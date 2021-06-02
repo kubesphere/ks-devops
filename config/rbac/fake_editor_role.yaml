@@ -1,0 +1,24 @@
+# permissions for end users to edit fakes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fake-editor-role
+rules:
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - fakes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - fakes/status
+  verbs:
+  - get

@@ -1,0 +1,10 @@
+domain: kubesphere.io
+repo: kubesphere.io/devops
+resources:
+- group: devops
+  kind: Pipeline
+  version: v1alpha3
+- group: devops
+  kind: Fake
+  version: v1alpha3
+version: "2"
