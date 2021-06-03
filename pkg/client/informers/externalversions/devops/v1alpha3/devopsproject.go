@@ -81,8 +81,7 @@ func (f *devOpsProjectInformer) defaultInformer(client versioned.Interface, resy
 }
 
 func (f *devOpsProjectInformer) Informer() cache.SharedIndexInformer {
-	return nil
-	//return f.factory.InformerFor(&devopsv1alpha3.DevOpsProject{}, f.defaultInformer)
+	return f.factory.InformerFor(&devopsv1alpha3.DevOpsProject{}, f.defaultInformer)
 }
 
 func (f *devOpsProjectInformer) Lister() v1alpha3.DevOpsProjectLister {

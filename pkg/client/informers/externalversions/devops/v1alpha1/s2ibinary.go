@@ -82,8 +82,7 @@ func (f *s2iBinaryInformer) defaultInformer(client versioned.Interface, resyncPe
 }
 
 func (f *s2iBinaryInformer) Informer() cache.SharedIndexInformer {
-	return nil
-	//return f.factory.InformerFor(&devopsv1alpha1.S2iBinary{}, f.defaultInformer)
+	return f.factory.InformerFor(&devopsv1alpha1.S2iBinary{}, f.defaultInformer)
 }
 
 func (f *s2iBinaryInformer) Lister() v1alpha1.S2iBinaryLister {

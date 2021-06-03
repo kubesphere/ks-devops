@@ -82,8 +82,7 @@ func (f *s2iRunInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *s2iRunInformer) Informer() cache.SharedIndexInformer {
-	return nil
-	//return f.factory.InformerFor(&devopsv1alpha1.S2iRun{}, f.defaultInformer)
+	return f.factory.InformerFor(&devopsv1alpha1.S2iRun{}, f.defaultInformer)
 }
 
 func (f *s2iRunInformer) Lister() v1alpha1.S2iRunLister {

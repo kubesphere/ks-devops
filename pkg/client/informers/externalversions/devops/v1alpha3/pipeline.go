@@ -82,8 +82,7 @@ func (f *pipelineInformer) defaultInformer(client versioned.Interface, resyncPer
 }
 
 func (f *pipelineInformer) Informer() cache.SharedIndexInformer {
-	return nil
-	//return f.factory.InformerFor(&devopsv1alpha3.Pipeline{}, f.defaultInformer)
+	return f.factory.InformerFor(&devopsv1alpha3.Pipeline{}, f.defaultInformer)
 }
 
 func (f *pipelineInformer) Lister() v1alpha3.PipelineLister {
