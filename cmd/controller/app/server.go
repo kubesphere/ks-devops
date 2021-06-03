@@ -23,6 +23,7 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/s3"
+	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/informers"
 	"kubesphere.io/devops/pkg/k8s"
 	"kubesphere.io/devops/pkg/utils/term"
@@ -39,26 +40,20 @@ import (
 
 func NewControllerManagerCommand() *cobra.Command {
 	s := options.NewDevOpsControllerManagerOptions()
-	//conf, err := controllerconfig.TryLoadFromDisk()
-	//if err == nil {
-	//	// make sure LeaderElection is not nil
-	//	s = &options.KubeSphereControllerManagerOptions{
-	//		KubernetesOptions:     conf.KubernetesOptions,
-	//		JenkinsOptions:         conf.JenkinsOptions,
-	//		S3Options:             conf.S3Options,
-	//		AuthenticationOptions: conf.AuthenticationOptions,
-	//		LdapOptions:           conf.LdapOptions,
-	//		OpenPitrixOptions:     conf.OpenPitrixOptions,
-	//		NetworkOptions:        conf.NetworkOptions,
-	//		MultiClusterOptions:   conf.MultiClusterOptions,
-	//		ServiceMeshOptions:    conf.ServiceMeshOptions,
-	//		LeaderElection:        s.LeaderElection,
-	//		LeaderElect:           s.LeaderElect,
-	//		WebhookCertDir:        s.WebhookCertDir,
-	//	}
-	//} else {
-	//	klog.Fatal("Failed to load configuration from disk", err)
-	//}
+	conf, err := config.TryLoadFromDisk()
+	if err == nil {
+		// make sure LeaderElection is not nil
+		s = &options.DevOpsControllerManagerOptions{
+			KubernetesOptions: conf.KubernetesOptions,
+			JenkinsOptions:    conf.DevopsOptions,
+			S3Options:         conf.S3Options,
+			LeaderElection:    s.LeaderElection,
+			LeaderElect:       s.LeaderElect,
+			WebhookCertDir:    s.WebhookCertDir,
+		}
+	} else {
+		klog.Fatal("Failed to load configuration from disk", err)
+	}
 
 	cmd := &cobra.Command{
 		Use:   "controller-manager",
