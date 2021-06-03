@@ -100,6 +100,11 @@ func NewKubernetesClient(options *KubernetesOptions) (Client, error) {
 		return nil, err
 	}
 
+	k.ks, err = kubesphere.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
 	k.apiextensions, err = apiextensionsclient.NewForConfig(config)
 	if err != nil {
 		return nil, err

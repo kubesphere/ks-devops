@@ -111,6 +111,7 @@ func run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 
 	informerFactory := informers.NewInformerFactories(
 		kubernetesClient.Kubernetes(),
+		kubernetesClient.KubeSphere(),
 		kubernetesClient.ApiExtensions())
 
 	mgrOptions := manager.Options{
