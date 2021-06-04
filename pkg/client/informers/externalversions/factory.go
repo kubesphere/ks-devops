@@ -36,11 +36,12 @@ import (
 type SharedInformerOption func(*sharedInformerFactory) *sharedInformerFactory
 
 type sharedInformerFactory struct {
-	client        versioned.Interface
-	namespace     string
-	lock          sync.Mutex
-	defaultResync time.Duration
-	customResync  map[reflect.Type]time.Duration
+	client           versioned.Interface
+	namespace        string
+	lock             sync.Mutex
+	defaultResync    time.Duration
+	customResync     map[reflect.Type]time.Duration
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
 
 	informers map[reflect.Type]cache.SharedIndexInformer
 	// startedInformers is used for tracking which informers have been started.
@@ -175,5 +176,5 @@ type SharedInformerFactory interface {
 }
 
 func (f *sharedInformerFactory) Devops() devops.Interface {
-	return devops.New(f, f.namespace /*, f.tweakListOptions*/)
+	return devops.New(f, f.namespace, f.tweakListOptions)
 }

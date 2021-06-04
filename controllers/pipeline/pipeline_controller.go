@@ -19,6 +19,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/labels"
 	"kubesphere.io/devops/pkg/utils"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
@@ -76,9 +77,27 @@ type Controller struct {
 
 func NewController(client clientset.Interface,
 	kubesphereClient kubesphereclient.Interface,
-	devopsClinet devopsClient.Interface,
+	devopsClient devopsClient.Interface,
 	namespaceInformer corev1informer.NamespaceInformer,
 	devopsInformer devopsinformers.PipelineInformer) *Controller {
+	if list, err := devopsInformer.Lister().Pipelines(metav1.NamespaceAll).List(labels.Everything()); err == nil {
+		fmt.Println("output the pipeline list", list, devopsInformer, devopsInformer.Lister())
+		for item := range list {
+			fmt.Println("pipelien item", item)
+		}
+	} else {
+		fmt.Println("pipeline list error", err)
+	}
+
+
+	if list, err := kubesphereClient.DevopsV1alpha3().Pipelines(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err == nil {
+		fmt.Println("output the pipeline list", list, devopsInformer, devopsInformer.Lister())
+		for item := range list.Items {
+		fmt.Println("pipelien item", item)
+	}
+	} else {
+		fmt.Println("pipeline list error", err)
+	}
 
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartLogging(func(format string, args ...interface{}) {
@@ -89,7 +108,7 @@ func NewController(client clientset.Interface,
 
 	v := &Controller{
 		client:              client,
-		devopsClient:        devopsClinet,
+		devopsClient:        devopsClient,
 		kubesphereClient:    kubesphereClient,
 		workqueue:           workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pipeline"),
 		devOpsProjectLister: devopsInformer.Lister(),
@@ -127,6 +146,7 @@ func (c *Controller) enqueuePipeline(obj interface{}) {
 		utilruntime.HandleError(err)
 		return
 	}
+	klog.V(9).Infof("enqueue pipeline: %s", key)
 	c.workqueue.Add(key)
 }
 

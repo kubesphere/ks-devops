@@ -33,22 +33,22 @@ type Interface interface {
 }
 
 type group struct {
-	factory   internalinterfaces.SharedInformerFactory
-	namespace string
-	//tweakListOptions internalinterfaces.TweakListOptionsFunc
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string /*, tweakListOptions internalinterfaces.TweakListOptionsFunc*/) Interface {
-	return &group{factory: f, namespace: namespace /*, tweakListOptions: tweakListOptions*/}
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &group{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
 // V1alpha1 returns a new v1alpha1.Interface.
 func (g *group) V1alpha1() v1alpha1.Interface {
-	return v1alpha1.New(g.factory, g.namespace /*, g.tweakListOptions*/)
+	return v1alpha1.New(g.factory, g.namespace, g.tweakListOptions)
 }
 
 // V1alpha3 returns a new v1alpha3.Interface.
 func (g *group) V1alpha3() v1alpha3.Interface {
-	return v1alpha3.New(g.factory, g.namespace /*, g.tweakListOptions*/)
+	return v1alpha3.New(g.factory, g.namespace, g.tweakListOptions)
 }

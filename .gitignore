@@ -24,3 +24,4 @@ bin
 *~
 
 charts/*.tgz
+kubesphere.yaml

@@ -23,8 +23,8 @@ import (
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	k8sinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	ksinformers "kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
+	ksinformers "kubesphere.io/devops/pkg/client/informers/externalversions"
 )
 
 // default re-sync period for all informer factories
@@ -81,6 +81,10 @@ func (f *informerFactories) ApiExtensionSharedInformerFactory() apiextensionsinf
 func (f *informerFactories) Start(stopCh <-chan struct{}) {
 	if f.informerFactory != nil {
 		f.informerFactory.Start(stopCh)
+	}
+
+	if f.ksInformerFactory != nil {
+		f.ksInformerFactory.Start(stopCh)
 	}
 
 	if f.apiextensionsInformerFactory != nil {

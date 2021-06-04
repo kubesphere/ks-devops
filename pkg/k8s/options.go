@@ -45,7 +45,7 @@ type KubernetesOptions struct {
 // NewKubernetesOptions returns a `zero` instance
 func NewKubernetesOptions() *KubernetesOptions {
 	return &KubernetesOptions{
-		KubeConfig: "",
+		KubeConfig: "",//"/Users/rick/.kube/config",
 		QPS:        1e6,
 		Burst:      1e6,
 	}

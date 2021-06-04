@@ -1,8 +1,10 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= surenpi/devops-controller:6
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+GV="devops:v1alpha1 devops:v1alpha3"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -19,12 +21,11 @@ test: generate fmt vet manifests
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
-	go build -a -o manager cmd/controller/main.go
+	go build -a -o bin/controller-manager cmd/controller/main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	go run cmd/controller/main.go
 
 # Install CRDs into a cluster
 install: manifests
@@ -55,8 +56,14 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+clientset:
+	./hack/generate_client.sh ${GV}
+
+openapi:
+	openapi-gen -O openapi_generated -i ./api/v1alpha1 -p kubesphere.io/api/devops/v1alpha1 -h ./hack/boilerplate.go.txt --report-filename ./api/violation_exceptions.list
+
 # Build the docker image
-docker-build: test
+docker-build:
 	docker build . -t ${IMG}
 
 # Push the docker image

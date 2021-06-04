@@ -37,30 +37,30 @@ type Interface interface {
 type version struct {
 	factory   internalinterfaces.SharedInformerFactory
 	namespace string
-	//tweakListOptions internalinterfaces.TweakListOptionsFunc
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string /*, tweakListOptions internalinterfaces.TweakListOptionsFunc*/) Interface {
-	return &version{factory: f, namespace: namespace /*, tweakListOptions: tweakListOptions*/}
+func New(f internalinterfaces.SharedInformerFactory, namespace string , tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace , tweakListOptions: tweakListOptions}
 }
 
 // S2iBinaries returns a S2iBinaryInformer.
 func (v *version) S2iBinaries() S2iBinaryInformer {
-	return &s2iBinaryInformer{factory: v.factory, namespace: v.namespace /*, tweakListOptions: v.tweakListOptions*/}
+	return &s2iBinaryInformer{factory: v.factory, namespace: v.namespace , tweakListOptions: v.tweakListOptions}
 }
 
 // S2iBuilders returns a S2iBuilderInformer.
 func (v *version) S2iBuilders() S2iBuilderInformer {
-	return &s2iBuilderInformer{factory: v.factory, namespace: v.namespace /*, tweakListOptions: v.tweakListOptions*/}
+	return &s2iBuilderInformer{factory: v.factory, namespace: v.namespace , tweakListOptions: v.tweakListOptions}
 }
 
 // S2iBuilderTemplates returns a S2iBuilderTemplateInformer.
 func (v *version) S2iBuilderTemplates() S2iBuilderTemplateInformer {
-	return &s2iBuilderTemplateInformer{factory: v.factory /*, tweakListOptions: v.tweakListOptions*/}
+	return &s2iBuilderTemplateInformer{factory: v.factory , tweakListOptions: v.tweakListOptions}
 }
 
 // S2iRuns returns a S2iRunInformer.
 func (v *version) S2iRuns() S2iRunInformer {
-	return &s2iRunInformer{factory: v.factory, namespace: v.namespace /*, tweakListOptions: v.tweakListOptions*/}
+	return &s2iRunInformer{factory: v.factory, namespace: v.namespace , tweakListOptions: v.tweakListOptions}
 }

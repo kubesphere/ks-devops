@@ -62,8 +62,7 @@ func addControllers(
 			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects())
 
 		devopsPipelineController = pipeline.NewController(client.Kubernetes(),
-			client.KubeSphere(),
-			devopsClient,
+			client.KubeSphere(), devopsClient,
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
 

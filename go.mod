@@ -20,6 +20,7 @@ require (
 	github.com/onsi/gomega v1.12.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
@@ -30,7 +31,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-base v0.20.2
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
+	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
 	kubesphere.io/api v0.0.0-20210511124541-08f2d682bd07
 	sigs.k8s.io/controller-runtime v0.6.3
 	sigs.k8s.io/kubefed v0.7.0
@@ -41,7 +42,7 @@ replace (
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/client-go => k8s.io/client-go v0.18.6
 	k8s.io/component-base => k8s.io/component-base v0.18.6
-	sigs.k8s.io/kubefed => sigs.k8s.io/kubefed v0.6.1
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	sigs.k8s.io/application => sigs.k8s.io/application v0.8.4-0.20201016185654-c8e2959e57a0
+	sigs.k8s.io/kubefed => sigs.k8s.io/kubefed v0.6.1
 )

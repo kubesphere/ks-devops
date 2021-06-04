@@ -66,18 +66,18 @@ const (
 
 // Config defines everything needed for apiserver to deal with external services
 type Config struct {
-	DevopsOptions         *jenkins.Options                           `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
-	KubernetesOptions     *k8s.KubernetesOptions                     `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
-	RedisOptions          *cache.Options                             `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
-	S3Options             *s3.Options                                `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
+	DevopsOptions     *jenkins.Options       `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
+	KubernetesOptions *k8s.KubernetesOptions `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
+	RedisOptions      *cache.Options         `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
+	S3Options         *s3.Options            `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
 }
 
 // newConfig creates a default non-empty Config
 func New() *Config {
 	return &Config{
-		DevopsOptions:         jenkins.NewDevopsOptions(),
-		KubernetesOptions:     k8s.NewKubernetesOptions(),
-		S3Options:             s3.NewS3Options(),
+		DevopsOptions:     jenkins.NewDevopsOptions(),
+		KubernetesOptions: k8s.NewKubernetesOptions(),
+		S3Options:         s3.NewS3Options(),
 	}
 }
 

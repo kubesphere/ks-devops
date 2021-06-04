@@ -31,22 +31,22 @@ type Interface interface {
 }
 
 type version struct {
-	factory   internalinterfaces.SharedInformerFactory
-	namespace string
-	//tweakListOptions internalinterfaces.TweakListOptionsFunc
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespace string /*, tweakListOptions internalinterfaces.TweakListOptionsFunc*/) Interface {
-	return &version{factory: f, namespace: namespace /*, tweakListOptions: tweakListOptions*/}
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
 // DevOpsProjects returns a DevOpsProjectInformer.
 func (v *version) DevOpsProjects() DevOpsProjectInformer {
-	return &devOpsProjectInformer{factory: v.factory /*, tweakListOptions: v.tweakListOptions*/}
+	return &devOpsProjectInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Pipelines returns a PipelineInformer.
 func (v *version) Pipelines() PipelineInformer {
-	return &pipelineInformer{factory: v.factory, namespace: v.namespace /* tweakListOptions: v.tweakListOptions*/}
+	return &pipelineInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
