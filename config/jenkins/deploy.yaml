@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ks-jenkins
+spec:
+  selector:
+    matchLabels:
+      control-plane: ks-jenkins
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: ks-jenkins
+    spec:
+      containers:
+      - image: kubesphere/ks-jenkins:2.249.1
+        name: jenkins
+        ports:
+          - containerPort: 8080
+            name: http
+        resources:
+          limits:
+            cpu: 1
+            memory: 2000Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10

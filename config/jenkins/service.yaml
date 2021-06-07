@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ks-jenkins
+  labels:
+    control-plane: ks-jenkins
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    control-plane: ks-jenkins

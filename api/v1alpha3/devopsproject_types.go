@@ -37,15 +37,10 @@ const (
 
 // DevOpsProjectSpec defines the desired state of DevOpsProject
 type DevOpsProjectSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 }
 
 // DevOpsProjectStatus defines the observed state of DevOpsProject
 type DevOpsProjectStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	AdminNamespace string `json:"adminNamespace,omitempty"`
 }
 

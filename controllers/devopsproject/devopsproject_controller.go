@@ -110,9 +110,9 @@ func NewController(client clientset.Interface,
 	devopsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: v.enqueueDevOpsProject,
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			old := oldObj.(*devopsv1alpha3.DevOpsProject)
-			new := newObj.(*devopsv1alpha3.DevOpsProject)
-			if old.ResourceVersion == new.ResourceVersion {
+			oldDevOpsProject := oldObj.(*devopsv1alpha3.DevOpsProject)
+			newDevOpsProject := newObj.(*devopsv1alpha3.DevOpsProject)
+			if oldDevOpsProject.ResourceVersion == newDevOpsProject.ResourceVersion {
 				return
 			}
 			v.enqueueDevOpsProject(newObj)
@@ -187,7 +187,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	klog.Info("starting devops project controller")
 	defer klog.Info("shutting down devops project controller")
 
-	if !cache.WaitForCacheSync(stopCh, c.devOpsProjectSynced, c.devOpsProjectSynced, c.workspaceSynced) {
+	if !cache.WaitForCacheSync(stopCh, c.devOpsProjectSynced, c.namespaceSynced) {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
