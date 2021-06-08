@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= surenpi/devops-controller:6
+IMG ?= surenpi/devops-controller:7
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -69,6 +69,9 @@ docker-build:
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+
+# Build and push the docker image
+docker-build-push: docker-build docker-push
 
 # find or download controller-gen
 # download controller-gen if necessary

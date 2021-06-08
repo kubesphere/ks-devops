@@ -17,8 +17,10 @@ limitations under the License.
 package k8s
 
 import (
+	"k8s.io/client-go/util/homedir"
 	"kubesphere.io/devops/pkg/utils/reflectutils"
 	"os"
+	"path"
 
 	"github.com/spf13/pflag"
 )
@@ -43,12 +45,17 @@ type KubernetesOptions struct {
 }
 
 // NewKubernetesOptions returns a `zero` instance
-func NewKubernetesOptions() *KubernetesOptions {
-	return &KubernetesOptions{
-		KubeConfig: "",//"/Users/rick/.kube/config",
+func NewKubernetesOptions() (option *KubernetesOptions) {
+	option = &KubernetesOptions{
 		QPS:        1e6,
 		Burst:      1e6,
 	}
+
+	userHomeConfig := path.Join(homedir.HomeDir(), ".kube/config")
+	if _, err := os.Stat(userHomeConfig); !os.IsNotExist(err) {
+		option.KubeConfig = userHomeConfig
+	}
+	return
 }
 
 func (k *KubernetesOptions) Validate() []error {

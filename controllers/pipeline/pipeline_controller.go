@@ -223,20 +223,21 @@ func (c *Controller) syncHandler(key string) error {
 		klog.Error(err, fmt.Sprintf("could not split copyPipeline meta %s ", key))
 		return nil
 	}
-	namespace, err := c.namespaceLister.Get(nsName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			klog.Info(fmt.Sprintf("namespace '%s' in work queue no longer exists ", key))
-			return nil
-		}
-		klog.V(8).Info(err, fmt.Sprintf("could not get namespace %s ", key))
-		return err
-	}
-	if !isDevOpsProjectAdminNamespace(namespace) {
-		err := fmt.Errorf("cound not create copyPipeline in normal namespaces %s", namespace.Name)
-		klog.Warning(err)
-		return err
-	}
+	//namespace, err := c.namespaceLister.Get(nsName)
+	//if err != nil {
+	//	if errors.IsNotFound(err) {
+	//		klog.Info(fmt.Sprintf("namespace '%s' in work queue no longer exists ", key))
+	//		return nil
+	//	}
+	//	klog.V(8).Info(err, fmt.Sprintf("could not get namespace %s ", key))
+	//	return err
+	//}
+	// TODO this is the KubeSphere core part instead of the DevOps part
+	//if !isDevOpsProjectAdminNamespace(namespace) {
+	//	err := fmt.Errorf("cound not create copyPipeline in normal namespaces %s", namespace.Name)
+	//	klog.Warning(err)
+	//	return err
+	//}
 
 	pipeline, err := c.devOpsProjectLister.Pipelines(nsName).Get(name)
 	if err != nil {
