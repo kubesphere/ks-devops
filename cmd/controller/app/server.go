@@ -22,10 +22,10 @@ import (
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
+	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/informers"
-	"kubesphere.io/devops/pkg/k8s"
 	"kubesphere.io/devops/pkg/utils/term"
 
 	"github.com/spf13/cobra"

@@ -47,8 +47,8 @@ type KubernetesOptions struct {
 // NewKubernetesOptions returns a `zero` instance
 func NewKubernetesOptions() (option *KubernetesOptions) {
 	option = &KubernetesOptions{
-		QPS:        1e6,
-		Burst:      1e6,
+		QPS:   1e6,
+		Burst: 1e6,
 	}
 
 	userHomeConfig := path.Join(homedir.HomeDir(), ".kube/config")

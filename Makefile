@@ -1,6 +1,6 @@
-
 # Image URL to use all building/pushing image targets
-IMG ?= surenpi/devops-controller:7
+CONTROLLER_IMG ?= surenpi/devops-controller:7
+APISERVER_IMG ?= surenpi/devops-apiserver:7
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -37,7 +37,7 @@ uninstall: manifests
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/manager && kustomize edit set image controller=${CONTROLLER_IMG}
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
@@ -62,16 +62,27 @@ clientset:
 openapi:
 	openapi-gen -O openapi_generated -i ./api/v1alpha1 -p kubesphere.io/api/devops/v1alpha1 -h ./hack/boilerplate.go.txt --report-filename ./api/violation_exceptions.list
 
-# Build the docker image
-docker-build:
-	docker build . -t ${IMG}
+# Build the docker image of controller-manager
+docker-build-controller:
+	docker build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
 
-# Push the docker image
-docker-push:
-	docker push ${IMG}
+# Push the docker image of controller-manager
+docker-push-controller:
+	docker push ${CONTROLLER_IMG}
 
 # Build and push the docker image
-docker-build-push: docker-build docker-push
+docker-build-push-controller: docker-build-controller docker-push-controller
+
+# Build the docker image of apiserver
+docker-build-apiserver:
+	docker build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
+
+# Push the docker image of controller-manager
+docker-push-apiserver:
+	docker push ${CONTROLLER_IMG}
+
+# Build and push the docker image
+docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver
 
 # find or download controller-gen
 # download controller-gen if necessary

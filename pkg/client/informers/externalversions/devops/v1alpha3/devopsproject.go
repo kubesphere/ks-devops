@@ -40,7 +40,7 @@ type DevOpsProjectInformer interface {
 }
 
 type devOpsProjectInformer struct {
-	factory internalinterfaces.SharedInformerFactory
+	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
@@ -48,13 +48,13 @@ type devOpsProjectInformer struct {
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewDevOpsProjectInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredDevOpsProjectInformer(client, resyncPeriod, indexers , nil)
+	return NewFilteredDevOpsProjectInformer(client, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredDevOpsProjectInformer constructs a new informer for DevOpsProject type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredDevOpsProjectInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers , tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredDevOpsProjectInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
@@ -77,7 +77,7 @@ func NewFilteredDevOpsProjectInformer(client versioned.Interface, resyncPeriod t
 }
 
 func (f *devOpsProjectInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredDevOpsProjectInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc} , f.tweakListOptions)
+	return NewFilteredDevOpsProjectInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *devOpsProjectInformer) Informer() cache.SharedIndexInformer {

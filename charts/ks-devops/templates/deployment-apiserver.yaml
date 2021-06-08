@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ks-devops.fullname" . }}
+  name: {{ include "ks-devops-apiserver.fullname" . }}
   labels:
-    {{- include "ks-devops.labels" . | nindent 4 }}
+    {{- include "ks-devops-apiserver.labels" . | nindent 4 }}
 spec:
 {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
 {{- end }}
   selector:
     matchLabels:
-      {{- include "ks-devops.selectorLabels" . | nindent 6 }}
+      {{- include "ks-devops-apiserver.selectorLabels" . | nindent 6 }}
   template:
     metadata:
     {{- with .Values.podAnnotations }}
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       labels:
-        {{- include "ks-devops.selectorLabels" . | nindent 8 }}
+        {{- include "ks-devops-apiserver.selectorLabels" . | nindent 8 }}
     spec:
       volumes:
         - name: kubesphere-config
@@ -29,14 +29,14 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "ks-devops.serviceAccountName" . }}
+      serviceAccountName: {{ include "ks-devops-apiserver.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.apiserver.repository }}:{{ .Values.image.apiserver.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

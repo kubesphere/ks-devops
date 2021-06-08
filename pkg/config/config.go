@@ -18,9 +18,10 @@ package config
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/k8s"
+	"kubesphere.io/devops/pkg/client/cache"
+	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/client/sonarqube"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -70,11 +71,13 @@ type Config struct {
 	KubernetesOptions *k8s.KubernetesOptions `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
 	RedisOptions      *cache.Options         `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
 	S3Options         *s3.Options            `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
+	SonarQubeOptions  *sonarqube.Options     `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
 }
 
 // newConfig creates a default non-empty Config
 func New() *Config {
 	return &Config{
+		SonarQubeOptions:  sonarqube.NewSonarQubeOptions(),
 		DevopsOptions:     jenkins.NewDevopsOptions(),
 		KubernetesOptions: k8s.NewKubernetesOptions(),
 		S3Options:         s3.NewS3Options(),

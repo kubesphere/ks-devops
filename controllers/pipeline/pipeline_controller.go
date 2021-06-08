@@ -89,12 +89,11 @@ func NewController(client clientset.Interface,
 		fmt.Println("pipeline list error", err)
 	}
 
-
 	if list, err := kubesphereClient.DevopsV1alpha3().Pipelines(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err == nil {
 		fmt.Println("output the pipeline list", list, devopsInformer, devopsInformer.Lister())
 		for item := range list.Items {
-		fmt.Println("pipelien item", item)
-	}
+			fmt.Println("pipelien item", item)
+		}
 	} else {
 		fmt.Println("pipeline list error", err)
 	}
