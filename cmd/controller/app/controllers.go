@@ -24,9 +24,9 @@ import (
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
 	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/informers"
-	"kubesphere.io/devops/pkg/k8s"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

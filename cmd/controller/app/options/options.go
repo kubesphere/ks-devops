@@ -19,8 +19,8 @@ package options
 import (
 	"flag"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
+	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
-	"kubesphere.io/devops/pkg/k8s"
 	"strings"
 	"time"
 

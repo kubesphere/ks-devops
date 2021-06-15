@@ -5,9 +5,13 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/linuxsuren/devops-controller
+  controller:
+    repository: ghcr.io/linuxsuren/devops-controller
+    tag: master
+  apiserver:
+    repository: ghcr.io/linuxsuren/devops-apiserver
+    tag: master
   pullPolicy: IfNotPresent
-  tag: sha-4a9164e
 
 imagePullSecrets: []
 nameOverride: ""
@@ -15,7 +19,7 @@ fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.

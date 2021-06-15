@@ -40,22 +40,22 @@ type S2iRunInformer interface {
 }
 
 type s2iRunInformer struct {
-	factory internalinterfaces.SharedInformerFactory
+	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace string
+	namespace        string
 }
 
 // NewS2iRunInformer constructs a new informer for S2iRun type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewS2iRunInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredS2iRunInformer(client, namespace, resyncPeriod, indexers , nil)
+	return NewFilteredS2iRunInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredS2iRunInformer constructs a new informer for S2iRun type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredS2iRunInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers , tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredS2iRunInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
@@ -78,7 +78,7 @@ func NewFilteredS2iRunInformer(client versioned.Interface, namespace string, res
 }
 
 func (f *s2iRunInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredS2iRunInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc} , f.tweakListOptions)
+	return NewFilteredS2iRunInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *s2iRunInformer) Informer() cache.SharedIndexInformer {
