@@ -27,7 +27,7 @@ data:
       bucket: s2i-binaries
 
     devops:
-      host: http://139.198.3.176:30409/
+      host: http://ks-jenkins.kubesphere-devops-system
       username: admin
       password: 119d76305a05e7a2a65d096f71feb77921
       maxConnections: 100

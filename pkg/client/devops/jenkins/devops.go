@@ -18,7 +18,6 @@ import (
 )
 
 func NewDevopsClient(options *Options) (devops.Interface, error) {
-
 	jenkins := CreateJenkins(nil, options.Host, options.MaxConnections, options.Username, options.Password)
 
 	return jenkins, nil

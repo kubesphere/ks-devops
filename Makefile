@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
-CONTROLLER_IMG ?= surenpi/devops-controller:7
-APISERVER_IMG ?= surenpi/devops-apiserver:7
+CONTROLLER_IMG ?= surenpi/devops-controller:8
+APISERVER_IMG ?= surenpi/devops-apiserver:8
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -37,7 +37,8 @@ uninstall: manifests
 
 install-chart:
 	helm lint charts/ks-devops
-	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace
+	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
+		--set image.pullPolicy=Always
 
 uninstall-chart:
 	helm uninstall ks-ctl -n kubesphere-devops-system
@@ -90,7 +91,7 @@ docker-build-apiserver:
 
 # Push the docker image of controller-manager
 docker-push-apiserver:
-	docker push ${CONTROLLER_IMG}
+	docker push ${APISERVER_IMG}
 
 # Build and push the docker image
 docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver

@@ -17,6 +17,8 @@ limitations under the License.
 package jenkins
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -46,6 +48,14 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	header := httpParameters.Header
+
+	if j.Requester != nil {
+		auth := j.Requester.BasicAuth
+
+		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth.Username, auth.Password)))
+		header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+	}
+	// TODO consider to remove below
 	SetBasicBearTokenHeader(&header)
 
 	newRequest := &http.Request{
