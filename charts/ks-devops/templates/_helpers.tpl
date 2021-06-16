@@ -31,11 +31,11 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Common labels for apiserver
 */}}
-{{- define "ks-devops.labels" -}}
+{{- define "ks-devops-apiserver.labels" -}}
 helm.sh/chart: {{ include "ks-devops.chart" . }}
-{{ include "ks-devops.selectorLabels" . }}
+{{ include "ks-devops-apiserver.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,11 +43,33 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Selector labels for apiserver
 */}}
-{{- define "ks-devops.selectorLabels" -}}
+{{- define "ks-devops-apiserver.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "ks-devops.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+devops.kubesphere.io/component: apiserver
+{{- end }}
+
+{{/*
+Common labels for controller
+*/}}
+{{- define "ks-devops-controller.labels" -}}
+helm.sh/chart: {{ include "ks-devops.chart" . }}
+{{ include "ks-devops-controller.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels for controller
+*/}}
+{{- define "ks-devops-controller.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "ks-devops.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+devops.kubesphere.io/component: controller
 {{- end }}
 
 {{/*

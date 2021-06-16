@@ -35,6 +35,17 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
+install-chart:
+	helm lint charts/ks-devops
+	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace
+
+uninstall-chart:
+	helm uninstall ks-ctl -n kubesphere-devops-system
+
+reinstall-chart:
+	make uninstall-chart || true
+	make install-chart
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${CONTROLLER_IMG}

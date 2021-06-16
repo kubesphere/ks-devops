@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: "{{ include "ks-devops.fullname" . }}-test-connection"
   labels:
-    {{- include "ks-devops.labels" . | nindent 4 }}
+    {{- include "ks-devops-apiserver.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
 spec:
