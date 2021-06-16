@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ks-devops-apiserver.fullname" . }}
+  name: {{ include "ks-devops.fullname" . }}-apiserver
   labels:
     {{- include "ks-devops-apiserver.labels" . | nindent 4 }}
 spec:
@@ -23,13 +23,13 @@ spec:
       volumes:
         - name: kubesphere-config
           configMap:
-            name: kubesphere-config
+            name: devops-config
             defaultMode: 420
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "ks-devops-apiserver.serviceAccountName" . }}
+      serviceAccountName: {{ include "ks-devops.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -38,6 +38,9 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.apiserver.repository }}:{{ .Values.image.apiserver.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 9090
+              protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
