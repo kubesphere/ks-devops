@@ -1,8 +1,4 @@
-{{- if .Capabilities.APIVersions.Has "apps/v1" }}
 apiVersion: apps/v1
-{{- else }}
-apiVersion: apps/v1
-{{- end }}
 kind: Deployment
 metadata:
   name: {{ template "jenkins.fullname" . }}
@@ -106,7 +102,7 @@ spec:
           {{- end }}
           env:
             - name: JAVA_TOOL_OPTIONS
-              value: "{{ default "" .Values.Master.JavaOpts}}"
+              value: "{{ default "" .Values.Master.JavaOpts | replace "\n" " "}}"
             - name: JENKINS_OPTS
               value: "{{ if .Values.Master.JenkinsUriPrefix }}--prefix={{ .Values.Master.JenkinsUriPrefix }} {{ end }}{{ default "" .Values.Master.JenkinsOpts}}"
             {{- if .Values.Master.UseSecurity }}
