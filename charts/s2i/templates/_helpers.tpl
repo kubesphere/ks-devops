@@ -43,20 +43,13 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Concrete prefix of s2i image
 */}}
-{{- define "s2i.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "s2i.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{- define "s2i.imagePrefix" -}}
+{{- if .Values.docker.registry }}
+{{- print .Values.docker.registry "/" .Values.docker.group }}
+{{- else }}
+{{- print .Values.docker.group }}
+{{- end }}
 {{- end }}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "s2i.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "s2i.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}

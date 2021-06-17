@@ -1,3 +1,92 @@
 # Default values for s2i.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+
+docker:
+  registry: ""
+  group: "kubespheredev"
+
+# Binary image
+binary:
+  image:
+    name: "s2i-binary"
+    tag: "v2.1.0"
+
+# Java image
+java8CentOs7:
+  image:
+    name: "java-8-centos7"
+    tag: "v2.1.0"
+java8Runtime:
+  image:
+    name: "java-8-runtime"
+    tag: "v2.1.0"
+
+java11CentOs7:
+  image:
+    name: "java-11-centos7"
+    tag: "v2.1.0"
+
+java11Runtime:
+  image:
+    name: "java-11-runtime"
+    tag: "v2.1.0"
+
+# Nodejs image
+nodejs8CentOs7:
+  image:
+    name: "nodejs-8-centos7"
+    tag: "v2.1.0"
+nodejs6CentOs7:
+  image:
+    name: "nodejs-6-centos7"
+    tag: "v2.1.0"
+nodejs4CentOs7:
+  image:
+    name: "nodejs-4-centos7"
+    tag: "v2.1.0"
+
+# Python image
+python36CentOs7:
+  image:
+    name: "python-36-centos7"
+    tag: "v2.1.0"
+python35CentOs7:
+  image:
+    name: "python-35-centos7"
+    tag: "v2.1.0"
+python34CentOs7:
+  image:
+    name: "python-34-centos7"
+    tag: "v2.1.0"
+python27CentOs7:
+  image:
+    name: "python-34-centos7"
+    tag: "v2.1.0"
+
+# Tomcat image
+tomcat85Java11:
+  image:
+    name: "tomcat85-java11-centos7"
+    tag: "v2.1.0"
+tomcat85Java11Runtime:
+  image:
+    name: "tomcat85-java11-runtime"
+    tag: "v2.1.0"
+tomcat85Java8:
+  image:
+    name: "tomcat85-java8-centos7"
+    tag: "v2.1.0"
+tomcat85Java8Runtime:
+  image:
+    name: "tomcat85-java8-runtime"
+    tag: "v2.1.0"
+
+s2ioperator:
+  image:
+    name: "s2ioperator"
+    tag: "v3.1.0"
+s2irun:
+  image:
+    name: "s2irun"
+    tag: "v2.1.1"
