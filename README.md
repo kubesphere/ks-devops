@@ -2,7 +2,7 @@
 
 1. Install KubeSphere via [kk](https://github.com/kubesphere/kubekey/) (or other ways). 
     This is an optional step, basically we need a Kubernetes Cluster and the front-end of DevOps.
-1. Install `ks-jenkins` (Remove this step after we combine Jenkins chart with `ks-devops`)
+1. Install `ks-jenkins` via enabling the DevOps component in KubeSphere (Remove this step after we combine Jenkins chart with `ks-devops`)
 1. Install `ks-devops` via [chart](charts/ks-devops)
 
 In current phase, we need to use a temporary images of [KubeSphere](https://github.com/kubesphere/kubesphere/) 
