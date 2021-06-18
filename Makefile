@@ -63,6 +63,9 @@ reinstall-jenkins-chart:
 	make uninstall-jenkins-chart || true
 	make install-jenkins-chart
 
+package-chart:
+	cd charts && helm package ks-devops
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${CONTROLLER_IMG}
