@@ -37,7 +37,7 @@ import (
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 
-	devopsv1alpha1 "kubesphere.io/devops/api/v1alpha1"
+	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 
 	devopsclient "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsinformers "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha1"

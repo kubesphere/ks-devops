@@ -1165,6 +1165,7 @@ type PipelineOperator interface {
 	//Webhook operator interface
 	GetNotifyCommit(httpParameters *HttpParameters) ([]byte, error)
 	GithubWebhook(httpParameters *HttpParameters) ([]byte, error)
+	GenericWebhook(httpParameters *HttpParameters) ([]byte, error)
 
 	CheckScriptCompile(projectName, pipelineName string, httpParameters *HttpParameters) (*CheckScript, error)
 	CheckCron(projectName string, httpParameters *HttpParameters) (*CheckCronRes, error)

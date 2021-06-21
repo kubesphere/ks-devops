@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 
-	"kubesphere.io/devops/api/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"

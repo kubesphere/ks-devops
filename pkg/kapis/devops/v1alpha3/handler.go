@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
-	"kubesphere.io/devops/api/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"

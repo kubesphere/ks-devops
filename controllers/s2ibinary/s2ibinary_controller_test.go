@@ -33,7 +33,7 @@ package s2ibinary
 //	"k8s.io/client-go/tools/cache"
 //	"k8s.io/client-go/tools/record"
 //
-//	s2i "kubesphere.io/devops/api/v1alpha1"
+//	s2i "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 //
 //	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
 //	informers "kubesphere.io/devops/pkg/client/informers/externalversions"

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 
-	devopsv1alpha1 "kubesphere.io/devops/api/v1alpha1"
+	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"time"
 
 	v1 "k8s.io/api/core/v1"

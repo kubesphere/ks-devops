@@ -19,7 +19,6 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/labels"
 	"kubesphere.io/devops/pkg/utils"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
@@ -43,7 +42,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	kubesphereclient "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
@@ -80,24 +79,6 @@ func NewController(client clientset.Interface,
 	devopsClient devopsClient.Interface,
 	namespaceInformer corev1informer.NamespaceInformer,
 	devopsInformer devopsinformers.PipelineInformer) *Controller {
-	if list, err := devopsInformer.Lister().Pipelines(metav1.NamespaceAll).List(labels.Everything()); err == nil {
-		fmt.Println("output the pipeline list", list, devopsInformer, devopsInformer.Lister())
-		for item := range list {
-			fmt.Println("pipelien item", item)
-		}
-	} else {
-		fmt.Println("pipeline list error", err)
-	}
-
-	if list, err := kubesphereClient.DevopsV1alpha3().Pipelines(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err == nil {
-		fmt.Println("output the pipeline list", list, devopsInformer, devopsInformer.Lister())
-		for item := range list.Items {
-			fmt.Println("pipelien item", item)
-		}
-	} else {
-		fmt.Println("pipeline list error", err)
-	}
-
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartLogging(func(format string, args ...interface{}) {
 		klog.Info(fmt.Sprintf(format, args))
@@ -261,6 +242,7 @@ func (c *Controller) syncHandler(key string) error {
 			specHash := utils.ComputeHash(copyPipeline.Spec)
 			oldHash, _ := copyPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] // don't need to check if it's nil, only compare if they're different
 			if specHash == oldHash {
+				klog.V(9).Info(fmt.Sprintf("%s/%s has no changes in spec", copyPipeline.Namespace, copyPipeline.Name))
 				// it was synced successfully, and there's any change with the Pipeline spec, skip this round
 				return nil
 			} else {

@@ -23,7 +23,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/klog"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/client/devops"
 )
@@ -31,7 +31,6 @@ import (
 func (j *Jenkins) CreateProjectPipeline(projectId string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	switch pipeline.Spec.Type {
 	case devopsv1alpha3.NoScmPipelineType:
-
 		config, err := createPipelineConfigXml(pipeline.Spec.Pipeline)
 		if err != nil {
 			return "", restful.NewError(http.StatusInternalServerError, err.Error())
@@ -94,7 +93,6 @@ func (j *Jenkins) DeleteProjectPipeline(projectId string, pipelineId string) (st
 func (j *Jenkins) UpdateProjectPipeline(projectId string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	switch pipeline.Spec.Type {
 	case devopsv1alpha3.NoScmPipelineType:
-
 		config, err := createPipelineConfigXml(pipeline.Spec.Pipeline)
 		if err != nil {
 			return "", restful.NewError(http.StatusInternalServerError, err.Error())

@@ -7,7 +7,7 @@ APISERVER_IMG ?= surenpi/devops-apiserver:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-GV="devops:v1alpha1 devops:v1alpha3"
+GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -19,7 +19,7 @@ endif
 all: manager
 
 # Run tests
-test: generate fmt vet manifests
+test: fmt vet # generate manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
@@ -96,9 +96,13 @@ clientset:
 openapi:
 	openapi-gen -O openapi_generated -i ./api/v1alpha1 -p kubesphere.io/api/devops/v1alpha1 -h ./hack/boilerplate.go.txt --report-filename ./api/violation_exceptions.list
 
+generate-listers:
+	lister-gen -v=2 --output-base=. --input-dirs kubesphere.io/devops/pkg/api/devops/v1alpha3,kubesphere.io/devops/pkg/api/devops/v1alpha1  \
+ 		--output-package pkg/client/listers -h hack/boilerplate.go.txt
+
 # Build the docker image of controller-manager
 docker-build-controller:
-	docker build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
+	docker build --build-arg GOPROXY=https://goproxy.io . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-controller:
@@ -109,7 +113,7 @@ docker-build-push-controller: docker-build-controller docker-push-controller
 
 # Build the docker image of apiserver
 docker-build-apiserver:
-	docker build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
+	docker build --build-arg GOPROXY=https://goproxy.io . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-apiserver:
@@ -117,6 +121,8 @@ docker-push-apiserver:
 
 # Build and push the docker image
 docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver
+
+docker-build-push: docker-build-push-apiserver docker-build-push-controller
 
 # find or download controller-gen
 # download controller-gen if necessary

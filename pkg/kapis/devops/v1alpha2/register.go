@@ -31,6 +31,7 @@ import (
 
 	devopsv1alpha1 "kubesphere.io/api/devops/v1alpha1"
 
+	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"
@@ -43,12 +44,7 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
-const (
-	GroupName = "devops.kubesphere.io"
-	RespOK    = "ok"
-)
-
-var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha2"}
+var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"}
 
 func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory, devopsClient devops.Interface,
 	sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface, s3Client s3.Interface, endpoint string) error {
@@ -69,7 +65,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 		return err
 	}
 
-	err = AddJenkinsToContainer(ws, devopsClient, endpoint)
+	err = addJenkinsToContainer(ws, devopsClient, endpoint)
 	if err != nil {
 		return err
 	}
@@ -92,7 +88,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsCredentialTag}).
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("credential", "credential's ID, e.g. dockerhub-id")).
-			Returns(http.StatusOK, RespOK, devops.Credential{}))
+			Returns(http.StatusOK, api.StatusOK, devops.Credential{}))
 
 		// match Jenkins api "/blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}"
 		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}").
@@ -101,7 +97,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Doc("Get the specified pipeline of the DevOps project").
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
-			Returns(http.StatusOK, RespOK, devops.Pipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.Pipeline{}).
 			Writes(devops.Pipeline{}))
 
 		// match Jenkins api: "jenkins_api/blue/rest/search"
@@ -121,7 +117,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.QueryParameter("limit", "the limit item count of the search.").
 				Required(false).
 				DataFormat("limit=%d")).
-			Returns(http.StatusOK, RespOK, devops.PipelineList{}).
+			Returns(http.StatusOK, api.StatusOK, devops.PipelineList{}).
 			Writes(devops.PipelineList{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/{run}/
@@ -132,7 +128,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "the name of devops project")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, devops.PipelineRun{}).
+			Returns(http.StatusOK, api.StatusOK, devops.PipelineRun{}).
 			Writes(devops.PipelineRun{}))
 
 		// match Jenkins api "/blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/"
@@ -151,7 +147,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.QueryParameter("branch", "the name of branch, same as repository branch, will be filtered by branch.").
 				Required(false).
 				DataFormat("branch=%s")).
-			Returns(http.StatusOK, RespOK, devops.PipelineRunList{}).
+			Returns(http.StatusOK, api.StatusOK, devops.PipelineRunList{}).
 			Writes(devops.PipelineRunList{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/runs/{run}/stop/
@@ -170,7 +166,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 				Required(false).
 				DataFormat("timeOutInSecs=%d").
 				DefaultValue("timeOutInSecs=10")).
-			Returns(http.StatusOK, RespOK, devops.StopPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.StopPipeline{}).
 			Writes(devops.StopPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/runs/{run}/Replay/
@@ -181,7 +177,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, devops.ReplayPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.ReplayPipeline{}).
 			Writes(devops.ReplayPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/
@@ -192,7 +188,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Reads(devops.RunPayload{}).
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
-			Returns(http.StatusOK, RespOK, devops.RunPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.RunPipeline{}).
 			Writes(devops.RunPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/{run}/artifacts
@@ -251,7 +247,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build")).
 			Param(webservice.PathParameter("node", "pipeline node ID, the stage in pipeline.")).
-			Returns(http.StatusOK, RespOK, []devops.NodeSteps{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.NodeSteps{}).
 			Writes([]devops.NodeSteps{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/runs/{run}/nodes/?limit=10000
@@ -262,7 +258,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "the name of devops project")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build")).
-			Returns(http.StatusOK, RespOK, []devops.PipelineRunNodes{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.PipelineRunNodes{}).
 			Writes([]devops.PipelineRunNodes{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/runs/{run}/nodes/{node}/steps/{step}
@@ -286,7 +282,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, []devops.NodesDetail{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.NodesDetail{}).
 			Writes(devops.NodesDetail{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/branches/{branch}
@@ -297,7 +293,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "the name of devops project")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch")).
-			Returns(http.StatusOK, RespOK, devops.BranchPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.BranchPipeline{}).
 			Writes(devops.BranchPipeline{}))
 
 		// match Jenkins api "/blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/branches/{branch}/runs/{run}/"
@@ -309,7 +305,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch.")).
 			Param(webservice.PathParameter("run", "pipeline run id, the unique id for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, devops.PipelineRun{}).
+			Returns(http.StatusOK, api.StatusOK, devops.PipelineRun{}).
 			Writes(devops.PipelineRun{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/branches/{branch}/runs/{run}/stop/
@@ -329,7 +325,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 				Required(false).
 				DataFormat("timeOutInSecs=%d").
 				DefaultValue("timeOutInSecs=10")).
-			Returns(http.StatusOK, RespOK, devops.StopPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.StopPipeline{}).
 			Writes(devops.StopPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/branches/{branch}/runs/{run}/Replay/
@@ -341,7 +337,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch.")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, devops.ReplayPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.ReplayPipeline{}).
 			Writes(devops.ReplayPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/branches/{}/runs/
@@ -353,7 +349,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch.")).
-			Returns(http.StatusOK, RespOK, devops.RunPipeline{}).
+			Returns(http.StatusOK, api.StatusOK, devops.RunPipeline{}).
 			Writes(devops.RunPipeline{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/branches/{branch}/runs/{run}/artifacts
@@ -416,7 +412,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch.")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
 			Param(webservice.PathParameter("node", "pipeline node ID, the stage in pipeline.")).
-			Returns(http.StatusOK, RespOK, []devops.NodeSteps{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.NodeSteps{}).
 			Writes([]devops.NodeSteps{}))
 
 		// match Jenkins api "/blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/branches/{branch}/runs/{run}/nodes"
@@ -432,7 +428,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 				Required(false).
 				DataFormat("limit=%d").
 				DefaultValue("limit=10000")).
-			Returns(http.StatusOK, RespOK, []devops.BranchPipelineRunNodes{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.BranchPipelineRunNodes{}).
 			Writes([]devops.BranchPipelineRunNodes{}))
 
 		// /blue/rest/organizations/jenkins/pipelines/{devops}/pipelines/{pipeline}/branches/{branch}/runs/{run}/nodes/{node}/steps/{step}
@@ -458,7 +454,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
 			Param(webservice.PathParameter("branch", "the name of branch, same as repository branch.")).
 			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, RespOK, []devops.NodesDetail{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.NodesDetail{}).
 			Writes(devops.NodesDetail{}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/branches/?filter=&start&limit=
@@ -477,7 +473,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.QueryParameter("limit", "the count of branches limit.").
 				Required(false).
 				DataFormat("limit=%d").DefaultValue("limit=100")).
-			Returns(http.StatusOK, RespOK, []devops.PipelineBranch{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.PipelineBranch{}).
 			Writes([]devops.PipelineBranch{}))
 
 		// match /job/{devops}/job/{pipeline}/build?delay=0
@@ -504,7 +500,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			To(projectPipelineHandler.GetCrumb).
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
 			Doc("Get crumb issuer. A CrumbIssuer represents an algorithm to generate a nonce value, known as a crumb, to counter cross site request forgery exploits. Crumbs are typically hashes incorporating information that uniquely identifies an agent that sends a request, along with a guarded secret so that the crumb value cannot be forged by a third party.").
-			Returns(http.StatusOK, RespOK, devops.Crumb{}).
+			Returns(http.StatusOK, api.StatusOK, devops.Crumb{}).
 			Writes(devops.Crumb{}))
 
 		// match "/blue/rest/organizations/jenkins/scm/%s/servers/"
@@ -513,7 +509,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsScmTag}).
 			Doc("List all servers in the jenkins.").
 			Param(webservice.PathParameter("scm", "The ID of the source configuration management (SCM).")).
-			Returns(http.StatusOK, RespOK, []devops.SCMServer{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.SCMServer{}).
 			Writes([]devops.SCMServer{}))
 
 		// match "/blue/rest/organizations/jenkins/scm/{scm}/organizations/?credentialId=github"
@@ -523,7 +519,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Doc("List all organizations of the specified source configuration management (SCM) such as Github.").
 			Param(webservice.PathParameter("scm", "the ID of the source configuration management (SCM).")).
 			Param(webservice.QueryParameter("credentialId", "credential ID for source configuration management (SCM).").Required(true).DataFormat("credentialId=%s")).
-			Returns(http.StatusOK, RespOK, []devops.SCMOrg{}).
+			Returns(http.StatusOK, api.StatusOK, []devops.SCMOrg{}).
 			Writes([]devops.SCMOrg{}))
 
 		// match "/blue/rest/organizations/jenkins/scm/{scm}/organizations/{organization}/repositories/?credentialId=&pageNumber&pageSize="
@@ -536,7 +532,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Param(webservice.QueryParameter("credentialId", "credential ID for SCM.").Required(true).DataFormat("credentialId=%s")).
 			Param(webservice.QueryParameter("pageNumber", "page number.").Required(true).DataFormat("pageNumber=%d")).
 			Param(webservice.QueryParameter("pageSize", "the item count of one page.").Required(true).DataFormat("pageSize=%d")).
-			Returns(http.StatusOK, RespOK, devops.OrgRepo{}).
+			Returns(http.StatusOK, api.StatusOK, devops.OrgRepo{}).
 			Writes(devops.OrgRepo{}))
 
 		// match "/blue/rest/organizations/jenkins/scm/%s/servers/" create bitbucket server
@@ -546,7 +542,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Doc("Create scm server if it does not exist in the Jenkins.").
 			Param(webservice.PathParameter("scm", "The ID of the source configuration management (SCM).")).
 			Reads(devops.CreateScmServerReq{}).
-			Returns(http.StatusOK, RespOK, devops.SCMServer{}).
+			Returns(http.StatusOK, api.StatusOK, devops.SCMServer{}).
 			Writes(devops.SCMServer{}))
 
 		// match "/blue/rest/organizations/jenkins/scm/github/validate/"
@@ -555,7 +551,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsScmTag}).
 			Doc("Validate the access token of the specified source configuration management (SCM) such as Github").
 			Param(webservice.PathParameter("scm", "the ID of the source configuration management (SCM).")).
-			Returns(http.StatusOK, RespOK, devops.Validates{}).
+			Returns(http.StatusOK, api.StatusOK, devops.Validates{}).
 			Writes(devops.Validates{}))
 
 		// match /git/notifyCommit/?url=
@@ -581,6 +577,12 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsWebhookTag}).
 			Doc("Get commit notification. Github webhook will request here."))
 
+		webservice.Route(webservice.POST("/webhook/generic-trigger").
+			To(projectPipelineHandler.genericWebhook).
+			Consumes("application/x-www-form-urlencoded", "application/json").
+			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsWebhookTag}).
+			Doc("This is a generic webhook trigger. Currently, it support Jenkins only."))
+
 		webservice.Route(webservice.POST("/devops/{devops}/pipelines/{pipeline}/checkScriptCompile").
 			To(projectPipelineHandler.CheckScriptCompile).
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
@@ -590,7 +592,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Produces("application/json", "charset=utf-8").
 			Doc("Check pipeline script compile.").
 			Reads(devops.ReqScript{}).
-			Returns(http.StatusOK, RespOK, devops.CheckScript{}).
+			Returns(http.StatusOK, api.StatusOK, devops.CheckScript{}).
 			Writes(devops.CheckScript{}))
 
 		webservice.Route(webservice.POST("/devops/{devops}/checkCron").
@@ -600,7 +602,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Produces("application/json", "charset=utf-8").
 			Doc("Check cron script compile.").
 			Reads(devops.CronData{}).
-			Returns(http.StatusOK, RespOK, devops.CheckCronRes{}).
+			Returns(http.StatusOK, api.StatusOK, devops.CheckCronRes{}).
 			Writes(devops.CheckCronRes{}))
 
 		// match /pipeline-model-converter/toJenkinsfile
@@ -611,7 +613,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Produces("application/json", "charset=utf-8").
 			Doc("Convert json to jenkinsfile format.").
 			Reads(devops.ReqJson{}).
-			Returns(http.StatusOK, RespOK, devops.ResJenkinsfile{}).
+			Returns(http.StatusOK, api.StatusOK, devops.ResJenkinsfile{}).
 			Writes(devops.ResJenkinsfile{}))
 
 		// match /pipeline-model-converter/toJson
@@ -629,7 +631,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Produces("application/json", "charset=utf-8").
 			Doc("Convert jenkinsfile to json format. Usually the frontend uses json to show or edit pipeline").
 			Reads(devops.ReqJenkinsfile{}).
-			Returns(http.StatusOK, RespOK, map[string]interface{}{}).
+			Returns(http.StatusOK, api.StatusOK, map[string]interface{}{}).
 			Writes(map[string]interface{}{}))
 	}
 	return nil
@@ -645,7 +647,7 @@ func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.In
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
-			Returns(http.StatusOK, RespOK, []sonarqube.SonarStatus{}).
+			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
 			Writes([]sonarqube.SonarStatus{}))
 
 		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus").
@@ -655,7 +657,7 @@ func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.In
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
 			Param(webservice.PathParameter("branch", "branch name, e.g. master")).
-			Returns(http.StatusOK, RespOK, []sonarqube.SonarStatus{}).
+			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
 			Writes([]sonarqube.SonarStatus{}))
 	}
 	return nil
@@ -676,7 +678,7 @@ func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Inter
 			Param(webservice.PathParameter("s2ibinary", "the name of s2ibinary")).
 			Param(webservice.FormParameter("s2ibinary", "file to upload")).
 			Param(webservice.FormParameter("md5", "md5 of file")).
-			Returns(http.StatusOK, RespOK, devopsv1alpha1.S2iBinary{}))
+			Returns(http.StatusOK, api.StatusOK, devopsv1alpha1.S2iBinary{}))
 
 		webservice.Route(webservice.GET("/namespaces/{namespace}/s2ibinaries/{s2ibinary}/file/{file}").
 			To(s2iHandler.DownloadS2iBinaryHandler).
@@ -685,12 +687,12 @@ func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Inter
 			Param(webservice.PathParameter("namespace", "the name of namespaces")).
 			Param(webservice.PathParameter("s2ibinary", "the name of s2ibinary")).
 			Param(webservice.PathParameter("file", "the name of binary file")).
-			Returns(http.StatusOK, RespOK, nil))
+			Returns(http.StatusOK, api.StatusOK, nil))
 	}
 	return nil
 }
 
-func AddJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string) error {
+func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string) error {
 	if devopsClient == nil {
 		return nil
 	}
@@ -713,7 +715,7 @@ func AddJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 			httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
 			httpProxy.ServeHTTP(response, request.Request)
 		}).
-		Returns(http.StatusOK, RespOK, nil).
+		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 
 	handlerWithDevOps := func(request *restful.Request, response *restful.Response) {
@@ -732,13 +734,13 @@ func AddJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 		To(handlerWithDevOps).
-		Returns(http.StatusOK, RespOK, nil).
+		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	webservice.Route(webservice.POST("/devops/{devops}/jenkins/{path:*}").
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
 		To(handlerWithDevOps).
-		Returns(http.StatusOK, RespOK, nil).
+		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	return nil
 }

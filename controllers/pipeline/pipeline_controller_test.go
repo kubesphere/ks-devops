@@ -36,7 +36,7 @@ package pipeline
 //	"k8s.io/client-go/tools/cache"
 //	"k8s.io/client-go/tools/record"
 //
-//	devops "kubesphere.io/devops/api/v1alpha3"
+//	devops "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 //
 //	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
 //	informers "kubesphere.io/devops/pkg/client/informers/externalversions"

@@ -28,7 +28,7 @@ import (
 	log "k8s.io/klog"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/api/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	clientDevOps "kubesphere.io/devops/pkg/client/devops"
@@ -835,6 +835,15 @@ func (h *ProjectPipelineHandler) GithubWebhook(req *restful.Request, resp *restf
 		return
 	}
 	resp.Write(res)
+}
+
+func (h *ProjectPipelineHandler) genericWebhook(req *restful.Request, resp *restful.Response) {
+	if res, err := h.devopsOperator.GenericWebhook(req.Request); err != nil {
+		parseErr(err, resp)
+		return
+	} else {
+		_, _ = resp.Write(res)
+	}
 }
 
 func (h *ProjectPipelineHandler) CheckScriptCompile(req *restful.Request, resp *restful.Response) {

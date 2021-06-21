@@ -283,38 +283,38 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"k8s.io/apimachinery/pkg/runtime.RawExtension":                   schema_k8sio_apimachinery_pkg_runtime_RawExtension(ref),
 		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                       schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
 		"k8s.io/apimachinery/pkg/runtime.Unknown":                        schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
-		"kubesphere.io/devops/api/v1alpha1.AuthConfig":                   schema_pkg_apis_devops_v1alpha1_AuthConfig(ref),
-		"kubesphere.io/devops/api/v1alpha1.CGroupLimits":                 schema_pkg_apis_devops_v1alpha1_CGroupLimits(ref),
-		"kubesphere.io/devops/api/v1alpha1.ContainerConfig":              schema_pkg_apis_devops_v1alpha1_ContainerConfig(ref),
-		"kubesphere.io/devops/api/v1alpha1.ContainerInfo":                schema_pkg_apis_devops_v1alpha1_ContainerInfo(ref),
-		"kubesphere.io/devops/api/v1alpha1.DockerConfig":                 schema_pkg_apis_devops_v1alpha1_DockerConfig(ref),
-		"kubesphere.io/devops/api/v1alpha1.DockerConfigEntry":            schema_pkg_apis_devops_v1alpha1_DockerConfigEntry(ref),
-		"kubesphere.io/devops/api/v1alpha1.DockerConfigJson":             schema_pkg_apis_devops_v1alpha1_DockerConfigJson(ref),
-		"kubesphere.io/devops/api/v1alpha1.EnvironmentSpec":              schema_pkg_apis_devops_v1alpha1_EnvironmentSpec(ref),
-		"kubesphere.io/devops/api/v1alpha1.Parameter":                    schema_pkg_apis_devops_v1alpha1_Parameter(ref),
-		"kubesphere.io/devops/api/v1alpha1.ProxyConfig":                  schema_pkg_apis_devops_v1alpha1_ProxyConfig(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iAutoScale":                 schema_pkg_apis_devops_v1alpha1_S2iAutoScale(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBinary":                    schema_pkg_apis_devops_v1alpha1_S2iBinary(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBinaryList":                schema_pkg_apis_devops_v1alpha1_S2iBinaryList(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBinarySpec":                schema_pkg_apis_devops_v1alpha1_S2iBinarySpec(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBinaryStatus":              schema_pkg_apis_devops_v1alpha1_S2iBinaryStatus(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuildResult":               schema_pkg_apis_devops_v1alpha1_S2iBuildResult(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuildSource":               schema_pkg_apis_devops_v1alpha1_S2iBuildSource(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilder":                   schema_pkg_apis_devops_v1alpha1_S2iBuilder(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderList":               schema_pkg_apis_devops_v1alpha1_S2iBuilderList(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderSpec":               schema_pkg_apis_devops_v1alpha1_S2iBuilderSpec(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderStatus":             schema_pkg_apis_devops_v1alpha1_S2iBuilderStatus(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplate":           schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplate(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateList":       schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateList(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateSpec":       schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateSpec(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateStatus":     schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateStatus(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iConfig":                    schema_pkg_apis_devops_v1alpha1_S2iConfig(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iRun":                       schema_pkg_apis_devops_v1alpha1_S2iRun(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iRunList":                   schema_pkg_apis_devops_v1alpha1_S2iRunList(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iRunSpec":                   schema_pkg_apis_devops_v1alpha1_S2iRunSpec(ref),
-		"kubesphere.io/devops/api/v1alpha1.S2iRunStatus":                 schema_pkg_apis_devops_v1alpha1_S2iRunStatus(ref),
-		"kubesphere.io/devops/api/v1alpha1.UserDefineTemplate":           schema_pkg_apis_devops_v1alpha1_UserDefineTemplate(ref),
-		"kubesphere.io/devops/api/v1alpha1.VolumeSpec":                   schema_pkg_apis_devops_v1alpha1_VolumeSpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig":                   schema_pkg_apis_devops_v1alpha1_AuthConfig(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.CGroupLimits":                 schema_pkg_apis_devops_v1alpha1_CGroupLimits(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.ContainerConfig":              schema_pkg_apis_devops_v1alpha1_ContainerConfig(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.ContainerInfo":                schema_pkg_apis_devops_v1alpha1_ContainerInfo(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfig":                 schema_pkg_apis_devops_v1alpha1_DockerConfig(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfigEntry":            schema_pkg_apis_devops_v1alpha1_DockerConfigEntry(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfigJson":             schema_pkg_apis_devops_v1alpha1_DockerConfigJson(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.EnvironmentSpec":              schema_pkg_apis_devops_v1alpha1_EnvironmentSpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.Parameter":                    schema_pkg_apis_devops_v1alpha1_Parameter(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.ProxyConfig":                  schema_pkg_apis_devops_v1alpha1_ProxyConfig(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iAutoScale":                 schema_pkg_apis_devops_v1alpha1_S2iAutoScale(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinary":                    schema_pkg_apis_devops_v1alpha1_S2iBinary(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinaryList":                schema_pkg_apis_devops_v1alpha1_S2iBinaryList(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinarySpec":                schema_pkg_apis_devops_v1alpha1_S2iBinarySpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinaryStatus":              schema_pkg_apis_devops_v1alpha1_S2iBinaryStatus(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildResult":               schema_pkg_apis_devops_v1alpha1_S2iBuildResult(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildSource":               schema_pkg_apis_devops_v1alpha1_S2iBuildSource(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilder":                   schema_pkg_apis_devops_v1alpha1_S2iBuilder(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderList":               schema_pkg_apis_devops_v1alpha1_S2iBuilderList(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderSpec":               schema_pkg_apis_devops_v1alpha1_S2iBuilderSpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderStatus":             schema_pkg_apis_devops_v1alpha1_S2iBuilderStatus(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplate":           schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplate(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateList":       schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateList(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateSpec":       schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateSpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateStatus":     schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateStatus(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iConfig":                    schema_pkg_apis_devops_v1alpha1_S2iConfig(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRun":                       schema_pkg_apis_devops_v1alpha1_S2iRun(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunList":                   schema_pkg_apis_devops_v1alpha1_S2iRunList(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunSpec":                   schema_pkg_apis_devops_v1alpha1_S2iRunSpec(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunStatus":                 schema_pkg_apis_devops_v1alpha1_S2iRunStatus(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.UserDefineTemplate":           schema_pkg_apis_devops_v1alpha1_UserDefineTemplate(ref),
+		"kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec":                   schema_pkg_apis_devops_v1alpha1_VolumeSpec(ref),
 	}
 }
 
@@ -13492,7 +13492,7 @@ func schema_pkg_apis_devops_v1alpha1_ContainerInfo(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.VolumeSpec"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec"),
 									},
 								},
 							},
@@ -13516,7 +13516,7 @@ func schema_pkg_apis_devops_v1alpha1_ContainerInfo(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"kubesphere.io/devops/api/v1alpha1.VolumeSpec"},
+			"kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec"},
 	}
 }
 
@@ -13626,7 +13626,7 @@ func schema_pkg_apis_devops_v1alpha1_DockerConfigJson(ref common.ReferenceCallba
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.DockerConfigEntry"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfigEntry"),
 									},
 								},
 							},
@@ -13637,7 +13637,7 @@ func schema_pkg_apis_devops_v1alpha1_DockerConfigJson(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"kubesphere.io/devops/api/v1alpha1.DockerConfigEntry"},
+			"kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfigEntry"},
 	}
 }
 
@@ -13825,19 +13825,19 @@ func schema_pkg_apis_devops_v1alpha1_S2iBinary(ref common.ReferenceCallback) com
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBinarySpec"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinarySpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBinaryStatus"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinaryStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/api/v1alpha1.S2iBinarySpec", "kubesphere.io/devops/api/v1alpha1.S2iBinaryStatus"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinarySpec", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinaryStatus"},
 	}
 }
 
@@ -13873,7 +13873,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBinaryList(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBinary"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinary"),
 									},
 								},
 							},
@@ -13884,7 +13884,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBinaryList(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/api/v1alpha1.S2iBinary"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBinary"},
 	}
 }
 
@@ -14121,19 +14121,19 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilder(ref common.ReferenceCallback) co
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilderSpec"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilderStatus"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/api/v1alpha1.S2iBuilderSpec", "kubesphere.io/devops/api/v1alpha1.S2iBuilderStatus"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderSpec", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderStatus"},
 	}
 }
 
@@ -14169,7 +14169,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderList(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilder"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilder"),
 									},
 								},
 							},
@@ -14180,7 +14180,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderList(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/api/v1alpha1.S2iBuilder"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilder"},
 	}
 }
 
@@ -14194,20 +14194,20 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderSpec(ref common.ReferenceCallback
 					"config": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"make\" to regenerate code after modifying this file",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.S2iConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iConfig"),
 						},
 					},
 					"fromTemplate": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FromTemplate define some inputs from user",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.UserDefineTemplate"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.UserDefineTemplate"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"kubesphere.io/devops/api/v1alpha1.S2iConfig", "kubesphere.io/devops/api/v1alpha1.UserDefineTemplate"},
+			"kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iConfig", "kubesphere.io/devops/pkg/api/devops/v1alpha1.UserDefineTemplate"},
 	}
 }
 
@@ -14282,19 +14282,19 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplate(ref common.ReferenceCall
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateSpec"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateStatus"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateSpec", "kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplateStatus"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateSpec", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplateStatus"},
 	}
 }
 
@@ -14330,7 +14330,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateList(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplate"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplate"),
 									},
 								},
 							},
@@ -14341,7 +14341,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateList(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/api/v1alpha1.S2iBuilderTemplate"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuilderTemplate"},
 	}
 }
 
@@ -14366,7 +14366,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.ContainerInfo"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.ContainerInfo"),
 									},
 								},
 							},
@@ -14386,7 +14386,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateSpec(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.Parameter"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -14417,7 +14417,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iBuilderTemplateSpec(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"kubesphere.io/devops/api/v1alpha1.ContainerInfo", "kubesphere.io/devops/api/v1alpha1.Parameter"},
+			"kubesphere.io/devops/pkg/api/devops/v1alpha1.ContainerInfo", "kubesphere.io/devops/pkg/api/devops/v1alpha1.Parameter"},
 	}
 }
 
@@ -14497,7 +14497,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 					"runtimeAuthentication": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RuntimeAuthentication holds the authentication information for pulling the runtime Docker images from private repositories.",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.AuthConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig"),
 						},
 					},
 					"runtimeArtifacts": {
@@ -14507,7 +14507,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.VolumeSpec"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec"),
 									},
 								},
 							},
@@ -14516,25 +14516,25 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 					"dockerConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DockerConfig describes how to access host docker daemon.",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.DockerConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfig"),
 						},
 					},
 					"pullAuthentication": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PullAuthentication holds the authentication information for pulling the Docker images from private repositories",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.AuthConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig"),
 						},
 					},
 					"pushAuthentication": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PullAuthentication holds the authentication information for pulling the Docker images from private repositories",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.AuthConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig"),
 						},
 					},
 					"incrementalAuthentication": {
 						SchemaProps: spec.SchemaProps{
 							Description: "IncrementalAuthentication holds the authentication information for pulling the previous image from private repositories",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.AuthConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig"),
 						},
 					},
 					"dockerNetworkMode": {
@@ -14607,7 +14607,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.EnvironmentSpec"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.EnvironmentSpec"),
 									},
 								},
 							},
@@ -14697,7 +14697,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.VolumeSpec"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec"),
 									},
 								},
 							},
@@ -14706,7 +14706,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 					"cgroupLimits": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CGroupLimits describes the cgroups limits that will be applied to any containers run by s2i.",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.CGroupLimits"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.CGroupLimits"),
 						},
 					},
 					"dropCapabilities": {
@@ -14726,7 +14726,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 					"scriptDownloadProxyConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ScriptDownloadProxyConfig optionally specifies the http and https proxy to use when downloading scripts",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.ProxyConfig"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.ProxyConfig"),
 						},
 					},
 					"excludeRegExp": {
@@ -14923,7 +14923,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iConfig(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference", "kubesphere.io/devops/api/v1alpha1.AuthConfig", "kubesphere.io/devops/api/v1alpha1.CGroupLimits", "kubesphere.io/devops/api/v1alpha1.DockerConfig", "kubesphere.io/devops/api/v1alpha1.EnvironmentSpec", "kubesphere.io/devops/api/v1alpha1.ProxyConfig", "kubesphere.io/devops/api/v1alpha1.VolumeSpec"},
+			"k8s.io/api/core/v1.LocalObjectReference", "kubesphere.io/devops/pkg/api/devops/v1alpha1.AuthConfig", "kubesphere.io/devops/pkg/api/devops/v1alpha1.CGroupLimits", "kubesphere.io/devops/pkg/api/devops/v1alpha1.DockerConfig", "kubesphere.io/devops/pkg/api/devops/v1alpha1.EnvironmentSpec", "kubesphere.io/devops/pkg/api/devops/v1alpha1.ProxyConfig", "kubesphere.io/devops/pkg/api/devops/v1alpha1.VolumeSpec"},
 	}
 }
 
@@ -14955,19 +14955,19 @@ func schema_pkg_apis_devops_v1alpha1_S2iRun(ref common.ReferenceCallback) common
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iRunSpec"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iRunStatus"),
+							Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/api/v1alpha1.S2iRunSpec", "kubesphere.io/devops/api/v1alpha1.S2iRunStatus"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunSpec", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRunStatus"},
 	}
 }
 
@@ -15003,7 +15003,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iRunList(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.S2iRun"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRun"),
 									},
 								},
 							},
@@ -15014,7 +15014,7 @@ func schema_pkg_apis_devops_v1alpha1_S2iRunList(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/api/v1alpha1.S2iRun"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iRun"},
 	}
 }
 
@@ -15117,20 +15117,20 @@ func schema_pkg_apis_devops_v1alpha1_S2iRunStatus(ref common.ReferenceCallback) 
 					"s2iBuildResult": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S2i build result info.",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.S2iBuildResult"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildResult"),
 						},
 					},
 					"s2iBuildSource": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S2i build source info.",
-							Ref:         ref("kubesphere.io/devops/api/v1alpha1.S2iBuildSource"),
+							Ref:         ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildSource"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time", "kubesphere.io/devops/api/v1alpha1.S2iBuildResult", "kubesphere.io/devops/api/v1alpha1.S2iBuildSource"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildResult", "kubesphere.io/devops/pkg/api/devops/v1alpha1.S2iBuildSource"},
 	}
 }
 
@@ -15154,7 +15154,7 @@ func schema_pkg_apis_devops_v1alpha1_UserDefineTemplate(ref common.ReferenceCall
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("kubesphere.io/devops/api/v1alpha1.Parameter"),
+										Ref: ref("kubesphere.io/devops/pkg/api/devops/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -15171,7 +15171,7 @@ func schema_pkg_apis_devops_v1alpha1_UserDefineTemplate(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"kubesphere.io/devops/api/v1alpha1.Parameter"},
+			"kubesphere.io/devops/pkg/api/devops/v1alpha1.Parameter"},
 	}
 }
 

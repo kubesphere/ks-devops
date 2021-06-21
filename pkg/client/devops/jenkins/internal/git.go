@@ -6,7 +6,7 @@ import (
 	"github.com/beevik/etree"
 	"k8s.io/klog"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func AppendGitSourceToEtree(source *etree.Element, gitSource *devopsv1alpha3.GitSource) {

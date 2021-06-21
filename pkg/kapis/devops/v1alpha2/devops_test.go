@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"kubesphere.io/devops/api/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/models/devops"
 )

@@ -75,6 +75,8 @@ const (
 	ClientApplication ClientType = "Application"
 
 	StatusOK = "ok"
+
+	GroupName = "devops.kubesphere.io"
 )
 
 var SupportedGroupVersionResources = map[ClientType][]schema.GroupVersionResource{
