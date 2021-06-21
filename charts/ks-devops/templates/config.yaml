@@ -6,8 +6,6 @@ data:
       authenticateRateLimiterDuration: 10m0s
       loginHistoryRetentionPeriod: 168h
       maximumClockSkew: 10s
-      multipleLogin: True
-      kubectlImage: registry.cn-beijing.aliyuncs.com/kubesphereio/kubectl:v1.19.0
       jwtSecret: "Z1TBo4jUSB5Rs6eyLqHSJ77GXtG8NhSP"
 
     ldap:
@@ -27,11 +25,10 @@ data:
       bucket: s2i-binaries
 
     devops:
-      host: http://ks-jenkins.kubesphere-devops-system
+      host: http://{{ .Release.Name }}-jenkins.{{ .Release.Namespace }}
       username: admin
       password: 119d76305a05e7a2a65d096f71feb77921
       maxConnections: 100
-      enableDevOps: false
 kind: ConfigMap
 metadata:
   name: devops-config

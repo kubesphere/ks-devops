@@ -35,17 +35,36 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
-install-chart:
+lint-chart:
 	helm lint charts/ks-devops
+
+install-chart: lint-chart
 	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
 		--set image.pullPolicy=Always
 
+install-jenkins-chart:
+	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=
+
+render-jenkins-chart:
+	helm template ks-jenkins-test charts/ks-devops/charts/jenkins
+
 uninstall-chart:
+	make uninstall-jenkins-chart || true
 	helm uninstall ks-ctl -n kubesphere-devops-system
+
+uninstall-jenkins-chart:
+	helm uninstall ks-jenkins-test
 
 reinstall-chart:
 	make uninstall-chart || true
 	make install-chart
+
+reinstall-jenkins-chart:
+	make uninstall-jenkins-chart || true
+	make install-jenkins-chart
+
+package-chart:
+	cd charts && helm package ks-devops
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
