@@ -9,15 +9,6 @@ which comes from [the branch remove-devops-ctrl](https://github.com/LinuxSuRen/k
 * `kubespheredev/ks-apiserver:remove-devops-ctrl`
 * `kubespheredev/ks-controller-manager:remove-devops-ctrl`
 
-KubeSphere is a proxy for `ks-devops`. We need to tell it the address of `ks-devops`. Please change the ConfigMap 
-of `kubesphere-config` in namespace `kubesphere-system`:
-
-```
-devops:
-  enable: false
-  devopsServiceAddress: 127.0.0.1:9091
-```
-
 ### Run it locally
 
 Technically, [apiserver](cmd/apiserver) and [controller](cmd/controller) are all binary files. So, 
