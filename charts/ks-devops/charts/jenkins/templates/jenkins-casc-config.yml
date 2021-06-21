@@ -16,7 +16,7 @@ data:
             skipTlsVerify: true
             namespace: "{{ .Values.Agent.WorkerNamespace }}"
             credentialsId: "k8s-service-account"
-            jenkinsUrl: "http://{{ .Release.Name }}.{{ .Release.Namespace }}:80"
+            jenkinsUrl: "http://{{template "jenkins.fullname" . }}.{{ .Release.Namespace }}:80"
             jenkinsTunnel: "{{ template "jenkins.fullname" . }}-agent.{{ .Release.Namespace }}:50000"
             containerCapStr: "2"
             connectTimeout: "60"
