@@ -98,7 +98,7 @@ openapi:
 
 # Build the docker image of controller-manager
 docker-build-controller:
-	docker build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
+	docker build --build-arg GOPROXY=https://goproxy.io . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-controller:
@@ -109,7 +109,7 @@ docker-build-push-controller: docker-build-controller docker-push-controller
 
 # Build the docker image of apiserver
 docker-build-apiserver:
-	docker build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
+	docker build --build-arg GOPROXY=https://goproxy.io . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-apiserver:
