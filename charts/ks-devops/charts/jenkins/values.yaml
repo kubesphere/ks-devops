@@ -403,7 +403,7 @@ Agent:
 
 Persistence:
   Enabled: true
-  StorageClass: "local"
+  StorageClass: "-"
 #  ExistingClaim: ""
 
   Annotations: {}
