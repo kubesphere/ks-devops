@@ -25,4 +25,5 @@ appVersion: 1.16.0
 dependencies:
   - name: jenkins
     version: 0.19.0
-    repository: file://jenkins
+  - name: s2i
+    version: 1.16.0
