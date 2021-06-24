@@ -20,7 +20,6 @@ spec:
       storage: {{ .Values.Persistence.Size | quote }}
 {{- if .Values.Persistence.StorageClass }}
 {{- if (eq "-" .Values.Persistence.StorageClass) }}
-  storageClassName: ""
 {{- else }}
   storageClassName: "{{ .Values.Persistence.StorageClass }}"
 {{- end }}
