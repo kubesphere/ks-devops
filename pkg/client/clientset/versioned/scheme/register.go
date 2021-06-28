@@ -25,8 +25,8 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	typesv1beta1 "kubesphere.io/api/types/v1beta1"
-	devopsv1alpha1 "kubesphere.io/devops/api/v1alpha1"
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 var Scheme = runtime.NewScheme()

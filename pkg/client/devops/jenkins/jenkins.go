@@ -811,6 +811,16 @@ func (j *Jenkins) GithubWebhook(httpParameters *devops.HttpParameters) ([]byte, 
 	return res, err
 }
 
+func (j *Jenkins) GenericWebhook(httpParameters *devops.HttpParameters) ([]byte, error) {
+	PipelineOjb := &Pipeline{
+		HttpParameters: httpParameters,
+		Jenkins:        j,
+		Path:           GenericWebhookUrl + httpParameters.Url.RawQuery,
+	}
+	res, err := PipelineOjb.GenericWebhook()
+	return res, err
+}
+
 func (j *Jenkins) Validate(scmId string, httpParameters *devops.HttpParameters) (*devops.Validates, error) {
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,

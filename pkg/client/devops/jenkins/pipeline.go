@@ -74,8 +74,10 @@ const (
 	CreateSCMServersUrl      = "/blue/rest/organizations/jenkins/scm/%s/servers/"
 	ValidateUrl              = "/blue/rest/organizations/jenkins/scm/%s/validate"
 
-	GetNotifyCommitUrl    = "/git/notifyCommit/?"
-	GithubWebhookUrl      = "/github-webhook/"
+	GetNotifyCommitUrl = "/git/notifyCommit/?"
+	GithubWebhookUrl   = "/github-webhook/"
+	// GenericWebhookUrl comes from Jenkins plugin, see also https://github.com/jenkinsci/generic-webhook-trigger-plugin
+	GenericWebhookUrl     = "/generic-webhook-trigger/invoke?"
 	CheckScriptCompileUrl = "/job/%s/job/%s/descriptorByName/org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition/checkScriptCompile"
 
 	CheckPipelienCronUrl = "/job/%s/job/%s/descriptorByName/hudson.triggers.TimerTrigger/checkSpec?%s"
@@ -685,6 +687,15 @@ func (p *Pipeline) GetNotifyCommit() ([]byte, error) {
 }
 
 func (p *Pipeline) GithubWebhook() ([]byte, error) {
+	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	return res, err
+}
+
+func (p *Pipeline) GenericWebhook() ([]byte, error) {
 	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
 	if err != nil {
 		klog.Error(err)

@@ -27,8 +27,8 @@ package main
 //	ctrl "sigs.k8s.io/controller-runtime"
 //	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 //
-//	devopskubesphereiov1alpha3 "kubesphere.io/devops/api/v1alpha3"
-//	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+//	devopskubesphereiov1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+//	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 //	"kubesphere.io/devops/controllers"
 //	// +kubebuilder:scaffold:imports
 //)

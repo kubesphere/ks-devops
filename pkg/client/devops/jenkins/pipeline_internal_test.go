@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func Test_NoScmPipelineConfig(t *testing.T) {
@@ -204,7 +204,7 @@ func Test_NoScmPipelineConfig_Trigger(t *testing.T) {
 		},
 	}
 
-	for _, input := range inputs {
+	for index, input := range inputs {
 		outputString, err := createPipelineConfigXml(input)
 		if err != nil {
 			t.Fatalf("should not get error %+v", err)
@@ -215,7 +215,7 @@ func Test_NoScmPipelineConfig_Trigger(t *testing.T) {
 			t.Fatalf("should not get error %+v", err)
 		}
 		if !reflect.DeepEqual(input, output) {
-			t.Fatalf("input [%+v] output [%+v] should equal ", input, output)
+			t.Fatalf("index: %d, input [%+v] output [%+v] should equal ", index, input, output)
 		}
 	}
 }

@@ -40,12 +40,7 @@ import (
 	"kubesphere.io/devops/pkg/server/params"
 )
 
-const (
-	GroupName = "devops.kubesphere.io"
-	RespOK    = "ok"
-)
-
-var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
+var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
 func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface,
 	k8sclient kubernetes.Interface, ksclient kubesphere.Interface,

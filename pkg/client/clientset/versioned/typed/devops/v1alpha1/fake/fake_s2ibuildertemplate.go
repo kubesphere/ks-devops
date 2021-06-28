@@ -27,7 +27,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
-	v1alpha1 "kubesphere.io/devops/api/v1alpha1"
+	v1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 )
 
 // FakeS2iBuilderTemplates implements S2iBuilderTemplateInterface

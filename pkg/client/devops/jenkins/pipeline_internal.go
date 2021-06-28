@@ -18,13 +18,14 @@ package jenkins
 
 import (
 	"fmt"
+	"kubesphere.io/devops/pkg/client/devops/jenkins/triggers"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/beevik/etree"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/client/devops/jenkins/internal"
 )
@@ -73,11 +74,18 @@ func createPipelineConfigXml(pipeline *devopsv1alpha3.NoScmPipeline) (string, er
 		appendParametersToEtree(properties, pipeline.Parameters)
 	}
 
-	if pipeline.TimerTrigger != nil {
-		triggers := properties.
+	// create trigger xml structure
+	if pipeline.TimerTrigger != nil || pipeline.GenericWebhook != nil {
+		triggersEle := properties.
 			CreateElement("org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty").
 			CreateElement("triggers")
-		triggers.CreateElement("hudson.triggers.TimerTrigger").CreateElement("spec").SetText(pipeline.TimerTrigger.Cron)
+
+		if pipeline.TimerTrigger != nil {
+			triggersEle.CreateElement("hudson.triggers.TimerTrigger").CreateElement("spec").
+				SetText(pipeline.TimerTrigger.Cron)
+		}
+
+		triggers.CreateGenericWebhookXML(triggersEle, pipeline.GenericWebhook)
 	}
 
 	pipelineDefine := flow.CreateElement("definition")
@@ -140,11 +148,17 @@ func parsePipelineConfigXml(config string) (*devopsv1alpha3.NoScmPipeline, error
 	if triggerProperty := properties.
 		SelectElement(
 			"org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty"); triggerProperty != nil {
-		triggers := triggerProperty.SelectElement("triggers")
-		if timerTrigger := triggers.SelectElement("hudson.triggers.TimerTrigger"); timerTrigger != nil {
+		triggersEle := triggerProperty.SelectElement("triggers")
+		if timerTrigger := triggersEle.SelectElement("hudson.triggers.TimerTrigger"); timerTrigger != nil {
 			pipeline.TimerTrigger = &devopsv1alpha3.TimerTrigger{
 				Cron: timerTrigger.SelectElement("spec").Text(),
 			}
+		}
+
+		if genericWebhookEle := triggersEle.SelectElement("org.jenkinsci.plugins.gwt.GenericTrigger"); genericWebhookEle != nil {
+			pipeline.GenericWebhook = triggers.ParseGenericWebhookXML(genericWebhookEle)
+		} else if pipeline.GenericWebhook != nil {
+			pipeline.GenericWebhook.Enable = false
 		}
 	}
 	if authToken := flow.SelectElement("authToken"); authToken != nil {

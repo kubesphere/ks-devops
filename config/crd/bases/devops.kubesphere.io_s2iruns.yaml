@@ -40,10 +40,14 @@ spec:
         description: S2iRun is the Schema for the s2iruns API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -51,23 +55,28 @@ spec:
             description: S2iRunSpec defines the desired state of S2iRun
             properties:
               backoffLimit:
-                description: BackoffLimit limits the restart count of each s2irun. Default is 0
+                description: BackoffLimit limits the restart count of each s2irun.
+                  Default is 0
                 format: int32
                 type: integer
               builderName:
                 description: BuilderName specify the name of s2ibuilder, required
                 type: string
               newRevisionId:
-                description: NewRevisionId override the default NewRevisionId in its s2ibuilder.
+                description: NewRevisionId override the default NewRevisionId in its
+                  s2ibuilder.
                 type: string
               newSourceURL:
                 description: NewSourceURL is used to download new binary artifacts
                 type: string
               newTag:
-                description: NewTag override the default tag in its s2ibuilder, image name cannot be changed.
+                description: NewTag override the default tag in its s2ibuilder, image
+                  name cannot be changed.
                 type: string
               secondsAfterFinished:
-                description: SecondsAfterFinished if is set and greater than zero, and the job created by s2irun become successful or failed , the job will be auto deleted after SecondsAfterFinished
+                description: SecondsAfterFinished if is set and greater than zero,
+                  and the job created by s2irun become successful or failed , the
+                  job will be auto deleted after SecondsAfterFinished
                 format: int32
                 type: integer
             required:
@@ -77,14 +86,17 @@ spec:
             description: S2iRunStatus defines the observed state of S2iRun
             properties:
               completionTime:
-                description: Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
+                description: Represents time when the job was completed. It is not
+                  guaranteed to be set in happens-before order across separate operations.
+                  It is represented in RFC3339 form and is in UTC.
                 format: date-time
                 type: string
               kubernetesJobName:
                 description: KubernetesJobName is the job name in k8s
                 type: string
               logURL:
-                description: LogURL is uesd for external log handler to let user know where is log located in
+                description: LogURL is uesd for external log handler to let user know
+                  where is log located in
                 type: string
               runState:
                 description: RunState  indicates whether this job is done or failed
@@ -125,10 +137,12 @@ spec:
                     format: int64
                     type: integer
                   builderImage:
-                    description: // BuilderImage describes which image is used for building the result images.
+                    description: // BuilderImage describes which image is used for
+                      building the result images.
                     type: string
                   commitID:
-                    description: CommitID represents an arbitrary extended object reference in Git as SHA-1
+                    description: CommitID represents an arbitrary extended object
+                      reference in Git as SHA-1
                     type: string
                   committerEmail:
                     description: CommitterEmail contains the e-mail of the committer
@@ -137,10 +151,12 @@ spec:
                     description: CommitterName contains the name of the committer
                     type: string
                   description:
-                    description: Description is a result image description label. The default is no description.
+                    description: Description is a result image description label.
+                      The default is no description.
                     type: string
                   revisionId:
-                    description: The RevisionId is a branch name or a SHA-1 hash of every important thing about the commit
+                    description: The RevisionId is a branch name or a SHA-1 hash of
+                      every important thing about the commit
                     type: string
                   sourceUrl:
                     description: SourceURL is  url of the codes such as https://github.com/a/b.git

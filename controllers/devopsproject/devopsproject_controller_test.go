@@ -24,7 +24,7 @@ package devopsproject
 //
 //	v1 "k8s.io/api/core/v1"
 //
-//	devopsprojects "kubesphere.io/devops/api/v1alpha3"
+//	devopsprojects "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 //
 //	fakeDevOps "kubesphere.io/devops/pkg/client/devops/fake"
 //	"kubesphere.io/devops/pkg/constants"
@@ -39,7 +39,7 @@ package devopsproject
 //	"k8s.io/client-go/tools/cache"
 //	"k8s.io/client-go/tools/record"
 //
-//	devops "kubesphere.io/devops/api/v1alpha3"
+//	devops "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 //
 //	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
 //	informers "kubesphere.io/devops/pkg/client/informers/externalversions"

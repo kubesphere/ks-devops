@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
-	"kubesphere.io/devops/api/v1alpha3"
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
@@ -116,6 +116,7 @@ type DevopsOperator interface {
 
 	GetNotifyCommit(req *http.Request) ([]byte, error)
 	GithubWebhook(req *http.Request) ([]byte, error)
+	GenericWebhook(req *http.Request) ([]byte, error)
 
 	CheckScriptCompile(projectName, pipelineName string, req *http.Request) (*devops.CheckScript, error)
 	CheckCron(projectName string, req *http.Request) (*devops.CheckCronRes, error)
@@ -897,6 +898,16 @@ func (d devopsOperator) GetNotifyCommit(req *http.Request) ([]byte, error) {
 func (d devopsOperator) GithubWebhook(req *http.Request) ([]byte, error) {
 
 	res, err := d.devopsClient.GithubWebhook(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GenericWebhook(req *http.Request) (data []byte, err error) {
+	res, err := d.devopsClient.GenericWebhook(convertToHttpParameters(req))
 	if err != nil {
 		klog.Error(err)
 		return nil, err

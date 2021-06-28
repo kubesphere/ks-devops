@@ -4,7 +4,7 @@ import (
 	"github.com/beevik/etree"
 	"k8s.io/klog"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func AppendSvnSourceToEtree(source *etree.Element, svnSource *devopsv1alpha3.SvnSource) {

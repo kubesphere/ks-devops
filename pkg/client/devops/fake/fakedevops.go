@@ -26,7 +26,7 @@ import (
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/client/devops"
 )
@@ -288,6 +288,9 @@ func (d *Devops) GetNotifyCommit(httpParameters *devops.HttpParameters) ([]byte,
 	return nil, nil
 }
 func (d *Devops) GithubWebhook(httpParameters *devops.HttpParameters) ([]byte, error) {
+	return nil, nil
+}
+func (d *Devops) GenericWebhook(httpParameters *devops.HttpParameters) ([]byte, error) {
 	return nil, nil
 }
 

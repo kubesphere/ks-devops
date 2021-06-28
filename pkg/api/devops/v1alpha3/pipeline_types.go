@@ -99,6 +99,7 @@ type NoScmPipeline struct {
 	DisableConcurrent bool               `json:"disable_concurrent,omitempty" mapstructure:"disable_concurrent" description:"Whether to prohibit the pipeline from running in parallel"`
 	TimerTrigger      *TimerTrigger      `json:"timer_trigger,omitempty" mapstructure:"timer_trigger" description:"Timer to trigger pipeline run"`
 	RemoteTrigger     *RemoteTrigger     `json:"remote_trigger,omitempty" mapstructure:"remote_trigger" description:"Remote api define to trigger pipeline run"`
+	GenericWebhook    *GenericWebhook    `json:"generic_webhook,omitempty" mapstructure:"generic_webhook" description:"Generic webhook config"`
 	Jenkinsfile       string             `json:"jenkinsfile,omitempty" description:"Jenkinsfile's content'"`
 }
 
@@ -223,6 +224,23 @@ type TimerTrigger struct {
 
 type RemoteTrigger struct {
 	Token string `json:"token,omitempty" description:"remote trigger token"`
+}
+
+type GenericWebhook struct {
+	Enable           bool              `json:"enable,omitempty" description:"Indicate if the generic webhook is enabled"`
+	Token            string            `json:"token,omitempty" description:"The token of generic webhook"`
+	Cause            string            `json:"cause,omitempty" description:"Indicate the reason why a webhook triggered"`
+	PrintVariables   bool              `json:"print_variables,omitempty" description:"Indicate if print the variables"`
+	PrintPostContent bool              `json:"print_post_content,omitempty" description:"Indicate if print the post content"`
+	RequestVariables []GenericVariable `json:"request_variables,omitempty" description:"Define variables which come from the HTTP request"`
+	HeaderVariables  []GenericVariable `json:"header_variables,omitempty" description:"Define variables which come from the HTTP request header"`
+	FilterText       string            `json:"filter_text,omitempty" description:"Filter name for the generic webhook, it could be a variable name"`
+	FilterExpression string            `json:"filter_expression,omitempty" description:"Filter expression which against the filter name"`
+}
+
+type GenericVariable struct {
+	Key          string `json:"key,omitempty" description:"Variable name as a key"`
+	RegexpFilter string `json:"regexp_filter,omitempty" description:"A regexp filter which take value from HTTP request, or header etc."`
 }
 
 func init() {

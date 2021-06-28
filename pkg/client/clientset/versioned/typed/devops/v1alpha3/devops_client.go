@@ -20,7 +20,7 @@ package v1alpha3
 
 import (
 	rest "k8s.io/client-go/rest"
-	v1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	v1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 )
 

@@ -6,22 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: (devel)
   creationTimestamp: null
-  name: devopsprojects.devops.kubesphere.io
+  name: fakes.devops.kubesphere.io
 spec:
   group: devops.kubesphere.io
   names:
-    categories:
-    - devops
-    kind: DevOpsProject
-    listKind: DevOpsProjectList
-    plural: devopsprojects
-    singular: devopsproject
-  scope: Cluster
+    kind: Fake
+    listKind: FakeList
+    plural: fakes
+    singular: fake
+  scope: Namespaced
   versions:
   - name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: DevOpsProject is the Schema for the devopsprojects API
+        description: Fake is the Schema for the fakes API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,13 +34,15 @@ spec:
           metadata:
             type: object
           spec:
-            description: DevOpsProjectSpec defines the desired state of DevOpsProject
+            description: FakeSpec defines the desired state of Fake
+            properties:
+              foo:
+                description: Foo is an example field of Fake. Edit Fake_types.go to
+                  remove/update
+                type: string
             type: object
           status:
-            description: DevOpsProjectStatus defines the observed state of DevOpsProject
-            properties:
-              adminNamespace:
-                type: string
+            description: FakeStatus defines the observed state of Fake
             type: object
         type: object
     served: true

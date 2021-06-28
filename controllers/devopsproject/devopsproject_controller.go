@@ -40,7 +40,7 @@ import (
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	devopsv1alpha3 "kubesphere.io/devops/api/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
