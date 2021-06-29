@@ -23,6 +23,8 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/constants"
 
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
@@ -31,13 +33,15 @@ import (
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"
+	devopsinformers "kubesphere.io/devops/pkg/informers"
 	"kubesphere.io/devops/pkg/models/devops"
 	servererr "kubesphere.io/devops/pkg/server/errors"
 	"kubesphere.io/devops/pkg/server/params"
 )
 
 type devopsHandler struct {
-	devops devops.DevopsOperator
+	devopsClient devopsClient.Interface
+	devops       devops.DevopsOperator
 }
 
 func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
@@ -45,7 +49,8 @@ func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.
 	k8sInformers informers.SharedInformerFactory) *devopsHandler {
 
 	return &devopsHandler{
-		devops: devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers),
+		devopsClient: devopsClient,
+		devops:       devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers),
 	}
 }
 
@@ -186,18 +191,22 @@ func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful
 	devopsProject := request.PathParameter("devops")
 	limit, offset := params.ParsePaging(request)
 
-	objs, err := h.devops.ListPipelineObj(devopsProject, nil, nil, limit, offset)
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		objs, err := client.ListPipelineObj(devopsProject, nil, nil, limit, offset)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
-		api.HandleBadRequest(response, request, err)
-		return
-	}
 
-	response.WriteEntity(objs)
+		_ = response.WriteEntity(objs)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
 }
 
 func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restful.Response) {
@@ -291,6 +300,24 @@ func (h *devopsHandler) GetCredential(request *restful.Request, response *restfu
 	}
 
 	response.WriteEntity(obj)
+}
+
+func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperator, error) {
+	ctx := request.Request.Context()
+	token := ctx.Value(constants.K8SToken).(string)
+
+	if kubernetesClient, err := k8s.NewKubernetesClientWithToken(token); err != nil {
+		return nil, err
+	} else {
+		informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),
+			kubernetesClient.KubeSphere(),
+			kubernetesClient.ApiExtensions())
+
+		return devops.NewDevopsOperator(h.devopsClient, kubernetesClient.Kubernetes(),
+			kubernetesClient.KubeSphere(),
+			informerFactory.KubeSphereSharedInformerFactory(),
+			informerFactory.KubernetesSharedInformerFactory()), nil
+	}
 }
 
 func (h *devopsHandler) ListCredential(request *restful.Request, response *restful.Response) {

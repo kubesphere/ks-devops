@@ -129,6 +129,7 @@ const (
 	NotificationTag             = "Notification"
 	NotificationSecretNamespace = "kubesphere-monitoring-federated"
 	NotificationManagedLabel    = "notification.kubesphere.io/managed"
+	K8SToken = "ks8.token"
 )
 
 const (

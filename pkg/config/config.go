@@ -65,6 +65,17 @@ const (
 	defaultConfigurationPath = "/etc/kubesphere"
 )
 
+// AuthMode is the auth mode of current project
+// TODO add a validation method to verify all the supported values
+type AuthMode string
+
+var (
+	// AuthModeToken let it use the token directly
+	AuthModeToken AuthMode = "token"
+	// AuthModeJWT make it verify jwt (JSON web token)
+	AuthModeJWT AuthMode = "jwt"
+)
+
 // Config defines everything needed for apiserver to deal with external services
 type Config struct {
 	DevopsOptions     *jenkins.Options       `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
@@ -72,6 +83,8 @@ type Config struct {
 	RedisOptions      *cache.Options         `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
 	S3Options         *s3.Options            `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
 	SonarQubeOptions  *sonarqube.Options     `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
+	AuthMode          AuthMode               `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
+	JWTSecret         string                 `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
 }
 
 // newConfig creates a default non-empty Config
@@ -81,6 +94,7 @@ func New() *Config {
 		DevopsOptions:     jenkins.NewDevopsOptions(),
 		KubernetesOptions: k8s.NewKubernetesOptions(),
 		S3Options:         s3.NewS3Options(),
+		AuthMode:          AuthModeToken,
 	}
 }
 

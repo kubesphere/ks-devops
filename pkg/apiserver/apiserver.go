@@ -20,6 +20,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
+	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
+	devopsbearertoken "kubesphere.io/devops/pkg/apiserver/authentication/authenticators/bearertoken"
+	"kubesphere.io/devops/pkg/apiserver/authentication/authenticators/jwttoken"
+	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"net/http"
@@ -163,6 +169,20 @@ func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 
 	handler := s.Server.Handler
 	handler = filters.WithKubeAPIServer(handler, s.KubernetesClient.Config(), &errorResponder{})
+
+	authenticators := make([]authenticator.Request, 0)
+	authenticators = append(authenticators, anonymous.NewAuthenticator())
+
+	switch s.Config.AuthMode {
+	case apiserverconfig.AuthModeJWT:
+		authenticators = append(authenticators, bearertoken.New(jwttoken.NewTokenAuthenticator(s.Config.JWTSecret)))
+	case apiserverconfig.AuthModeToken:
+		authenticators = append(authenticators, bearertoken.New(devopsbearertoken.New()))
+	default:
+		// TODO error handle
+	}
+
+	handler = filters.WithAuthentication(handler, unionauth.New(authenticators...))
 	handler = filters.WithRequestInfo(handler, requestInfoResolver)
 
 	s.Server.Handler = handler

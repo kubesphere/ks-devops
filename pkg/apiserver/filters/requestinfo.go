@@ -17,7 +17,9 @@ limitations under the License.
 package filters
 
 import (
+	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"strings"
 
@@ -61,11 +63,20 @@ func WithRequestInfo(handler http.Handler, resolver request.RequestInfoResolver)
 		ctx := req.Context()
 		info, err := resolver.NewRequestInfo(req)
 		if err != nil {
-			responsewriters.InternalError(w, req, fmt.Errorf("failed to crate RequestInfo: %v", err))
+			responsewriters.InternalError(w, req, fmt.Errorf("failed to create RequestInfo: %v", err))
 			return
 		}
 
 		req = req.WithContext(request.WithRequestInfo(ctx, info))
+		req = injectToken(req)
+
 		handler.ServeHTTP(w, req)
 	})
+}
+
+func injectToken(req *http.Request) (requestWithTokenContext *http.Request) {
+	authorization := req.Header.Get("Authorization")
+	token := strings.ReplaceAll(authorization, "bearer ", "")
+	requestWithTokenContext = req.WithContext(context.WithValue(req.Context(), constants.K8SToken, token))
+	return
 }
