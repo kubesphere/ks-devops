@@ -60,7 +60,6 @@ func (s *jwtTokenIssuer) VerifyWithoutClaimsValidation(tokenString string) (user
 		}
 		return nil, "", err
 	}
-	fmt.Println(token)
 	return &user.DefaultInfo{}, "clm.TokenType", nil
 }
 

@@ -40,15 +40,16 @@ import (
 )
 
 type devopsHandler struct {
+	k8sClient    k8s.Client
 	devopsClient devopsClient.Interface
 	devops       devops.DevopsOperator
 }
 
 func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory,
-	k8sInformers informers.SharedInformerFactory) *devopsHandler {
+	ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory, k8sClient k8s.Client) *devopsHandler {
 
 	return &devopsHandler{
+		k8sClient:    k8sClient,
 		devopsClient: devopsClient,
 		devops:       devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers),
 	}
@@ -306,7 +307,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 	ctx := request.Request.Context()
 	token := ctx.Value(constants.K8SToken).(string)
 
-	if kubernetesClient, err := k8s.NewKubernetesClientWithToken(token); err != nil {
+	if kubernetesClient, err := k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host); err != nil {
 		return nil, err
 	} else {
 		informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),

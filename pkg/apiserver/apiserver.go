@@ -127,13 +127,15 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.SonarClient,
 		s.KubernetesClient.KubeSphere(),
 		s.S3Client,
-		s.Config.DevopsOptions.Host))
+		s.Config.DevopsOptions.Host,
+		s.KubernetesClient))
 	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container,
 		s.DevopsClient,
 		s.KubernetesClient.Kubernetes(),
 		s.KubernetesClient.KubeSphere(),
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
-		s.InformerFactory.KubernetesSharedInformerFactory()))
+		s.InformerFactory.KubernetesSharedInformerFactory(),
+		s.KubernetesClient))
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

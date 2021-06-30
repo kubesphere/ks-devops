@@ -108,14 +108,14 @@ func NewKubernetesClientWithConfig(config *rest.Config) (client Client, err erro
 }
 
 // NewKubernetesClientWithToken creates a k8s client with a bearer token
-func NewKubernetesClientWithToken(token string) (client Client, err error) {
+func NewKubernetesClientWithToken(token string, master string) (client Client, err error) {
 	if token == "" {
 		return
 	}
 
 	client, err = NewKubernetesClientWithConfig(&rest.Config{
 		BearerToken: token,
-		Host: "https://139.198.3.176:6443",
+		Host:        master,
 		TLSClientConfig: rest.TLSClientConfig{
 			Insecure: true,
 		},

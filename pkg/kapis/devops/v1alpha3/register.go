@@ -19,6 +19,7 @@
 package v1alpha3
 
 import (
+	"kubesphere.io/devops/pkg/client/k8s"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -42,14 +43,13 @@ import (
 
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
-func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface,
-	k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory,
-	k8sInformers informers.SharedInformerFactory) error {
+func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sclient kubernetes.Interface,
+	ksclient kubesphere.Interface, ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory,
+	k8sClient k8s.Client) error {
 	devopsEnable := devopsClient != nil
 	if devopsEnable {
 		ws := runtime.NewWebService(GroupVersion)
-		handler := newDevOpsHandler(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers)
+		handler := newDevOpsHandler(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers, k8sClient)
 		// credential
 		ws.Route(ws.GET("/devops/{devops}/credentials").
 			To(handler.ListCredential).
