@@ -72,8 +72,6 @@ type AuthMode string
 var (
 	// AuthModeToken let it use the token directly
 	AuthModeToken AuthMode = "token"
-	// AuthModeJWT make it verify jwt (JSON web token)
-	AuthModeJWT AuthMode = "jwt"
 )
 
 // Config defines everything needed for apiserver to deal with external services

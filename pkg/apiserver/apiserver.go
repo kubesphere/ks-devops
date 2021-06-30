@@ -24,7 +24,6 @@ import (
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
 	devopsbearertoken "kubesphere.io/devops/pkg/apiserver/authentication/authenticators/bearertoken"
-	"kubesphere.io/devops/pkg/apiserver/authentication/authenticators/jwttoken"
 	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
 	"kubesphere.io/devops/pkg/apiserver/request"
@@ -176,8 +175,6 @@ func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 	authenticators = append(authenticators, anonymous.NewAuthenticator())
 
 	switch s.Config.AuthMode {
-	case apiserverconfig.AuthModeJWT:
-		authenticators = append(authenticators, bearertoken.New(jwttoken.NewTokenAuthenticator(s.Config.JWTSecret)))
 	case apiserverconfig.AuthModeToken:
 		authenticators = append(authenticators, bearertoken.New(devopsbearertoken.New()))
 	default:
