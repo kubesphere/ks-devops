@@ -50,7 +50,7 @@ type kubernetesClient struct {
 }
 
 // NewKubernetesClientOrDie creates KubernetesClient and panic if there is an error
-func NewKubernetesClientOrDie(options *KubernetesOptions) Client {
+func NewKubernetesClientOrDie(options *KubernetesOptions) (client Client) {
 	config, err := clientcmd.BuildConfigFromFlags("", options.KubeConfig)
 	if err != nil {
 		panic(err)
@@ -79,41 +79,71 @@ func NewKubernetesClientOrDie(options *KubernetesOptions) Client {
 	return k
 }
 
+// NewKubernetesClientWithConfig creates a k8s client with the rest config
+func NewKubernetesClientWithConfig(config *rest.Config) (client Client, err error) {
+	if config == nil {
+		return
+	}
+
+	var k kubernetesClient
+	if k.k8s, err = kubernetes.NewForConfig(config); err != nil {
+		return
+	}
+
+	if k.discoveryClient, err = discovery.NewDiscoveryClientForConfig(config); err != nil {
+		return
+	}
+
+	if k.ks, err = kubesphere.NewForConfig(config); err != nil {
+		return
+	}
+
+	if k.apiextensions, err = apiextensionsclient.NewForConfig(config); err != nil {
+		return
+	}
+
+	k.config = config
+	client = &k
+	return
+}
+
+// NewKubernetesClientWithToken creates a k8s client with a bearer token
+func NewKubernetesClientWithToken(token string, master string) (client Client, err error) {
+	if token == "" {
+		return
+	}
+
+	client, err = NewKubernetesClientWithConfig(&rest.Config{
+		BearerToken: token,
+		Host:        master,
+		TLSClientConfig: rest.TLSClientConfig{
+			Insecure: true,
+		},
+	})
+	return
+}
+
 // NewKubernetesClient creates a KubernetesClient
-func NewKubernetesClient(options *KubernetesOptions) (Client, error) {
-	config, err := clientcmd.BuildConfigFromFlags("", options.KubeConfig)
-	if err != nil {
-		return nil, err
+func NewKubernetesClient(options *KubernetesOptions) (client Client, err error) {
+	if options == nil {
+		return
+	}
+
+	var config *rest.Config
+	if config, err = clientcmd.BuildConfigFromFlags("", options.KubeConfig); err != nil {
+		return
 	}
 
 	config.QPS = options.QPS
 	config.Burst = options.Burst
 
-	var k kubernetesClient
-	k.k8s, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
+	if client, err = NewKubernetesClientWithConfig(config); err == nil {
+		if k8sClient, ok := client.(*kubernetesClient); ok {
+			k8sClient.config = config
+			k8sClient.master = options.Master
+		}
 	}
-
-	k.discoveryClient, err = discovery.NewDiscoveryClientForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	k.ks, err = kubesphere.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	k.apiextensions, err = apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	k.master = options.Master
-	k.config = config
-
-	return &k, nil
+	return
 }
 
 func (k *kubernetesClient) Kubernetes() kubernetes.Interface {

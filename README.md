@@ -1,5 +1,7 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/LinuxSuRen/ks-devops)
 [![codecov](https://codecov.io/gh/linuxsuren/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/linuxsuren/ks-devops)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_shield)
+
 
 ## Get started
 
@@ -31,7 +33,12 @@ components, please see also [the sample file](config/samples/kubesphere.yaml).
 
 For example, you can access an API like:
 
-`curl http://ip:30880/kapis/clusters/host/devops.kubesphere.io/v1alpha3/devops/test847h4/credentials`
+```shell script
+curl -H "Authorization: bearer xxxx" \
+  http://localhost:9090/kapis/devops.kubesphere.io/v1alpha3/devops/testblpsz/pipelines
+```
+
+> Please get a token from Kubernetes cluster, and replace `xxxx` with it.
 
 ## Code contribution
 
@@ -47,3 +54,7 @@ then, it can generate CRDs and DeepCopy methods.
 * Install `ks-devops` via helm chart in [ks-installer](https://github.com/kubesphere/ks-installer)
 * Auth support
     * OIDC support as a default provider
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_large)

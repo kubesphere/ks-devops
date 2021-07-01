@@ -20,6 +20,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
+	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
+	devopsbearertoken "kubesphere.io/devops/pkg/apiserver/authentication/authenticators/bearertoken"
+	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"net/http"
@@ -121,13 +126,15 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.SonarClient,
 		s.KubernetesClient.KubeSphere(),
 		s.S3Client,
-		s.Config.DevopsOptions.Host))
+		s.Config.DevopsOptions.Host,
+		s.KubernetesClient))
 	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container,
 		s.DevopsClient,
 		s.KubernetesClient.Kubernetes(),
 		s.KubernetesClient.KubeSphere(),
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
-		s.InformerFactory.KubernetesSharedInformerFactory()))
+		s.InformerFactory.KubernetesSharedInformerFactory(),
+		s.KubernetesClient))
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
@@ -163,6 +170,18 @@ func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 
 	handler := s.Server.Handler
 	handler = filters.WithKubeAPIServer(handler, s.KubernetesClient.Config(), &errorResponder{})
+
+	authenticators := make([]authenticator.Request, 0)
+	authenticators = append(authenticators, anonymous.NewAuthenticator())
+
+	switch s.Config.AuthMode {
+	case apiserverconfig.AuthModeToken:
+		authenticators = append(authenticators, bearertoken.New(devopsbearertoken.New()))
+	default:
+		// TODO error handle
+	}
+
+	handler = filters.WithAuthentication(handler, unionauth.New(authenticators...))
 	handler = filters.WithRequestInfo(handler, requestInfoResolver)
 
 	s.Server.Handler = handler
