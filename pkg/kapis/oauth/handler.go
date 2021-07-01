@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	KindTokenReview       = "TokenReview"
+	KindTokenReview = "TokenReview"
 )
 
 type Spec struct {

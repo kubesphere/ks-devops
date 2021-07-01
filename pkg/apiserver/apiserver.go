@@ -139,8 +139,8 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.KubernetesClient))
 	urlruntime.Must(oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
-		s.CacheClient,
-		s.Config.AuthenticationOptions)))
+			s.CacheClient,
+			s.Config.AuthenticationOptions)))
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

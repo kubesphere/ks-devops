@@ -8,7 +8,7 @@ import (
 )
 
 // Authenticator implements an anonymous auth
-type Authenticator struct {}
+type Authenticator struct{}
 
 func NewAuthenticator() authenticator.Request {
 	return &Authenticator{}
@@ -17,7 +17,7 @@ func NewAuthenticator() authenticator.Request {
 func (a *Authenticator) AuthenticateRequest(req *http.Request) (*authenticator.Response, bool, error) {
 	if auth := strings.TrimSpace(req.Header.Get("Authorization")); auth == "" {
 		return &authenticator.Response{
-			User:      &user.DefaultInfo{
+			User: &user.DefaultInfo{
 				Name:   "anonymous",
 				Groups: []string{user.AllAuthenticated},
 			},
