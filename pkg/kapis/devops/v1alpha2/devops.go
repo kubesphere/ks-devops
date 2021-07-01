@@ -69,7 +69,7 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 
 	// make sure we have an appropriate value
 	limit, start = params.ParsePaging(req)
-	return h.devopsOperator.ListPipelineObj(namespace, pipelineFilter, func(list []*v1alpha3.Pipeline, i int, j int) bool {
+	return h.devopsOperator.ListPipelineObj(namespace, pipelineFilter, func(list []v1alpha3.Pipeline, i int, j int) bool {
 		return strings.Compare(strings.ToUpper(list[i].Name), strings.ToUpper(list[j].Name)) < 0
 	}, limit, start)
 }

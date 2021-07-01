@@ -54,7 +54,7 @@ const (
 )
 
 type PipelineFilter func(pipeline *v1alpha3.Pipeline) bool
-type PipelineSorter func([]*v1alpha3.Pipeline, int, int) bool
+type PipelineSorter func([]v1alpha3.Pipeline, int, int) bool
 
 type DevopsOperator interface {
 	CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
@@ -131,6 +131,7 @@ type devopsOperator struct {
 	ksclient     kubesphere.Interface
 	ksInformers  externalversions.SharedInformerFactory
 	k8sInformers informers.SharedInformerFactory
+	context      context.Context
 }
 
 func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
@@ -141,6 +142,7 @@ func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, 
 		ksclient:     ksclient,
 		ksInformers:  ksInformers,
 		k8sInformers: k8sInformers,
+		context:      context.TODO(),
 	}
 }
 
@@ -273,15 +275,16 @@ func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3
 
 func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineFilter,
 	sortFunc PipelineSorter, limit, offset int) (api.ListResult, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
-	data, err := d.ksInformers.Devops().V1alpha3().Pipelines().Lister().Pipelines(projectObj.Status.AdminNamespace).List(labels.Everything())
+	pipelineList, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).List(d.context, metav1.ListOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
 
+	data := pipelineList.Items
 	if sortFunc != nil {
 		//sort the pipeline list according to the request
 		sort.SliceStable(data, func(i, j int) bool {
@@ -291,10 +294,10 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 
 	var result []interface{}
 	for i, _ := range data {
-		if filterFunc != nil && !filterFunc(data[i]) {
+		if filterFunc != nil && !filterFunc(&data[i]) {
 			continue
 		}
-		result = append(result, *data[i])
+		result = append(result, data[i])
 	}
 
 	if limit == -1 || limit+offset > len(result) {

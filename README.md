@@ -31,7 +31,12 @@ components, please see also [the sample file](config/samples/kubesphere.yaml).
 
 For example, you can access an API like:
 
-`curl http://ip:30880/kapis/clusters/host/devops.kubesphere.io/v1alpha3/devops/test847h4/credentials`
+```shell script
+curl -H "Authorization: bearer xxxx" \
+  http://localhost:9090/kapis/devops.kubesphere.io/v1alpha3/devops/testblpsz/pipelines
+```
+
+> Please get a token from Kubernetes cluster, and replace `xxxx` with it.
 
 ## Code contribution
 

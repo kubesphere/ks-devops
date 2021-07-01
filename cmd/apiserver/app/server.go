@@ -54,7 +54,7 @@ cluster's shared state through which all other components interact.`,
 				return utilerrors.NewAggregate(errs)
 			}
 
-			return Run(s, signals.SetupSignalHandler())
+			return run(s, signals.SetupSignalHandler())
 		},
 		SilenceUsage: true,
 	}
@@ -84,7 +84,7 @@ cluster's shared state through which all other components interact.`,
 	return
 }
 
-func Run(s *options.ServerRunOptions, stopCh <-chan struct{}) error {
+func run(s *options.ServerRunOptions, stopCh <-chan struct{}) error {
 	apiserver, err := s.NewAPIServer(stopCh)
 	if err != nil {
 		return err

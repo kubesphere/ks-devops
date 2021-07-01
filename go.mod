@@ -41,6 +41,7 @@ require (
 	k8s.io/apiserver v0.20.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-base v0.20.2
+	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d

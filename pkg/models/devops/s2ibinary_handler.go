@@ -19,6 +19,7 @@ package devops
 import (
 	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/client/k8s"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -49,13 +50,16 @@ type S2iBinaryUploader interface {
 }
 
 type s2iBinaryUploader struct {
+	k8sClient k8s.Client
 	client    versioned.Interface
 	informers externalversions.SharedInformerFactory
 	s3Client  s3.Interface
 }
 
-func NewS2iBinaryUploader(client versioned.Interface, informers externalversions.SharedInformerFactory, s3Client s3.Interface) S2iBinaryUploader {
+func NewS2iBinaryUploader(client versioned.Interface, informers externalversions.SharedInformerFactory, s3Client s3.Interface,
+	k8sClient k8s.Client) S2iBinaryUploader {
 	return &s2iBinaryUploader{
+		k8sClient: k8sClient,
 		client:    client,
 		informers: informers,
 		s3Client:  s3Client,

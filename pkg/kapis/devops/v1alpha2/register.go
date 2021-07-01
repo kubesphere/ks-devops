@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/client/k8s"
 	"net/url"
 	"strings"
 
@@ -46,41 +47,41 @@ import (
 
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"}
 
-func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory, devopsClient devops.Interface,
-	sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface, s3Client s3.Interface, endpoint string) error {
+func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
+	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
 	ws := runtime.NewWebService(GroupVersion)
 
-	err := AddPipelineToWebService(ws, devopsClient, ksInformers)
+	err := AddPipelineToWebService(ws, devopsClient, ksInformers, k8sClient)
 	if err != nil {
 		return err
 	}
 
-	err = AddSonarToWebService(ws, devopsClient, sonarqubeClient)
+	err = AddSonarToWebService(ws, devopsClient, sonarqubeClient, k8sClient)
 	if err != nil {
 		return err
 	}
 
-	err = AddS2IToWebService(ws, ksClient, ksInformers, s3Client)
+	err = AddS2IToWebService(ws, ksClient, ksInformers, s3Client, k8sClient)
 	if err != nil {
 		return err
 	}
 
-	err = addJenkinsToContainer(ws, devopsClient, endpoint)
+	err = addJenkinsToContainer(ws, devopsClient, endpoint, k8sClient)
 	if err != nil {
 		return err
 	}
 
 	container.Add(ws)
-
 	return nil
 }
 
-func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, ksInformers externalversions.SharedInformerFactory) error {
-
+func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface,
+	ksInformers externalversions.SharedInformerFactory, k8sClient k8s.Client) error {
 	projectPipelineEnable := devopsClient != nil
 
 	if projectPipelineEnable {
-		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, ksInformers)
+		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, ksInformers, k8sClient)
 
 		webservice.Route(webservice.GET("/devops/{devops}/credentials/{credential}/usage").
 			To(projectPipelineHandler.GetProjectCredentialUsage).
@@ -637,10 +638,11 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 	return nil
 }
 
-func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.Interface, sonarClient sonarqube.SonarInterface) error {
+func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.Interface, sonarClient sonarqube.SonarInterface,
+	k8sClient k8s.Client) error {
 	sonarEnable := devopsClient != nil && sonarClient != nil
 	if sonarEnable {
-		sonarHandler := NewPipelineSonarHandler(devopsClient, sonarClient)
+		sonarHandler := NewPipelineSonarHandler(devopsClient, sonarClient, k8sClient)
 		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/sonarstatus").
 			To(sonarHandler.GetPipelineSonarStatusHandler).
 			Doc("Get the sonar quality information for the specified pipeline of the DevOps project. More info: https://docs.sonarqube.org/7.4/user-guide/metric-definitions/").
@@ -663,12 +665,12 @@ func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.In
 	return nil
 }
 
-func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Interface,
-	ksInformer externalversions.SharedInformerFactory, s3Client s3.Interface) error {
+func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Interface, ksInformer externalversions.SharedInformerFactory,
+	s3Client s3.Interface, k8sClient k8s.Client) error {
 	s2iEnable := ksClient != nil && ksInformer != nil && s3Client != nil
 
 	if s2iEnable {
-		s2iHandler := NewS2iBinaryHandler(ksClient, ksInformer, s3Client)
+		s2iHandler := NewS2iBinaryHandler(ksClient, ksInformer, s3Client, k8sClient)
 		webservice.Route(webservice.PUT("/namespaces/{namespace}/s2ibinaries/{s2ibinary}/file").
 			To(s2iHandler.UploadS2iBinaryHandler).
 			Consumes("multipart/form-data").
@@ -692,7 +694,7 @@ func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Inter
 	return nil
 }
 
-func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string) error {
+func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string, client k8s.Client) error {
 	if devopsClient == nil {
 		return nil
 	}
