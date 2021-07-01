@@ -24,7 +24,6 @@ import (
 )
 
 func TestTokenVerifyWithoutCacheValidate(t *testing.T) {
-
 	issuer := NewTokenIssuer("kubesphere", 0)
 
 	admin := &user.DefaultInfo{
