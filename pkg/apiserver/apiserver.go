@@ -27,6 +27,8 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
 	"kubesphere.io/devops/pkg/apiserver/request"
+	"kubesphere.io/devops/pkg/kapis/oauth"
+	"kubesphere.io/devops/pkg/models/auth"
 	"net/http"
 	rt "runtime"
 	"time"
@@ -135,6 +137,10 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.InformerFactory.KubernetesSharedInformerFactory(),
 		s.KubernetesClient))
+	urlruntime.Must(oauth.AddToContainer(s.container,
+		auth.NewTokenOperator(
+			s.CacheClient,
+			s.Config.AuthenticationOptions)))
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

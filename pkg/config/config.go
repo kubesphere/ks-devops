@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"
 	"kubesphere.io/devops/pkg/client/cache"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/sonarqube"
@@ -76,13 +77,14 @@ var (
 
 // Config defines everything needed for apiserver to deal with external services
 type Config struct {
-	DevopsOptions     *jenkins.Options       `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
-	KubernetesOptions *k8s.KubernetesOptions `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
-	RedisOptions      *cache.Options         `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
-	S3Options         *s3.Options            `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
-	SonarQubeOptions  *sonarqube.Options     `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
-	AuthMode          AuthMode               `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
-	JWTSecret         string                 `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
+	DevopsOptions         *jenkins.Options                   `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
+	KubernetesOptions     *k8s.KubernetesOptions             `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
+	RedisOptions          *cache.Options                     `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
+	S3Options             *s3.Options                        `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
+	SonarQubeOptions      *sonarqube.Options                 `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
+	AuthenticationOptions *authoptions.AuthenticationOptions `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
+	AuthMode              AuthMode                           `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
+	JWTSecret             string                             `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
 }
 
 // newConfig creates a default non-empty Config

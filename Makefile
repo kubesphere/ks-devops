@@ -20,7 +20,7 @@ all: manager
 
 # Run tests
 test: fmt vet # generate manifests
-	go test ./... -coverprofile cover.out
+	go test $(go list ./... | grep -v controllers) -coverprofile coverage.out
 
 # Build manager binary
 manager: generate fmt vet
