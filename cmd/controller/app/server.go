@@ -60,7 +60,7 @@ func NewControllerManagerCommand() *cobra.Command {
 		Short: `KubeSphere DevOps controller manager`,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			if errs := s.Validate(); len(errs) == 0 {
-				err = run(s, signals.SetupSignalHandler())
+				err = Run(s, signals.SetupSignalHandler())
 			}
 			return
 		},
@@ -94,7 +94,7 @@ func NewControllerManagerCommand() *cobra.Command {
 	return cmd
 }
 
-func run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
+func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
 	kubernetesClient, err := k8s.NewKubernetesClient(s.KubernetesOptions)
 	if err != nil {
 		klog.Errorf("Failed to create kubernetes clientset %v", err)
