@@ -59,7 +59,7 @@ Master:
   #     ingress.kubernetes.io/ssl-redirect: "false"
   #     ingress.kubernetes.io/proxy-body-size: 50m
   #     ingress.kubernetes.io/proxy-request-buffering: "off"
-  HostName: jenkins.k8s.kubesphere.io
+  HostName: jenkins.devops.kubesphere.local
 
   HealthProbes: true
   HealthProbesLivenessTimeout: 90
@@ -433,3 +433,12 @@ rbac:
   roleRef: cluster-admin
   # Role kind (RoleBinding or ClusterRoleBinding)
   roleBindingKind: ClusterRoleBinding
+
+securityRealm:
+  ldap:
+    enabled: false
+    host: openldap.kubesphere-system.svc:389
+
+ksAuth:
+  enabled: false
+#  server:

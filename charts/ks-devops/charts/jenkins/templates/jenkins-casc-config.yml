@@ -171,6 +171,7 @@ data:
                     hostPath: "/var/data/jenkins_sonar_cache"
                     mountPath: "/root/.sonar/cache"
                 yaml: "spec:\r\n  affinity:\r\n    nodeAffinity:\r\n      preferredDuringSchedulingIgnoredDuringExecution:\r\n      - weight: 1\r\n        preference:\r\n          matchExpressions:\r\n          - key: node-role.kubernetes.io/worker\r\n            operator: In\r\n            values:\r\n            - ci\r\n  tolerations:\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"NoSchedule\"\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"PreferNoSchedule\"\r\n  containers:\r\n  - name: \"go\"\r\n    resources:\r\n      requests:\r\n        ephemeral-storage: \"1Gi\"\r\n      limits:\r\n        ephemeral-storage: \"10Gi\"\r\n  securityContext:\r\n    fsGroup: 1000\r\n "
+      {{ if .Values.securityRealm.ldap.enabled }}
       securityRealm:
         ldap:
           configurations:
@@ -184,19 +185,20 @@ data:
             userSearch: "(&(objectClass=inetOrgPerson)(|(uid={0})(mail={0})))"
             groupSearchBase: "ou=Groups"
             groupSearchFilter: "(&(objectClass=posixGroup)(cn={0}))"
-            server: "ldap://openldap.kubesphere-system.svc:389"
+            server: "ldap://{{.Values.securityRealm.ldap.host }}"
           disableMailAddressResolver: false
           disableRolePrefixing: true
+      {{end}}
 
     unclassified:
       location:
-        url: "http://jenkins.devops.kubesphere.local:30180/"
+        url: {{ .Values.Master.HostName }}
       kubespheretokenauthglobalconfiguration:
         cacheConfiguration:
           size: 20
           ttl: 300
-        enabled: true
-        server: "http://ks-apiserver.kubesphere-system.svc/"
+        enabled: {{ .Values.ksAuth.enabled }}
+        server: "http://{{ include "ks-devops.fullname" . }}-apiserver.svc/"
       gitLabServers:
         servers:
         - name: "https://gitlab.com"
