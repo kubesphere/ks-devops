@@ -4,6 +4,7 @@ VERSION := dev-$(shell git describe --tags $(shell git rev-list --tags --max-cou
 
 CONTROLLER_IMG ?= surenpi/devops-controller:$(VERSION)-$(COMMIT)
 APISERVER_IMG ?= surenpi/devops-apiserver:$(VERSION)-$(COMMIT)
+TOOLS_IMG ?= surenpi/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -20,11 +21,14 @@ all: manager
 
 # Run tests
 test: fmt vet # generate manifests
-	go test $(go list ./... | grep -v controllers) -coverprofile coverage.out
+	go test $(shell go list ./... | grep -v controllers) -coverprofile coverage.out
 
 # Build manager binary
 manager: generate fmt vet
 	go build -a -o bin/controller-manager cmd/controller/main.go
+
+tools-jwt: fmt vet
+	go build -a -o bin/jwt cmd/tools/jwt/jwt_cmd.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
@@ -122,7 +126,22 @@ docker-push-apiserver:
 # Build and push the docker image
 docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver
 
+# Build the docker image of apiserver
+docker-build-tools:
+	docker build . -f config/dockerfiles/tools/Dockerfile -t ${TOOLS_IMG}
+
+# Push the docker image of controller-manager
+docker-push-tools:
+	docker push ${TOOLS_IMG}
+
+# Build and push the docker image
+docker-build-push-tools: docker-build-tools docker-push-tools
+
 docker-build-push: docker-build-push-apiserver docker-build-push-controller
+
+mock-gen:
+	mockgen -source=cmd/tools/jwt/app/configmap_updater.go -destination ./cmd/tools/jwt/app/mock_app/configmap_updater.go
+	mockgen -source=cmd/tools/jwt/app/kubernetes.go -destination ./cmd/tools/jwt/app/mock_app/kubernetes.go
 
 # find or download controller-gen
 # download controller-gen if necessary

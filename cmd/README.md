@@ -8,3 +8,9 @@ There're three commands here:
 * [controller-manager](controller)
 * [All in One](allinone)
     * Combine apiserver and controller-manager into one command.
+
+## Others
+
+There're some small tools under this directory.
+
+* [jwt](tools/jwt/README.md) helps to generate `jwtSecret` and Jenkins `token`

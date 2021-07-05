@@ -60,7 +60,9 @@ import (
 
 const (
 	// DefaultConfigurationName is the default name of configuration
-	defaultConfigurationName = "kubesphere"
+	DefaultConfigurationName = "kubesphere"
+	// DefaultConfigurationFileName is the default filename of configuration
+	DefaultConfigurationFileName = DefaultConfigurationName + ".yaml"
 
 	// DefaultConfigurationPath the default location of the configuration file
 	defaultConfigurationPath = "/etc/kubesphere"
@@ -101,7 +103,7 @@ func New() *Config {
 // TryLoadFromDisk loads configuration from default location after server startup
 // return nil error if configuration file not exists
 func TryLoadFromDisk() (*Config, error) {
-	viper.SetConfigName(defaultConfigurationName)
+	viper.SetConfigName(DefaultConfigurationName)
 	viper.AddConfigPath(defaultConfigurationPath)
 
 	// Load from current working directory, only used for debugging

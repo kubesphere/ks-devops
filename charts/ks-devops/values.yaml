@@ -11,6 +11,9 @@ image:
   apiserver:
     repository: ghcr.io/linuxsuren/devops-apiserver
     tag: master
+  tools:
+    repository: ghcr.io/linuxsuren/devops-tools
+    tag: master
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
