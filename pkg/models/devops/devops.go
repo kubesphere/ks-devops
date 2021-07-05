@@ -31,7 +31,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/informers"
@@ -129,7 +128,6 @@ type devopsOperator struct {
 	devopsClient devops.Interface
 	k8sclient    kubernetes.Interface
 	ksclient     kubesphere.Interface
-	ksInformers  externalversions.SharedInformerFactory
 	k8sInformers informers.SharedInformerFactory
 	context      context.Context
 }
@@ -140,7 +138,6 @@ func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, 
 		devopsClient: client,
 		k8sclient:    k8sclient,
 		ksclient:     ksclient,
-		ksInformers:  ksInformers,
 		k8sInformers: k8sInformers,
 		context:      context.TODO(),
 	}
@@ -190,7 +187,7 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 }
 
 func (d devopsOperator) GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error) {
-	return d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(context.Background(), projectName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeleteDevOpsProject(workspace string, projectName string) error {
@@ -207,14 +204,14 @@ func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.
 }
 
 func (d devopsOperator) ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error) {
-	data, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().List(labels.Everything())
+	devOpsProjectList, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return api.ListResult{}, nil
 	}
 	items := make([]interface{}, 0)
 	var result []interface{}
-	for _, item := range data {
-		result = append(result, *item)
+	for _, item := range devOpsProjectList.Items {
+		result = append(result, item)
 	}
 
 	if limit == -1 || limit+offset > len(result) {
@@ -229,7 +226,7 @@ func (d devopsOperator) ListDevOpsProject(workspace string, limit, offset int) (
 
 // pipelineobj in crd
 func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(context.Background(), projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -239,15 +236,15 @@ func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *v1alpha3
 }
 
 func (d devopsOperator) GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(context.Background(), projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return d.ksInformers.Devops().V1alpha3().Pipelines().Lister().Pipelines(projectObj.Status.AdminNamespace).Get(pipelineName)
+	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(context.Background(), pipelineName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeletePipelineObj(projectName string, pipelineName string) error {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(context.Background(), projectName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -255,7 +252,7 @@ func (d devopsOperator) DeletePipelineObj(projectName string, pipelineName strin
 }
 
 func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(context.Background(), projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +290,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 	}
 
 	var result []interface{}
-	for i, _ := range data {
+	for i := range data {
 		if filterFunc != nil && !filterFunc(&data[i]) {
 			continue
 		}
@@ -309,7 +306,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 
 //credentialobj in crd
 func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +317,7 @@ func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secre
 }
 
 func (d devopsOperator) GetCredentialObj(projectName string, secretName string) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +325,7 @@ func (d devopsOperator) GetCredentialObj(projectName string, secretName string) 
 }
 
 func (d devopsOperator) DeleteCredentialObj(projectName string, secret string) error {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -336,7 +333,7 @@ func (d devopsOperator) DeleteCredentialObj(projectName string, secret string) e
 }
 
 func (d devopsOperator) UpdateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +344,7 @@ func (d devopsOperator) UpdateCredentialObj(projectName string, secret *v1.Secre
 }
 
 func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
@@ -965,13 +962,12 @@ func (d devopsOperator) ToJson(req *http.Request) (map[string]interface{}, error
 }
 
 func (d devopsOperator) isGenerateNameUnique(workspace, generateName string) (bool, error) {
-	selector := labels.Set{}
-	projects, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().List(labels.SelectorFromSet(selector))
+	projects, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		klog.Error(err)
 		return false, err
 	}
-	for _, p := range projects {
+	for _, p := range projects.Items {
 		if p.GenerateName == generateName {
 			return false, err
 		}
