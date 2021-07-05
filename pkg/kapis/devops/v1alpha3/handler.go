@@ -32,7 +32,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	devopsinformers "kubesphere.io/devops/pkg/informers"
 	"kubesphere.io/devops/pkg/models/devops"
 	servererr "kubesphere.io/devops/pkg/server/errors"
@@ -46,12 +45,12 @@ type devopsHandler struct {
 }
 
 func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory, k8sClient k8s.Client) *devopsHandler {
+	k8sInformers informers.SharedInformerFactory, k8sClient k8s.Client) *devopsHandler {
 
 	return &devopsHandler{
 		k8sClient:    k8sClient,
 		devopsClient: devopsClient,
-		devops:       devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers),
+		devops:       devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, k8sInformers),
 	}
 }
 
@@ -314,10 +313,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 			kubernetesClient.KubeSphere(),
 			kubernetesClient.ApiExtensions())
 
-		return devops.NewDevopsOperator(h.devopsClient, kubernetesClient.Kubernetes(),
-			kubernetesClient.KubeSphere(),
-			informerFactory.KubeSphereSharedInformerFactory(),
-			informerFactory.KubernetesSharedInformerFactory()), nil
+		return devops.NewDevopsOperator(h.devopsClient, kubernetesClient.Kubernetes(), kubernetesClient.KubeSphere(), informerFactory.KubernetesSharedInformerFactory()), nil
 	}
 }
 

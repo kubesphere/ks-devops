@@ -44,7 +44,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 )
 
@@ -133,7 +132,7 @@ type devopsOperator struct {
 }
 
 func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory) DevopsOperator {
+	k8sInformers informers.SharedInformerFactory) DevopsOperator {
 	return &devopsOperator{
 		devopsClient: client,
 		k8sclient:    k8sclient,
