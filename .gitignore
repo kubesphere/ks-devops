@@ -25,3 +25,4 @@ bin
 
 charts/*.tgz
 kubesphere.yaml
+*/**/*.xml

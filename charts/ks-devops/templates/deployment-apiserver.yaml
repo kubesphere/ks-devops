@@ -32,6 +32,14 @@ spec:
       serviceAccountName: {{ include "ks-devops.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: "init-config"
+          image: "{{ .Values.image.tools.repository }}:{{ .Values.image.tools.tag | default .Chart.AppVersion }}"
+          command:
+            - /jwt
+            - --output
+            - configmap
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
