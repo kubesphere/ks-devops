@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
+	"net/http"
 
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
@@ -309,7 +310,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 
 	if kubernetesClient, err := k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host); err != nil {
 		return nil, err
-	} else {
+	} else if kubernetesClient != nil {
 		informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),
 			kubernetesClient.KubeSphere(),
 			kubernetesClient.ApiExtensions())
@@ -319,6 +320,8 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 			informerFactory.KubeSphereSharedInformerFactory(),
 			informerFactory.KubernetesSharedInformerFactory()), nil
 	}
+	// when kubernetesClient == nil, we will complain unauthorized error
+	return nil, restful.NewError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 }
 
 func (h *devopsHandler) ListCredential(request *restful.Request, response *restful.Response) {
