@@ -7,6 +7,7 @@ Master:
   UseSecurity: true
   HostNetworking: false
   AdminUser: admin
+#  AdminPassword: yourPasword
   resources:
     requests:
       cpu: "50m"
@@ -238,7 +239,18 @@ Master:
       // Save the state
       println "Saving changes."
       jenkinsInstance.save()
+    Users: |-
+      import jenkins.model.*
+      import hudson.security.*
 
+      def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+      def adminUsername = System.getenv('ADMIN_USER')
+      def adminPassword = System.getenv('ADMIN_PASSWORD')
+      hudsonRealm.createAccount(adminUsername, adminPassword)
+
+      def instance = Jenkins.getInstance()
+      instance.setSecurityRealm(hudsonRealm)
+      instance.save()
     Sonarqube: |-
       import hudson.model.*
       import jenkins.model.*
@@ -435,8 +447,8 @@ rbac:
   roleBindingKind: ClusterRoleBinding
 
 securityRealm:
+  type: local # support values include local, ldap
   ldap:
-    enabled: false
     host: openldap.kubesphere-system.svc:389
 
 ksAuth:

@@ -53,7 +53,7 @@ uninstall-chart:
 	make uninstall-jenkins-chart || true
 	helm uninstall ks-ctl -n kubesphere-devops-system
 render-chart:
-	helm template ks-jenkins-test charts/ks-devops  -n kubesphere-devops-system \
+	helm template ks-ctl charts/ks-devops  -n kubesphere-devops-system \
 		--set serviceAccount.create=true --create-namespace \
 		--set image.pullPolicy=Always \
 		--set jenkins.ksAuth.enabled=true --debug
