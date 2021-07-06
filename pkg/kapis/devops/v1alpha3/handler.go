@@ -42,7 +42,6 @@ import (
 type devopsHandler struct {
 	k8sClient    k8s.Client
 	devopsClient devopsClient.Interface
-	devops       devops.DevopsOperator
 }
 
 func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
@@ -51,7 +50,6 @@ func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.
 	return &devopsHandler{
 		k8sClient:    k8sClient,
 		devopsClient: devopsClient,
-		devops:       devops.NewDevopsOperator(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers),
 	}
 }
 
@@ -60,38 +58,42 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 	workspace := request.PathParameter("workspace")
 	devops := request.PathParameter("devops")
 
-	project, err := h.devops.GetDevOpsProject(workspace, devops)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		project, err := client.GetDevOpsProject(workspace, devops)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(project)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(project)
 }
 
 func (h *devopsHandler) ListDevOpsProject(request *restful.Request, response *restful.Response) {
 	workspace := request.PathParameter("workspace")
 	limit, offset := params.ParsePaging(request)
 
-	projectList, err := h.devops.ListDevOpsProject(workspace, limit, offset)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		projectList, err := client.ListDevOpsProject(workspace, limit, offset)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(projectList)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(projectList)
 }
 
 func (h *devopsHandler) CreateDevOpsProject(request *restful.Request, response *restful.Response) {
@@ -105,22 +107,24 @@ func (h *devopsHandler) CreateDevOpsProject(request *restful.Request, response *
 		return
 	}
 
-	created, err := h.devops.CreateDevOpsProject(workspace, &devOpsProject)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		} else if errors.IsConflict(err) {
-			api.HandleConflict(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		created, err := client.CreateDevOpsProject(workspace, &devOpsProject)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			} else if errors.IsConflict(err) {
+				api.HandleConflict(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(created)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(created)
 }
 
 func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *restful.Response) {
@@ -134,38 +138,42 @@ func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *
 		return
 	}
 
-	project, err := h.devops.UpdateDevOpsProject(workspace, &devOpsProject)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		project, err := client.UpdateDevOpsProject(workspace, &devOpsProject)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(project)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(project)
 }
 
 func (h *devopsHandler) DeleteDevOpsProject(request *restful.Request, response *restful.Response) {
 	workspace := request.PathParameter("workspace")
 	devops := request.PathParameter("devops")
 
-	err := h.devops.DeleteDevOpsProject(workspace, devops)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		err := client.DeleteDevOpsProject(workspace, devops)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(servererr.None)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(servererr.None)
 }
 
 // pipeline handler about get/list/post/put/delete
@@ -173,19 +181,21 @@ func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.
 	devops := request.PathParameter("devops")
 	pipeline := request.PathParameter("pipeline")
 
-	obj, err := h.devops.GetPipelineObj(devops, pipeline)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		obj, err := client.GetPipelineObj(devops, pipeline)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(obj)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(obj)
 }
 
 func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful.Response) {
@@ -221,19 +231,21 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 		return
 	}
 
-	created, err := h.devops.CreatePipelineObj(devops, &pipeline)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		created, err := client.CreatePipelineObj(devops, &pipeline)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(created)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(created)
 }
 
 func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restful.Response) {
@@ -248,19 +260,21 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 		return
 	}
 
-	obj, err := h.devops.UpdatePipelineObj(devops, &pipeline)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		obj, err := client.UpdatePipelineObj(devops, &pipeline)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(obj)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(obj)
 }
 
 func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restful.Response) {
@@ -268,19 +282,22 @@ func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restf
 	pipeline := request.PathParameter("pipeline")
 
 	klog.V(8).Infof("ready to delete pipeline %s/%s", devops, pipeline)
-	err := h.devops.DeletePipelineObj(devops, pipeline)
 
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+	if client, err := h.getDevOps(request); err == nil {
+		err := client.DeletePipelineObj(devops, pipeline)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
 			return
 		}
+		_ = response.WriteEntity(servererr.None)
+	} else {
 		api.HandleBadRequest(response, request, err)
-		return
 	}
-
-	response.WriteEntity(servererr.None)
 }
 
 //credential handler about get/list/post/put/delete
@@ -288,19 +305,121 @@ func (h *devopsHandler) GetCredential(request *restful.Request, response *restfu
 	devops := request.PathParameter("devops")
 	credential := request.PathParameter("credential")
 
-	obj, err := h.devops.GetCredentialObj(devops, credential)
+	if client, err := h.getDevOps(request); err == nil {
+		obj, err := client.GetCredentialObj(devops, credential)
+
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
+			return
+		}
+
+		_ = response.WriteEntity(obj)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
+}
+
+func (h *devopsHandler) ListCredential(request *restful.Request, response *restful.Response) {
+	devops := request.PathParameter("devops")
+	query := query.ParseQueryParameter(request)
+
+	if client, err := h.getDevOps(request); err == nil {
+		objs, err := client.ListCredentialObj(devops, query)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
+			return
+		}
+		_ = response.WriteEntity(objs)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
+}
+
+func (h *devopsHandler) CreateCredential(request *restful.Request, response *restful.Response) {
+	devops := request.PathParameter("devops")
+	var obj v1.Secret
+	err := request.ReadEntity(&obj)
 
 	if err != nil {
 		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		}
 		api.HandleBadRequest(response, request, err)
 		return
 	}
 
-	response.WriteEntity(obj)
+	if client, err := h.getDevOps(request); err == nil {
+		created, err := client.CreateCredentialObj(devops, &obj)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
+			return
+		}
+		_ = response.WriteEntity(created)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
+}
+
+func (h *devopsHandler) UpdateCredential(request *restful.Request, response *restful.Response) {
+	devops := request.PathParameter("devops")
+	var obj v1.Secret
+	err := request.ReadEntity(&obj)
+
+	if err != nil {
+		klog.Error(err)
+		api.HandleBadRequest(response, request, err)
+		return
+	}
+
+	if client, err := h.getDevOps(request); err == nil {
+		updated, err := client.UpdateCredentialObj(devops, &obj)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
+			return
+		}
+		_ = response.WriteEntity(updated)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
+}
+
+func (h *devopsHandler) DeleteCredential(request *restful.Request, response *restful.Response) {
+	devops := request.PathParameter("devops")
+	credential := request.PathParameter("credential")
+
+	if client, err := h.getDevOps(request); err == nil {
+		err := client.DeleteCredentialObj(devops, credential)
+		if err != nil {
+			klog.Error(err)
+			if errors.IsNotFound(err) {
+				api.HandleNotFound(response, request, err)
+				return
+			}
+			api.HandleBadRequest(response, request, err)
+			return
+		}
+		_ = response.WriteEntity(servererr.None)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
 }
 
 func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperator, error) {
@@ -319,93 +438,4 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 			informerFactory.KubeSphereSharedInformerFactory(),
 			informerFactory.KubernetesSharedInformerFactory()), nil
 	}
-}
-
-func (h *devopsHandler) ListCredential(request *restful.Request, response *restful.Response) {
-	devops := request.PathParameter("devops")
-	query := query.ParseQueryParameter(request)
-	objs, err := h.devops.ListCredentialObj(devops, query)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		}
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	response.WriteEntity(objs)
-}
-
-func (h *devopsHandler) CreateCredential(request *restful.Request, response *restful.Response) {
-	devops := request.PathParameter("devops")
-	var obj v1.Secret
-	err := request.ReadEntity(&obj)
-
-	if err != nil {
-		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	created, err := h.devops.CreateCredentialObj(devops, &obj)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		}
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	response.WriteEntity(created)
-}
-
-func (h *devopsHandler) UpdateCredential(request *restful.Request, response *restful.Response) {
-	devops := request.PathParameter("devops")
-	var obj v1.Secret
-	err := request.ReadEntity(&obj)
-
-	if err != nil {
-		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	updated, err := h.devops.UpdateCredentialObj(devops, &obj)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		}
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	response.WriteEntity(updated)
-}
-
-func (h *devopsHandler) DeleteCredential(request *restful.Request, response *restful.Response) {
-	devops := request.PathParameter("devops")
-	credential := request.PathParameter("credential")
-
-	err := h.devops.DeleteCredentialObj(devops, credential)
-
-	if err != nil {
-		klog.Error(err)
-		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
-			return
-		}
-		api.HandleBadRequest(response, request, err)
-		return
-	}
-
-	response.WriteEntity(servererr.None)
 }
