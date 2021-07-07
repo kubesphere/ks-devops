@@ -2,7 +2,6 @@
 [![codecov](https://codecov.io/gh/linuxsuren/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/linuxsuren/ks-devops)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_shield)
 
-
 ## Get started
 
 1. Install KubeSphere via [kk](https://github.com/kubesphere/kubekey/) (or other ways). 
@@ -15,6 +14,10 @@ which comes from [the branch remove-devops-ctrl](https://github.com/LinuxSuRen/k
 * `kubespheredev/ks-controller-manager:remove-devops-ctrl`
 
 Want to go into deep? Please checkout the [documentation](docs).
+
+### Install it as a Helm Chart
+
+First, please clone this git repository. Then run command: `make install-chart`
 
 ### Run it locally
 
@@ -55,6 +58,10 @@ then, it can generate CRDs and DeepCopy methods.
 * Auth support
     * OIDC support as a default provider
 
+## Experimental support
+
+[octant-ks-devops](https://github.com/LinuxSuRen/octant-ks-devops) is a plugin of [octant](https://github.com/vmware-tanzu/octant/).
+It provides a dashboard for Kubernetes and ks-devops.
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_large)

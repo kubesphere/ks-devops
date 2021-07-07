@@ -7,6 +7,7 @@ Master:
   UseSecurity: true
   HostNetworking: false
   AdminUser: admin
+#  AdminPassword: yourPasword
   resources:
     requests:
       cpu: "50m"
@@ -59,7 +60,7 @@ Master:
   #     ingress.kubernetes.io/ssl-redirect: "false"
   #     ingress.kubernetes.io/proxy-body-size: 50m
   #     ingress.kubernetes.io/proxy-request-buffering: "off"
-  HostName: jenkins.k8s.kubesphere.io
+  HostName: jenkins.devops.kubesphere.local
 
   HealthProbes: true
   HealthProbesLivenessTimeout: 90
@@ -238,7 +239,18 @@ Master:
       // Save the state
       println "Saving changes."
       jenkinsInstance.save()
+    Users: |-
+      import jenkins.model.*
+      import hudson.security.*
 
+      def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+      def adminUsername = System.getenv('ADMIN_USER')
+      def adminPassword = System.getenv('ADMIN_PASSWORD')
+      hudsonRealm.createAccount(adminUsername, adminPassword)
+
+      def instance = Jenkins.getInstance()
+      instance.setSecurityRealm(hudsonRealm)
+      instance.save()
     Sonarqube: |-
       import hudson.model.*
       import jenkins.model.*
@@ -433,3 +445,12 @@ rbac:
   roleRef: cluster-admin
   # Role kind (RoleBinding or ClusterRoleBinding)
   roleBindingKind: ClusterRoleBinding
+
+securityRealm:
+  type: local # support values include local, ldap
+  ldap:
+    host: openldap.kubesphere-system.svc:389
+
+ksAuth:
+  enabled: false
+#  server:
