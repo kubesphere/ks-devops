@@ -18,6 +18,7 @@ package token
 
 import (
 	"fmt"
+	"kubesphere.io/devops/pkg/server/errors"
 	"time"
 
 	"github.com/form3tech-oss/jwt-go"
@@ -45,22 +46,42 @@ type jwtTokenIssuer struct {
 	maximumClockSkew time.Duration
 }
 
-func (s *jwtTokenIssuer) VerifyWithoutClaimsValidation(tokenString string) (user.Info, TokenType, error) {
+func (s *jwtTokenIssuer) VerifyWithoutClaimsValidation(tokenString string) (userInfo user.Info, tokenType TokenType, err error) {
 	parser := &jwt.Parser{
 		SkipClaimsValidation: true,
 	}
-	token, err := parser.Parse(tokenString, s.keyFunc)
-	if err != nil {
-		if token != nil {
-			mapClaims := token.Claims.(jwt.MapClaims)
 
-			return &user.DefaultInfo{
-				Name: mapClaims["sub"].(string),
-			}, "clm.TokenType", nil
+	// set up the default values
+	tokenType = "clm.TokenType"
+	userInfo = &user.DefaultInfo{}
+
+	var token *jwt.Token
+	// TODO consider to verify the token parse result
+	if token, _ = parser.Parse(tokenString, s.keyFunc); token != nil {
+		mapClaims := token.Claims.(jwt.MapClaims)
+		if username := getUserFromClaims(mapClaims); username != "" {
+			userInfo = &user.DefaultInfo{
+				Name: username,
+			}
+		} else {
+			err = errors.New("no sub or username found from jwt, claims: %v", mapClaims)
 		}
-		return nil, "", err
 	}
-	return &user.DefaultInfo{}, "clm.TokenType", nil
+	return
+}
+
+// getUserFromClaims returns the username which support sub or username as key
+func getUserFromClaims(claims jwt.MapClaims) (user string) {
+	var ok bool
+	var val interface{}
+	if val, ok = claims["sub"]; !ok {
+		val, _ = claims["username"]
+	}
+
+	if strVal, ok := val.(string); ok {
+		user = strVal
+	}
+	return
 }
 
 func (s *jwtTokenIssuer) Verify(tokenString string) (user.Info, TokenType, error) {
