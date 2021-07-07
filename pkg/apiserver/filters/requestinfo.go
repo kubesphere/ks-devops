@@ -75,8 +75,9 @@ func WithRequestInfo(handler http.Handler, resolver request.RequestInfoResolver)
 }
 
 func injectToken(req *http.Request) (requestWithTokenContext *http.Request) {
-	authorization := req.Header.Get("Authorization")
+	authorization := req.Header.Get("X-Authorization")
 	token := strings.ReplaceAll(authorization, "Bearer ", "")
+	token = strings.ReplaceAll(token, "bearer ", "")
 	requestWithTokenContext = req.WithContext(context.WithValue(req.Context(), constants.K8SToken, token))
 	return
 }

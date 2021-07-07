@@ -16,14 +16,18 @@ func New() authenticator.Token {
 	return &tokenAuthenticator{}
 }
 
-func (a *tokenAuthenticator) AuthenticateToken(ctx context.Context, token string) (*authenticator.Response, bool, error) {
+func (a *tokenAuthenticator) AuthenticateToken(ctx context.Context, token string) (response *authenticator.Response, ok bool, err error) {
 	issuer := jwt.NewTokenIssuer("", time.Second)
 
-	if authenticated, _, err := issuer.VerifyWithoutClaimsValidation(token); err == nil {
-		return &authenticator.Response{
+	var authenticated user.Info
+	if authenticated, _, err = issuer.VerifyWithoutClaimsValidation(token); err == nil {
+		response = &authenticator.Response{
 			User: &user.DefaultInfo{
 				Name: authenticated.GetName(),
-			}}, true, nil
+			}}
+		ok = true
+	} else {
+		ok = false
 	}
-	return nil, false, nil
+	return
 }
