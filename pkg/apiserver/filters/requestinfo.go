@@ -19,6 +19,7 @@ package filters
 import (
 	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"strings"
@@ -75,7 +76,7 @@ func WithRequestInfo(handler http.Handler, resolver request.RequestInfoResolver)
 }
 
 func injectToken(req *http.Request) (requestWithTokenContext *http.Request) {
-	authorization := req.Header.Get("Authorization")
+	authorization := query.GetAuthorization(req.Header)
 	token := strings.ReplaceAll(authorization, "bearer ", "")
 	requestWithTokenContext = req.WithContext(context.WithValue(req.Context(), constants.K8SToken, token))
 	return

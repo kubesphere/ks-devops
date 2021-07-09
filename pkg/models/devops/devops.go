@@ -174,7 +174,7 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 		return nil, err
 	} else if !unique {
 		err = errors.NewConflict(devopsv1alpha3.Resource(devopsv1alpha3.ResourceSingularDevOpsProject),
-			project.GenerateName, fmt.Errorf(project.GenerateName, fmt.Errorf("a devops project named %s already exists in the workspace", project.GenerateName)))
+			project.GenerateName, fmt.Errorf("a devops project named %s already exists in the workspace", project.GenerateName))
 		klog.Error(err)
 		return nil, err
 	}

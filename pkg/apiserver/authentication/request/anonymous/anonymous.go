@@ -3,8 +3,8 @@ package anonymous
 import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"net/http"
-	"strings"
 )
 
 // Authenticator implements an anonymous auth
@@ -15,7 +15,7 @@ func NewAuthenticator() authenticator.Request {
 }
 
 func (a *Authenticator) AuthenticateRequest(req *http.Request) (*authenticator.Response, bool, error) {
-	if auth := strings.TrimSpace(req.Header.Get("Authorization")); auth == "" {
+	if auth := query.GetAuthorization(req.Header); auth == "" {
 		return &authenticator.Response{
 			User: &user.DefaultInfo{
 				Name:   "anonymous",
