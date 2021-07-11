@@ -24,14 +24,14 @@ func TestSetContainersLimit(t *testing.T) {
 	}
 
 	cloneMapString := func(source map[string]string) map[string]string {
-		target := make(map[string]string, 0)
+		target := make(map[string]string)
 		for key, value := range source {
 			target[key] = value
 		}
 		return target
 	}
 	cloneMapInterface := func(source map[string]interface{}) map[string]interface{} {
-		target := make(map[string]interface{}, 0)
+		target := make(map[string]interface{})
 		for key, value := range source {
 			target[key] = value
 		}
