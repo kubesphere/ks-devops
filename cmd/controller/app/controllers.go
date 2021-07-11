@@ -18,8 +18,10 @@ package app
 
 import (
 	"k8s.io/klog"
+	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
 	"kubesphere.io/devops/controllers/devopsproject"
+	"kubesphere.io/devops/controllers/jenkinsconfig"
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
@@ -30,20 +32,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-func addControllers(
-	mgr manager.Manager,
-	client k8s.Client,
-	informerFactory informers.InformerFactory,
-	devopsClient devops.Interface,
-	s3Client s3.Interface,
-	options *k8s.KubernetesOptions,
+func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
+	devopsClient devops.Interface, s3Client s3.Interface, s *options.DevOpsControllerManagerOptions,
 	stopCh <-chan struct{}) error {
 
 	kubesphereInformer := informerFactory.KubeSphereSharedInformerFactory()
-	//kubernetesInformer := informerFactory.KubernetesSharedInformerFactory()
 
-	var vsController, drController manager.Runnable
-	var s2iBinaryController, s2iRunController, devopsProjectController, devopsPipelineController, devopsCredentialController manager.Runnable
+	var (
+		s2iBinaryController,
+		s2iRunController,
+		devopsProjectController,
+		devopsPipelineController,
+		devopsCredentialController,
+		jenkinsConfigController manager.Runnable
+	)
+
 	if devopsClient != nil {
 		s2iBinaryController = s2ibinary.NewController(client.Kubernetes(),
 			client.KubeSphere(),
@@ -71,21 +74,30 @@ func addControllers(
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
 
+		jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
+			LimitRangeClient:    client.Kubernetes().CoreV1(),
+			ResourceQuotaClient: client.Kubernetes().CoreV1(),
+			ConfigMapClient:     client.Kubernetes().CoreV1(),
+
+			ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
+			NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+			InformerFactory:   informerFactory,
+		}, s.JenkinsOptions)
 	}
 
 	controllers := map[string]manager.Runnable{
-		"virtualservice-controller":  vsController,
-		"destinationrule-controller": drController,
-		"s2ibinary-controller":       s2iBinaryController,
-		"s2irun-controller":          s2iRunController,
+		"s2ibinary-controller": s2iBinaryController,
+		"s2irun-controller":    s2iRunController,
 	}
 
 	if devopsClient != nil {
 		controllers["pipeline-controller"] = devopsPipelineController
 		controllers["devopsprojects-controller"] = devopsProjectController
 		controllers["devopscredential-controller"] = devopsCredentialController
+		controllers["jenkinsconfig-controller"] = jenkinsConfigController
 	}
 
+	// Add all controllers into manager.
 	for name, ctrl := range controllers {
 		if ctrl == nil {
 			klog.V(4).Infof("%s is not going to run due to dependent component disabled.", name)

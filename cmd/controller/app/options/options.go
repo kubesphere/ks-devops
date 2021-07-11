@@ -52,7 +52,7 @@ type DevOpsControllerManagerOptions struct {
 
 func NewDevOpsControllerManagerOptions() *DevOpsControllerManagerOptions {
 	s := &DevOpsControllerManagerOptions{
-		JenkinsOptions: jenkins.NewDevopsOptions(),
+		JenkinsOptions: jenkins.NewJenkinsOptions(),
 		LeaderElection: &leaderelection.LeaderElectionConfig{
 			LeaseDuration: 30 * time.Second,
 			RenewDeadline: 15 * time.Second,

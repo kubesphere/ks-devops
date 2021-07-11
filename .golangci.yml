@@ -1,0 +1,4 @@
+# golangci-lint configuration from https://golangci-lint.run/usage/configuration/
+linters:
+  enable:
+    - revive # replacement for golint
