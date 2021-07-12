@@ -420,16 +420,16 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 	ctx := request.Request.Context()
 	token := ctx.Value(constants.K8SToken).(string)
 
-	if kubernetesClient, err := k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host); err != nil {
+	kubernetesClient, err := k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host)
+	if err != nil {
 		return nil, err
-	} else {
-		informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),
-			kubernetesClient.KubeSphere(),
-			kubernetesClient.ApiExtensions())
-
-		return devops.NewDevopsOperator(h.devopsClient,
-			kubernetesClient.Kubernetes(),
-			kubernetesClient.KubeSphere(),
-			informerFactory.KubernetesSharedInformerFactory()), nil
 	}
+	informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),
+		kubernetesClient.KubeSphere(),
+		kubernetesClient.ApiExtensions())
+
+	return devops.NewDevopsOperator(h.devopsClient,
+		kubernetesClient.Kubernetes(),
+		kubernetesClient.KubeSphere(),
+		informerFactory.KubernetesSharedInformerFactory()), nil
 }

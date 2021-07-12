@@ -36,8 +36,10 @@ import (
 	"kubesphere.io/devops/pkg/server/params"
 )
 
+//GroupVersion describes CRD group and its version.
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
+//AddToContainer adds web service into container.
 func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client) error {
 	devopsEnable := devopsClient != nil
 	if devopsEnable {
