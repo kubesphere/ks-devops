@@ -7,7 +7,7 @@ import (
 )
 
 func TestSetContainersLimit(t *testing.T) {
-	goContainer := map[string]interface{}{
+	goContainer := map[interface{}]interface{}{
 		"name":                  "go",
 		"resourceRequestCpu":    "100m",
 		"resourceRequestMemory": "100Mi",
@@ -15,7 +15,7 @@ func TestSetContainersLimit(t *testing.T) {
 		"resourceLimitMemory":   "8192Mi",
 	}
 
-	jnlpContainer := map[string]interface{}{
+	jnlpContainer := map[interface{}]interface{}{
 		"name":                  "jnlp",
 		"resourceRequestCpu":    "50m",
 		"resourceRequestMemory": "400Mi",
@@ -30,8 +30,8 @@ func TestSetContainersLimit(t *testing.T) {
 		}
 		return target
 	}
-	cloneMapInterface := func(source map[string]interface{}) map[string]interface{} {
-		target := make(map[string]interface{})
+	cloneMapInterface := func(source map[interface{}]interface{}) map[interface{}]interface{} {
+		target := make(map[interface{}]interface{})
 		for key, value := range source {
 			target[key] = value
 		}
@@ -59,15 +59,15 @@ func TestSetContainersLimit(t *testing.T) {
 				goLimitMemoryKey:   "4096Mi",
 			},
 			assertion: func(config *TestConfig) {
-				assert.Equal(t, config.providedConfig[jnlpLimitCPUKey], config.containers[1].(map[string]interface{})["resourceLimitCpu"])
-				assert.Equal(t, config.providedConfig[jnlpLimitMemoryKey], config.containers[1].(map[string]interface{})["resourceLimitMemory"])
-				assert.Equal(t, "50m", config.containers[1].(map[string]interface{})["resourceRequestCpu"])
-				assert.Equal(t, "400Mi", config.containers[1].(map[string]interface{})["resourceRequestMemory"])
+				assert.Equal(t, config.providedConfig[jnlpLimitCPUKey], config.containers[1].(map[interface{}]interface{})["resourceLimitCpu"])
+				assert.Equal(t, config.providedConfig[jnlpLimitMemoryKey], config.containers[1].(map[interface{}]interface{})["resourceLimitMemory"])
+				assert.Equal(t, "50m", config.containers[1].(map[interface{}]interface{})["resourceRequestCpu"])
+				assert.Equal(t, "400Mi", config.containers[1].(map[interface{}]interface{})["resourceRequestMemory"])
 
-				assert.Equal(t, config.providedConfig[goLimitCPUKey], config.containers[0].(map[string]interface{})["resourceLimitCpu"])
-				assert.Equal(t, config.providedConfig[goLimitMemoryKey], config.containers[0].(map[string]interface{})["resourceLimitMemory"])
-				assert.Equal(t, "100m", config.containers[0].(map[string]interface{})["resourceRequestCpu"])
-				assert.Equal(t, "100Mi", config.containers[0].(map[string]interface{})["resourceRequestMemory"])
+				assert.Equal(t, config.providedConfig[goLimitCPUKey], config.containers[0].(map[interface{}]interface{})["resourceLimitCpu"])
+				assert.Equal(t, config.providedConfig[goLimitMemoryKey], config.containers[0].(map[interface{}]interface{})["resourceLimitMemory"])
+				assert.Equal(t, "100m", config.containers[0].(map[interface{}]interface{})["resourceRequestCpu"])
+				assert.Equal(t, "100Mi", config.containers[0].(map[interface{}]interface{})["resourceRequestMemory"])
 			},
 		},
 		{
@@ -81,10 +81,10 @@ func TestSetContainersLimit(t *testing.T) {
 				goLimitCPUKey:   "",
 			},
 			assertion: func(config *TestConfig) {
-				assert.Equal(t, config.providedConfig[jnlpLimitCPUKey], config.containers[1].(map[string]interface{})["resourceLimitCpu"])
-				assert.Equal(t, "1536Mi", config.containers[1].(map[string]interface{})["resourceLimitMemory"])
-				assert.Equal(t, config.providedConfig[goLimitCPUKey], config.containers[0].(map[string]interface{})["resourceLimitCpu"])
-				assert.Equal(t, "8192Mi", config.containers[0].(map[string]interface{})["resourceLimitMemory"])
+				assert.Equal(t, config.providedConfig[jnlpLimitCPUKey], config.containers[1].(map[interface{}]interface{})["resourceLimitCpu"])
+				assert.Equal(t, "1536Mi", config.containers[1].(map[interface{}]interface{})["resourceLimitMemory"])
+				assert.Equal(t, config.providedConfig[goLimitCPUKey], config.containers[0].(map[interface{}]interface{})["resourceLimitCpu"])
+				assert.Equal(t, "8192Mi", config.containers[0].(map[interface{}]interface{})["resourceLimitMemory"])
 			},
 		},
 		{
