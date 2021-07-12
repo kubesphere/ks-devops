@@ -2,6 +2,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: ks-devops-agent
+  namespace: "{{ .Values.Agent.WorkerNamespace }}"
 data:
   MavenSetting: |
     <?xml version="1.0" encoding="UTF-8"?>

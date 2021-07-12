@@ -59,8 +59,20 @@ spec:
           image: "{{ .Values.Master.Image }}:{{ .Values.Master.ImageTag }}"
           imagePullPolicy: "{{ .Values.Master.ImagePullPolicy }}"
           command: [ "sh", "/var/jenkins_config/apply_config.sh" ]
-          {{- if .Values.Master.InitContainerEnv }}
           env:
+          {{- if .Values.Master.UseSecurity }}
+          - name: ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "jenkins.fullname" . }}
+                key: jenkins-admin-password
+          - name: ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "jenkins.fullname" . }}
+                key: jenkins-admin-user
+          {{- end }}
+          {{- if .Values.Master.InitContainerEnv }}
 {{ toYaml .Values.Master.InitContainerEnv | indent 12 }}
           {{- end }}
           resources:

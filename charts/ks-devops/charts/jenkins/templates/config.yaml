@@ -16,7 +16,6 @@ data:
         <denyAnonymousReadAccess>true</denyAnonymousReadAccess>
       </authorizationStrategy>
       <securityRealm class="hudson.security.LegacySecurityRealm"/>
-      <disableRememberMe>false</disableRememberMe>
       <projectNamingStrategy class="jenkins.model.ProjectNamingStrategy$DefaultProjectNamingStrategy"/>
       <workspaceDir>${JENKINS_HOME}/workspace/${ITEM_FULLNAME}</workspaceDir>
       <buildsDir>${ITEM_ROOTDIR}/builds</buildsDir>

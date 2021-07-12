@@ -17,6 +17,7 @@ limitations under the License.
 package k8s
 
 import (
+	"errors"
 	"strings"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -110,17 +111,16 @@ func NewKubernetesClientWithConfig(config *rest.Config) (client Client, err erro
 // NewKubernetesClientWithToken creates a k8s client with a bearer token
 func NewKubernetesClientWithToken(token string, master string) (client Client, err error) {
 	if token == "" {
-		return
+		return nil, errors.New("token required")
 	}
 
-	client, err = NewKubernetesClientWithConfig(&rest.Config{
+	return NewKubernetesClientWithConfig(&rest.Config{
 		BearerToken: token,
 		Host:        master,
 		TLSClientConfig: rest.TLSClientConfig{
 			Insecure: true,
 		},
 	})
-	return
 }
 
 // NewKubernetesClient creates a KubernetesClient

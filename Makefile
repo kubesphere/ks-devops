@@ -47,17 +47,19 @@ lint-chart:
 
 install-chart: lint-chart
 	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
-		--set image.pullPolicy=Always
-
-install-jenkins-chart:
-	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=
-
-render-jenkins-chart:
-	helm template ks-jenkins-test charts/ks-devops/charts/jenkins
-
+		--set image.pullPolicy=Always \
+		--set jenkins.ksAuth.enabled=true
 uninstall-chart:
 	make uninstall-jenkins-chart || true
 	helm uninstall ks-ctl -n kubesphere-devops-system
+render-chart:
+	helm template ks-ctl charts/ks-devops  -n kubesphere-devops-system \
+		--set serviceAccount.create=true --create-namespace \
+		--set image.pullPolicy=Always \
+		--set jenkins.ksAuth.enabled=true --debug
+
+install-jenkins-chart:
+	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=
 
 uninstall-jenkins-chart:
 	helm uninstall ks-jenkins-test
