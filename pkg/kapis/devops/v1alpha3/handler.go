@@ -20,8 +20,6 @@ import (
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
@@ -29,9 +27,7 @@ import (
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
-	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	devopsinformers "kubesphere.io/devops/pkg/informers"
 	"kubesphere.io/devops/pkg/models/devops"
 	servererr "kubesphere.io/devops/pkg/server/errors"
@@ -43,8 +39,7 @@ type devopsHandler struct {
 	devopsClient devopsClient.Interface
 }
 
-func newDevOpsHandler(devopsClient devopsClient.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory, k8sClient k8s.Client) *devopsHandler {
+func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) *devopsHandler {
 
 	return &devopsHandler{
 		k8sClient:    k8sClient,
@@ -432,9 +427,9 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 			kubernetesClient.KubeSphere(),
 			kubernetesClient.ApiExtensions())
 
-		return devops.NewDevopsOperator(h.devopsClient, kubernetesClient.Kubernetes(),
+		return devops.NewDevopsOperator(h.devopsClient,
+			kubernetesClient.Kubernetes(),
 			kubernetesClient.KubeSphere(),
-			informerFactory.KubeSphereSharedInformerFactory(),
 			informerFactory.KubernetesSharedInformerFactory()), nil
 	}
 }
