@@ -57,7 +57,7 @@ make uninstall
 For example, you can access an API like:
 
 ```shell script
-curl -H "Authorization: bearer xxxx" \
+curl -H "Authorization: Bearer xxxx" \
   http://localhost:9090/kapis/devops.kubesphere.io/v1alpha3/devops/testblpsz/pipelines
 ```
 
