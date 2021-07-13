@@ -33,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
@@ -127,17 +126,16 @@ type devopsOperator struct {
 	devopsClient devops.Interface
 	k8sclient    kubernetes.Interface
 	ksclient     kubesphere.Interface
-	k8sInformers informers.SharedInformerFactory
 	context      context.Context
 }
 
-func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	k8sInformers informers.SharedInformerFactory) DevopsOperator {
+func NewDevopsOperator(client devops.Interface,
+	k8sclient kubernetes.Interface,
+	ksclient kubesphere.Interface) DevopsOperator {
 	return &devopsOperator{
 		devopsClient: client,
 		k8sclient:    k8sclient,
 		ksclient:     ksclient,
-		k8sInformers: k8sInformers,
 		context:      context.Background(),
 	}
 }
@@ -319,7 +317,7 @@ func (d devopsOperator) GetCredentialObj(projectName string, secretName string) 
 	if err != nil {
 		return nil, err
 	}
-	return d.k8sInformers.Core().V1().Secrets().Lister().Secrets(projectObj.Status.AdminNamespace).Get(secretName)
+	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeleteCredentialObj(projectName string, secret string) error {
@@ -346,7 +344,9 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 	if err != nil {
 		return api.ListResult{}, err
 	}
-	credentialObjList, err := d.k8sInformers.Core().V1().Secrets().Lister().Secrets(projectObj.Status.AdminNamespace).List(query.Selector())
+	credentialObjList, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).List(d.context, metav1.ListOptions{
+		LabelSelector: query.Selector().String(),
+	})
 	if err != nil {
 		return api.ListResult{}, err
 	}
@@ -358,10 +358,10 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		v1alpha3.SecretTypeSecretText,
 		v1alpha3.SecretTypeKubeConfig,
 	}
-	for _, credential := range credentialObjList {
+	for _, credential := range credentialObjList.Items {
 		for _, credentialType := range credentialTypeList {
 			if credential.Type == credentialType {
-				result = append(result, credential)
+				result = append(result, &credential)
 			}
 		}
 	}

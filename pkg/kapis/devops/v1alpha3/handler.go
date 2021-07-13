@@ -28,7 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	devopsinformers "kubesphere.io/devops/pkg/informers"
 	"kubesphere.io/devops/pkg/models/devops"
 	servererr "kubesphere.io/devops/pkg/server/errors"
 	"kubesphere.io/devops/pkg/server/params"
@@ -424,12 +423,6 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 	if err != nil {
 		return nil, err
 	}
-	informerFactory := devopsinformers.NewInformerFactories(kubernetesClient.Kubernetes(),
-		kubernetesClient.KubeSphere(),
-		kubernetesClient.ApiExtensions())
 
-	return devops.NewDevopsOperator(h.devopsClient,
-		kubernetesClient.Kubernetes(),
-		kubernetesClient.KubeSphere(),
-		informerFactory.KubernetesSharedInformerFactory()), nil
+	return devops.NewDevopsOperator(h.devopsClient, kubernetesClient.Kubernetes(), kubernetesClient.KubeSphere()), nil
 }
