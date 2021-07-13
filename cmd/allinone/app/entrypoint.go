@@ -58,7 +58,7 @@ func runControllerManager(stopCh <-chan struct{}) (err error) {
 		// make sure LeaderElection is not nil
 		s = &controllerOpt.DevOpsControllerManagerOptions{
 			KubernetesOptions: conf.KubernetesOptions,
-			JenkinsOptions:    conf.DevopsOptions,
+			JenkinsOptions:    conf.JenkinsOptions,
 			S3Options:         conf.S3Options,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,

@@ -29,6 +29,8 @@ data:
       username: admin
       password: 119d76305a05e7a2a65d096f71feb77921
       maxConnections: 100
+      namespace: {{ .Release.Namespace }}
+      workerNamespace: {{ .Values.jenkins.Agent.WorkerNamespace }}
 kind: ConfigMap
 metadata:
   name: devops-config

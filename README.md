@@ -26,6 +26,26 @@ it's possible to run them in your local environment. You just need to make sure 
 between your environment and a Kubernetes cluster works well. This is a default config file of these 
 components, please see also [the sample file](config/samples/kubesphere.yaml).
 
+### Development locally
+
+- Run [kind](https://github.com/kubernetes-sigs/kind) in local or remote machine
+  
+- Make sure that you can access cluster via kubectl command in local machine
+  
+- Execute the following command to install our CRDs:
+
+```shell
+make install
+```
+
+- Debug code...
+
+- Execute the following command to uninstall our CRDs:
+
+```shell
+make uninstall
+```
+
 ## Create Pipeline via CLI
 
 [ks](https://github.com/linuxsuren/ks) is an official client of KubeSphere. You can create a Pipeline by it.
@@ -50,6 +70,16 @@ If you're going to update or add CRD go struct, please run the following command
 `make manifests generate generate-listers`
 
 then, it can generate CRDs and DeepCopy methods.
+
+## Lint your codes
+
+We are using [golangci-lint](https://golangci-lint.run/) as our code linter. Before you make some code changes, please execute following command to check code style:
+
+```shell
+golangci-lint run
+# Or with specified folder, e.g.
+golangci-lint run controllers/jenkinsconfig
+```
 
 ## TODO
 

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-agent-config
+  namespace: kubesphere-devops-system
+data:
+  agent.pod_resource_limit: default # or high or custom

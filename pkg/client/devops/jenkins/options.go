@@ -24,19 +24,23 @@ import (
 )
 
 type Options struct {
-	Host           string `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
-	Username       string `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
-	Password       string `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
-	MaxConnections int    `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
+	Host            string `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
+	Username        string `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
+	Password        string `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
+	MaxConnections  int    `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
+	Namespace       string `json:"namespace,omitempty" yaml:"namespace"`
+	WorkerNamespace string `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
 }
 
-// NewDevopsOptions returns a `zero` instance
-func NewDevopsOptions() *Options {
+// NewJenkinsOptions returns a `zero` instance
+func NewJenkinsOptions() *Options {
 	return &Options{
-		Host:           "",
-		Username:       "",
-		Password:       "",
-		MaxConnections: 100,
+		Host:            "",
+		Username:        "",
+		Password:        "",
+		MaxConnections:  100,
+		Namespace:       "kubesphere-devops-system",
+		WorkerNamespace: "kubesphere-devops-worker",
 	}
 }
 
@@ -81,4 +85,6 @@ func (s *Options) AddFlags(fs *pflag.FlagSet, c *Options) {
 	fs.IntVar(&s.MaxConnections, "jenkins-max-connections", c.MaxConnections, ""+
 		"Maximum allowed connections to Jenkins. ")
 
+	fs.StringVar(&s.Namespace, "namespace", c.Namespace, "Namespace where devops system is in.")
+	fs.StringVar(&s.WorkerNamespace, "worker-namespace", c.WorkerNamespace, "Namespace where Jenkins agent workers are in.")
 }

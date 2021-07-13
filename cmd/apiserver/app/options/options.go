@@ -65,7 +65,7 @@ func (s *ServerRunOptions) Flags() (fss cliflag.NamedFlagSets) {
 	fs.BoolVar(&s.DebugMode, "debug", false, "Don't enable this if you don't know what it means.")
 	s.GenericServerRunOptions.AddFlags(fs, s.GenericServerRunOptions)
 	s.KubernetesOptions.AddFlags(fss.FlagSet("kubernetes"), s.KubernetesOptions)
-	s.DevopsOptions.AddFlags(fss.FlagSet("devops"), s.DevopsOptions)
+	s.JenkinsOptions.AddFlags(fss.FlagSet("devops"), s.JenkinsOptions)
 	s.SonarQubeOptions.AddFlags(fss.FlagSet("sonarqube"), s.SonarQubeOptions)
 	s.S3Options.AddFlags(fss.FlagSet("s3"), s.S3Options)
 
@@ -110,8 +110,8 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 		}
 	}
 
-	if s.DevopsOptions.Host != "" {
-		devopsClient, err := jenkins.NewDevopsClient(s.DevopsOptions)
+	if s.JenkinsOptions.Host != "" {
+		devopsClient, err := jenkins.NewDevopsClient(s.JenkinsOptions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to jenkins, please check jenkins status, error: %v", err)
 		}

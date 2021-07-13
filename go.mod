@@ -50,6 +50,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
 	kubesphere.io/api v0.0.0-20210511124541-08f2d682bd07
 	sigs.k8s.io/controller-runtime v0.6.3
+	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
 replace (
@@ -64,5 +65,4 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.18.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	sigs.k8s.io/application => sigs.k8s.io/application v0.8.4-0.20201016185654-c8e2959e57a0
-	sigs.k8s.io/kubefed => sigs.k8s.io/kubefed v0.6.1
 )
