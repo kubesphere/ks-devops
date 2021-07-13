@@ -250,6 +250,7 @@ jobs:
           # Optional: working directory, useful for monorepos
           working-directory: >
             controllers/jenkinsconfig
+            pkg/kapis/devops/v1alpha3
           # The path-prefix flag will be overwritten by working-directory if we don't specify path-prefix
           # Please follow up pull request: https://github.com/golangci/golangci-lint-action/pull/34
           args: >
