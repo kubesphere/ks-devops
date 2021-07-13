@@ -79,7 +79,7 @@ var (
 
 // Config defines everything needed for apiserver to deal with external services
 type Config struct {
-	DevopsOptions         *jenkins.Options                   `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
+	JenkinsOptions        *jenkins.Options                   `json:"devops,omitempty" yaml:"devops,omitempty" mapstructure:"devops"`
 	KubernetesOptions     *k8s.KubernetesOptions             `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty" mapstructure:"kubernetes"`
 	RedisOptions          *cache.Options                     `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
 	S3Options             *s3.Options                        `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
@@ -93,7 +93,7 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		SonarQubeOptions:  sonarqube.NewSonarQubeOptions(),
-		DevopsOptions:     jenkins.NewDevopsOptions(),
+		JenkinsOptions:    jenkins.NewJenkinsOptions(),
 		KubernetesOptions: k8s.NewKubernetesOptions(),
 		S3Options:         s3.NewS3Options(),
 		AuthMode:          AuthModeToken,
@@ -156,8 +156,8 @@ func (conf *Config) ToMap() map[string]bool {
 
 // Remove invalid options before serializing to json or yaml
 func (conf *Config) stripEmptyOptions() {
-	if conf.DevopsOptions != nil && conf.DevopsOptions.Host == "" {
-		conf.DevopsOptions = nil
+	if conf.JenkinsOptions != nil && conf.JenkinsOptions.Host == "" {
+		conf.JenkinsOptions = nil
 	}
 
 	if conf.S3Options != nil && conf.S3Options.Endpoint == "" {

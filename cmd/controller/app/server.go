@@ -39,13 +39,16 @@ import (
 )
 
 func NewControllerManagerCommand() *cobra.Command {
+	// Here will create a default devops controller manager options
 	s := options.NewDevOpsControllerManagerOptions()
+	// Load configuration from disk via viper, /etc/kubesphere/kubesphere.[yaml,json,xxx]
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
 		// make sure LeaderElection is not nil
+		// override devops controller manager options
 		s = &options.DevOpsControllerManagerOptions{
 			KubernetesOptions: conf.KubernetesOptions,
-			JenkinsOptions:    conf.DevopsOptions,
+			JenkinsOptions:    conf.JenkinsOptions,
 			S3Options:         conf.S3Options,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,
@@ -55,6 +58,7 @@ func NewControllerManagerCommand() *cobra.Command {
 		klog.Fatal("Failed to load configuration from disk", err)
 	}
 
+	// Initialize command to run our controllers later
 	cmd := &cobra.Command{
 		Use:   "controller-manager",
 		Short: `KubeSphere DevOps controller manager`,
@@ -68,6 +72,7 @@ func NewControllerManagerCommand() *cobra.Command {
 	}
 
 	fs := cmd.Flags()
+	// Add pre-defined flags into command
 	namedFlagSets := s.Flags()
 
 	for _, f := range namedFlagSets.FlagSets {
@@ -95,20 +100,24 @@ func NewControllerManagerCommand() *cobra.Command {
 }
 
 func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
+	// Init k8s client
 	kubernetesClient, err := k8s.NewKubernetesClient(s.KubernetesOptions)
 	if err != nil {
 		klog.Errorf("Failed to create kubernetes clientset %v", err)
 		return err
 	}
 
+	// Init DevOps client while Jenkins options and Jenkins host
 	var devopsClient devops.Interface
 	if s.JenkinsOptions != nil && len(s.JenkinsOptions.Host) != 0 {
+		// Make sure that Jenkins host is not empty
 		devopsClient, err = jenkins.NewDevopsClient(s.JenkinsOptions)
 		if err != nil {
 			return fmt.Errorf("failed to connect jenkins, please check jenkins status, error: %v", err)
 		}
 	}
 
+	// Init informers
 	informerFactory := informers.NewInformerFactories(
 		kubernetesClient.Kubernetes(),
 		kubernetesClient.KubeSphere(),
@@ -135,15 +144,16 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 	klog.V(0).Info("setting up manager")
 	ctrl.SetLogger(klogr.New())
 	// Use 8443 instead of 443 cause we need root permission to bind port 443
+	// Init controller manager
 	mgr, err := manager.New(kubernetesClient.Config(), mgrOptions)
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
-
 	if err = apis.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatalf("unable add APIs to scheme: %v", err)
 	}
 
+	// Init s3 client
 	var s3Client s3.Interface
 	if s.S3Options != nil && len(s.S3Options.Endpoint) != 0 {
 		s3Client, err = s3.NewS3Client(s.S3Options)
@@ -160,8 +170,9 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		informerFactory,
 		devopsClient,
 		s3Client,
-		s.KubernetesOptions, stopCh); err != nil {
-		klog.Fatalf("unable to register controllers to the manager: %v", err)
+		s,
+		stopCh); err != nil {
+		return fmt.Errorf("unable to register controllers to the manager: %v", err)
 	}
 
 	// Start cache data after all informer is registered
