@@ -26,30 +26,25 @@ import (
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-
 	"kubesphere.io/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
-	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/constants"
 	"kubesphere.io/devops/pkg/server/params"
 )
 
+//GroupVersion describes CRD group and its version.
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
-func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sclient kubernetes.Interface,
-	ksclient kubesphere.Interface, ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory,
-	k8sClient k8s.Client) error {
+//AddToContainer adds web service into container.
+func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client) error {
 	devopsEnable := devopsClient != nil
 	if devopsEnable {
 		ws := runtime.NewWebService(GroupVersion)
-		handler := newDevOpsHandler(devopsClient, k8sclient, ksclient, ksInformers, k8sInformers, k8sClient)
+		handler := newDevOpsHandler(devopsClient, k8sClient)
 		// credential
 		ws.Route(ws.GET("/devops/{devops}/credentials").
 			To(handler.ListCredential).

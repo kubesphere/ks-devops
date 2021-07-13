@@ -130,17 +130,12 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.S3Client,
 		s.Config.JenkinsOptions.Host,
 		s.KubernetesClient))
-	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container,
-		s.DevopsClient,
-		s.KubernetesClient.Kubernetes(),
-		s.KubernetesClient.KubeSphere(),
-		s.InformerFactory.KubeSphereSharedInformerFactory(),
-		s.InformerFactory.KubernetesSharedInformerFactory(),
-		s.KubernetesClient))
+	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient))
 	urlruntime.Must(oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
-			s.Config.AuthenticationOptions)))
+			s.Config.AuthenticationOptions),
+	))
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

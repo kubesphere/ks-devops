@@ -247,11 +247,3 @@ jobs:
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.41.1
-          # Optional: working directory, useful for monorepos
-          working-directory: >
-            controllers/jenkinsconfig
-          # The path-prefix flag will be overwritten by working-directory if we don't specify path-prefix
-          # Please follow up pull request: https://github.com/golangci/golangci-lint-action/pull/34
-          args: >
-            --timeout 2m
-            --path-prefix ""

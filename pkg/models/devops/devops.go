@@ -31,10 +31,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
@@ -45,7 +43,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 )
 
@@ -129,20 +126,17 @@ type devopsOperator struct {
 	devopsClient devops.Interface
 	k8sclient    kubernetes.Interface
 	ksclient     kubesphere.Interface
-	ksInformers  externalversions.SharedInformerFactory
-	k8sInformers informers.SharedInformerFactory
 	context      context.Context
 }
 
-func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface, ksclient kubesphere.Interface,
-	ksInformers externalversions.SharedInformerFactory, k8sInformers informers.SharedInformerFactory) DevopsOperator {
+func NewDevopsOperator(client devops.Interface,
+	k8sclient kubernetes.Interface,
+	ksclient kubesphere.Interface) DevopsOperator {
 	return &devopsOperator{
 		devopsClient: client,
 		k8sclient:    k8sclient,
 		ksclient:     ksclient,
-		ksInformers:  ksInformers,
-		k8sInformers: k8sInformers,
-		context:      context.TODO(),
+		context:      context.Background(),
 	}
 }
 
@@ -186,15 +180,15 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 	//project.Labels[tenantv1alpha1.WorkspaceLabel] = workspace
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = StatusPending
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Create(context.Background(), project, metav1.CreateOptions{})
+	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Create(d.context, project, metav1.CreateOptions{})
 }
 
 func (d devopsOperator) GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error) {
-	return d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeleteDevOpsProject(workspace string, projectName string) error {
-	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Delete(context.Background(), projectName, *metav1.NewDeleteOptions(0))
+	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Delete(d.context, projectName, *metav1.NewDeleteOptions(0))
 }
 
 func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error) {
@@ -203,18 +197,18 @@ func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.
 	}
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = StatusPending
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), project, metav1.UpdateOptions{})
+	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Update(d.context, project, metav1.UpdateOptions{})
 }
 
 func (d devopsOperator) ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error) {
-	data, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().List(labels.Everything())
+	devOpsProjectList, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{})
 	if err != nil {
 		return api.ListResult{}, nil
 	}
 	items := make([]interface{}, 0)
 	var result []interface{}
-	for _, item := range data {
-		result = append(result, *item)
+	for _, item := range devOpsProjectList.Items {
+		result = append(result, item)
 	}
 
 	if limit == -1 || limit+offset > len(result) {
@@ -229,48 +223,47 @@ func (d devopsOperator) ListDevOpsProject(workspace string, limit, offset int) (
 
 // pipelineobj in crd
 func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	projectObj.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey] = StatusPending
 	projectObj.Annotations[devopsv1alpha3.PipelineSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Create(context.Background(), pipeline, metav1.CreateOptions{})
+	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Create(d.context, pipeline, metav1.CreateOptions{})
 }
 
 func (d devopsOperator) GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return d.ksInformers.Devops().V1alpha3().Pipelines().Lister().Pipelines(projectObj.Status.AdminNamespace).Get(pipelineName)
+	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(d.context, pipelineName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeletePipelineObj(projectName string, pipelineName string) error {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Delete(context.Background(), pipelineName, *metav1.NewDeleteOptions(0))
+	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Delete(d.context, pipelineName, *metav1.NewDeleteOptions(0))
 }
 
 func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	ctx := context.Background()
 	ns := projectObj.Status.AdminNamespace
 	name := pipeline.GetName()
 	// trying to avoid the error of `Operation cannot be fulfilled on` by getting the latest resourceVersion
-	if latestPipe, err := d.ksclient.DevopsV1alpha3().Pipelines(ns).Get(ctx, name, metav1.GetOptions{}); err == nil {
+	if latestPipe, err := d.ksclient.DevopsV1alpha3().Pipelines(ns).Get(d.context, name, metav1.GetOptions{}); err == nil {
 		pipeline.ResourceVersion = latestPipe.ResourceVersion
 	} else {
 		return nil, fmt.Errorf("cannot found pipeline %s/%s, error: %v", ns, name, err)
 	}
 
-	return d.ksclient.DevopsV1alpha3().Pipelines(ns).Update(context.Background(), pipeline, metav1.UpdateOptions{})
+	return d.ksclient.DevopsV1alpha3().Pipelines(ns).Update(d.context, pipeline, metav1.UpdateOptions{})
 }
 
 func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineFilter,
@@ -293,7 +286,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 	}
 
 	var result []interface{}
-	for i, _ := range data {
+	for i := range data {
 		if filterFunc != nil && !filterFunc(&data[i]) {
 			continue
 		}
@@ -309,49 +302,51 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 
 //credentialobj in crd
 func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(d.context, secret, metav1.CreateOptions{})
 }
 
 func (d devopsOperator) GetCredentialObj(projectName string, secretName string) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return d.k8sInformers.Core().V1().Secrets().Lister().Secrets(projectObj.Status.AdminNamespace).Get(secretName)
+	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{})
 }
 
 func (d devopsOperator) DeleteCredentialObj(projectName string, secret string) error {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Delete(context.Background(), secret, *metav1.NewDeleteOptions(0))
+	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Delete(d.context, secret, *metav1.NewDeleteOptions(0))
 }
 
 func (d devopsOperator) UpdateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(context.Background(), secret, metav1.UpdateOptions{})
+	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(d.context, secret, metav1.UpdateOptions{})
 }
 
 func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error) {
-	projectObj, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().Get(projectName)
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
-	credentialObjList, err := d.k8sInformers.Core().V1().Secrets().Lister().Secrets(projectObj.Status.AdminNamespace).List(query.Selector())
+	credentialObjList, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).List(d.context, metav1.ListOptions{
+		LabelSelector: query.Selector().String(),
+	})
 	if err != nil {
 		return api.ListResult{}, err
 	}
@@ -363,10 +358,10 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		v1alpha3.SecretTypeSecretText,
 		v1alpha3.SecretTypeKubeConfig,
 	}
-	for _, credential := range credentialObjList {
+	for _, credential := range credentialObjList.Items {
 		for _, credentialType := range credentialTypeList {
 			if credential.Type == credentialType {
-				result = append(result, credential)
+				result = append(result, &credential)
 			}
 		}
 	}
@@ -965,13 +960,12 @@ func (d devopsOperator) ToJson(req *http.Request) (map[string]interface{}, error
 }
 
 func (d devopsOperator) isGenerateNameUnique(workspace, generateName string) (bool, error) {
-	selector := labels.Set{}
-	projects, err := d.ksInformers.Devops().V1alpha3().DevOpsProjects().Lister().List(labels.SelectorFromSet(selector))
+	projects, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{})
 	if err != nil {
 		klog.Error(err)
 		return false, err
 	}
-	for _, p := range projects {
+	for _, p := range projects.Items {
 		if p.GenerateName == generateName {
 			return false, err
 		}
