@@ -48,7 +48,7 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 	for _, object := range objects {
 		selected := true
 		for field, value := range q.Filters {
-			if !filterFunc(object, query.Filter{Field: field, Value: value}) {
+			if filterFunc != nil && !filterFunc(object, query.Filter{Field: field, Value: value}) {
 				selected = false
 				break
 			}
@@ -56,19 +56,23 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 
 		if selected {
 			for _, transform := range transformFuncs {
-				object = transform(object)
+				if transform != nil {
+					object = transform(object)
+				}
 			}
 			filtered = append(filtered, object)
 		}
 	}
 
 	// sort by sortBy field
-	sort.Slice(filtered, func(i, j int) bool {
-		if !q.Ascending {
-			return compareFunc(filtered[i], filtered[j], q.SortBy)
-		}
-		return !compareFunc(filtered[i], filtered[j], q.SortBy)
-	})
+	if compareFunc != nil {
+		sort.Slice(filtered, func(i, j int) bool {
+			if !q.Ascending {
+				return compareFunc(filtered[i], filtered[j], q.SortBy)
+			}
+			return !compareFunc(filtered[i], filtered[j], q.SortBy)
+		})
+	}
 
 	total := len(filtered)
 
@@ -141,13 +145,23 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		return false
 		// /namespaces?page=1&limit=10&annotation=openpitrix_runtime
 	case query.FieldAnnotation:
-		return labelMatch(item.Annotations, string(filter.Value))
-		// /namespaces?page=1&limit=10&label=kubesphere.io/workspace:system-workspace
+		return labelsMatch(item.Annotations, string(filter.Value))
+		// /namespaces?page=1&limit=10&label=kubesphere.io/workspace=system-workspace
 	case query.FieldLabel:
-		return labelMatch(item.Labels, string(filter.Value))
+		return labelsMatch(item.Labels, string(filter.Value))
 	default:
-		return false
+		// We should allow fields that are not found
+		return true
 	}
+}
+
+func labelsMatch(labels map[string]string, filterStr string) bool {
+	filters := strings.SplitN(filterStr, ",", 2)
+	var match = true
+	for _, filter := range filters {
+		match = match && labelMatch(labels, filter)
+	}
+	return match
 }
 
 func labelMatch(labels map[string]string, filter string) bool {

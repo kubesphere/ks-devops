@@ -42,7 +42,7 @@ const (
 // supported format: ?paging=limit=100,page=1
 func ParsePaging(req *restful.Request) (limit, offset int) {
 	paging := req.QueryParameter(PagingParam)
-	limit = 10
+	limit = DefaultLimit
 	page := DefaultPage
 	if paging != "" {
 		if groups := regexp.MustCompile(`^limit=(-?\d+),page=(\d+)$`).FindStringSubmatch(paging); len(groups) == 3 {

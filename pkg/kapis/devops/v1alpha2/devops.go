@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"net/http"
 	"strings"
 
@@ -37,7 +38,6 @@ import (
 	//"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/constants"
 	"kubesphere.io/devops/pkg/models/devops"
-	"kubesphere.io/devops/pkg/server/params"
 )
 
 const jenkinsHeaderPre = "X-"
@@ -58,20 +58,17 @@ func (h *ProjectPipelineHandler) GetPipeline(req *restful.Request, resp *restful
 
 func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (api.ListResult, error) {
 	// this is a very trick way, but don't have a better solution for now
-	var (
-		start     int
-		limit     int
-		namespace string
-	)
+	var namespace string
 
 	// parse query from the request
 	pipelineFilter, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
 
+	queryParam := query.ParseQueryParameter(req)
+
 	// make sure we have an appropriate value
-	limit, start = params.ParsePaging(req)
 	return h.devopsOperator.ListPipelineObj(namespace, pipelineFilter, func(list []v1alpha3.Pipeline, i int, j int) bool {
 		return strings.Compare(strings.ToUpper(list[i].Name), strings.ToUpper(list[j].Name)) < 0
-	}, limit, start)
+	}, queryParam)
 }
 
 func parseNameFilterFromQuery(query string) (filter devops.PipelineFilter, namespace string) {

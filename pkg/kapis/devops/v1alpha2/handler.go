@@ -39,7 +39,7 @@ type PipelineSonarHandler struct {
 
 func NewProjectPipelineHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) ProjectPipelineHandler {
 	return ProjectPipelineHandler{
-		devopsOperator:          devops.NewDevopsOperator(devopsClient, nil, nil),
+		devopsOperator:          devops.NewDevopsOperator(devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere()),
 		projectCredentialGetter: devops.NewProjectCredentialOperator(devopsClient),
 		k8sClient:               k8sClient,
 	}
