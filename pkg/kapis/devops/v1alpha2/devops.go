@@ -114,7 +114,7 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 	}
 	pipelineMap := make(map[string]int, pipelineList.Total)
 	for i, _ := range objs.Items {
-		if pipeline, ok := objs.Items[i].(v1alpha3.Pipeline); !ok {
+		if pipeline, ok := objs.Items[i].(*v1alpha3.Pipeline); !ok {
 			continue
 		} else {
 			pipelineMap[pipeline.Name] = i
