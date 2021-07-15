@@ -24,7 +24,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 
@@ -279,33 +278,31 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 		return api.ListResult{}, err
 	}
 
-	data := pipelines.Items
-	if sortFunc != nil {
-		//sort the pipeline list according to the request
-		sort.SliceStable(data, func(i, j int) bool {
-			return sortFunc(data, i, j)
-		})
+	var result = make([]runtime.Object, len(pipelines.Items))
+	for i, _ := range pipelines.Items {
+		result = append(result, &pipelines.Items[i])
 	}
+	//if sortFunc != nil {
+	//	//sort the pipeline list according to the request
+	//	sort.SliceStable(data, func(i, j int) bool {
+	//		return sortFunc(data, i, j)
+	//	})
+	//}
+	//
+	//var result = make([]runtime.Object, 0)
+	//for i := range data {
+	//	if filterFunc != nil && !filterFunc(&data[i]) {
+	//		continue
+	//	}
+	//	result = append(result, &data[i])
+	//}
+	//
+	//var items = make([]runtime.Object, 0)
+	//
+	//startIndex, endIndex := query.Pagination.GetValidPagination(len(result))
+	//items = result[startIndex:endIndex]
 
-	var result = make([]runtime.Object, 0)
-	for i := range data {
-		if filterFunc != nil && !filterFunc(&data[i]) {
-			continue
-		}
-		result = append(result, &data[i])
-	}
-
-	var (
-		limit  = query.Pagination.Limit
-		offset = query.Pagination.Offset
-	)
-
-	if limit == -1 || limit+offset > len(result) {
-		limit = len(result) - offset
-	}
-	items := result[offset : offset+limit]
-
-	return *resourcesV1alpha3.DefaultList(items, query, d.compare, d.filter), nil
+	return *resourcesV1alpha3.DefaultList(result, query, d.compare, d.filter), nil
 }
 
 //credentialobj in crd

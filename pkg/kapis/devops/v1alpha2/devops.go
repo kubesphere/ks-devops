@@ -61,41 +61,40 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 	var namespace string
 
 	// parse query from the request
-	pipelineFilter, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
+	pipelineName, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
+
+	// for pagination compatibility
+	start := req.QueryParameter("start")
+	req.Request.Form.Set(query.ParameterPage, start)
 
 	queryParam := query.ParseQueryParameter(req)
 
+	// for filter compatibility
+	if _, ok := queryParam.Filters[query.FieldName]; !ok {
+		// if name query is not set
+		queryParam.Filters[query.FieldName] = query.Value(pipelineName)
+	}
+
 	// make sure we have an appropriate value
-	return h.devopsOperator.ListPipelineObj(namespace, pipelineFilter, func(list []v1alpha3.Pipeline, i int, j int) bool {
+	return h.devopsOperator.ListPipelineObj(namespace, nil, func(list []v1alpha3.Pipeline, i int, j int) bool {
 		return strings.Compare(strings.ToUpper(list[i].Name), strings.ToUpper(list[j].Name)) < 0
 	}, queryParam)
 }
 
-func parseNameFilterFromQuery(query string) (filter devops.PipelineFilter, namespace string) {
-	var (
-		nameFilter string
-	)
-
+func parseNameFilterFromQuery(query string) (pipelineName, namespace string) {
 	for _, val := range strings.Split(query, ";") {
 		if strings.HasPrefix(val, "pipeline:") {
 			nsAndName := strings.TrimPrefix(val, "pipeline:")
 			filterMeta := strings.Split(nsAndName, "/")
 			if len(filterMeta) >= 2 {
 				namespace = filterMeta[0]
-				nameFilter = filterMeta[1] // the format is '*keyword*'
-				nameFilter = strings.TrimSuffix(nameFilter, "*")
-				nameFilter = strings.TrimPrefix(nameFilter, "*")
+				pipelineName = filterMeta[1] // the format is '*keyword*'
+				pipelineName = strings.TrimSuffix(pipelineName, "*")
+				pipelineName = strings.TrimPrefix(pipelineName, "*")
 			} else if len(filterMeta) > 0 {
 				namespace = filterMeta[0]
 			}
 		}
-	}
-
-	filter = func(pipeline *v1alpha3.Pipeline) bool {
-		return strings.Contains(pipeline.Name, nameFilter)
-	}
-	if nameFilter == "" {
-		filter = nil
 	}
 	return
 }
@@ -127,10 +126,10 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 
 	// get all pipelines which come from Jenkins
 	// fill out the rest fields
-	if query, err := jenkins.ParseJenkinsQuery(req.Request.URL.RawQuery); err == nil {
-		query.Set("limit", "10000")
-		query.Set("start", "0")
-		req.Request.URL.RawQuery = query.Encode()
+	if jenkinsQuery, err := jenkins.ParseJenkinsQuery(req.Request.URL.RawQuery); err == nil {
+		jenkinsQuery.Set("limit", "10000")
+		jenkinsQuery.Set("start", "0")
+		req.Request.URL.RawQuery = jenkinsQuery.Encode()
 	}
 	res, err := h.devopsOperator.ListPipelines(req.Request)
 	if err != nil {
