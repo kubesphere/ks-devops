@@ -98,12 +98,8 @@ It provides a dashboard for Kubernetes and ks-devops.
 
 ## Available communication channels:
 
-- [kubesphere Devops google group ](https://groups.google.com/g/kubesphere-sig-devops/)
-    
+- [KubeSphere Devops google group](https://groups.google.com/g/kubesphere-sig-devops/)
 - [DevOps Slack channel for English speakers](https://kubesphere.slack.com/archives/C010TH02010)
-    
 - [DevOps Slack channel for Chinese speakers](https://kubesphere.slack.com/archives/C026V4FBWBW)
-    
 - [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
-    
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
