@@ -82,14 +82,6 @@ func TestParseQueryParameter(t *testing.T) {
 }
 
 func TestPagination_GetValidPagination(t *testing.T) {
-	type test struct {
-		name       string
-		limit      int
-		offset     int
-		total      int
-		startIndex int
-		endIndx    int
-	}
 	tests := []struct {
 		name       string
 		limit      int
