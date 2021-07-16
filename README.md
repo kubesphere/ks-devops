@@ -95,3 +95,11 @@ It provides a dashboard for Kubernetes and ks-devops.
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_large)
+
+## Available communication channels:
+
+- [KubeSphere Devops google group](https://groups.google.com/g/kubesphere-sig-devops/)
+- [DevOps Slack channel for English speakers](https://kubesphere.slack.com/archives/C010TH02010)
+- [DevOps Slack channel for Chinese speakers](https://kubesphere.slack.com/archives/C026V4FBWBW)
+- [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
+- [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
