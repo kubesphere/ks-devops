@@ -93,11 +93,10 @@ func DefaultObjectMetaCompare(left, right metav1.ObjectMeta, sortBy query.Field)
 	switch sortBy {
 	// ?sortBy=name
 	case query.FieldName:
+		// sort the name in ascending order
 		return strings.Compare(left.Name, right.Name) > 0
 	//	?sortBy=creationTimestamp
 	default:
-		fallthrough
-	case query.FieldCreateTime:
 		fallthrough
 	case query.FieldCreationTimeStamp:
 		// compare by name if creation timestamp is equal
@@ -108,7 +107,7 @@ func DefaultObjectMetaCompare(left, right metav1.ObjectMeta, sortBy query.Field)
 	}
 }
 
-//  Default metadata filter
+// DefaultObjectMetaFilter filters data with given filter
 func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 	switch filter.Field {
 	case query.FieldNames:
@@ -155,11 +154,12 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 	}
 }
 
+// labelsMatch handles multi label value pair split by ","
 func labelsMatch(labels map[string]string, filterStr string) bool {
 	filters := strings.SplitN(filterStr, ",", 2)
 	var match = true
 	for _, filter := range filters {
-		match = match && labelMatch(labels, filter)
+		match = match && labelMatch(labels, strings.TrimSpace(filter))
 	}
 	return match
 }

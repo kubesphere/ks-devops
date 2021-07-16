@@ -282,25 +282,6 @@ func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineF
 	for i, _ := range pipelines.Items {
 		result = append(result, &pipelines.Items[i])
 	}
-	//if sortFunc != nil {
-	//	//sort the pipeline list according to the request
-	//	sort.SliceStable(data, func(i, j int) bool {
-	//		return sortFunc(data, i, j)
-	//	})
-	//}
-	//
-	//var result = make([]runtime.Object, 0)
-	//for i := range data {
-	//	if filterFunc != nil && !filterFunc(&data[i]) {
-	//		continue
-	//	}
-	//	result = append(result, &data[i])
-	//}
-	//
-	//var items = make([]runtime.Object, 0)
-	//
-	//startIndex, endIndex := query.Pagination.GetValidPagination(len(result))
-	//items = result[startIndex:endIndex]
 
 	return *resourcesV1alpha3.DefaultList(result, query, d.compare, d.filter), nil
 }

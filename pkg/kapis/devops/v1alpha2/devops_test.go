@@ -40,13 +40,11 @@ func TestParseNameFilterFromQuery(t *testing.T) {
 		message:              "query all pipelines with filter *",
 	}}
 
-	for i, item := range table {
+	for _, item := range table {
 		t.Run(item.message, func(t *testing.T) {
 			pipelineName, ns := parseNameFilterFromQuery(item.query)
 			assert.Equal(t, item.expectedPipelineName, pipelineName)
-			if ns != item.expectNamespace {
-				t.Fatalf("invalid namespace, index: %d, message: %s", i, item.message)
-			}
+			assert.Equal(t, item.expectNamespace, ns)
 		})
 	}
 }

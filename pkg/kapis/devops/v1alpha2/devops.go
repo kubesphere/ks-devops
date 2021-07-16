@@ -71,14 +71,27 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 
 	// for filter compatibility
 	if _, ok := queryParam.Filters[query.FieldName]; !ok {
-		// if name query is not set
+		// set name filter by default
 		queryParam.Filters[query.FieldName] = query.Value(pipelineName)
 	}
 
+	// for compare compatibility
+	if len(req.QueryParameter(query.ParameterOrderBy)) == 0 {
+		// set sort by as name by default
+		queryParam.SortBy = query.FieldName
+	}
+
+	// for ascending compatibility
+	if len(req.QueryParameter(query.ParameterAscending)) == 0 {
+		// set ascending as true by default
+		queryParam.Ascending = true
+	}
+
 	// make sure we have an appropriate value
-	return h.devopsOperator.ListPipelineObj(namespace, nil, func(list []v1alpha3.Pipeline, i int, j int) bool {
-		return strings.Compare(strings.ToUpper(list[i].Name), strings.ToUpper(list[j].Name)) < 0
-	}, queryParam)
+	return h.devopsOperator.ListPipelineObj(namespace,
+		nil,
+		nil,
+		queryParam)
 }
 
 func parseNameFilterFromQuery(query string) (pipelineName, namespace string) {
