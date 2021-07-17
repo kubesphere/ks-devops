@@ -19,11 +19,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-controller
+            kubespheresig/devops-controller
             ghcr.io/${{ github.repository_owner }}/devops-controller
           tags: |
             type=schedule
@@ -33,7 +33,7 @@ jobs:
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
@@ -63,7 +63,7 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         with:
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -72,7 +72,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         with:
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
@@ -86,11 +86,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-apiserver
+            kubespheresig/devops-apiserver
             ghcr.io/${{ github.repository_owner }}/devops-apiserver
           tags: |
             type=schedule
@@ -100,7 +100,7 @@ jobs:
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
@@ -130,7 +130,7 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         with:
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -139,7 +139,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         with:
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
@@ -153,11 +153,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-tools
+            kubespheresig/devops-tools
             ghcr.io/${{ github.repository_owner }}/devops-tools
           tags: |
             type=schedule
@@ -167,7 +167,7 @@ jobs:
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         uses: docker/metadata-action@v3
         with:
           images: |
@@ -197,7 +197,7 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
+        if: github.repository_owner == 'kubesphere-sigs'
         with:
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -206,7 +206,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
+        if: github.repository_owner != 'kubesphere-sigs'
         with:
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
