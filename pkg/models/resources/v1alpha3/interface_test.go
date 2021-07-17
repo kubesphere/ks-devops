@@ -245,11 +245,11 @@ func TestDefaultObjectMetaCompare(t *testing.T) {
 
 func TestDefaultList(t *testing.T) {
 	objectMetaFilterFunc := func(object runtime.Object, filter query.Filter) bool {
-		if pipeline, ok := object.(*v1alpha3.Pipeline); !ok {
+		pipeline, ok := object.(*v1alpha3.Pipeline)
+		if !ok {
 			return false
-		} else {
-			return DefaultObjectMetaFilter(pipeline.ObjectMeta, filter)
 		}
+		return DefaultObjectMetaFilter(pipeline.ObjectMeta, filter)
 	}
 	objectMetaCompareFunc := func(leftObj runtime.Object, rightObj runtime.Object, field query.Field) bool {
 		leftPipeline, ok := leftObj.(*v1alpha3.Pipeline)
