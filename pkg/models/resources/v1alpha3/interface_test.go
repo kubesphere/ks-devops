@@ -21,6 +21,9 @@ package v1alpha3
 import (
 	"gotest.tools/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"kubesphere.io/devops/pkg/api"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"testing"
 	"time"
@@ -236,6 +239,192 @@ func TestDefaultObjectMetaCompare(t *testing.T) {
 		t.Run(item.name, func(t *testing.T) {
 			result := DefaultObjectMetaCompare(item.left, item.right, item.field)
 			assert.Equal(t, item.expectedCmpResult, result)
+		})
+	}
+}
+
+func TestDefaultList(t *testing.T) {
+	objectMetaFilterFunc := func(object runtime.Object, filter query.Filter) bool {
+		if pipeline, ok := object.(*v1alpha3.Pipeline); !ok {
+			return false
+		} else {
+			return DefaultObjectMetaFilter(pipeline.ObjectMeta, filter)
+		}
+	}
+	objectMetaCompareFunc := func(leftObj runtime.Object, rightObj runtime.Object, field query.Field) bool {
+		leftPipeline, ok := leftObj.(*v1alpha3.Pipeline)
+		if !ok {
+			return false
+		}
+		rightPipeline, ok := rightObj.(*v1alpha3.Pipeline)
+		if !ok {
+			return false
+		}
+		return DefaultObjectMetaCompare(leftPipeline.ObjectMeta, rightPipeline.ObjectMeta, field)
+	}
+
+	table := []struct {
+		name           string
+		items          []runtime.Object
+		query          query.Query
+		filterFunc     FilterFunc
+		compareFunc    CompareFunc
+		transform      TransformFunc
+		expectedResult api.ListResult
+	}{{
+		name:        "nil items, compareFunc, filterFunc and transform",
+		items:       nil,
+		filterFunc:  nil,
+		compareFunc: nil,
+		expectedResult: api.ListResult{
+			TotalItems: 0,
+			Items:      []interface{}{},
+		},
+	}, {
+		name: "nil compareFunc, filterFunc and transform",
+		items: []runtime.Object{
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-a",
+				},
+			},
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-b",
+				},
+			},
+		},
+		filterFunc:  nil,
+		compareFunc: nil,
+		expectedResult: api.ListResult{
+			TotalItems: 2,
+			Items: []interface{}{
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-a",
+					},
+				},
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-b",
+					},
+				},
+			},
+		},
+	}, {
+		name: "filter name",
+		items: []runtime.Object{
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-abcd",
+				},
+			},
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-efgh",
+				},
+			},
+		},
+		filterFunc:  objectMetaFilterFunc,
+		compareFunc: nil,
+		query: query.Query{
+			Filters: map[query.Field]query.Value{
+				"name": "bc",
+			},
+		},
+		expectedResult: api.ListResult{
+			TotalItems: 1,
+			Items: []interface{}{
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-abcd",
+					},
+				},
+			},
+		},
+	}, {
+		name: "filter name",
+		items: []runtime.Object{
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-abcd",
+				},
+			},
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-efgh",
+				},
+			},
+		},
+		filterFunc:  nil,
+		compareFunc: objectMetaCompareFunc,
+		query: query.Query{
+			SortBy:    query.FieldName,
+			Ascending: false,
+		},
+		expectedResult: api.ListResult{
+			TotalItems: 2,
+			Items: []interface{}{
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-efgh",
+					},
+				},
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-abcd",
+					},
+				},
+			},
+		},
+	}, {
+		name: "filter and compare name",
+		items: []runtime.Object{
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-cdef",
+				},
+			},
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-abcd",
+				},
+			},
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-efgh",
+				},
+			},
+		},
+		filterFunc:  objectMetaFilterFunc,
+		compareFunc: objectMetaCompareFunc,
+		query: query.Query{
+			Filters: map[query.Field]query.Value{
+				query.FieldName: "cd",
+			},
+			SortBy:    query.FieldName,
+			Ascending: true,
+		},
+		expectedResult: api.ListResult{
+			TotalItems: 2,
+			Items: []interface{}{
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-abcd",
+					},
+				},
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-cdef",
+					},
+				},
+			},
+		},
+	}}
+	for _, item := range table {
+		t.Run(item.name, func(t *testing.T) {
+			result := DefaultList(item.items, &item.query, item.compareFunc, item.filterFunc, item.transform)
+			assert.DeepEqual(t, item.expectedResult, *result)
 		})
 	}
 }
