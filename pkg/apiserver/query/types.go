@@ -147,7 +147,14 @@ func ParseQueryParameter(request *restful.Request) *Query {
 	query.LabelSelector = request.QueryParameter(ParameterLabelSelector)
 
 	for key, values := range request.Request.URL.Query() {
-		if !sliceutil.HasString([]string{ParameterPage, ParameterLimit, ParameterOrderBy, ParameterAscending, ParameterLabelSelector}, key) {
+		if !sliceutil.HasString([]string{
+			ParameterPage,
+			ParameterLimit,
+			ParameterOrderBy,
+			ParameterAscending,
+			ParameterLabelSelector,
+			ParameterFieldSelector,
+		}, key) {
 			// support multiple query condition
 			for _, value := range values {
 				query.Filters[Field(key)] = Value(value)

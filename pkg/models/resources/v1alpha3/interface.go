@@ -122,14 +122,14 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		return strings.Contains(item.Name, string(filter.Value))
 		// /namespaces?page=1&limit=10&uid=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldUID:
-		return strings.Compare(string(item.UID), string(filter.Value)) == 0
+		return string(item.UID) == string(filter.Value)
 		// /deployments?page=1&limit=10&namespace=kubesphere-system
 	case query.FieldNamespace:
-		return strings.Compare(item.Namespace, string(filter.Value)) == 0
+		return item.Namespace == string(filter.Value)
 		// /namespaces?page=1&limit=10&ownerReference=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldOwnerReference:
 		for _, ownerReference := range item.OwnerReferences {
-			if strings.Compare(string(ownerReference.UID), string(filter.Value)) == 0 {
+			if string(ownerReference.UID) == string(filter.Value) {
 				return true
 			}
 		}
@@ -137,7 +137,7 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		// /namespaces?page=1&limit=10&ownerKind=Workspace
 	case query.FieldOwnerKind:
 		for _, ownerReference := range item.OwnerReferences {
-			if strings.Compare(ownerReference.Kind, string(filter.Value)) == 0 {
+			if ownerReference.Kind == string(filter.Value) {
 				return true
 			}
 		}
