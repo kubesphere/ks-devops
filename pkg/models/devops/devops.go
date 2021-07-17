@@ -49,9 +49,6 @@ const (
 	channelMaxCapacity = 100
 )
 
-type PipelineFilter func(pipeline *v1alpha3.Pipeline) bool
-type PipelineSorter func([]v1alpha3.Pipeline, int, int) bool
-
 type DevopsOperator interface {
 	CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
@@ -63,7 +60,7 @@ type DevopsOperator interface {
 	GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error)
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
-	ListPipelineObj(projectName string, filterFunc PipelineFilter, sortFunc PipelineSorter, query *query.Query) (api.ListResult, error)
+	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -265,7 +262,7 @@ func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3
 	return d.ksclient.DevopsV1alpha3().Pipelines(ns).Update(d.context, pipeline, metav1.UpdateOptions{})
 }
 
-func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineFilter, sortFunc PipelineSorter, query *query.Query) (api.ListResult, error) {
+func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error) {
 	project, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err

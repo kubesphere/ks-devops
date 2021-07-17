@@ -196,7 +196,7 @@ func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful
 	queryParam := query.ParseQueryParameter(request)
 
 	if client, err := h.getDevOps(request); err == nil {
-		objs, err := client.ListPipelineObj(devopsProject, nil, nil, queryParam)
+		objs, err := client.ListPipelineObj(devopsProject, queryParam)
 		if err != nil {
 			klog.Error(err)
 			if errors.IsNotFound(err) {

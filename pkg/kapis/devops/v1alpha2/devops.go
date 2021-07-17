@@ -88,10 +88,7 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 	}
 
 	// make sure we have an appropriate value
-	return h.devopsOperator.ListPipelineObj(namespace,
-		nil,
-		nil,
-		queryParam)
+	return h.devopsOperator.ListPipelineObj(namespace, queryParam)
 }
 
 func parseNameFilterFromQuery(query string) (pipelineName, namespace string) {
