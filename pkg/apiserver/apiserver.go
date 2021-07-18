@@ -20,6 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	rt "runtime"
+	"time"
+
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
@@ -29,9 +33,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/kapis/oauth"
 	"kubesphere.io/devops/pkg/models/auth"
-	"net/http"
-	rt "runtime"
-	"time"
 
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -123,7 +124,6 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 //   any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
 	urlruntime.Must(devopsv1alpha2.AddToContainer(s.container,
-		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.DevopsClient,
 		s.SonarClient,
 		s.KubernetesClient.KubeSphere(),

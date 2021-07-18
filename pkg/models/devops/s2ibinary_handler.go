@@ -19,10 +19,11 @@ package devops
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/client/k8s"
 	"mime/multipart"
 	"net/http"
 	"reflect"
+
+	"kubesphere.io/devops/pkg/client/k8s"
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -56,12 +57,11 @@ type s2iBinaryUploader struct {
 	s3Client  s3.Interface
 }
 
-func NewS2iBinaryUploader(client versioned.Interface, informers externalversions.SharedInformerFactory, s3Client s3.Interface,
+func NewS2iBinaryUploader(client versioned.Interface, s3Client s3.Interface,
 	k8sClient k8s.Client) S2iBinaryUploader {
 	return &s2iBinaryUploader{
 		k8sClient: k8sClient,
 		client:    client,
-		informers: informers,
 		s3Client:  s3Client,
 	}
 }

@@ -19,7 +19,6 @@ package v1alpha2
 import (
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/client/sonarqube"
@@ -53,7 +52,7 @@ func NewPipelineSonarHandler(devopsClient devopsClient.Interface, sonarClient so
 	}
 }
 
-func NewS2iBinaryHandler(client versioned.Interface, informers externalversions.SharedInformerFactory, s3Client s3.Interface,
+func NewS2iBinaryHandler(client versioned.Interface, s3Client s3.Interface,
 	k8sClient k8s.Client) S2iBinaryHandler {
-	return S2iBinaryHandler{devops.NewS2iBinaryUploader(client, informers, s3Client, k8sClient)}
+	return S2iBinaryHandler{devops.NewS2iBinaryUploader(client, s3Client, k8sClient)}
 }

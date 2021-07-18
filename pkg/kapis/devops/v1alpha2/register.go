@@ -19,10 +19,11 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/client/k8s"
 	"net/url"
 	"strings"
+
+	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/client/k8s"
 
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -35,7 +36,6 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/client/sonarqube"
 	"kubesphere.io/devops/pkg/constants"
@@ -47,7 +47,7 @@ import (
 
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"}
 
-func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
+func AddToContainer(container *restful.Container,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
 	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
 	ws := runtime.NewWebService(GroupVersion)
@@ -62,7 +62,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 		return err
 	}
 
-	err = AddS2IToWebService(ws, ksClient, ksInformers, s3Client, k8sClient)
+	err = AddS2IToWebService(ws, ksClient, s3Client, k8sClient)
 	if err != nil {
 		return err
 	}
@@ -664,12 +664,12 @@ func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.In
 	return nil
 }
 
-func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Interface, ksInformer externalversions.SharedInformerFactory,
+func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Interface,
 	s3Client s3.Interface, k8sClient k8s.Client) error {
-	s2iEnable := ksClient != nil && ksInformer != nil && s3Client != nil
+	s2iEnable := ksClient != nil && s3Client != nil
 
 	if s2iEnable {
-		s2iHandler := NewS2iBinaryHandler(ksClient, ksInformer, s3Client, k8sClient)
+		s2iHandler := NewS2iBinaryHandler(ksClient, s3Client, k8sClient)
 		webservice.Route(webservice.PUT("/namespaces/{namespace}/s2ibinaries/{s2ibinary}/file").
 			To(s2iHandler.UploadS2iBinaryHandler).
 			Consumes("multipart/form-data").
