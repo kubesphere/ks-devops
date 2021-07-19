@@ -154,12 +154,16 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 	}
 }
 
-// labelsMatch handles multi label value pair split by ","
+// labelsMatch handles multi-label value pairs split by ",".
+// e.g. devops.ks.io/creator=admin,devops.ks.io/status=success
 func labelsMatch(labels map[string]string, filterStr string) bool {
-	filters := strings.SplitN(filterStr, ",", 2)
+	filters := strings.Split(filterStr, ",")
 	var match = true
 	for _, filter := range filters {
 		match = match && labelMatch(labels, strings.TrimSpace(filter))
+		if !match {
+			break
+		}
 	}
 	return match
 }

@@ -61,46 +61,53 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 	var namespace string
 
 	// parse query from the request
-	pipelineName, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
+	nameReg, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
 
-	// for pagination compatibility
-	start := req.QueryParameter("start")
-	req.Request.Form.Set(query.ParameterPage, start)
-
-	queryParam := query.ParseQueryParameter(req)
-
-	// for filter compatibility
-	if _, ok := queryParam.Filters[query.FieldName]; !ok {
-		// set name filter by default
-		queryParam.Filters[query.FieldName] = query.Value(pipelineName)
-	}
-
-	// for compare compatibility
-	if len(req.QueryParameter(query.ParameterOrderBy)) == 0 {
-		// set sort by as name by default
-		queryParam.SortBy = query.FieldName
-	}
-
-	// for ascending compatibility
-	if len(req.QueryParameter(query.ParameterAscending)) == 0 {
-		// set ascending as true by default
-		queryParam.Ascending = true
-	}
+	// compatible
+	queryParam := buildPipelineSearchQueryParam(req, nameReg)
 
 	// make sure we have an appropriate value
 	return h.devopsOperator.ListPipelineObj(namespace, queryParam)
 }
 
-func parseNameFilterFromQuery(query string) (pipelineName, namespace string) {
+func buildPipelineSearchQueryParam(req *restful.Request, nameReg string) (q *query.Query) {
+	// for pagination compatibility
+	start := req.QueryParameter("start")
+	req.Request.Form.Set(query.ParameterPage, start)
+
+	q = query.ParseQueryParameter(req)
+
+	// for filter compatibility
+	if _, ok := q.Filters[query.FieldName]; !ok {
+		// set name filter by default
+		q.Filters[query.FieldName] = query.Value(nameReg)
+	}
+
+	// for compare compatibility
+	if len(req.QueryParameter(query.ParameterOrderBy)) == 0 {
+		// set sort by as name by default
+		q.SortBy = query.FieldName
+	}
+
+	// for ascending compatibility
+	if len(req.QueryParameter(query.ParameterAscending)) == 0 {
+		// set ascending as true by default
+		q.Ascending = true
+	}
+
+	return
+}
+
+func parseNameFilterFromQuery(query string) (nameReg, namespace string) {
 	for _, val := range strings.Split(query, ";") {
 		if strings.HasPrefix(val, "pipeline:") {
 			nsAndName := strings.TrimPrefix(val, "pipeline:")
 			filterMeta := strings.Split(nsAndName, "/")
 			if len(filterMeta) >= 2 {
 				namespace = filterMeta[0]
-				pipelineName = filterMeta[1] // the format is '*keyword*'
-				pipelineName = strings.TrimSuffix(pipelineName, "*")
-				pipelineName = strings.TrimPrefix(pipelineName, "*")
+				nameReg = filterMeta[1] // the format is '*keyword*'
+				nameReg = strings.TrimSuffix(nameReg, "*")
+				nameReg = strings.TrimPrefix(nameReg, "*")
 			} else if len(filterMeta) > 0 {
 				namespace = filterMeta[0]
 			}

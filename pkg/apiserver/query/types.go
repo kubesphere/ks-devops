@@ -121,10 +121,7 @@ func ParseQueryParameter(request *restful.Request) *Query {
 
 	limit, err := strconv.Atoi(request.QueryParameter(ParameterLimit))
 	// equivalent to undefined, use the default value
-	if err != nil {
-		limit = -1
-	}
-	if limit < -1 {
+	if err != nil || limit < -1 {
 		limit = -1
 	}
 	page, err := strconv.Atoi(request.QueryParameter(ParameterPage))

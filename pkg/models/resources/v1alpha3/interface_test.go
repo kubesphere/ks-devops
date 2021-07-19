@@ -118,8 +118,9 @@ func TestLabelsMatch(t *testing.T) {
 		labels: map[string]string{
 			"kubesphere.io/creator": "admin",
 			"kubesphere.io/status":  "success",
+			"kubesphere.io/synced":  "true",
 		},
-		filter:        "kubesphere.io/creator=admin,kubesphere.io/status=success",
+		filter:        "kubesphere.io/creator=admin,kubesphere.io/status=success,kubesphere.io/synced=true",
 		expectedMatch: true,
 	}, {
 		name: "partial match(multi)",
