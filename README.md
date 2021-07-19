@@ -63,6 +63,8 @@ curl -H "Authorization: Bearer xxxx" \
 
 > Please get a token from Kubernetes cluster, and replace `xxxx` with it.
 
+If you want to see ks-devops postman API collection , please visit **[ks-devops postman](https://www.postman.com/ks-devops/workspace/kubesphere-devops)**
+
 ## Code contribution
 
 If you're going to update or add CRD go struct, please run the following command once done with that:
