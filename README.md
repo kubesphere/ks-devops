@@ -63,7 +63,7 @@ curl -H "Authorization: Bearer xxxx" \
 
 > Please get a token from Kubernetes cluster, and replace `xxxx` with it.
 
-If  you want to see ks-devops postman api collection , please visit **[ks-devops postman](https://www.postman.com/ks-devops/workspace/kubesphere-devops)**
+If you want to see ks-devops postman API collection , please visit **[ks-devops postman](https://www.postman.com/ks-devops/workspace/kubesphere-devops)**
 
 ## Code contribution
 
