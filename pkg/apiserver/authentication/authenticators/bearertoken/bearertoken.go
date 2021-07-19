@@ -9,7 +9,7 @@ import (
 	jwt "kubesphere.io/devops/pkg/apiserver/authentication/token"
 )
 
-// tokenAuthenticator implements an anonymous auth
+// tokenAuthenticator implements an simple auth which only check the format of target JWT token
 type tokenAuthenticator struct{}
 
 func New() authenticator.Token {

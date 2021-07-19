@@ -58,8 +58,11 @@ func (s *jwtTokenIssuer) VerifyWithoutClaimsValidation(tokenString string) (user
 	var token *jwt.Token
 	// TODO consider to verify the token parse result
 	if token, _ = parser.Parse(tokenString, s.keyFunc); token != nil {
-		mapClaims := token.Claims.(jwt.MapClaims)
-		if username := getUserFromClaims(mapClaims); username != "" {
+		var mapClaims jwt.MapClaims
+		var ok bool
+		if mapClaims, ok = token.Claims.(jwt.MapClaims); !ok {
+			err = errors.New("unexpect type (should be map[string]interface{}) of JWT token claims: %v", token.Claims)
+		} else if username := getUserFromClaims(mapClaims); username != "" {
 			userInfo = &user.DefaultInfo{
 				Name: username,
 			}
