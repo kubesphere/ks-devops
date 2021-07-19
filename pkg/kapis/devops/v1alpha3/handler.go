@@ -419,6 +419,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (devops.DevopsOperat
 	ctx := request.Request.Context()
 	token := ctx.Value(constants.K8SToken).(string)
 
+	klog.V(9).Infof("get DevOps client with  token: %s", token)
 	kubernetesClient, err := k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host)
 	if err != nil {
 		return nil, err

@@ -17,6 +17,7 @@ limitations under the License.
 package token
 
 import (
+	"github.com/form3tech-oss/jwt-go"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -44,5 +45,54 @@ func TestTokenVerifyWithoutCacheValidate(t *testing.T) {
 
 	if diff := cmp.Diff(got, admin); diff != "" {
 		t.Error("token validate failed")
+	}
+}
+
+func Test_getUserFromClaims(t *testing.T) {
+	type args struct {
+		claims jwt.MapClaims
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantUser string
+	}{{
+		name: "without any valid key",
+		args: args{
+			claims: jwt.MapClaims{},
+		},
+		wantUser: "",
+	}, {
+		name: "with key: sub",
+		args: args{
+			claims: jwt.MapClaims{
+				"sub": "rick",
+			},
+		},
+		wantUser: "rick",
+	}, {
+		name: "with key: username",
+		args: args{
+			claims: jwt.MapClaims{
+				"username": "rick",
+			},
+		},
+		wantUser: "rick",
+	}, {
+		name: "with key: username and sub, take sub first",
+		args: args{
+			claims: jwt.MapClaims{
+				"sub": "rick",
+				"username": "mark",
+			},
+		},
+		wantUser: "rick",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotUser := getUserFromClaims(tt.args.claims); gotUser != tt.wantUser {
+				t.Errorf("getUserFromClaims() = %v, want %v", gotUser, tt.wantUser)
+			}
+		})
 	}
 }

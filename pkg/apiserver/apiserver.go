@@ -69,7 +69,6 @@ type APIServer struct {
 	// number of kubesphere apiserver
 	ServerCount int
 
-	//
 	Server *http.Server
 
 	Config *apiserverconfig.Config
