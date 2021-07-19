@@ -1,0 +1,11 @@
+authentication:
+  authenticateRateLimiterDuration: 10m0s
+  authenticateRateLimiterMaxTries: "10"
+  jwtSecret: Z1TBo4jUSB5Rs6eyLqHSJ77GXtG8NhSP
+  loginHistoryRetentionPeriod: 168h
+  maximumClockSkew: 10s
+devops:
+  host: http://172.18.0.2:30180/ # Need to change
+  maxConnections: "100"
+  password: 01UccBiGssWh4YNvAYnRrR # Need to change
+  username: admin
