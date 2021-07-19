@@ -26,10 +26,6 @@ it's possible to run them in your local environment. You just need to make sure 
 between your environment and a Kubernetes cluster works well. This is a default config file of these 
 components, please see also [the sample file](config/samples/kubesphere.yaml).
 
-### Get Jenkins password
-```shell
-kubectl get secret --namespace kubesphere-devops-system ks-ctl-jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode;echo
-```
 ### Development locally
 
 - Run [kind](https://github.com/kubernetes-sigs/kind) in local or remote machine
