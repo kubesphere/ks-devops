@@ -181,7 +181,11 @@ spec:
   {{- end }}
             -
               mountPath: /var/jenkins_home
+              {{- if .Values.Persistence.ExistingClaim }}
+              name: {{ .Values.Persistence.ExistingClaim }}
+              {{- else }}
               name: jenkins-home
+              {{- end }}
               readOnly: false
             -
               mountPath: /var/jenkins_config
@@ -233,15 +237,25 @@ spec:
   {{- end }}
       - name: secrets-dir
         emptyDir: {}
-      - name: jenkins-home
   {{- if .Values.Persistence.Enabled }}
+      - name: jenkins-home
         persistentVolumeClaim:
           claimName: {{ .Values.Persistence.ExistingClaim | default (include "jenkins.fullname" .) }}
-  {{- else }}
-        emptyDir: {}
   {{- end -}}
   {{- if .Values.Master.ImagePullSecret }}
       imagePullSecrets:
       - name: {{ .Values.Master.ImagePullSecret }}
+  {{- end -}}
+  {{- if and (not .Values.Persistence.Enabled) .Values.Persistence.ExistingClaim }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .Values.Persistence.ExistingClaim }}
+      # annotations:
+      #   volume.beta.kubernetes.io/storage-class: anything
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
   {{- end -}}
 {{- end -}}
