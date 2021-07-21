@@ -24,7 +24,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 
@@ -50,9 +49,6 @@ const (
 	channelMaxCapacity = 100
 )
 
-type PipelineFilter func(pipeline *v1alpha3.Pipeline) bool
-type PipelineSorter func([]v1alpha3.Pipeline, int, int) bool
-
 type DevopsOperator interface {
 	CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
@@ -64,7 +60,7 @@ type DevopsOperator interface {
 	GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error)
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
-	ListPipelineObj(projectName string, filterFunc PipelineFilter, sortFunc PipelineSorter, limit, offset int) (api.ListResult, error)
+	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -266,38 +262,25 @@ func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3
 	return d.ksclient.DevopsV1alpha3().Pipelines(ns).Update(d.context, pipeline, metav1.UpdateOptions{})
 }
 
-func (d devopsOperator) ListPipelineObj(projectName string, filterFunc PipelineFilter,
-	sortFunc PipelineSorter, limit, offset int) (api.ListResult, error) {
-	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
+func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error) {
+	project, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
-	pipelineList, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).List(d.context, metav1.ListOptions{})
+	pipelines, err := d.ksclient.DevopsV1alpha3().Pipelines(project.Status.AdminNamespace).List(d.context, metav1.ListOptions{
+		LabelSelector: query.LabelSelector,
+	})
+
 	if err != nil {
 		return api.ListResult{}, err
 	}
 
-	data := pipelineList.Items
-	if sortFunc != nil {
-		//sort the pipeline list according to the request
-		sort.SliceStable(data, func(i, j int) bool {
-			return sortFunc(data, i, j)
-		})
+	var result = make([]runtime.Object, len(pipelines.Items))
+	for i, _ := range pipelines.Items {
+		result = append(result, &pipelines.Items[i])
 	}
 
-	var result []interface{}
-	for i := range data {
-		if filterFunc != nil && !filterFunc(&data[i]) {
-			continue
-		}
-		result = append(result, data[i])
-	}
-
-	if limit == -1 || limit+offset > len(result) {
-		limit = len(result) - offset
-	}
-	items := result[offset : offset+limit]
-	return api.ListResult{TotalItems: len(result), Items: items}, nil
+	return *resourcesV1alpha3.DefaultList(result, query, d.compare, d.filter), nil
 }
 
 //credentialobj in crd
@@ -1010,4 +993,25 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 		rc = ioutil.NopCloser(body)
 	}
 	return rc
+}
+
+func (d devopsOperator) filter(item runtime.Object, filter query.Filter) bool {
+	devOpsProject, ok := item.(*devopsv1alpha3.Pipeline)
+	if !ok {
+		return false
+	}
+	return resourcesV1alpha3.DefaultObjectMetaFilter(devOpsProject.ObjectMeta, filter)
+}
+
+func (d devopsOperator) compare(left runtime.Object, right runtime.Object, field query.Field) bool {
+	leftProject, ok := left.(*devopsv1alpha3.Pipeline)
+	if !ok {
+		return false
+	}
+
+	rightProject, ok := right.(*devopsv1alpha3.Pipeline)
+	if !ok {
+		return false
+	}
+	return resourcesV1alpha3.DefaultObjectMetaCompare(leftProject.ObjectMeta, rightProject.ObjectMeta, field)
 }

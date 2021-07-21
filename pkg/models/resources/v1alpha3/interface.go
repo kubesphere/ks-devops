@@ -48,7 +48,7 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 	for _, object := range objects {
 		selected := true
 		for field, value := range q.Filters {
-			if !filterFunc(object, query.Filter{Field: field, Value: value}) {
+			if filterFunc != nil && !filterFunc(object, query.Filter{Field: field, Value: value}) {
 				selected = false
 				break
 			}
@@ -56,19 +56,23 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 
 		if selected {
 			for _, transform := range transformFuncs {
-				object = transform(object)
+				if transform != nil {
+					object = transform(object)
+				}
 			}
 			filtered = append(filtered, object)
 		}
 	}
 
 	// sort by sortBy field
-	sort.Slice(filtered, func(i, j int) bool {
-		if !q.Ascending {
-			return compareFunc(filtered[i], filtered[j], q.SortBy)
-		}
-		return !compareFunc(filtered[i], filtered[j], q.SortBy)
-	})
+	if compareFunc != nil {
+		sort.Slice(filtered, func(i, j int) bool {
+			if !q.Ascending {
+				return compareFunc(filtered[i], filtered[j], q.SortBy)
+			}
+			return !compareFunc(filtered[i], filtered[j], q.SortBy)
+		})
+	}
 
 	total := len(filtered)
 
@@ -89,11 +93,10 @@ func DefaultObjectMetaCompare(left, right metav1.ObjectMeta, sortBy query.Field)
 	switch sortBy {
 	// ?sortBy=name
 	case query.FieldName:
+		// sort the name in ascending order
 		return strings.Compare(left.Name, right.Name) > 0
 	//	?sortBy=creationTimestamp
 	default:
-		fallthrough
-	case query.FieldCreateTime:
 		fallthrough
 	case query.FieldCreationTimeStamp:
 		// compare by name if creation timestamp is equal
@@ -104,7 +107,7 @@ func DefaultObjectMetaCompare(left, right metav1.ObjectMeta, sortBy query.Field)
 	}
 }
 
-//  Default metadata filter
+// DefaultObjectMetaFilter filters data with given filter
 func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 	switch filter.Field {
 	case query.FieldNames:
@@ -119,14 +122,14 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		return strings.Contains(item.Name, string(filter.Value))
 		// /namespaces?page=1&limit=10&uid=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldUID:
-		return strings.Compare(string(item.UID), string(filter.Value)) == 0
+		return string(item.UID) == string(filter.Value)
 		// /deployments?page=1&limit=10&namespace=kubesphere-system
 	case query.FieldNamespace:
-		return strings.Compare(item.Namespace, string(filter.Value)) == 0
+		return item.Namespace == string(filter.Value)
 		// /namespaces?page=1&limit=10&ownerReference=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldOwnerReference:
 		for _, ownerReference := range item.OwnerReferences {
-			if strings.Compare(string(ownerReference.UID), string(filter.Value)) == 0 {
+			if string(ownerReference.UID) == string(filter.Value) {
 				return true
 			}
 		}
@@ -134,20 +137,35 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		// /namespaces?page=1&limit=10&ownerKind=Workspace
 	case query.FieldOwnerKind:
 		for _, ownerReference := range item.OwnerReferences {
-			if strings.Compare(ownerReference.Kind, string(filter.Value)) == 0 {
+			if ownerReference.Kind == string(filter.Value) {
 				return true
 			}
 		}
 		return false
 		// /namespaces?page=1&limit=10&annotation=openpitrix_runtime
 	case query.FieldAnnotation:
-		return labelMatch(item.Annotations, string(filter.Value))
-		// /namespaces?page=1&limit=10&label=kubesphere.io/workspace:system-workspace
+		return labelsMatch(item.Annotations, string(filter.Value))
+		// /namespaces?page=1&limit=10&label=kubesphere.io/workspace=system-workspace
 	case query.FieldLabel:
-		return labelMatch(item.Labels, string(filter.Value))
+		return labelsMatch(item.Labels, string(filter.Value))
 	default:
-		return false
+		// We should allow fields that are not found
+		return true
 	}
+}
+
+// labelsMatch handles multi-label value pairs split by ",".
+// e.g. devops.ks.io/creator=admin,devops.ks.io/status=success
+func labelsMatch(labels map[string]string, filterStr string) bool {
+	filters := strings.Split(filterStr, ",")
+	var match = true
+	for _, filter := range filters {
+		match = match && labelMatch(labels, strings.TrimSpace(filter))
+		if !match {
+			break
+		}
+	}
+	return match
 }
 
 func labelMatch(labels map[string]string, filter string) bool {

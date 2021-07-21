@@ -81,6 +81,9 @@ func (p *Pagination) GetValidPagination(total int) (startIndex, endIndex int) {
 
 	// no pagination
 	if p.Limit == NoPagination.Limit {
+		if p.Offset >= total {
+			return 0, 0
+		}
 		return 0, total
 	}
 
@@ -118,12 +121,12 @@ func ParseQueryParameter(request *restful.Request) *Query {
 
 	limit, err := strconv.Atoi(request.QueryParameter(ParameterLimit))
 	// equivalent to undefined, use the default value
-	if err != nil {
+	if err != nil || limit < -1 {
 		limit = -1
 	}
 	page, err := strconv.Atoi(request.QueryParameter(ParameterPage))
 	// equivalent to undefined, use the default value
-	if err != nil {
+	if err != nil || page < 1 {
 		page = 1
 	}
 
@@ -141,7 +144,14 @@ func ParseQueryParameter(request *restful.Request) *Query {
 	query.LabelSelector = request.QueryParameter(ParameterLabelSelector)
 
 	for key, values := range request.Request.URL.Query() {
-		if !sliceutil.HasString([]string{ParameterPage, ParameterLimit, ParameterOrderBy, ParameterAscending, ParameterLabelSelector}, key) {
+		if !sliceutil.HasString([]string{
+			ParameterPage,
+			ParameterLimit,
+			ParameterOrderBy,
+			ParameterAscending,
+			ParameterLabelSelector,
+			ParameterFieldSelector,
+		}, key) {
 			// support multiple query condition
 			for _, value := range values {
 				query.Filters[Field(key)] = Value(value)

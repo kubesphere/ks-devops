@@ -193,10 +193,10 @@ func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.
 
 func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful.Response) {
 	devopsProject := request.PathParameter("devops")
-	limit, offset := params.ParsePaging(request)
+	queryParam := query.ParseQueryParameter(request)
 
 	if client, err := h.getDevOps(request); err == nil {
-		objs, err := client.ListPipelineObj(devopsProject, nil, nil, limit, offset)
+		objs, err := client.ListPipelineObj(devopsProject, queryParam)
 		if err != nil {
 			klog.Error(err)
 			if errors.IsNotFound(err) {

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"net/http"
 	"strings"
 
@@ -37,7 +38,6 @@ import (
 	//"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/constants"
 	"kubesphere.io/devops/pkg/models/devops"
-	"kubesphere.io/devops/pkg/server/params"
 )
 
 const jenkinsHeaderPre = "X-"
@@ -58,47 +58,60 @@ func (h *ProjectPipelineHandler) GetPipeline(req *restful.Request, resp *restful
 
 func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (api.ListResult, error) {
 	// this is a very trick way, but don't have a better solution for now
-	var (
-		start     int
-		limit     int
-		namespace string
-	)
+	var namespace string
 
 	// parse query from the request
-	pipelineFilter, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
+	nameReg, namespace := parseNameFilterFromQuery(req.QueryParameter("q"))
+
+	// compatible
+	queryParam := buildPipelineSearchQueryParam(req, nameReg)
 
 	// make sure we have an appropriate value
-	limit, start = params.ParsePaging(req)
-	return h.devopsOperator.ListPipelineObj(namespace, pipelineFilter, func(list []v1alpha3.Pipeline, i int, j int) bool {
-		return strings.Compare(strings.ToUpper(list[i].Name), strings.ToUpper(list[j].Name)) < 0
-	}, limit, start)
+	return h.devopsOperator.ListPipelineObj(namespace, queryParam)
 }
 
-func parseNameFilterFromQuery(query string) (filter devops.PipelineFilter, namespace string) {
-	var (
-		nameFilter string
-	)
+func buildPipelineSearchQueryParam(req *restful.Request, nameReg string) (q *query.Query) {
+	// for pagination compatibility
+	start := req.QueryParameter("start")
+	req.Request.Form.Set(query.ParameterPage, start)
 
+	q = query.ParseQueryParameter(req)
+
+	// for filter compatibility
+	if _, ok := q.Filters[query.FieldName]; !ok {
+		// set name filter by default
+		q.Filters[query.FieldName] = query.Value(nameReg)
+	}
+
+	// for compare compatibility
+	if len(req.QueryParameter(query.ParameterOrderBy)) == 0 {
+		// set sort by as name by default
+		q.SortBy = query.FieldName
+	}
+
+	// for ascending compatibility
+	if len(req.QueryParameter(query.ParameterAscending)) == 0 {
+		// set ascending as true by default
+		q.Ascending = true
+	}
+
+	return
+}
+
+func parseNameFilterFromQuery(query string) (nameReg, namespace string) {
 	for _, val := range strings.Split(query, ";") {
 		if strings.HasPrefix(val, "pipeline:") {
 			nsAndName := strings.TrimPrefix(val, "pipeline:")
 			filterMeta := strings.Split(nsAndName, "/")
 			if len(filterMeta) >= 2 {
 				namespace = filterMeta[0]
-				nameFilter = filterMeta[1] // the format is '*keyword*'
-				nameFilter = strings.TrimSuffix(nameFilter, "*")
-				nameFilter = strings.TrimPrefix(nameFilter, "*")
+				nameReg = filterMeta[1] // the format is '*keyword*'
+				nameReg = strings.TrimSuffix(nameReg, "*")
+				nameReg = strings.TrimPrefix(nameReg, "*")
 			} else if len(filterMeta) > 0 {
 				namespace = filterMeta[0]
 			}
 		}
-	}
-
-	filter = func(pipeline *v1alpha3.Pipeline) bool {
-		return strings.Contains(pipeline.Name, nameFilter)
-	}
-	if nameFilter == "" {
-		filter = nil
 	}
 	return
 }
@@ -117,7 +130,7 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 	}
 	pipelineMap := make(map[string]int, pipelineList.Total)
 	for i, _ := range objs.Items {
-		if pipeline, ok := objs.Items[i].(v1alpha3.Pipeline); !ok {
+		if pipeline, ok := objs.Items[i].(*v1alpha3.Pipeline); !ok {
 			continue
 		} else {
 			pipelineMap[pipeline.Name] = i
@@ -130,10 +143,10 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 
 	// get all pipelines which come from Jenkins
 	// fill out the rest fields
-	if query, err := jenkins.ParseJenkinsQuery(req.Request.URL.RawQuery); err == nil {
-		query.Set("limit", "10000")
-		query.Set("start", "0")
-		req.Request.URL.RawQuery = query.Encode()
+	if jenkinsQuery, err := jenkins.ParseJenkinsQuery(req.Request.URL.RawQuery); err == nil {
+		jenkinsQuery.Set("limit", "10000")
+		jenkinsQuery.Set("start", "0")
+		req.Request.URL.RawQuery = jenkinsQuery.Encode()
 	}
 	res, err := h.devopsOperator.ListPipelines(req.Request)
 	if err != nil {
