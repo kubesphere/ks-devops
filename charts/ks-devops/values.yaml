@@ -13,7 +13,7 @@ image:
   pullPolicy: IfNotPresent
 
 authentication:
-  # Leave
+  # If not set, jwt tools will generate and set it automatically
   jwtSecret: ""
 
 imagePullSecrets: []
