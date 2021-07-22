@@ -1,14 +1,16 @@
 replicaCount: 1
 
 image:
+  # support 'ghcr.io/kubesphere-sigs' or 'kubespheresig'
+  registry: ghcr.io/kubesphere-sigs
   controller:
-    repository: ghcr.io/kubesphere-sigs/devops-controller
+    repository: devops-controller
     tag: master
   apiserver:
-    repository: ghcr.io/kubesphere-sigs/devops-apiserver
+    repository: devops-apiserver
     tag: master
   tools:
-    repository: ghcr.io/kubesphere-sigs/devops-tools
+    repository: devops-tools
     tag: master
   pullPolicy: IfNotPresent
 
