@@ -12,6 +12,10 @@ image:
     tag: master
   pullPolicy: IfNotPresent
 
+authentication:
+  # Leave
+  jwtSecret: ""
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""

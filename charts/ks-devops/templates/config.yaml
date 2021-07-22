@@ -6,7 +6,7 @@ data:
       authenticateRateLimiterDuration: 10m0s
       loginHistoryRetentionPeriod: 168h
       maximumClockSkew: 10s
-      jwtSecret: "Z1TBo4jUSB5Rs6eyLqHSJ77GXtG8NhSP"
+      jwtSecret: {{ .Values.authentication.jwtSecret | quote }}
 
     ldap:
       host: openldap.kubesphere-system.svc:389
