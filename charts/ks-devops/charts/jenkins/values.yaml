@@ -453,4 +453,4 @@ securityRealm:
 
 ksAuth:
   enabled: false
-#  server:
+  server: ""

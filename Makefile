@@ -46,14 +46,15 @@ lint-chart:
 	helm lint charts/ks-devops
 
 install-chart: lint-chart
-	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
+	helm install ks-devops charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
 		--set image.pullPolicy=Always \
-		--set jenkins.ksAuth.enabled=true
+		--set jenkins.ksAuth.enabled=true \
+		--set jenkins.ksAuth.server=http://ks-devops-apiserver.kubesphere-devops-system:9090
 uninstall-chart:
 	make uninstall-jenkins-chart || true
-	helm uninstall ks-ctl -n kubesphere-devops-system
+	helm uninstall ks-devops -n kubesphere-devops-system
 render-chart:
-	helm template ks-ctl charts/ks-devops  -n kubesphere-devops-system \
+	helm template ks-devops charts/ks-devops  -n kubesphere-devops-system \
 		--set serviceAccount.create=true --create-namespace \
 		--set image.pullPolicy=Always \
 		--set jenkins.ksAuth.enabled=true --debug

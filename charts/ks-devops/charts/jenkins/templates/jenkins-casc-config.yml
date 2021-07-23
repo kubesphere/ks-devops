@@ -201,7 +201,7 @@ data:
           size: 20
           ttl: 300
         enabled: {{ .Values.ksAuth.enabled }}
-        server: "http://{{ .Release.Name }}-ks-devops-apiserver.{{ .Release.Namespace }}:9090/"
+        server: {{ .Values.ksAuth.server }}
       gitLabServers:
         servers:
         - name: "https://gitlab.com"
