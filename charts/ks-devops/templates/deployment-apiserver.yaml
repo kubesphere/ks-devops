@@ -39,6 +39,8 @@ spec:
             - /jwt
             - --output
             - configmap
+            - --namespace
+            - {{ .Release.Namespace }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
       containers:
         - name: {{ .Chart.Name }}
