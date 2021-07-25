@@ -400,6 +400,7 @@ Agent:
   # jenkins-agent: v1
 
   Builder:
+    # Available values: docker.io/kubesphere, docker.io/kubespheredev
     Registry: "docker.io/kubespheredev"
     Base:
       Image: builder-base

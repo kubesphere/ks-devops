@@ -22,4 +22,4 @@ The following tables list the configurable parameters of the s2i chart and their
 
 | Parameter      | Description                                                                                                | Default       |
 | -------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
-| image.registry | docker image registry related s2i. docker.io/kubespheredev, ghcr.io/kubespheredev or any other registrie | docker.io/kubespheredev |
+| image.registry | docker image registry related s2i. Available value: docker.io/kubespheredev                                | docker.io/kubespheredev |
