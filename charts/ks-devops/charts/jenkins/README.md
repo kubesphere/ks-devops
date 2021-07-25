@@ -94,7 +94,7 @@ The following tables list the configurable parameters of the Jenkins chart and t
 | `Agent.Privileged`          | Agent privileged container                                                                         | `false`                                                                      |
 | `Agent.resources`           | Resources allocation (Requests and Limits)                                                         | `{requests: {cpu: 200m, memory: 256Mi}, limits: {cpu: 200m, memory: 256Mi}}` |
 | `Agent.volumes`             | Additional volumes                                                                                 | `nil`                                                                        |
-| `Agent.Builder.Registry`    | Agent builder image registry with namespace. Like `ghcr.io/kubesphere` or `[docker.io/]kubesphere` | `kubespheredev`
+| `Agent.Builder.Registry`    | Agent builder image registry with namespace. Like `ghcr.io/kubesphere` or `docker.io/kubesphere` | `docker.io/kubespheredev`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
