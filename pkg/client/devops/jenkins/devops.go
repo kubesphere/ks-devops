@@ -15,10 +15,17 @@ package jenkins
 
 import (
 	"kubesphere.io/devops/pkg/client/devops"
+	"net/http"
 )
 
 func NewDevopsClient(options *Options) (devops.Interface, error) {
-	jenkins := CreateJenkins(nil, options.Host, options.MaxConnections, options.Username, options.Password)
+	// we have to create http client with no redirection
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	jenkins := CreateJenkins(client, options.Host, options.MaxConnections, options.Username, options.Password)
 
 	return jenkins, nil
 }

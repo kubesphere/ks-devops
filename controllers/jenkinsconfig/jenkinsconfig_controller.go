@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
+	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/informers"
 	"strconv"
@@ -33,6 +34,8 @@ type ControllerOptions struct {
 	NamespaceInformer corev1informer.NamespaceInformer
 
 	InformerFactory informers.InformerFactory
+
+	ConfigOperator devops.ConfigurationOperator
 }
 
 // Controller is used to maintain the state of the jenkins-casc-config ConfigMap.
@@ -44,6 +47,8 @@ type Controller struct {
 	limitRangeClient    v1core.LimitRangesGetter
 	resourceQuotaClient v1core.ResourceQuotasGetter
 	configMapClient     v1core.ConfigMapsGetter
+
+	configOperator devops.ConfigurationOperator
 
 	queue            workqueue.RateLimitingInterface
 	workerLoopPeriod time.Duration
@@ -64,6 +69,8 @@ func NewController(
 		limitRangeClient:    options.LimitRangeClient,
 		resourceQuotaClient: options.ResourceQuotaClient,
 		configMapClient:     options.ConfigMapClient,
+
+		configOperator: options.ConfigOperator,
 
 		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), jenkinsConfigName),
 		workerLoopPeriod: time.Second,
@@ -156,7 +163,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		klog.Error(err, "could not reconcile devopsProject")
 		utilruntime.HandleError(err)
 		return true
 	}
@@ -245,6 +251,14 @@ func (c *Controller) syncHandler(key string) error {
 		klog.Errorf("failed to update ConfigMap: %s/%s", namespace, configMapName)
 		return err
 	}
+
+	// Reload configuration
+	klog.V(5).Info("reloading devops configuration")
+	err = c.configOperator.ReloadConfiguration()
+	if err != nil {
+		return err
+	}
+	klog.V(5).Infof("reloaded devops configuration successfully")
 
 	return nil
 }
