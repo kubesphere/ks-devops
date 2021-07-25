@@ -31,7 +31,7 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "base"
-                  image: "{{ .Values.Agent.Builder.Base.Image }}:{{ .Values.Agent.Builder.Base.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Base.Image }}:{{ .Values.Agent.Builder.Base.Tag }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
@@ -65,7 +65,7 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "nodejs"
-                  image: "{{ .Values.Agent.Builder.NodeJs.Image }}:{{ .Values.Agent.Builder.NodeJs.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.NodeJs.Image }}:{{ .Values.Agent.Builder.NodeJs.Tag }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
@@ -105,7 +105,7 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "maven"
-                  image: "{{ .Values.Agent.Builder.Maven.Image }}:{{ .Values.Agent.Builder.Maven.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Maven.Image }}:{{ .Values.Agent.Builder.Maven.Tag }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
@@ -142,7 +142,7 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "go"
-                  image: "{{ .Values.Agent.Builder.Golang.Image }}:{{ .Values.Agent.Builder.Golang.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Golang.Image }}:{{ .Values.Agent.Builder.Golang.Tag }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
@@ -173,7 +173,7 @@ data:
                     mountPath: "/root/.sonar/cache"
                 yaml: "spec:\r\n  affinity:\r\n    nodeAffinity:\r\n      preferredDuringSchedulingIgnoredDuringExecution:\r\n      - weight: 1\r\n        preference:\r\n          matchExpressions:\r\n          - key: node-role.kubernetes.io/worker\r\n            operator: In\r\n            values:\r\n            - ci\r\n  tolerations:\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"NoSchedule\"\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"PreferNoSchedule\"\r\n  containers:\r\n  - name: \"go\"\r\n    resources:\r\n      requests:\r\n        ephemeral-storage: \"1Gi\"\r\n      limits:\r\n        ephemeral-storage: \"10Gi\"\r\n  securityContext:\r\n    fsGroup: 1000\r\n "
       securityRealm:
-      {{ if eq .Values.securityRealm.type "ldap" }}
+    {{ if eq .Values.securityRealm.type "ldap" }}
         ldap:
           configurations:
           - displayNameAttributeName: "uid"
@@ -189,9 +189,9 @@ data:
             server: "ldap://{{.Values.securityRealm.ldap.host }}"
           disableMailAddressResolver: false
           disableRolePrefixing: true
-      {{ else }}
+    {{ else }}
       authorizationStrategy: loggedInUsersCanDoAnything
-      {{end}}
+    {{end}}
 
     unclassified:
       location:
