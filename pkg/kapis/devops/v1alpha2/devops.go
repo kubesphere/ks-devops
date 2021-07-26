@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/apiserver/request"
 	"net/http"
 	"strings"
 
@@ -323,32 +324,32 @@ func (h *ProjectPipelineHandler) GetPipelineRunNodes(req *restful.Request, resp 
 // only the owner of this Pipeline can approve or reject it
 func (h *ProjectPipelineHandler) approvableCheck(nodes []clientDevOps.NodesDetail, pipe pipelineParam) {
 	var userInfo user.Info
-	//var ok bool
+	var ok bool
 	var isAdmin bool
 	// check if current user belong to the admin group, grant it if it's true
-	//if userInfo, ok = request.UserFrom(pipe.Context); ok {
-	//	createAuth := authorizer.AttributesRecord{
-	//		User:            userInfo,
-	//		Verb:            authorizer.VerbDelete,
-	//		Workspace:       pipe.Workspace,
-	//		DevOps:          pipe.ProjectName,
-	//		Resource:        "devopsprojects",
-	//		ResourceRequest: true,
-	//		ResourceScope:   request.DevOpsScope,
-	//	}
-	//
-	//	if decision, _, err := h.authorizer.Authorize(createAuth); err == nil {
-	//		isAdmin = decision == authorizer.DecisionAllow
-	//	} else {
-	//		// this is an expected case, printing the debug info for troubleshooting
-	//		klog.V(8).Infof("authorize failed with '%v', error is '%v'",
-	//			createAuth, err)
-	//	}
-	//} else {
-	//	klog.V(6).Infof("cannot get the current user when checking the approvable with pipeline '%s/%s'",
-	//		pipe.ProjectName, pipe.Name)
-	//	return
-	//}
+	if userInfo, ok = request.UserFrom(pipe.Context); ok {
+		//createAuth := authorizer.AttributesRecord{
+		//	User:            userInfo,
+		//	Verb:            authorizer.VerbDelete,
+		//	Workspace:       pipe.Workspace,
+		//	DevOps:          pipe.ProjectName,
+		//	Resource:        "devopsprojects",
+		//	ResourceRequest: true,
+		//	ResourceScope:   request.DevOpsScope,
+		//}
+		//
+		//if decision, _, err := h.authorizer.Authorize(createAuth); err == nil {
+		//	isAdmin = decision == authorizer.DecisionAllow
+		//} else {
+		//	// this is an expected case, printing the debug info for troubleshooting
+		//	klog.V(8).Infof("authorize failed with '%v', error is '%v'",
+		//		createAuth, err)
+		//}
+	} else {
+		klog.V(6).Infof("cannot get the current user when checking the approvable with pipeline '%s/%s'",
+			pipe.ProjectName, pipe.Name)
+		return
+	}
 
 	var createdByCurrentUser bool // indicate if the current user is the owner
 	if pipeline, err := h.devopsOperator.GetPipelineObj(pipe.ProjectName, pipe.Name); err == nil {
