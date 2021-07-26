@@ -18,6 +18,7 @@ package query
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 
@@ -78,4 +79,81 @@ func TestParseQueryParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPagination_GetValidPagination(t *testing.T) {
+	tests := []struct {
+		name       string
+		limit      int
+		offset     int
+		total      int
+		startIndex int
+		endIndx    int
+	}{
+		{
+			name:       "Valid pagination 1",
+			limit:      1,
+			offset:     0,
+			total:      1,
+			startIndex: 0,
+			endIndx:    1,
+		},
+		{
+			name:       "Valid pagination 3",
+			limit:      10,
+			offset:     1,
+			total:      20,
+			startIndex: 1,
+			endIndx:    11,
+		},
+		{
+			name:       "Invalid pagination 1",
+			limit:      1,
+			offset:     1,
+			total:      1,
+			startIndex: 1,
+			endIndx:    1,
+		},
+		{
+			name:       "Invalid pagination 2",
+			limit:      10,
+			offset:     10,
+			total:      10,
+			startIndex: 10,
+			endIndx:    10,
+		},
+		{
+			name:       "Unlimited: Offset = 0",
+			limit:      -1,
+			offset:     0,
+			total:      1000,
+			startIndex: 0,
+			endIndx:    1000,
+		},
+		{
+			name:       "Unlimited: Offset > 0",
+			limit:      -1,
+			offset:     10,
+			total:      5,
+			startIndex: 0,
+			endIndx:    0,
+		},
+		{
+			name:       "Unlimited: Offset > total",
+			limit:      -1,
+			offset:     10,
+			total:      5,
+			startIndex: 0,
+			endIndx:    0,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pagination := newPagination(test.limit, test.offset)
+			startIndex, endIndex := pagination.GetValidPagination(test.total)
+			assert.Equal(t, test.startIndex, startIndex)
+			assert.Equal(t, test.endIndx, endIndex)
+		})
+	}
+
 }
