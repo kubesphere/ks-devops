@@ -1,6 +1,6 @@
 Master:
   StatefulSet:
-    Enable: true
+    Enabled: false
     Replicas: 1
     # StatefulSetUpdateStrategy must be 'RollingUpdate' or 'OnDelete'
     UpdateStrategy: RollingUpdate

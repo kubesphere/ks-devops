@@ -1,4 +1,4 @@
-{{- if .Values.Master.StatefulSet.Enable }}
+{{- if .Values.Master.StatefulSet.Enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
