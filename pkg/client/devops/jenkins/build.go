@@ -398,19 +398,30 @@ func (b *Build) Poll(options ...interface{}) (int, error) {
 	return response.StatusCode, nil
 }
 
-func (j *Jenkins) GetProjectPipelineBuildByType(projectId, pipelineId string, status string) (*devops.Build, error) {
-	job, err := j.GetJob(pipelineId, projectId)
-	if err != nil {
-		return nil, restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+func (j *Jenkins) GetProjectPipelineBuildByType(projectId, pipelineId string, status string) (build *devops.Build, err error) {
+	var job *Job
+	if job, err = j.GetJob(pipelineId, projectId); err != nil {
+		err = restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+	} else {
+		build, err = getBuildByType(job, status)
 	}
-	build, err := job.getBuildByType(status)
-	return build.Raw, nil
+	return
 }
-func (j *Jenkins) GetMultiBranchPipelineBuildByType(projectId, pipelineId, branch string, status string) (*devops.Build, error) {
-	job, err := j.GetJob(branch, projectId, pipelineId)
-	if err != nil {
-		return nil, restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+
+func (j *Jenkins) GetMultiBranchPipelineBuildByType(projectId, pipelineId, branch string, status string) (build *devops.Build, err error) {
+	var job *Job
+	if job, err = j.GetJob(branch, projectId, pipelineId); err != nil {
+		err = restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+	} else {
+		build, err = getBuildByType(job, status)
 	}
-	build, err := job.getBuildByType(status)
-	return build.Raw, nil
+	return
+}
+
+func getBuildByType(job *Job, typeStr string) (build *devops.Build, err error) {
+	var jobBuild *Build
+	if jobBuild, err = job.getBuildByType(typeStr); err == nil {
+		build = jobBuild.Raw
+	}
+	return
 }
