@@ -253,12 +253,12 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	// Reload configuration
-	klog.V(5).Info("reloading devops configuration")
+	klog.V(5).Info("reloading Jenkins configuration")
 	err = c.configOperator.ReloadConfiguration()
 	if err != nil {
 		return err
 	}
-	klog.V(5).Infof("reloaded devops configuration successfully")
+	klog.V(5).Infof("reloaded Jenkins configuration successfully")
 
 	return nil
 }
