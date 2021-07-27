@@ -82,6 +82,9 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
 			NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			InformerFactory:   informerFactory,
+
+			ConfigOperator:  devopsClient,
+			ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 		}, s.JenkinsOptions)
 	}
 
