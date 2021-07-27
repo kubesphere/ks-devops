@@ -19,17 +19,19 @@ package jenkins
 import (
 	"fmt"
 	"kubesphere.io/devops/pkg/utils/reflectutils"
+	"time"
 
 	"github.com/spf13/pflag"
 )
 
 type Options struct {
-	Host            string `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
-	Username        string `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
-	Password        string `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
-	MaxConnections  int    `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
-	Namespace       string `json:"namespace,omitempty" yaml:"namespace"`
-	WorkerNamespace string `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
+	Host             string        `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
+	Username         string        `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
+	Password         string        `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
+	MaxConnections   int           `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
+	Namespace        string        `json:"namespace,omitempty" yaml:"namespace"`
+	WorkerNamespace  string        `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
+	ReloadCasCPeriod time.Duration `json:"reloadCasCPeriod,omitempty" yaml:"reloadCasCPeriod"`
 }
 
 // NewJenkinsOptions returns a `zero` instance
@@ -41,6 +43,10 @@ func NewJenkinsOptions() *Options {
 		MaxConnections:  100,
 		Namespace:       "kubesphere-devops-system",
 		WorkerNamespace: "kubesphere-devops-worker",
+		// Default syncFrequency of Kubernetes is "1m", and increasing it will result in longer refresh times for
+		// ConfigMap, so we use 70s as the default value of ReloadCasCPeriod. Please see also:
+		// https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
+		ReloadCasCPeriod: 70 * time.Second,
 	}
 }
 
@@ -87,4 +93,7 @@ func (s *Options) AddFlags(fs *pflag.FlagSet, c *Options) {
 
 	fs.StringVar(&s.Namespace, "namespace", c.Namespace, "Namespace where devops system is in.")
 	fs.StringVar(&s.WorkerNamespace, "worker-namespace", c.WorkerNamespace, "Namespace where Jenkins agent workers are in.")
+	fs.DurationVar(&s.ReloadCasCPeriod, "reload-casc-period", c.ReloadCasCPeriod,
+		"ReloadCasCPeriod specifies the total duration that controller should delay the reload action for "+
+			"jenkins-casc-config ConfigMap change, and it is only valid for controller manager. Default: \"70s\"")
 }
