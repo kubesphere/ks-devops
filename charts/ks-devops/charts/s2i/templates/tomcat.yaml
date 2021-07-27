@@ -15,13 +15,13 @@ metadata:
 
 spec:
   containerInfo:
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.tomcat85Java11.image.name }}:{{ .Values.tomcat85Java11.image.tag }}
-      runtimeImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.tomcat85Java11Runtime.image.name }}:{{ .Values.tomcat85Java11Runtime.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.tomcat85Java11.image.name }}:{{ .Values.tomcat85Java11.image.tag }}
+      runtimeImage: {{ .Values.image.registry }}/{{ .Values.tomcat85Java11Runtime.image.name }}:{{ .Values.tomcat85Java11Runtime.image.tag }}
       runtimeArtifacts:
         - source: "/deployments"
       buildVolumes: [ "s2i_java_cache:/tmp/artifacts" ]
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.tomcat85Java8.image.name }}:{{ .Values.tomcat85Java8.image.tag }}
-      runtimeImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.tomcat85Java8Runtime.image.name }}:{{ .Values.tomcat85Java8Runtime.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.tomcat85Java8.image.name }}:{{ .Values.tomcat85Java8.image.tag }}
+      runtimeImage: {{ .Values.image.registry }}/{{ .Values.tomcat85Java8Runtime.image.name }}:{{ .Values.tomcat85Java8Runtime.image.tag }}
       runtimeArtifacts:
         - source: "/deployments"
       buildVolumes: [ "s2i_java_cache:/tmp/artifacts" ]
@@ -142,7 +142,7 @@ spec:
       required: false
       defaultValue: ""
   codeFramework: java
-  defaultBaseImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.tomcat85Java8.image.name }}:{{ .Values.tomcat85Java8.image.tag }}
+  defaultBaseImage: {{ .Values.image.registry }}/{{ .Values.tomcat85Java8.image.name }}:{{ .Values.tomcat85Java8.image.tag }}
   version: 0.0.1
   description: "This is a builder template for Java builds whose result can be run directly with Tomcat application server."
   iconPath: assets/tomcat.png

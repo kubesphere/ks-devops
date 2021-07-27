@@ -14,13 +14,13 @@ metadata:
   name: java
 spec:
   containerInfo:
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.java8CentOs7.image.name }}:{{ .Values.java8CentOs7.image.tag }}
-      runtimeImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.java8Runtime.image.name }}:{{ .Values.java8Runtime.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.java8CentOs7.image.name }}:{{ .Values.java8CentOs7.image.tag }}
+      runtimeImage: {{ .Values.image.registry }}/{{ .Values.java8Runtime.image.name }}:{{ .Values.java8Runtime.image.tag }}
       runtimeArtifacts:
         - source: "/deployments"
       buildVolumes: [ "s2i_java_cache:/tmp/artifacts" ]
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.java11CentOs7.image.name }}:{{ .Values.java11CentOs7.image.tag }}
-      runtimeImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.java11Runtime.image.name }}:{{ .Values.java11Runtime.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.java11CentOs7.image.name }}:{{ .Values.java11CentOs7.image.tag }}
+      runtimeImage: {{ .Values.image.registry }}/{{ .Values.java11Runtime.image.name }}:{{ .Values.java11Runtime.image.tag }}
       runtimeArtifacts:
         - source: "/deployments"
       buildVolumes: [ "s2i_java_cache:/tmp/artifacts" ]
@@ -141,7 +141,7 @@ spec:
       required: false
       defaultValue: ""
   codeFramework: java
-  defaultBaseImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.java8CentOs7.image.name }}:{{ .Values.java8CentOs7.image.tag }}
+  defaultBaseImage: {{ .Values.image.registry }}/{{ .Values.java8CentOs7.image.name }}:{{ .Values.java8CentOs7.image.tag }}
   version: 0.0.1
   description: "This is a builder template for Java builds whose result can be run directly without any further application server.It's suited ideally for microservices with a flat classpath (including \"far jars\")"
   iconPath: assets/java.png

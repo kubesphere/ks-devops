@@ -400,17 +400,19 @@ Agent:
   # jenkins-agent: v1
 
   Builder:
+    # Available values: docker.io/kubesphere, docker.io/kubespheredev
+    Registry: "docker.io/kubespheredev"
     Base:
-      Image: kubespheredev/builder-base
+      Image: builder-base
       Tag: v3.1.0
     NodeJs:
-      Image: kubespheredev/builder-nodejs
+      Image: builder-nodejs
       Tag: v3.1.0
     Maven:
-      Image: kubespheredev/builder-maven
+      Image: builder-maven
       Tag: v3.1.0
     Golang:
-      Image: kubespheredev/builder-go
+      Image: builder-go
       Tag: v3.1.0
 
 Persistence:
