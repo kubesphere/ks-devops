@@ -37,7 +37,7 @@ type ControllerOptions struct {
 
 	ConfigOperator devops.ConfigurationOperator
 
-	ReloadCasCPeriod time.Duration
+	ReloadCasCDelay time.Duration
 }
 
 // Controller is used to maintain the state of the jenkins-casc-config ConfigMap.
@@ -54,7 +54,7 @@ type Controller struct {
 
 	queue            workqueue.RateLimitingInterface
 	workerLoopPeriod time.Duration
-	ReloadCasCPeriod time.Duration
+	ReloadCasCDelay  time.Duration
 
 	devopsOptions *jenkins.Options
 }
@@ -77,7 +77,7 @@ func NewController(
 
 		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), jenkinsConfigName),
 		workerLoopPeriod: time.Second,
-		ReloadCasCPeriod: options.ReloadCasCPeriod,
+		ReloadCasCDelay:  options.ReloadCasCDelay,
 
 		devopsOptions: devopsOptions,
 	}
@@ -257,8 +257,8 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	// Wait some period to reload
-	klog.V(5).Infof("waiting %s to reload Jenkins configuration", c.ReloadCasCPeriod.String())
-	time.Sleep(c.ReloadCasCPeriod)
+	klog.V(5).Infof("waiting %s to reload Jenkins configuration", c.ReloadCasCDelay.String())
+	time.Sleep(c.ReloadCasCDelay)
 
 	// Reload configuration
 	klog.V(5).Info("reloading Jenkins configuration")
