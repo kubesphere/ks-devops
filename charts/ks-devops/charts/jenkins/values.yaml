@@ -1,4 +1,11 @@
 Master:
+  StatefulSet:
+    Enabled: false
+    Replicas: 1
+    # StatefulSetUpdateStrategy must be 'RollingUpdate' or 'OnDelete'
+    UpdateStrategy: RollingUpdate
+    # Name of the Kubernetes scheduler to use
+    SchedulerName: ""
   Name: jenkins-master
   Image: "kubespheredev/ks-jenkins"
   ImageTag: "2.249.1"
