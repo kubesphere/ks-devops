@@ -463,3 +463,17 @@ securityRealm:
 ksAuth:
   enabled: false
 #  server:
+
+# Install service monitor
+prometheus:
+  namespace: ""
+  serviceMonitor:
+    disabled: false
+    labels: { }
+  prometheusRule:
+    disabled: false
+    labels:
+      custom-alerting-rule-level: cluster
+      role: thanos-alerting-rules
+      thanosruler: thanos-rule
+    alertRules: [ ]

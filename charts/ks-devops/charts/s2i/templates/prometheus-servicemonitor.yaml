@@ -1,0 +1,28 @@
+{{ if and (not .Values.prometheus.serviceMonitor.disabled) (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/ServiceMonitor") -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  {{- with .Values.prometheus.serviceMonitor.labels }}
+  labels:
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  name: s2i-operator
+  namespace: {{ .Values.prometheus.namespace | default "default"}}
+spec:
+  endpoints:
+    - honorLabels: true
+      interval: 1m
+      metricRelabelings:
+        - action: keep
+          regex: s2i_s2ibuilder_created
+          sourceLabels:
+            - __name__
+      port: http
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      app: s2i-metrics
+      control-plane: s2i-controller-manager
+  {{ end -}}

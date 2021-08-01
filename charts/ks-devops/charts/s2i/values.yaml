@@ -182,3 +182,9 @@ s2ioperator:
       p2hvkjDixDbGS3Svi45eEpBnIrcma+fanPKJCYUZbiRIoD+kA8Ss5mZgtah3LcrQ
       U8UUR60N6LJ52m2ik/zHh+p31ihhCz7F7JWq7itNpbjFcb9T6g==
       -----END CERTIFICATE-----
+
+prometheus:
+  namespace: ""
+  serviceMonitor:
+    disabled: false
+    labels: { }
