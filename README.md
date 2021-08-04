@@ -18,7 +18,7 @@ Want to go into deep? Please checkout the [documentation](docs).
 ### Install it as a Helm Chart
 
 First, please clone this git repository. Then run command: `make install-chart`
- - Because the default registry uses `ghcr.io/kubesphere-sigs`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheresig`
+ - Because the default registry uses `ghcr.io/kubesphere-sigs`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
 
 ### Run it locally
 
