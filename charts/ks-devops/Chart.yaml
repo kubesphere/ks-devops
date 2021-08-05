@@ -25,5 +25,10 @@ appVersion: 1.16.0
 dependencies:
   - name: jenkins
     version: 0.19.0
+    condition: charts.jenkins.enabled
   - name: s2i
     version: 1.16.0
+    condition: charts.s2i.enabled
+  - name: tekton-pipeline
+    version: 0.25.0
+    condition: charts.tekton.enabled

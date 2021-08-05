@@ -85,3 +85,11 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+charts:
+  jenkins:
+    enabled: true
+  s2i:
+    enabled: true
+  tekton:
+    enabled: false
