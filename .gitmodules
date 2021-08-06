@@ -1,0 +1,4 @@
+[submodule "pkg/client/devops/jenkins-cli"]
+  path = pkg/client/devops/jenkins-cli 
+  url = https://github.com/wxharry/jenkins-cli.git
+	branch = ks-devops

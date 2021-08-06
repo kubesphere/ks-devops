@@ -46,6 +46,7 @@ import (
 
 	kubesphereclient "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/client/devops/jclient"
 	devopsinformers "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha3"
 	devopslisters "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/constants"
@@ -269,7 +270,9 @@ func (c *Controller) syncHandler(key string) error {
 				klog.V(8).Info(fmt.Sprintf("nothing was changed, pipeline '%v'", copyPipeline.Spec))
 			}
 		} else {
-			_, err := c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
+			// _, err := c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
+			jcli := jclient.JenkinsClient{}
+			_, err = jcli.CreateProjectPipeline(nsName, copyPipeline)
 			if err != nil {
 				klog.V(8).Info(err, fmt.Sprintf("failed to create copyPipeline %s ", key))
 				return err
