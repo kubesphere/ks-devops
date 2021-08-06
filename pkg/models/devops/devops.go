@@ -341,7 +341,9 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		v1alpha3.SecretTypeSecretText,
 		v1alpha3.SecretTypeKubeConfig,
 	}
-	for _, credential := range credentialObjList.Items {
+	for i, _ := range credentialObjList.Items {
+		credential := credentialObjList.Items[i]
+
 		for _, credentialType := range credentialTypeList {
 			if credential.Type == credentialType {
 				result = append(result, &credential)
