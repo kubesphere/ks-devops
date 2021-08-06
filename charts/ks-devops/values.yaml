@@ -1,16 +1,22 @@
 replicaCount: 1
 
 image:
+  # support 'ghcr.io/kubesphere-sigs' or 'kubespheredev'
+  registry: ghcr.io/kubesphere-sigs
   controller:
-    repository: ghcr.io/linuxsuren/devops-controller
+    repository: devops-controller
     tag: master
   apiserver:
-    repository: ghcr.io/linuxsuren/devops-apiserver
+    repository: devops-apiserver
     tag: master
   tools:
-    repository: ghcr.io/linuxsuren/devops-tools
+    repository: devops-tools
     tag: master
   pullPolicy: IfNotPresent
+
+authentication:
+  # If not set, jwt tools will generate and set it automatically
+  jwtSecret: ""
 
 imagePullSecrets: []
 nameOverride: ""

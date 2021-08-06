@@ -12,10 +12,10 @@ metadata:
     devops.kubesphere.io/s2i-template-url: https://github.com/kubesphere/s2i-python-container
 spec:
   containerInfo:
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.python36CentOs7.image.name }}:{{ .Values.python36CentOs7.image.tag }}
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.python35CentOs7.image.name }}:{{ .Values.python35CentOs7.image.tag }}
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.python34CentOs7.image.name }}:{{ .Values.python34CentOs7.image.tag }}
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.python27CentOs7.image.name }}:{{ .Values.python27CentOs7.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.python36CentOs7.image.name }}:{{ .Values.python36CentOs7.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.python35CentOs7.image.name }}:{{ .Values.python35CentOs7.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.python34CentOs7.image.name }}:{{ .Values.python34CentOs7.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.python27CentOs7.image.name }}:{{ .Values.python27CentOs7.image.tag }}
   environment:
     - key: APP_SCRIPT
       type: string
@@ -79,7 +79,7 @@ spec:
       defaultValue: ""
       type: string
   codeFramework: python
-  defaultBaseImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.python36CentOs7.image.name }}:{{ .Values.python36CentOs7.image.tag }}
+  defaultBaseImage: {{ .Values.image.registry }}/{{ .Values.python36CentOs7.image.name }}:{{ .Values.python36CentOs7.image.tag }}
   version: 0.0.1
   description: "Python available as container is a base platform for building and running various Python applications and frameworks. Python is an easy to learn, powerful programming language. It has efficient high-level data structures and a simple but effective approach to object-oriented programming. Python's elegant syntax and dynamic typing, together with its interpreted nature, make it an ideal language for scripting and rapid application development in many areas on most platforms.
 

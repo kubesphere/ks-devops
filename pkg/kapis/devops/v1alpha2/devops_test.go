@@ -1,62 +1,50 @@
 package v1alpha2
 
 import (
-	"strings"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-
-	"kubesphere.io/devops/pkg/models/devops"
 )
 
 func TestParseNameFilterFromQuery(t *testing.T) {
 	table := []struct {
-		query           string
-		pipeline        *v1alpha3.Pipeline
-		expectFilter    devops.PipelineFilter
-		expectNamespace string
-		message         string
+		query                string
+		pipeline             *v1alpha3.Pipeline
+		expectNamespace      string
+		expectedPipelineName string
+		message              string
 	}{{
-		query:           "type:pipeline;organization:jenkins;pipeline:serverjkq4c/*",
-		pipeline:        &v1alpha3.Pipeline{},
-		expectFilter:    nil,
-		expectNamespace: "serverjkq4c",
-		message:         "query all pipelines with filter *",
+		query:                "type:pipeline;organization:jenkins;pipeline:serverjkq4c/*",
+		pipeline:             &v1alpha3.Pipeline{},
+		expectNamespace:      "serverjkq4c",
+		expectedPipelineName: "",
+		message:              "query all pipelines with filter *",
 	}, {
-		query:    "type:pipeline;organization:jenkins;pipeline:cccc/*abc*",
-		pipeline: &v1alpha3.Pipeline{},
-		expectFilter: func(pipeline *v1alpha3.Pipeline) bool {
-			return strings.Contains(pipeline.Name, "abc")
-		},
-		expectNamespace: "cccc",
-		message:         "query all pipelines with filter abc",
+		query:                "type:pipeline;organization:jenkins;pipeline:cccc/*abc*",
+		pipeline:             &v1alpha3.Pipeline{},
+		expectNamespace:      "cccc",
+		expectedPipelineName: "abc",
+		message:              "query all pipelines with filter abc",
 	}, {
-		query:           "type:pipeline;organization:jenkins;pipeline:pai-serverjkq4c/*",
-		pipeline:        &v1alpha3.Pipeline{},
-		expectFilter:    nil,
-		expectNamespace: "pai-serverjkq4c",
-		message:         "query all pipelines with filter *",
+		query:                "type:pipeline;organization:jenkins;pipeline:pai-serverjkq4c/*",
+		pipeline:             &v1alpha3.Pipeline{},
+		expectNamespace:      "pai-serverjkq4c",
+		expectedPipelineName: "",
+		message:              "query all pipelines with filter *",
 	}, {
-		query:           "type:pipeline;organization:jenkins;pipeline:defdef",
-		pipeline:        &v1alpha3.Pipeline{},
-		expectFilter:    nil,
-		expectNamespace: "defdef",
-		message:         "query all pipelines with filter *",
+		query:                "type:pipeline;organization:jenkins;pipeline:defdef",
+		pipeline:             &v1alpha3.Pipeline{},
+		expectNamespace:      "defdef",
+		expectedPipelineName: "",
+		message:              "query all pipelines with filter *",
 	}}
 
-	for i, item := range table {
-		filter, ns := parseNameFilterFromQuery(item.query)
-		if item.expectFilter == nil {
-			if filter != nil {
-				t.Fatalf("invalid filter, index: %d, message: %s", i, item.message)
-			}
-		} else {
-			if filter == nil || filter(item.pipeline) != item.expectFilter(item.pipeline) {
-				t.Fatalf("invalid filter, index: %d, message: %s", i, item.message)
-			}
-		}
-		if ns != item.expectNamespace {
-			t.Fatalf("invalid namespace, index: %d, message: %s", i, item.message)
-		}
+	for _, item := range table {
+		t.Run(item.message, func(t *testing.T) {
+			pipelineName, ns := parseNameFilterFromQuery(item.query)
+			assert.Equal(t, item.expectedPipelineName, pipelineName)
+			assert.Equal(t, item.expectNamespace, ns)
+		})
 	}
 }

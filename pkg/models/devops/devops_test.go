@@ -61,7 +61,7 @@ func TestGetNodesDetail(t *testing.T) {
 
 	devopsClient := fake.NewFakeDevops(fakeData)
 
-	devopsOperator := NewDevopsOperator(devopsClient, nil, nil, nil, nil)
+	devopsOperator := NewDevopsOperator(devopsClient, nil, nil)
 
 	httpReq, _ := http.NewRequest(http.MethodGet, baseUrl+"devops/project1/pipelines/pipeline1/runs/run1/nodesdetail/?limit=10000", nil)
 
@@ -113,7 +113,7 @@ func TestGetBranchNodesDetail(t *testing.T) {
 
 	devopsClient := fake.NewFakeDevops(fakeData)
 
-	devopsOperator := NewDevopsOperator(devopsClient, nil, nil, nil, nil)
+	devopsOperator := NewDevopsOperator(devopsClient, nil, nil)
 
 	httpReq, _ := http.NewRequest(http.MethodGet, baseUrl+"devops/project1/pipelines/pipeline1/branchs/branch1/runs/run1/nodesdetail/?limit=10000", nil)
 

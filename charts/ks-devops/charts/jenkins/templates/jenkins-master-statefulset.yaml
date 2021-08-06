@@ -1,6 +1,6 @@
-{{- if not .Values.Master.StatefulSet.Enabled }}
+{{- if .Values.Master.StatefulSet.Enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ template "jenkins.fullname" . }}
   labels:
@@ -8,10 +8,17 @@ metadata:
     release: {{ .Release.Name | quote }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     component: "{{ .Release.Name }}-{{ .Values.Master.Name }}"
+  {{- if .Values.Master.StatefulSet.StatefulSetAnnotations }}
+  annotations:
+{{ toYaml .Values.Master.StatefulSet.StatefulSetAnnotations | indent 4 }}
+  {{- end }}
 spec:
-  replicas: 1
-  strategy:
-    type: {{ if .Values.Persistence.Enabled }}Recreate{{ else }}RollingUpdate{{ end }}
+  serviceName: {{ template "jenkins.fullname" . }}
+  replicas: {{ default 1 .Values.Master.StatefulSet.Replicas }}
+  {{- if .Values.Master.StatefulSet.UpdateStrategy }}
+  updateStrategy:
+    type: {{ .Values.Master.StatefulSet.UpdateStrategy }}
+  {{- end }}
   selector:
     matchLabels:
       component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
@@ -22,38 +29,42 @@ spec:
         heritage: {{ .Release.Service | quote }}
         release: {{ .Release.Name | quote }}
         chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        component: "{{ .Release.Name }}-{{ .Values.Master.Component }}"
+        component: "{{ .Release.Name }}-{{ .Values.Master.Name }}"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
-        {{- if .Values.Master.PodAnnotations }}
-{{ toYaml .Values.Master.PodAnnotations | indent 8 }}
+        {{- if .Values.Master.StatefulSet.podAnnotations }}
+{{ toYaml .Values.Master.StatefulSet.podAnnotations | indent 8 }}
         {{- end }}
     spec:
-      {{- if .Values.Master.NodeSelector }}
+  {{- if .Values.Master.StatefulSet.SchedulerName }}
+      schedulerName: {{ .Values.Master.StatefulSet.SchedulerName }}
+  {{- end }}
+  {{- if .Values.Master.NodeSelector }}
       nodeSelector:
 {{ toYaml .Values.Master.NodeSelector | indent 8 }}
-      {{- end }}
-      {{- if .Values.Master.Tolerations }}
+  {{- end }}
+  {{- if .Values.Master.Tolerations }}
       tolerations:
 {{ toYaml .Values.Master.Tolerations | indent 8 }}
-      {{- end }}
-      {{- if .Values.Master.Affinity }}
+  {{- end }}
+  {{- if .Values.Master.Affinity }}
       affinity:
 {{ toYaml .Values.Master.Affinity | indent 8 }}
-      {{- end }}
-{{- if .Values.Master.UsePodSecurityContext }}
+  {{- end }}
+  {{- if .Values.Master.UsePodSecurityContext }}
       securityContext:
         runAsUser: {{ default 0 .Values.Master.RunAsUser }}
-{{- if and (.Values.Master.RunAsUser) (.Values.Master.FsGroup) }}
-{{- if not (eq .Values.Master.RunAsUser 0.0) }}
+        {{- if and (.Values.Master.RunAsUser) (.Values.Master.FsGroup) }}
+        {{- if not (eq .Values.Master.RunAsUser 0.0) }}
         fsGroup: {{ .Values.Master.FsGroup }}
-{{- end }}
-{{- end }}
-{{- end }}
+        runAsNonRoot: true
+        {{- end }}
+        {{- end }}
+  {{- end }}
       serviceAccountName: {{ if .Values.rbac.install }}{{ template "jenkins.fullname" . }}{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
 {{- if .Values.Master.HostNetworking }}
       hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet 
+      dnsPolicy: ClusterFirstWithHostNet
 {{- end }}
       initContainers:
         - name: "copy-default-config"
@@ -111,7 +122,7 @@ spec:
           image: "{{ .Values.Master.Image }}:{{ .Values.Master.ImageTag }}"
           imagePullPolicy: "{{ .Values.Master.ImagePullPolicy }}"
           {{- if .Values.Master.UseSecurity }}
-          args: [ "--argumentsRealm.passwd.$(ADMIN_USER)=$(ADMIN_PASSWORD)",  "--argumentsRealm.roles.$(ADMIN_USER)=admin"]
+          args: [ "--argumentsRealm.passwd.$(ADMIN_USER)=$(ADMIN_PASSWORD)",  "--argumentsRealm.roles.$(ADMIN_USER)=admin" ]
           {{- end }}
           env:
             - name: JAVA_TOOL_OPTIONS
@@ -142,7 +153,7 @@ spec:
             - containerPort: {{ .Values.Master.JMXPort }}
               name: jmx
             {{- end }}
-{{- if .Values.Master.HealthProbes }}
+  {{- if .Values.Master.HealthProbes }}
           livenessProbe:
             httpGet:
               path: "{{ default "" .Values.Master.JenkinsUriPrefix }}/login"
@@ -155,85 +166,96 @@ spec:
               path: "{{ default "" .Values.Master.JenkinsUriPrefix }}/login"
               port: http
             initialDelaySeconds: {{ .Values.Master.HealthProbesReadinessTimeout }}
-{{- end }}
-          # Resources configuration is a little hacky. This was to prevent breaking
-          # changes, and should be cleanned up in the future once everybody had
-          # enough time to migrate.
+  {{- end }}
           resources:
-{{ if or .Values.Master.Cpu .Values.Master.Memory }}
+  {{ if or .Values.Master.Cpu .Values.Master.Memory }}
             requests:
               cpu: "{{ .Values.Master.Cpu }}"
               memory: "{{ .Values.Master.Memory }}"
-{{ else }}
+  {{ else }}
 {{ toYaml .Values.Master.resources | indent 12 }}
-{{ end }}
+  {{ end }}
           volumeMounts:
-{{- if .Values.Persistence.mounts }}
+  {{- if .Values.Persistence.mounts }}
 {{ toYaml .Values.Persistence.mounts | indent 12 }}
-{{- end }}
+  {{- end }}
             -
               mountPath: /var/jenkins_home
+              {{- if .Values.Persistence.ExistingClaim }}
+              name: {{ .Values.Persistence.ExistingClaim }}
+              {{- else }}
               name: jenkins-home
+              {{- end }}
               readOnly: false
             -
               mountPath: /var/jenkins_config
               name: jenkins-config
               readOnly: true
-            {{- if .Values.Master.CredentialsXmlSecret }}
+              {{- if .Values.Master.CredentialsXmlSecret }}
             -
               mountPath: /var/jenkins_credentials
               name: jenkins-credentials
               readOnly: true
-            {{- end }}
-            {{- if .Values.Master.SecretsFilesSecret }}
+              {{- end }}
+              {{- if .Values.Master.SecretsFilesSecret }}
             -
               mountPath: /var/jenkins_secrets
               name: jenkins-secrets
               readOnly: true
-            {{- end }}
-            {{- if .Values.Master.Jobs }}
+              {{- end }}
+              {{- if .Values.Master.Jobs }}
             -
               mountPath: /var/jenkins_jobs
               name: jenkins-jobs
               readOnly: true
-            {{- end }}
+              {{- end }}
             -
               mountPath: /usr/share/jenkins/ref/secrets/
               name: secrets-dir
               readOnly: false
       volumes:
-{{- if .Values.Persistence.volumes }}
+  {{- if .Values.Persistence.volumes }}
 {{ toYaml .Values.Persistence.volumes | indent 6 }}
-{{- end }}
+  {{- end }}
       - name: jenkins-config
         configMap:
           name: {{ template "jenkins.fullname" . }}
-      {{- if .Values.Master.CredentialsXmlSecret }}
+  {{- if .Values.Master.CredentialsXmlSecret }}
       - name: jenkins-credentials
         secret:
           secretName: {{ .Values.Master.CredentialsXmlSecret }}
-      {{- end }}
-      {{- if .Values.Master.SecretsFilesSecret }}
+  {{- end }}
+  {{- if .Values.Master.SecretsFilesSecret }}
       - name: jenkins-secrets
         secret:
           secretName: {{ .Values.Master.SecretsFilesSecret }}
-      {{- end }}
-      {{- if .Values.Master.Jobs }}
+  {{- end }}
+  {{- if .Values.Master.Jobs }}
       - name: jenkins-jobs
         configMap:
           name: {{ template "jenkins.fullname" . }}-jobs
-      {{- end }}
+  {{- end }}
       - name: secrets-dir
         emptyDir: {}
+  {{- if .Values.Persistence.Enabled }}
       - name: jenkins-home
-      {{- if .Values.Persistence.Enabled }}
         persistentVolumeClaim:
           claimName: {{ .Values.Persistence.ExistingClaim | default (include "jenkins.fullname" .) }}
-      {{- else }}
-        emptyDir: {}
-      {{- end -}}
-{{- if .Values.Master.ImagePullSecret }}
+  {{- end -}}
+  {{- if .Values.Master.ImagePullSecret }}
       imagePullSecrets:
       - name: {{ .Values.Master.ImagePullSecret }}
-{{- end -}}
+  {{- end -}}
+  {{- if and (not .Values.Persistence.Enabled) .Values.Persistence.ExistingClaim }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .Values.Persistence.ExistingClaim }}
+      # annotations:
+      #   volume.beta.kubernetes.io/storage-class: anything
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  {{- end -}}
 {{- end -}}

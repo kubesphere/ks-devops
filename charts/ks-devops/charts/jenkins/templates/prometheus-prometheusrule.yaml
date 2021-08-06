@@ -1,0 +1,53 @@
+{{ if and (not .Values.prometheus.prometheusRule.disabled) (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/PrometheusRule") }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  {{- with .Values.prometheus.prometheusRule.labels }}
+  labels:
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  name: {{ template "jenkins.fullname" . }}-rules
+  namespace: {{ .Values.prometheus.namespace | default "default"}}
+spec:
+  groups:
+    - name: {{ template "jenkins.fullname" . }}.jenkins.rules
+      rules:
+        - alert: jenkins-cpu-overcommit
+          annotations:
+            summary: {{`Jenkins({{ $labels.instance }}) process has overcommitted CPU resource requests.`}}
+          expr: >
+            sum(rate(process_cpu_seconds_total{container="{{ template "jenkins.fullname" . }}", namespace="{{ .Release.Namespace }}"}[5m])) by (container, instance) > 0.8
+          for: 5m
+          labels:
+            alerttype: metric
+            severity: warning
+        - alert: jenkins-down
+          annotations:
+            message: Jenkins has disppeared from Prometheus target discovery.
+          expr: absent(default_jenkins_up)
+          for: 5m
+          labels:
+            alerttype: metric
+            severity: critical
+        - alert: jenkins-too-many-stuck-jobs
+          annotations:
+            summary: Jenkins has too many stuck jobs.
+            message: {{`Jenkins has more than 10 stuck jobs({{ $value | humanize }}) in the past 5 minutes. Please have an inspection about jenkins.`}}
+          expr: avg_over_time(jenkins_queue_size_value[5m]) > 10
+          for: 5m
+          labels:
+            alerttype: metric
+            severity: warning
+        - alert: jenkins-too-many-failure-jobs
+          annotations:
+            summary: Jenkins has too many failed jobs.
+            message: {{`Jenkins has more than 5 failed jobs({{ $value | humanize }}) in the past 5 minutes.`}}
+          expr: increase(jenkins_runs_failure_total{namespace='{{ .Release.Namespace }}', container='{{ template "jenkins.fullname" . }}', job='{{ template "jenkins.fullname" }}'}[5m]) > 5
+          for: 5m
+          labels:
+            alerttype: metric
+            severity: warning
+  {{- with .Values.prometheus.prometheusRule.alertRules }}
+  {{- toYaml . | nindent 8 }}
+  {{- end }}
+  {{ end -}}

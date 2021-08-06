@@ -18,6 +18,7 @@ Want to go into deep? Please checkout the [documentation](docs).
 ### Install it as a Helm Chart
 
 First, please clone this git repository. Then run command: `make install-chart`
+ - Because the default registry uses `ghcr.io/kubesphere-sigs`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
 
 ### Run it locally
 
@@ -57,11 +58,13 @@ make uninstall
 For example, you can access an API like:
 
 ```shell script
-curl -H "Authorization: bearer xxxx" \
+curl -H "X-Authorization: Bearer xxxx" \
   http://localhost:9090/kapis/devops.kubesphere.io/v1alpha3/devops/testblpsz/pipelines
 ```
 
 > Please get a token from Kubernetes cluster, and replace `xxxx` with it.
+
+If you want to see ks-devops postman API collection , please visit **[ks-devops postman](https://www.postman.com/ks-devops/workspace/kubesphere-devops)**
 
 ## Code contribution
 
@@ -93,5 +96,14 @@ golangci-lint run controllers/jenkinsconfig
 [octant-ks-devops](https://github.com/LinuxSuRen/octant-ks-devops) is a plugin of [octant](https://github.com/vmware-tanzu/octant/).
 It provides a dashboard for Kubernetes and ks-devops.
 
+## Available communication channels:
+
+- [KubeSphere Devops google group](https://groups.google.com/g/kubesphere-sig-devops/)
+- [DevOps Slack channel for English speakers](https://kubesphere.slack.com/archives/C010TH02010)
+- [DevOps Slack channel for Chinese speakers](https://kubesphere.slack.com/archives/C026V4FBWBW)
+- [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
+- [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
+
 ## License
+
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_large)

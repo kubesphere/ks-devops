@@ -52,12 +52,12 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
 	ws := runtime.NewWebService(GroupVersion)
 
-	err := AddPipelineToWebService(ws, devopsClient, ksInformers, k8sClient)
+	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
 	if err != nil {
 		return err
 	}
 
-	err = AddSonarToWebService(ws, devopsClient, sonarqubeClient, k8sClient)
+	err = addSonarqubeToWebService(ws, devopsClient, sonarqubeClient, k8sClient)
 	if err != nil {
 		return err
 	}
@@ -76,12 +76,11 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 	return nil
 }
 
-func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface,
-	ksInformers externalversions.SharedInformerFactory, k8sClient k8s.Client) error {
+func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, k8sClient k8s.Client) error {
 	projectPipelineEnable := devopsClient != nil
 
 	if projectPipelineEnable {
-		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, ksInformers, k8sClient)
+		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient)
 
 		webservice.Route(webservice.GET("/devops/{devops}/credentials/{credential}/usage").
 			To(projectPipelineHandler.GetProjectCredentialUsage).
@@ -634,33 +633,6 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Reads(devops.ReqJenkinsfile{}).
 			Returns(http.StatusOK, api.StatusOK, map[string]interface{}{}).
 			Writes(map[string]interface{}{}))
-	}
-	return nil
-}
-
-func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.Interface, sonarClient sonarqube.SonarInterface,
-	k8sClient k8s.Client) error {
-	sonarEnable := devopsClient != nil && sonarClient != nil
-	if sonarEnable {
-		sonarHandler := NewPipelineSonarHandler(devopsClient, sonarClient, k8sClient)
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/sonarstatus").
-			To(sonarHandler.GetPipelineSonarStatusHandler).
-			Doc("Get the sonar quality information for the specified pipeline of the DevOps project. More info: https://docs.sonarqube.org/7.4/user-guide/metric-definitions/").
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
-			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
-			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
-			Writes([]sonarqube.SonarStatus{}))
-
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus").
-			To(sonarHandler.GetMultiBranchesPipelineSonarStatusHandler).
-			Doc("Get the sonar quality check information for the specified pipeline branch of the DevOps project. More info: https://docs.sonarqube.org/7.4/user-guide/metric-definitions/").
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
-			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
-			Param(webservice.PathParameter("branch", "branch name, e.g. master")).
-			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
-			Writes([]sonarqube.SonarStatus{}))
 	}
 	return nil
 }

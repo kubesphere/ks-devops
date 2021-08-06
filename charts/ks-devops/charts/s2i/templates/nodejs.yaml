@@ -12,9 +12,9 @@ metadata:
   name: nodejs
 spec:
   containerInfo:
-     - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.nodejs8CentOs7.image.name }}:{{ .Values.nodejs8CentOs7.image.tag }}
-     - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.nodejs6CentOs7.image.name }}:{{ .Values.nodejs6CentOs7.image.tag }}
-     - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.nodejs4CentOs7.image.name }}:{{ .Values.nodejs4CentOs7.image.tag }}
+     - builderImage: {{ .Values.image.registry }}/{{ .Values.nodejs8CentOs7.image.name }}:{{ .Values.nodejs8CentOs7.image.tag }}
+     - builderImage: {{ .Values.image.registry }}/{{ .Values.nodejs6CentOs7.image.name }}:{{ .Values.nodejs6CentOs7.image.tag }}
+     - builderImage: {{ .Values.image.registry }}/{{ .Values.nodejs4CentOs7.image.name }}:{{ .Values.nodejs4CentOs7.image.tag }}
   environment:
     - key: NODE_ENV
       type: string
@@ -57,7 +57,7 @@ spec:
       required: false
       defaultValue: ""
   codeFramework: nodejs
-  defaultBaseImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.nodejs8CentOs7.image.name }}:{{ .Values.nodejs8CentOs7.image.tag }}
+  defaultBaseImage: {{ .Values.image.registry }}/{{ .Values.nodejs8CentOs7.image.name }}:{{ .Values.nodejs8CentOs7.image.tag }}
   version: 0.0.1
   description: "Node.js available as container is a base platform for building and running various Node.js applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices."
   iconPath: assets/nodejs.png
