@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"path/filepath"
 	"testing"
 
@@ -43,7 +44,7 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 
 // Disable this test because it depends on etcd.
-func testAPIs(t *testing.T) {
+func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
@@ -68,6 +69,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = devopsv1alpha4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
