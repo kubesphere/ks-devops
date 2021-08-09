@@ -226,7 +226,7 @@ func (j *Jenkins) CreateCredentialInProject(projectId string, credential *v1.Sec
 		return "", restful.NewError(http.StatusBadRequest, err.Error())
 	}
 
-	response, err := j.Requester.Post(
+	response, err := j.Requester.PostForm(
 		fmt.Sprintf("/job/%s/credentials/store/folder/domain/_/createCredentials", projectId),
 		nil, &responseString, map[string]string{
 			"json": makeJson(map[string]interface{}{
@@ -237,7 +237,7 @@ func (j *Jenkins) CreateCredentialInProject(projectId string, credential *v1.Sec
 		return "", err
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusFound {
 		return "", errors.New(strconv.Itoa(response.StatusCode))
 	}
 	return credential.Name, nil
@@ -264,7 +264,7 @@ func (j *Jenkins) UpdateCredentialInProject(projectId string, credential *v1.Sec
 		klog.Errorf("%+v", err)
 		return "", restful.NewError(http.StatusBadRequest, err.Error())
 	}
-	response, err := j.Requester.Post(
+	response, err := j.Requester.PostForm(
 		fmt.Sprintf("/job/%s/credentials/store/folder/domain/_/credential/%s/updateSubmit", projectId, credential.Name),
 		nil, nil, map[string]string{
 			"json": requestContent,
@@ -272,7 +272,7 @@ func (j *Jenkins) UpdateCredentialInProject(projectId string, credential *v1.Sec
 	if err != nil {
 		return "", err
 	}
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusFound {
 		return "", errors.New(strconv.Itoa(response.StatusCode))
 	}
 	return credential.Name, nil
