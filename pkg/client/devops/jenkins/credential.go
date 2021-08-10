@@ -237,9 +237,9 @@ func (j *Jenkins) CreateCredentialInProject(projectId string, credential *v1.Sec
 		return "", err
 	}
 
-	// the jenkins api `/job/{projectId}/credentials/store/folder/domain/_/createCredentials`
-	// under a special version of jenkins, the response status code is `http.StatusFound`
-	// In order to be applicable to multiple versions of jenkins,
+	// the Jenkins API `/job/{jobName}/credentials/store/folder/domain/_/createCredentials`
+	// under a special version of Jenkins, the response status code is `http.StatusFound`
+	// In order to be applicable to multiple versions of Jenkins,
 	// here you need to verify `http.StatusOK` and `http.StatusFound`
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusFound {
 		return "", errors.New(strconv.Itoa(response.StatusCode))
@@ -277,9 +277,9 @@ func (j *Jenkins) UpdateCredentialInProject(projectId string, credential *v1.Sec
 		return "", err
 	}
 
-	// the jenkins api `/job/{projectId}/credentials/store/folder/domain/_/credential/{credential.Name}/updateSubmit`
-	// under a special version of jenkins, the response status code is `http.StatusFound`
-	// In order to be applicable to multiple versions of jenkins,
+	// the Jenkins API `/job/{jobName}/credentials/store/folder/domain/_/credential/{credentialName}/updateSubmit`
+	// under a special version of Jenkins, the response status code is `http.StatusFound`
+	// In order to be applicable to multiple versions of Jenkins,
 	// here you need to verify `http.StatusOK` and `http.StatusFound`
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusFound {
 		return "", errors.New(strconv.Itoa(response.StatusCode))
