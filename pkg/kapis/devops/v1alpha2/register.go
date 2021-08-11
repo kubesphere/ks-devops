@@ -50,14 +50,30 @@ var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"
 func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
 	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
-	ws := runtime.NewWebService(GroupVersion)
+	wsWithGroup := runtime.NewWebService(GroupVersion)
+	// the API endpoint with group version will be removed in the future release
+	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
+		s3Client, endpoint, k8sClient, wsWithGroup); err != nil {
+		return err
+	}
 
+	ws := runtime.NewWebServiceWithoutGroup(GroupVersion)
+	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
+		s3Client, endpoint, k8sClient, ws); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addToContainerWithWebService(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
+	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, ws *restful.WebService) error {
 	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
 	if err != nil {
 		return err
 	}
 
-	err = AddSonarToWebService(ws, devopsClient, sonarqubeClient, k8sClient)
+	err = addSonarqubeToWebService(ws, devopsClient, sonarqubeClient, k8sClient)
 	if err != nil {
 		return err
 	}
@@ -633,33 +649,6 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Reads(devops.ReqJenkinsfile{}).
 			Returns(http.StatusOK, api.StatusOK, map[string]interface{}{}).
 			Writes(map[string]interface{}{}))
-	}
-	return nil
-}
-
-func AddSonarToWebService(webservice *restful.WebService, devopsClient devops.Interface, sonarClient sonarqube.SonarInterface,
-	k8sClient k8s.Client) error {
-	sonarEnable := devopsClient != nil && sonarClient != nil
-	if sonarEnable {
-		sonarHandler := NewPipelineSonarHandler(devopsClient, sonarClient, k8sClient)
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/sonarstatus").
-			To(sonarHandler.GetPipelineSonarStatusHandler).
-			Doc("Get the sonar quality information for the specified pipeline of the DevOps project. More info: https://docs.sonarqube.org/7.4/user-guide/metric-definitions/").
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
-			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
-			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
-			Writes([]sonarqube.SonarStatus{}))
-
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus").
-			To(sonarHandler.GetMultiBranchesPipelineSonarStatusHandler).
-			Doc("Get the sonar quality check information for the specified pipeline branch of the DevOps project. More info: https://docs.sonarqube.org/7.4/user-guide/metric-definitions/").
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
-			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-			Param(webservice.PathParameter("pipeline", "the name of pipeline, e.g. sample-pipeline")).
-			Param(webservice.PathParameter("branch", "branch name, e.g. master")).
-			Returns(http.StatusOK, api.StatusOK, []sonarqube.SonarStatus{}).
-			Writes([]sonarqube.SonarStatus{}))
 	}
 	return nil
 }

@@ -438,8 +438,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: S2IIMAGENAME
-              value: "{{ template "s2i.imagePrefix" . }}/{{ .Values.s2irun.image.name }}:{{ .Values.s2irun.image.tag }}"
-          image: "{{ template "s2i.imagePrefix" . }}/{{ .Values.s2ioperator.image.name }}:{{ .Values.s2ioperator.image.tag }}"
+              value: "{{ .Values.image.registry }}/{{ .Values.s2irun.image.name }}:{{ .Values.s2irun.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.s2ioperator.image.name }}:{{ .Values.s2ioperator.image.tag }}"
           imagePullPolicy: IfNotPresent
           name: manager
           ports:

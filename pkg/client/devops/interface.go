@@ -36,6 +36,8 @@ type Interface interface {
 	ProjectOperator
 
 	RoleOperator
+
+	ConfigurationOperator
 }
 
 func GetDevOpsStatusCode(devopsErr error) int {

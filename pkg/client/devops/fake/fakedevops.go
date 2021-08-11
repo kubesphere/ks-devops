@@ -598,3 +598,7 @@ func (d *Devops) DeleteUserInProject(sid string) error {
 func (d *Devops) GetGlobalRole(roleName string) (string, error) {
 	return "", nil
 }
+
+func (d *Devops) ReloadConfiguration() error {
+	return nil
+}

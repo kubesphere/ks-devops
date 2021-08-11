@@ -341,7 +341,9 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		v1alpha3.SecretTypeSecretText,
 		v1alpha3.SecretTypeKubeConfig,
 	}
-	for _, credential := range credentialObjList.Items {
+	for i, _ := range credentialObjList.Items {
+		credential := credentialObjList.Items[i]
+
 		for _, credentialType := range credentialTypeList {
 			if credential.Type == credentialType {
 				result = append(result, &credential)
@@ -541,7 +543,8 @@ func (d devopsOperator) GetNodesDetail(projectName, pipelineName, runId string, 
 	for i, v := range respNodes {
 		wg.Add(1)
 		go func(nodeId string, index int) {
-			Steps, err := d.GetNodeSteps(projectName, pipelineName, runId, nodeId, req)
+			// We have to clone the request to prevent concurrent header writes in the next process
+			Steps, err := d.GetNodeSteps(projectName, pipelineName, runId, nodeId, req.Clone(context.TODO()))
 			if err != nil {
 				klog.Error(err)
 				return

@@ -1,0 +1,24 @@
+{{ if and (not .Values.prometheus.serviceMonitor.disabled) (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/ServiceMonitor") -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  {{- with .Values.prometheus.serviceMonitor.labels }}
+  labels:
+  {{- toYaml . | nindent 4}}
+  {{- end}}
+  name: {{ template "jenkins.fullname" . }}
+  namespace: {{ .Values.prometheus.namespace | default "default" }}
+spec:
+  endpoints:
+    - honorLabels: true
+      interval: 1m
+      port: http
+      path: /prometheus/
+  jobLabel: {{ template "jenkins.fullname" .}}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      app: {{ template "jenkins.fullname" . }}
+  {{ end -}}

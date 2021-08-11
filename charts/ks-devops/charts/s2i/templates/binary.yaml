@@ -12,7 +12,7 @@ metadata:
   name: binary
 spec:
   containerInfo:
-    - builderImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.binary.image.name }}:{{ .Values.binary.image.tag }}
+    - builderImage: {{ .Values.image.registry }}/{{ .Values.binary.image.name }}:{{ .Values.binary.image.tag }}
   environment:
     - key: ARGS
       type: string
@@ -20,7 +20,7 @@ spec:
       required: false
       defaultValue: ""
   codeFramework: binary
-  defaultBaseImage: {{ template "s2i.imagePrefix" . }}/{{ .Values.binary.image.name }}:{{ .Values.binary.image.tag }}
+  defaultBaseImage: {{ .Values.image.registry }}/{{ .Values.binary.image.name }}:{{ .Values.binary.image.tag }}
   version: 0.0.1
   description: "This is a builder template for binary build"
   iconPath: assets/binary.png
