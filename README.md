@@ -104,6 +104,10 @@ It provides a dashboard for Kubernetes and ks-devops.
 - [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
 
+## Additional links 
+
+- [collection of KubeSphere Devops related projects](docs/projects.md)
+
 ## License
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_large)
