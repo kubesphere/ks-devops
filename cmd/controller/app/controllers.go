@@ -25,6 +25,8 @@ import (
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
+	tPipeline "kubesphere.io/devops/controllers/tekton/pipeline"
+	tPipelineRun "kubesphere.io/devops/controllers/tekton/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -86,6 +88,22 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			ConfigOperator:  devopsClient,
 			ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 		}, s.JenkinsOptions)
+
+		// add tekton pipeline controller
+		if err := (&tPipeline.PipelineReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
+		}
+
+		// add tekton pipelinerun controller
+		if err := (&tPipelineRun.PipelineRunReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
+		}
 	}
 
 	controllers := map[string]manager.Runnable{

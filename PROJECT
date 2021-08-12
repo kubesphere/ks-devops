@@ -2,9 +2,12 @@ domain: kubesphere.io
 repo: kubesphere.io/devops
 resources:
 - group: devops
-  kind: Pipeline
-  version: v1alpha3
-- group: devops
   kind: Fake
   version: v1alpha3
+- group: devops
+  kind: Pipeline
+  version: v2alpha1
+- group: devops
+  kind: PipelineRun
+  version: v2alpha1
 version: "2"
