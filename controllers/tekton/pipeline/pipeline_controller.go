@@ -20,12 +20,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -35,7 +35,6 @@ import (
 // PipelineReconciler reconciles a Pipeline object
 type PipelineReconciler struct {
 	client.Client
-	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
@@ -54,18 +53,19 @@ type PipelineReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	_ = r.Log.WithValues("pipelinerun", req.NamespacedName)
+
+	klog.Info(fmt.Sprintf("req: %v", req))
 
 	// get cr by its name
 	pipeline := &devopsv2alpha1.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
-		r.Log.Error(err, "unable to fetch pipeline crd resources")
+		klog.Error(err, "unable to fetch pipeline crd resources")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// translate our pipeline CRD to tekton CRDs, e.g. Task, Pipeline, PipelineResource
-	if err := r.reconcileTektonCrd(ctx, pipeline); err != nil {
-		r.Log.Error(err, "unable to reconcile tekton crd resources")
+	if err := r.reconcileTektonCrd(ctx, req.Namespace, pipeline); err != nil {
+		klog.Error(err, "unable to reconcile tekton crd resources")
 		return ctrl.Result{}, err
 	}
 
@@ -80,22 +80,22 @@ func (r *PipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // reconcileTektonCrd translates our Pipeline CRD to Tekton CRDs
-func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	// print the pipeline name and the number of its tasks.
-	r.Log.Info(fmt.Sprintf("Pipeline name: %s\tTask num: %d", pipeline.Name, len(pipeline.Spec.Tasks)))
+	klog.Info(fmt.Sprintf("Pipeline name: %s\tTask num: %d", pipeline.Name, len(pipeline.Spec.Tasks)))
 
 	// translate tasks included in the pipeline to Tekton Tasks
-	r.Log.Info("Going to translate tasks included in the pipeline to Tekton Tasks.")
+	klog.Info("Going to translate tasks included in the pipeline to Tekton Tasks.")
 	for _, task := range pipeline.Spec.Tasks {
-		if err := r.reconcileTektonTask(ctx, &task, pipeline.Name); err != nil {
-			r.Log.Error(err, "Failed to reconcile tekton task resources.")
+		if err := r.reconcileTektonTask(ctx, namespace, &task, pipeline.Name); err != nil {
+			klog.Error(err, "Failed to reconcile tekton task resources.")
 			return err
 		}
 	}
 
-	r.Log.Info("Going to translate Pipeline CRD to Tekton Pipeline CRD.")
-	if err := r.reconcileTektonPipeline(ctx, pipeline); err != nil {
-		r.Log.Error(err, "Failed to reconcile tekton pipeline resources.")
+	klog.Info("Going to translate Pipeline CRD to Tekton Pipeline CRD.")
+	if err := r.reconcileTektonPipeline(ctx, namespace, pipeline); err != nil {
+		klog.Error(err, "Failed to reconcile tekton pipeline resources.")
 		return err
 	}
 
@@ -103,14 +103,14 @@ func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, pipeline *d
 }
 
 // reconcileTektonTask translates tasks in our Pipeline CRD to Tekton Task CRD
-func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, task *devopsv2alpha1.TaskSpec, pipelineName string) error {
+func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, namespace string, task *devopsv2alpha1.TaskSpec, pipelineName string) error {
 	// print the task name
-	r.Log.Info(fmt.Sprintf("Translating task %s to Tekton Task.", task.Name))
+	klog.Info(fmt.Sprintf("Translating task %s to Tekton Task.", task.Name))
 
 	// check if the task already exists
 	// in order to differentiate tasks from pipelines, we add pipeline name before the task name
 	tTask := &tektonv1.Task{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: "default", Name: pipelineName + "-" + task.Name}, tTask); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipelineName + "-" + task.Name}, tTask); err != nil {
 		// this means that we do not find the Tekton Task in the given namespace
 		// i.e. we need to create it.
 
@@ -131,7 +131,7 @@ func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, task *devo
 		// add steps in Tekton Task
 		tektonTask := &tektonv1.Task{
 			TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1beta1"},
-			ObjectMeta: metav1.ObjectMeta{Name: pipelineName + "-" + task.Name, Namespace: "default"},
+			ObjectMeta: metav1.ObjectMeta{Name: pipelineName + "-" + task.Name, Namespace: namespace},
 			Spec: tektonv1.TaskSpec{
 				Steps: steps,
 			},
@@ -143,22 +143,22 @@ func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, task *devo
 		}
 
 		// if create tekton task successfully, log it.
-		r.Log.Info(fmt.Sprintf("Tekton Task %s created successfully.", tektonTask.ObjectMeta.Name))
+		klog.Info(fmt.Sprintf("Tekton Task %s created successfully.", tektonTask.ObjectMeta.Name))
 	} else {
-		r.Log.Info(fmt.Sprintf("Tekton Task %s already exists.", tTask.ObjectMeta.Name))
+		klog.Info(fmt.Sprintf("Tekton Task %s already exists.", tTask.ObjectMeta.Name))
 	}
 
 	return nil
 }
 
 // reconcileTektonPipeline translates our Pipeline CRD to Tekton Pipeline CRD
-func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	// print the pipeline name
-	r.Log.Info(fmt.Sprintf("Translating Pipeline %s to Tekton Pipeline.", pipeline.Name))
+	klog.Info(fmt.Sprintf("Translating Pipeline %s to Tekton Pipeline.", pipeline.Name))
 
 	// check if the task already exists
 	tPipeline := &tektonv1.Pipeline{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: "default", Name: pipeline.Name}, tPipeline); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipeline.Name}, tPipeline); err != nil {
 		// this means the current Tekton Pipeline does not exist in the given namespace
 		// i.e. we are supposed to create it
 
@@ -176,7 +176,7 @@ func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, pipeli
 		// set up tekton pipeline
 		tektonPipeline := &tektonv1.Pipeline{
 			TypeMeta:   metav1.TypeMeta{Kind: "Pipeline", APIVersion: "tekton.dev/v1beta1"},
-			ObjectMeta: metav1.ObjectMeta{Name: pipeline.Name, Namespace: "default"},
+			ObjectMeta: metav1.ObjectMeta{Name: pipeline.Name, Namespace: namespace},
 			Spec:       tektonv1.PipelineSpec{Tasks: tasks},
 		}
 
@@ -186,9 +186,9 @@ func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, pipeli
 		}
 
 		// if create tekton pipeline successfully, log it.
-		r.Log.Info(fmt.Sprintf("Tekton Pipeline resource %s created successfully.", tektonPipeline.ObjectMeta.Name))
+		klog.Info(fmt.Sprintf("Tekton Pipeline resource %s created successfully.", tektonPipeline.ObjectMeta.Name))
 	} else {
-		r.Log.Info(fmt.Sprintf("Tekton Pipeline resource %s already exists.", tPipeline.ObjectMeta.Name))
+		klog.Info(fmt.Sprintf("Tekton Pipeline resource %s already exists.", tPipeline.ObjectMeta.Name))
 	}
 
 	return nil
