@@ -18,11 +18,12 @@ package options
 
 import (
 	"flag"
+	"strings"
+	"time"
+
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
-	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -39,6 +40,12 @@ type DevOpsControllerManagerOptions struct {
 	LeaderElection    *leaderelection.LeaderElectionConfig
 	WebhookCertDir    string
 	S3Options         *s3.Options
+
+	// Pipeline backend flag, valid value is "jenkins" or "tekton".
+	// This field is used to choose either the jenkins controller or the tekton controller
+	// when setting up controllers of CRDs (Pipeline and PipelineRun).
+	// The default value of this field is "jenkins".
+	PipelineBackend string
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
 	// There are other projects also built on sigs.k8s.io/application, when KubeSphere installed along side
@@ -61,6 +68,7 @@ func NewDevOpsControllerManagerOptions() *DevOpsControllerManagerOptions {
 		LeaderElect:         false,
 		WebhookCertDir:      "",
 		ApplicationSelector: "",
+		PipelineBackend:     "jenkins",
 	}
 
 	return s
@@ -83,6 +91,10 @@ func (s *DevOpsControllerManagerOptions) Flags() cliflag.NamedFlagSets {
 		"Certificate directory used to setup webhooks, need tls.crt and tls.key placed inside."+
 		"if not set, webhook server would look up the server key and certificate in"+
 		"{TempDir}/k8s-webhook-server/serving-certs")
+
+	fs.StringVar(&s.PipelineBackend, "pipeline-backend", s.PipelineBackend, ""+
+		"Backend of the pipeline. You can choose the backend from jenkins and tekton. "+
+		"The default value is jenkins, if not specified.")
 
 	gfs := fss.FlagSet("generic")
 	gfs.StringVar(&s.ApplicationSelector, "application-selector", s.ApplicationSelector, ""+
