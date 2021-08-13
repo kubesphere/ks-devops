@@ -24,9 +24,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+// GroupName is the group name use in this package
+const GroupName = "devops.kubesphere.io"
+
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "devops.kubesphere.io", Version: "v1alpha4"}
+	GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha4"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

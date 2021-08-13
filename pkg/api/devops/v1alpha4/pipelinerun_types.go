@@ -21,23 +21,18 @@ import (
 	"kubesphere.io/devops/pkg/apis"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
-
 	// Parameters are some key/value pairs passed to runner.
 	// +optional
 	Parameters []*Parameter `json:"parameters,omitempty"`
 
-	// Scm is a SCM configuration that target pipeline run requires.
-	Scm *Scm `json:"scm,omitempty"`
+	// SCM is a SCM configuration that target pipeline run requires.
+	SCM *SCM `json:"scm,omitempty"`
 }
 
 // PipelineRunStatus defines the observed state of PipelineRun
 type PipelineRunStatus struct {
-
 	// Start timestamp of the pipeline run.
 	// +optional
 	StartTime *metav1.Time `json:"startTime,omitempty"`
@@ -84,7 +79,6 @@ type PipelineRunList struct {
 
 // Parameter is an option that can be passed with the endpoint to influence the Pipeline Run
 type Parameter struct {
-
 	// Name indicates that name of the parameter.
 	Name string `json:"name" description:"parameter name"`
 
@@ -92,7 +86,7 @@ type Parameter struct {
 	Value string `json:"value" description:"parameter value"`
 }
 
-// RefType indicates that scm reference type, such as branch, tag, pr, mr.
+// RefType indicates that SCM reference type, such as branch, tag, pr, mr.
 type RefType string
 
 const (
@@ -109,13 +103,13 @@ const (
 	MergeRequest RefType = "mr"
 )
 
-// Scm is a SCM configuration that target pipeline run requires.
-type Scm struct {
+// SCM is a SCM configuration that target pipeline run requires.
+type SCM struct {
 	// RefType indicates that SCM reference type, such as branch, tag, pr, mr.
-	RefType RefType `json:"refType" description:"scm reference type"`
+	RefType RefType `json:"refType"`
 
 	// RefName indicates that SCM reference name, such as master, dev, release-v1.
-	RefName string `json:"refName" description:"scm reference name"`
+	RefName string `json:"refName"`
 }
 
 // RunPhase is a label for the condition of a pipeline run at the current time.
@@ -138,6 +132,7 @@ const (
 	Unknown RunPhase = "Unknown"
 )
 
+// ConditionType is type of pipeline run condition.
 type ConditionType string
 
 const (
@@ -154,7 +149,6 @@ const (
 type ConditionStatus string
 
 const (
-
 	// ConditionTrue means a resource is in the condition.
 	ConditionTrue ConditionStatus = "True"
 
@@ -168,7 +162,6 @@ const (
 // Condition contains details for the current condition of this pipeline run.
 // Reference from PodCondition
 type Condition struct {
-
 	// Type is the type of the condition.
 	Type ConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=PodConditionType"`
 
