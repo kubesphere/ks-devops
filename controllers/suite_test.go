@@ -44,7 +44,7 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 
 // Disable this test because it depends on etcd.
-func TestAPIs(t *testing.T) {
+func testAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
