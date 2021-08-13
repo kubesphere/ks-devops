@@ -89,8 +89,8 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 		}, s.JenkinsOptions)
 
-		// add pipelinerun controller
-		if err := (&pipelinerun.PipelineRunReconciler{
+		// add PipelineRun controller
+		if err := (&pipelinerun.Reconciler{
 			Client: mgr.GetClient(),
 			Scheme: mgr.GetScheme(),
 			Log:    ctrl.Log.WithName("pipelinerun-controller"),

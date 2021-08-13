@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// PipelineRunReconciler reconciles a PipelineRun object
-type PipelineRunReconciler struct {
+// Reconciler reconciles a PipelineRun object
+type Reconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
@@ -45,7 +45,7 @@ type PipelineRunReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.6.4/pkg/reconcile
-func (r *PipelineRunReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	r.Log.WithValues("pipelinerun", req.NamespacedName).Info("Hello PipelineRun")
 
@@ -55,7 +55,7 @@ func (r *PipelineRunReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv1alpha4.PipelineRun{}).
 		Complete(r)
