@@ -41,15 +41,3 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
-
-{{/*
-Concrete prefix of s2i image
-*/}}
-{{- define "s2i.imagePrefix" -}}
-{{- if .Values.docker.registry }}
-{{- print .Values.docker.registry "/" .Values.docker.group }}
-{{- else }}
-{{- print .Values.docker.group }}
-{{- end }}
-{{- end }}
-

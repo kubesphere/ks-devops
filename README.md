@@ -1,6 +1,6 @@
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/LinuxSuRen/ks-devops)
-[![codecov](https://codecov.io/gh/linuxsuren/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/linuxsuren/ks-devops)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_shield)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/kubesphere/ks-devops)
+[![codecov](https://codecov.io/gh/kubesphere/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/kubesphere/ks-devops)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_shield)
 
 ## Get started
 
@@ -18,7 +18,7 @@ Want to go into deep? Please checkout the [documentation](docs).
 ### Install it as a Helm Chart
 
 First, please clone this git repository. Then run command: `make install-chart`
- - Because the default registry uses `ghcr.io/kubesphere-sigs`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheresig`
+ - Because the default registry uses `ghcr.io/kubesphere-sigs`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
 
 ### Run it locally
 
@@ -58,7 +58,7 @@ make uninstall
 For example, you can access an API like:
 
 ```shell script
-curl -H "Authorization: Bearer xxxx" \
+curl -H "X-Authorization: Bearer xxxx" \
   http://localhost:9090/kapis/devops.kubesphere.io/v1alpha3/devops/testblpsz/pipelines
 ```
 
@@ -96,9 +96,6 @@ golangci-lint run controllers/jenkinsconfig
 [octant-ks-devops](https://github.com/LinuxSuRen/octant-ks-devops) is a plugin of [octant](https://github.com/vmware-tanzu/octant/).
 It provides a dashboard for Kubernetes and ks-devops.
 
-## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLinuxSuRen%2Fks-devops?ref=badge_large)
-
 ## Available communication channels:
 
 - [KubeSphere Devops google group](https://groups.google.com/g/kubesphere-sig-devops/)
@@ -106,3 +103,7 @@ It provides a dashboard for Kubernetes and ks-devops.
 - [DevOps Slack channel for Chinese speakers](https://kubesphere.slack.com/archives/C026V4FBWBW)
 - [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
+
+## License
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_large)

@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  # support 'ghcr.io/kubesphere-sigs' or 'kubespheresig'
+  # support 'ghcr.io/kubesphere-sigs' or 'kubespheredev'
   registry: ghcr.io/kubesphere-sigs
   controller:
     repository: devops-controller

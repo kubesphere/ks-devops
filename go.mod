@@ -50,7 +50,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
 	kubesphere.io/api v0.0.0-20210511124541-08f2d682bd07
 	sigs.k8s.io/controller-runtime v0.6.3
-	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
 replace (
@@ -60,6 +59,8 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	k8s.io/api => k8s.io/api v0.18.6
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.18.6
 	k8s.io/apiserver => k8s.io/apiserver v0.18.6
 	k8s.io/client-go => k8s.io/client-go v0.18.6
 	k8s.io/component-base => k8s.io/component-base v0.18.6
