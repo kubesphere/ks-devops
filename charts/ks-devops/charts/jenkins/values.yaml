@@ -452,5 +452,5 @@ securityRealm:
     host: openldap.kubesphere-system.svc:389
 
 ksAuth:
-  enabled: false
-  server: ""
+  enabled: true
+  #server: ""
