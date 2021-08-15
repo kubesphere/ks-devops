@@ -1,0 +1,27 @@
+apiVersion: devops.kubesphere.io/v2alpha1
+kind: Pipeline
+metadata:
+  name: hello-world
+spec:
+  name: hello-world
+  tasks:
+    - name: echo-hello-world
+      steps:
+        - name: echo-step
+          image: ubuntu:latest
+          command:
+            - echo
+          args:
+            - "Hello world"
+        - name: echo-step-2
+          image: centos:latest
+          command:
+            - date
+    - name: list-directory
+      steps:
+        - name: ls-step
+          image: "alpine:latest"
+          script: |
+            echo $(pwd)
+            ls
+            whoami 

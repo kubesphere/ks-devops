@@ -1,0 +1,20 @@
+# permissions for end users to view pipelineruns.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipelinerun-viewer-role
+rules:
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - pipelineruns
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - pipelineruns/status
+  verbs:
+  - get
