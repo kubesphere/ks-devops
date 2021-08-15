@@ -32,6 +32,7 @@ import (
 
 	devopskubesphereiov1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -68,6 +69,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = devopsv2alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
