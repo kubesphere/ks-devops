@@ -76,7 +76,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		// Choose controllers of CRDs (Pipeline and PipelineRun),
 		// by the field `PipelineBackend`in options.DevOpsControllerManagerOptions
 		if s.PipelineBackend == "jenkins" {
-			klog.Info("Jenkins is chosen to be the pipeline backend.")
+			klog.Info("Jenkins was chosen to be the pipeline backend.")
 			devopsPipelineController = pipeline.NewController(client.Kubernetes(),
 				client.KubeSphere(), devopsClient,
 				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
@@ -95,7 +95,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 			}, s.JenkinsOptions)
 		} else if s.PipelineBackend == "tekton" {
-			klog.Info("Tekton is chosen to be the pipeline backend.")
+			klog.Info("Tekton was chosen to be the pipeline backend.")
 			// add tekton pipeline controller
 			if err := (&tPipeline.PipelineReconciler{
 				Client: mgr.GetClient(),
