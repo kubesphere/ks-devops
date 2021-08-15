@@ -17,6 +17,8 @@ limitations under the License.
 package app
 
 import (
+	"os"
+
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
@@ -25,6 +27,8 @@ import (
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
+	tPipeline "kubesphere.io/devops/controllers/tekton/pipeline"
+	tPipelineRun "kubesphere.io/devops/controllers/tekton/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -64,28 +68,55 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects())
 
-		devopsPipelineController = pipeline.NewController(client.Kubernetes(),
-			client.KubeSphere(), devopsClient,
-			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
-
 		devopsCredentialController = devopscredential.NewController(client.Kubernetes(),
 			devopsClient,
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
 
-		jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
-			LimitRangeClient:    client.Kubernetes().CoreV1(),
-			ResourceQuotaClient: client.Kubernetes().CoreV1(),
-			ConfigMapClient:     client.Kubernetes().CoreV1(),
+		// Choose controllers of CRDs (Pipeline and PipelineRun),
+		// by the field `PipelineBackend`in options.DevOpsControllerManagerOptions
+		if s.PipelineBackend == "jenkins" {
+			klog.Info("Jenkins was chosen to be the pipeline backend.")
+			devopsPipelineController = pipeline.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
 
-			ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
-			NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-			InformerFactory:   informerFactory,
+			jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
+				LimitRangeClient:    client.Kubernetes().CoreV1(),
+				ResourceQuotaClient: client.Kubernetes().CoreV1(),
+				ConfigMapClient:     client.Kubernetes().CoreV1(),
 
-			ConfigOperator:  devopsClient,
-			ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
-		}, s.JenkinsOptions)
+				ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
+				NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				InformerFactory:   informerFactory,
+
+				ConfigOperator:  devopsClient,
+				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
+			}, s.JenkinsOptions)
+		} else if s.PipelineBackend == "tekton" {
+			klog.Info("Tekton was chosen to be the pipeline backend.")
+			// add tekton pipeline controller
+			if err := (&tPipeline.PipelineReconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
+				os.Exit(1)
+			}
+
+			// add tekton pipelinerun controller
+			if err := (&tPipelineRun.PipelineRunReconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
+				os.Exit(1)
+			}
+		} else {
+			klog.Errorf("Pipeline backend does not found. Expected jenkins or tekton, but given %s", s.PipelineBackend)
+			os.Exit(1)
+		}
 	}
 
 	controllers := map[string]manager.Runnable{

@@ -18,6 +18,7 @@ package app
 
 import (
 	"fmt"
+
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -49,6 +50,7 @@ func NewControllerManagerCommand() *cobra.Command {
 		s = &options.DevOpsControllerManagerOptions{
 			KubernetesOptions: conf.KubernetesOptions,
 			JenkinsOptions:    conf.JenkinsOptions,
+			PipelineBackend:   "jenkins",
 			S3Options:         conf.S3Options,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,
