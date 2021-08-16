@@ -126,7 +126,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			}
 		} else {
 			// We currently only support two backends: Tekton and Jenkins,
-			// and ther choices are illegal.
+			// and the other choices are illegal.
 			errorMessage := fmt.Sprintf("Pipeline backend does not found. Expected value Jenkins or Tekton, but given %s", s.PipelineBackend)
 			klog.Error(errorMessage)
 			return fmt.Errorf(errorMessage)
