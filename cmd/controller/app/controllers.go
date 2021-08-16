@@ -17,7 +17,7 @@ limitations under the License.
 package app
 
 import (
-	"os"
+	"fmt"
 
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
@@ -75,8 +75,8 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 		// Choose controllers of CRDs (Pipeline and PipelineRun),
 		// by the field `PipelineBackend`in options.DevOpsControllerManagerOptions
-		if s.PipelineBackend == "jenkins" {
-			klog.Info("Jenkins was chosen to be the pipeline backend.")
+		klog.Infof("%s was chosen to be the pipeline backend.", s.PipelineBackend)
+		if s.PipelineBackend == "Jenkins" {
 			devopsPipelineController = pipeline.NewController(client.Kubernetes(),
 				client.KubeSphere(), devopsClient,
 				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
@@ -94,15 +94,14 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				ConfigOperator:  devopsClient,
 				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 			}, s.JenkinsOptions)
-		} else if s.PipelineBackend == "tekton" {
-			klog.Info("Tekton was chosen to be the pipeline backend.")
+		} else if s.PipelineBackend == "Tekton" {
 			// add tekton pipeline controller
 			if err := (&tPipeline.PipelineReconciler{
 				Client: mgr.GetClient(),
 				Scheme: mgr.GetScheme(),
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
-				os.Exit(1)
+				return err
 			}
 
 			// add tekton pipelinerun controller
@@ -111,11 +110,12 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				Scheme: mgr.GetScheme(),
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
-				os.Exit(1)
+				return err
 			}
 		} else {
-			klog.Errorf("Pipeline backend does not found. Expected jenkins or tekton, but given %s", s.PipelineBackend)
-			os.Exit(1)
+			errorMessage := fmt.Sprintf("Pipeline backend does not found. Expected value Jenkins or Tekton, but given %s", s.PipelineBackend)
+			klog.Error(errorMessage)
+			return fmt.Errorf(errorMessage)
 		}
 	}
 

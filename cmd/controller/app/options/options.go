@@ -41,10 +41,10 @@ type DevOpsControllerManagerOptions struct {
 	WebhookCertDir    string
 	S3Options         *s3.Options
 
-	// Pipeline backend flag, valid value is "jenkins" or "tekton".
+	// Pipeline backend flag, valid value is "Jenkins" or "Tekton".
 	// This field is used to choose either the jenkins controller or the tekton controller
 	// when setting up controllers of CRDs (Pipeline and PipelineRun).
-	// The default value of this field is "jenkins".
+	// The default value of this field is "Jenkins".
 	PipelineBackend string
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
@@ -68,7 +68,7 @@ func NewDevOpsControllerManagerOptions() *DevOpsControllerManagerOptions {
 		LeaderElect:         false,
 		WebhookCertDir:      "",
 		ApplicationSelector: "",
-		PipelineBackend:     "jenkins",
+		PipelineBackend:     "Jenkins",
 	}
 
 	return s

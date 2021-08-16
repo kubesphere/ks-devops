@@ -50,7 +50,7 @@ func NewControllerManagerCommand() *cobra.Command {
 		s = &options.DevOpsControllerManagerOptions{
 			KubernetesOptions: conf.KubernetesOptions,
 			JenkinsOptions:    conf.JenkinsOptions,
-			PipelineBackend:   "jenkins",
+			PipelineBackend:   "Jenkins",
 			S3Options:         conf.S3Options,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,
