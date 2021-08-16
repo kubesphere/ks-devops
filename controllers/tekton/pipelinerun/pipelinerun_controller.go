@@ -18,7 +18,6 @@ package pipelinerun
 
 import (
 	"context"
-	"fmt"
 
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,8 +84,8 @@ func (r *PipelineRunReconciler) reconcileTektonCrd(ctx context.Context, namespac
 
 // reconcileTektonPipelineRun translates our PipelineRun to Tekton PipelineRun
 func (r *PipelineRunReconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
-
-	klog.Info(fmt.Sprintf("Going to create Tekton PipelineRun resource called %s", pipelineRun.Name))
+	// print the pipelinerun name
+	klog.Infof("Going to create Tekton PipelineRun resource called %s", pipelineRun.Name)
 
 	// translate PipelineRun to Tekton PipelineRun
 	tPipelineRun := &tektonv1.PipelineRun{}
@@ -109,11 +108,11 @@ func (r *PipelineRunReconciler) reconcileTektonPipelineRun(ctx context.Context, 
 		}
 
 		// log if create successfully
-		klog.Info(fmt.Sprintf("Tekton PipelineRun resource %s created successfully", pipelineRun.Name))
+		klog.Infof("Tekton PipelineRun resource %s created successfully", pipelineRun.Name)
 	} else {
 		// This means that a Tekton PipelineRun resource has already exists in the given namespace,
 		// which can be a problem.
-		klog.Info(fmt.Sprintf("Tekton PipelineRun resource %s already exists!", pipelineRun.Name))
+		klog.Infof("Tekton PipelineRun resource %s already exists!", pipelineRun.Name)
 	}
 
 	return nil

@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // Step defines the content of the step
 type Step struct {
 	// Name of the container specified as a DNS_LABEL.
@@ -97,9 +94,6 @@ type TaskSpec struct {
 
 // PipelineSpec defines the desired state of Pipeline
 type PipelineSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// Name is the pipeline name for reference.
 	Name string `json:"name" description:"the name of the pipeline"`
 
@@ -109,8 +103,6 @@ type PipelineSpec struct {
 
 // PipelineStatus defines the observed state of Pipeline
 type PipelineStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
