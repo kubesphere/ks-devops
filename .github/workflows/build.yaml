@@ -7,6 +7,8 @@ on:
       - master
       - tekton-support
       - jenkins-client-refactor
+      - feat/*
+      - fix/*
       - test-* # make it be easier for contributors to test
     tags:
       - 'v*.*.*'
@@ -15,6 +17,8 @@ on:
       - 'master'
       - 'tekton-support'
       - 'jenkins-client-refactor'
+      - 'feat/*'
+      - 'fix/*'
 
 jobs:
   BuildController:
