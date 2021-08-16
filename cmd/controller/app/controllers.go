@@ -28,8 +28,8 @@ import (
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
-	tPipeline "kubesphere.io/devops/controllers/tekton/pipeline"
-	tPipelineRun "kubesphere.io/devops/controllers/tekton/pipelinerun"
+	tknPipeline "kubesphere.io/devops/controllers/tekton/pipeline"
+	tknPipelineRun "kubesphere.io/devops/controllers/tekton/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -104,10 +104,11 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				Log:    ctrl.Log.WithName("pipelinerun-controller"),
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
+				return err
 			}
 		} else if s.PipelineBackend == "Tekton" {
 			// add tekton pipeline controller
-			if err := (&tPipeline.PipelineReconciler{
+			if err := (&tknPipeline.Reconciler{
 				Client: mgr.GetClient(),
 				Scheme: mgr.GetScheme(),
 			}).SetupWithManager(mgr); err != nil {
@@ -116,7 +117,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			}
 
 			// add tekton pipelinerun controller
-			if err := (&tPipelineRun.PipelineRunReconciler{
+			if err := (&tknPipelineRun.Reconciler{
 				Client: mgr.GetClient(),
 				Scheme: mgr.GetScheme(),
 			}).SetupWithManager(mgr); err != nil {
@@ -124,6 +125,8 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				return err
 			}
 		} else {
+			// We currently only support two backends: Tekton and Jenkins,
+			// and ther choices are illegal.
 			errorMessage := fmt.Sprintf("Pipeline backend does not found. Expected value Jenkins or Tekton, but given %s", s.PipelineBackend)
 			klog.Error(errorMessage)
 			return fmt.Errorf(errorMessage)

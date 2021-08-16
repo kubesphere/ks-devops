@@ -30,8 +30,8 @@ import (
 	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 )
 
-// PipelineRunReconciler reconciles a PipelineRun object
-type PipelineRunReconciler struct {
+// Reconciler reconciles a PipelineRun object
+type Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -49,7 +49,7 @@ type PipelineRunReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
-func (r *PipelineRunReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
 	// get the pipelinerun crd
@@ -68,22 +68,19 @@ func (r *PipelineRunReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv2alpha1.PipelineRun{}).
 		Complete(r)
 }
 
 // reconcileTektonCrd translates our crd to Tekton crd
-func (r *PipelineRunReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRun) error {
-	if err := r.reconcileTektonPipelineRun(ctx, namespace, &pipelineRun.Spec); err != nil {
-		return err
-	}
-	return nil
+func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRun) error {
+	return r.reconcileTektonPipelineRun(ctx, namespace, &pipelineRun.Spec)
 }
 
 // reconcileTektonPipelineRun translates our PipelineRun to Tekton PipelineRun
-func (r *PipelineRunReconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
+func (r *Reconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
 	// print the pipelinerun name
 	klog.Infof("Going to create Tekton PipelineRun resource called %s", pipelineRun.Name)
 

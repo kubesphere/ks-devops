@@ -31,8 +31,8 @@ import (
 	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 )
 
-// PipelineReconciler reconciles a Pipeline object
-type PipelineReconciler struct {
+// Reconciler reconciles a Pipeline object
+type Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -50,7 +50,7 @@ type PipelineReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
-func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
 	klog.Infof("req: %v", req)
@@ -72,14 +72,14 @@ func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv2alpha1.Pipeline{}).
 		Complete(r)
 }
 
 // reconcileTektonCrd transforms our Pipeline CRD to Tekton CRDs
-func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	// print the pipeline name and the number of its tasks.
 	klog.Infof("Pipeline name: %s\tTask num: %d", pipeline.Name, len(pipeline.Spec.Tasks))
 
@@ -102,7 +102,7 @@ func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, namespace s
 }
 
 // reconcileTektonTask transforms tasks in our Pipeline CRD to Tekton Task CRD
-func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
+func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
 	// print the task name
 	klog.Infof("Transforming task %s to Tekton Task.", taskSpec.Name)
 
@@ -151,7 +151,7 @@ func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, namespace 
 }
 
 // reconcileTektonPipeline transforms our Pipeline CRD to Tekton Pipeline CRD
-func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *Reconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	// print the pipeline name
 	klog.Infof("Transforming Pipeline %s to Tekton Pipeline.", pipeline.Name)
 
