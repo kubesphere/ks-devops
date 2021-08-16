@@ -1,0 +1,11 @@
+apiVersion: devops.kubesphere.io/v1alpha4
+kind: PipelineRun
+metadata:
+  name: pipelinerun-sample
+spec:
+  parameters:
+    - name: foo
+      value: bar
+  scm:
+    refType: branch
+    refName: master

@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"path/filepath"
 	"testing"
 
@@ -68,6 +69,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = devopsv1alpha4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
