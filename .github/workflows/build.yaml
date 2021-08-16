@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - tekton-support
       - test-* # make it be easier for contributors to test
     tags:
       - 'v*.*.*'
