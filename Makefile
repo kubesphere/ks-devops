@@ -53,8 +53,15 @@ uninstall-chart:
 	make uninstall-jenkins-chart || true
 	helm uninstall ks-devops -n kubesphere-devops-system
 render-chart:
+<<<<<<< HEAD
 	helm template ks-devops charts/ks-devops -n kubesphere-devops-system --create-namespace \
 		 --set image.pullPolicy=Always --set jenkins.ksAuth.enabled=true --debug
+=======
+	helm template ks-ctl charts/ks-devops  -n kubesphere-devops-system \
+		--set serviceAccount.create=true --create-namespace \
+		--set image.pullPolicy=Always \
+		--set jenkins.ksAuth.enabled=true --debug
+>>>>>>> 0606682 (Remove the comment statements in the makefile)
 
 install-jenkins-chart:
 	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=
