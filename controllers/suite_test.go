@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -72,6 +74,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = devopsv2alpha1.AddToScheme(scheme.Scheme)
+	err = devopsv1alpha4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
