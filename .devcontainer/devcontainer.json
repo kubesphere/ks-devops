@@ -1,0 +1,12 @@
+{
+	"name": "Existing Dockerfile",
+	"context": "..",
+	"dockerFile": "../.gitpod.Dockerfile",
+	"settings": {},
+	"extensions": [
+		"golang.go",
+		"ms-azuretools.vscode-docker"
+	],
+
+	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+}
