@@ -46,13 +46,15 @@ lint-chart:
 	helm lint charts/ks-devops
 
 install-chart: lint-chart
-	helm install ks-devops charts/ks-devops -n kubesphere-devops-system --create-namespace
+	helm install ks-devops charts/ks-devops -n kubesphere-devops-system --create-namespace \
+		 --set image.pullPolicy=Always
 
 uninstall-chart:
 	make uninstall-jenkins-chart || true
 	helm uninstall ks-devops -n kubesphere-devops-system
 render-chart:
-	helm template ks-devops charts/ks-devops -n kubesphere-devops-system --create-namespace
+	helm template ks-devops charts/ks-devops -n kubesphere-devops-system --create-namespace \
+		 --set image.pullPolicy=Always --debug
 
 install-jenkins-chart:
 	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=

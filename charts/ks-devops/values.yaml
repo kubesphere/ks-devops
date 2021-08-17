@@ -12,15 +12,13 @@ image:
   tools:
     repository: devops-tools
     tag: master
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 authentication:
   # If not set, jwt tools will generate and set it automatically
   jwtSecret: ""
 
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -71,10 +69,6 @@ resources: {}
 
 autoscaling:
   enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
