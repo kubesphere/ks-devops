@@ -54,7 +54,7 @@ spec:
                 type: object
               type: array
             scm:
-              description: Scm is a SCM configuration that target pipeline run requires.
+              description: SCM is a SCM configuration that target pipeline run requires.
               properties:
                 refName:
                   description: RefName indicates that SCM reference name, such as
