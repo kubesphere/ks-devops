@@ -48,12 +48,22 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	header := httpParameters.Header
+	if header == nil {
+		header = http.Header{}
+	}
 
 	if j.Requester != nil {
 		auth := j.Requester.BasicAuth
 
 		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth.Username, auth.Password)))
 		header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		// set crumb
+		if err := j.Requester.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
+			header.Set(crumbRequestField, crumb)
+		}); err != nil {
+			return nil, nil, err
+		}
 	}
 	// TODO consider to remove below
 	SetBasicBearTokenHeader(&header)

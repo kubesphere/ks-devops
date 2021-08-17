@@ -90,6 +90,14 @@ type Requester struct {
 }
 
 func (r *Requester) SetCrumb(ar *APIRequest) error {
+	return r.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
+		ar.SetHeader(crumbRequestField, crumb)
+	})
+}
+
+// SetCrumbForConsumer makes crumb consumer set the crumb. Crumb consumer accepts crumb request field and crumb
+// parameters and can handle the crumb whatever it likes.
+func (r *Requester) SetCrumbForConsumer(crumbConsumer func(crumbRequestField, crumb string)) error {
 	crumbData := map[string]string{}
 	response, err := r.GetJSON("/crumbIssuer/api/json", &crumbData, nil)
 	if err != nil {
@@ -100,7 +108,7 @@ func (r *Requester) SetCrumb(ar *APIRequest) error {
 		return err
 	}
 	if response.StatusCode == 200 && crumbData["crumbRequestField"] != "" {
-		ar.SetHeader(crumbData["crumbRequestField"], crumbData["crumb"])
+		crumbConsumer(crumbData["crumbRequestField"], crumbData["crumb"])
 	}
 
 	return nil
