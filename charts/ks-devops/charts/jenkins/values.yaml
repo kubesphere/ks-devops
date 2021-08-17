@@ -461,7 +461,7 @@ securityRealm:
     host: openldap.kubesphere-system.svc:389
 
 ksAuth:
-  enabled: true
+  enabled: false
   #server: ""
 
 # Install service monitor
