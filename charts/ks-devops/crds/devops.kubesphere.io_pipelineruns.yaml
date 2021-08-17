@@ -1,0 +1,137 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: pipelineruns.devops.kubesphere.io
+spec:
+  group: devops.kubesphere.io
+  names:
+    kind: PipelineRun
+    listKind: PipelineRunList
+    plural: pipelineruns
+    singular: pipelinerun
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: PipelineRun is the Schema for the pipelineruns API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: PipelineRunSpec defines the desired state of PipelineRun
+          properties:
+            parameters:
+              description: Parameters are some key/value pairs passed to runner.
+              items:
+                description: Parameter is an option that can be passed with the endpoint
+                  to influence the Pipeline Run
+                properties:
+                  name:
+                    description: Name indicates that name of the parameter.
+                    type: string
+                  value:
+                    description: Value indicates that value of the parameter.
+                    type: string
+                required:
+                - name
+                - value
+                type: object
+              type: array
+            scm:
+              description: Scm is a SCM configuration that target pipeline run requires.
+              properties:
+                refName:
+                  description: RefName indicates that SCM reference name, such as
+                    master, dev, release-v1.
+                  type: string
+                refType:
+                  description: RefType indicates that SCM reference type, such as
+                    branch, tag, pr, mr.
+                  type: string
+              required:
+              - refName
+              - refType
+              type: object
+          type: object
+        status:
+          description: PipelineRunStatus defines the observed state of PipelineRun
+          properties:
+            completionTime:
+              description: Completion timestamp of the pipeline run.
+              format: date-time
+              type: string
+            conditions:
+              description: Current state of pipeline run.
+              items:
+                description: Condition contains details for the current condition
+                  of this pipeline run. Reference from PodCondition
+                properties:
+                  lastProbeTime:
+                    description: Last time we probed the condition.
+                    format: date-time
+                    type: string
+                  lastTransitionTime:
+                    description: Last time the condition transitioned from one status
+                      to another.
+                    format: date-time
+                    type: string
+                  message:
+                    description: Human-readable message indicating details about last
+                      transition.
+                    type: string
+                  reason:
+                    description: Unique, one-word, CamelCase reason for the condition's
+                      last transition.
+                    type: string
+                  status:
+                    description: Status is the status of the condition. Can be True,
+                      False, Unknown.
+                    type: string
+                  type:
+                    description: Type is the type of the condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            phase:
+              description: Current phase of pipeline run.
+              type: string
+            startTime:
+              description: Start timestamp of the pipeline run.
+              format: date-time
+              type: string
+            updateTime:
+              description: Update timestamp of the pipeline run.
+              format: date-time
+              type: string
+          type: object
+      type: object
+  version: v1alpha4
+  versions:
+  - name: v1alpha4
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
