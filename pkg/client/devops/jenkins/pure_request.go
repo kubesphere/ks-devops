@@ -64,7 +64,7 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 			if err := j.Requester.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
 				header.Set(crumbRequestField, crumb)
 			}); err != nil {
-				klog.Error("unable to set crumb to http parameters, err: %v", err)
+				klog.Errorf("unable to set crumb to http parameters, err: %v", err)
 				return nil, nil, err
 			}
 		}
