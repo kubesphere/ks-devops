@@ -14,11 +14,11 @@ If release name contains chart name it will be used as a full name.
 {{ .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "ks-devops-apiserver.fullname" -}}
+{{- define "ks-devops.apiserver-fullname" -}}
 {{ include "ks-devops.fullname" . }}-apiserver
 {{- end }}
 
-{{- define "ks-devops-controller.fullname" -}}
+{{- define "ks-devops.controller-fullname" -}}
 {{ include "ks-devops.fullname" . }}-controller
 {{- end }}
 

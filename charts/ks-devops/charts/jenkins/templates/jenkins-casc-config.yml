@@ -205,7 +205,7 @@ data:
         {{- if .Values.ksAuth.server }}
         server: {{ .Values.ksAuth.server }}
         {{ else }}
-        server: "http://{{ include "ks-devops-apiserver.fullname" . }}.{{ .Release.Namespace }}:9090/"
+        server: "http://{{ include "ks-devops.apiserver-fullname" . }}.{{ .Release.Namespace }}:9090/"
         {{- end }}
         {{- end }}
       gitLabServers:
