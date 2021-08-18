@@ -20,8 +20,8 @@ func Test_getStubUrl(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getStubUrl(); !reflect.DeepEqual(got.String(), tt.want) {
-				t.Errorf("getStubUrl() = %v, want %v", got, tt.want)
+			if got := getStubURL(); !reflect.DeepEqual(got.String(), tt.want) {
+				t.Errorf("getStubURL() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -48,7 +48,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 			pr: &devopsv1alpha4.PipelineRun{},
 		},
 		want: &devopsClient.HttpParameters{
-			Url:    getStubUrl(),
+			Url:    getStubURL(),
 			Method: http.MethodPost,
 			Header: map[string][]string{
 				"Content-Type": {"application/json"},
@@ -61,7 +61,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 			pr: &devopsv1alpha4.PipelineRun{},
 		},
 		want: &devopsClient.HttpParameters{
-			Url:    getStubUrl(),
+			Url:    getStubURL(),
 			Method: http.MethodPost,
 			Header: map[string][]string{
 				"Content-Type": {"application/json"},
@@ -83,7 +83,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 			},
 		},
 		want: &devopsClient.HttpParameters{
-			Url:    getStubUrl(),
+			Url:    getStubURL(),
 			Method: http.MethodPost,
 			Header: map[string][]string{
 				"Content-Type": {"application/json"},
@@ -93,13 +93,13 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildHttpParametersForRunning(tt.args.pr)
+			got, err := buildHTTPParametersForRunning(tt.args.pr)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("buildHttpParametersForRunning() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("buildHTTPParametersForRunning() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildHttpParametersForRunning() got = %v, want %v", got, tt.want)
+				t.Errorf("buildHTTPParametersForRunning() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

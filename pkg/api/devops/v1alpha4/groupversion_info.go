@@ -28,7 +28,7 @@ import (
 const (
 	GroupName                     = "devops.kubesphere.io"
 	JenkinsPipelineRunPipelineKey = GroupName + "/pipeline"
-	JenkinsPipelineRunIdKey       = GroupName + "/jenkins-pipelinerun-id"
+	JenkinsPipelineRunIDKey       = GroupName + "/jenkins-pipelinerun-id"
 	JenkinsPipelineRunDataKey     = GroupName + "/jenkins-pipelinerun-last-run-data"
 	JenkinsPipelineRunNodesKey    = GroupName + "/jenkins-pipelinerun-last-nodes-data"
 )

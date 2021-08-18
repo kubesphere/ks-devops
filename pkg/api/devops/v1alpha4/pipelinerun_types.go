@@ -102,7 +102,7 @@ func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
 
 // HasStarted indicates if the pipeline run has started already.
 func (pr *PipelineRun) HasStarted() bool {
-	_, ok := pr.GetPipelineRunId()
+	_, ok := pr.GetPipelineRunID()
 	return pr.Status.StartTime != nil && ok
 }
 
@@ -111,8 +111,8 @@ func (pr *PipelineRun) IsMultiBranchPipeline() bool {
 	return pr.Spec.SCM != nil && len(pr.Spec.SCM.RefName) > 0
 }
 
-func (pr *PipelineRun) GetPipelineRunId() (pipelineRunId string, exist bool) {
-	pipelineRunId, exist = pr.Annotations[JenkinsPipelineRunIdKey]
+func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
+	pipelineRunID, exist = pr.Annotations[JenkinsPipelineRunIDKey]
 	return
 }
 

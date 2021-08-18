@@ -135,13 +135,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	parameters := pr.Spec.Parameters
-	if parameters == nil {
-		parameters = make([]devopsv1alpha4.Parameter, 0)
-	}
-
 	// build http parameters
-	httpParameters, err := buildHttpParametersForRunning(&pr)
+	httpParameters, err := buildHTTPParametersForRunning(&pr)
 	if err != nil {
 		log.Error(err, "unable to create http parameters for running pipeline.")
 		return ctrl.Result{}, err
@@ -166,7 +161,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pr.Annotations == nil {
 		pr.Annotations = make(map[string]string)
 	}
-	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIdKey] = runResponse.ID
+	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = runResponse.ID
 
 	// label PipelineRun as running
 	pr.Status.MarkPending()
@@ -187,16 +182,16 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (runResult *devopsClient.PipelineRun, err error) {
 	// get PipelineRun id
-	runId, _ := pr.GetPipelineRunId()
+	runID, _ := pr.GetPipelineRunID()
 	// get latest runs data from Jenkins
 	if pr.IsMultiBranchPipeline() {
-		runResult, err = r.DevOpsClient.GetBranchPipelineRun(projectName, pipelineName, pr.Spec.SCM.RefName, runId, &devopsClient.HttpParameters{
-			Url:    getStubUrl(),
+		runResult, err = r.DevOpsClient.GetBranchPipelineRun(projectName, pipelineName, pr.Spec.SCM.RefName, runID, &devopsClient.HttpParameters{
+			Url:    getStubURL(),
 			Method: http.MethodGet,
 		})
 	} else {
-		runResult, err = r.DevOpsClient.GetPipelineRun(projectName, pipelineName, runId, &devopsClient.HttpParameters{
-			Url:    getStubUrl(),
+		runResult, err = r.DevOpsClient.GetPipelineRun(projectName, pipelineName, runID, &devopsClient.HttpParameters{
+			Url:    getStubURL(),
 			Method: http.MethodGet,
 		})
 	}
@@ -214,13 +209,10 @@ func (r *Reconciler) completePipelineRun(pr *devopsv1alpha4.PipelineRun, jenkins
 
 	// resolve status
 	jenkinsRunData := JenkinsRunData{jenkinsRunResult}
-	if err := jenkinsRunData.resolveStatus(pr); err != nil {
-		return err
-	}
-	return nil
+	return jenkinsRunData.resolveStatus(pr)
 }
 
-func buildHttpParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClient.HttpParameters, error) {
+func buildHTTPParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClient.HttpParameters, error) {
 	if pr == nil {
 		return nil, errors.New("invalid PipelineRun")
 	}
@@ -239,7 +231,7 @@ func buildHttpParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClien
 		return nil, err
 	}
 	return &devopsClient.HttpParameters{
-		Url:    getStubUrl(),
+		Url:    getStubURL(),
 		Method: http.MethodPost,
 		Header: map[string][]string{
 			"Content-Type": {"application/json"},
@@ -248,15 +240,16 @@ func buildHttpParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClien
 	}, nil
 }
 
-func getStubUrl() *url.URL {
+// getStubURL is only for HttpParameters
+func getStubURL() *url.URL {
 	// this url isn't meaningful.
 	const stubDevOpsHost = "https://devops.kubesphere.io/"
-	stubUrl, err := url.Parse(stubDevOpsHost)
+	stubURL, err := url.Parse(stubDevOpsHost)
 	if err != nil {
 		// should never happen
-		panic("invalid stub url: " + stubDevOpsHost)
+		panic("invalid stub URL: " + stubDevOpsHost)
 	}
-	return stubUrl
+	return stubURL
 }
 
 type JenkinsRunState string
