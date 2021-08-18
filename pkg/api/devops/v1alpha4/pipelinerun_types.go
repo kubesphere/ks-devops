@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/apis"
+	"time"
 )
 
 // PipelineRunSpec defines the desired state of PipelineRun
@@ -79,8 +80,24 @@ type PipelineRunList struct {
 
 // MarkPending marks current pipeline pending.
 func (status *PipelineRunStatus) MarkPending() {
-	//TODO Complete pipeline run status
 	status.Phase = Pending
+	status.MarkStarted()
+	status.MarkUpdated()
+}
+
+func (status *PipelineRunStatus) MarkStarted() {
+	now := metav1.Now()
+	status.StartTime = &now
+}
+
+func (status *PipelineRunStatus) MarkUpdated() {
+	now := metav1.Now()
+	status.UpdateTime = &now
+}
+
+func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
+	completionTime := metav1.NewTime(endTime)
+	status.CompletionTime = &completionTime
 }
 
 // HasStarted indicates if the pipeline run has started already.

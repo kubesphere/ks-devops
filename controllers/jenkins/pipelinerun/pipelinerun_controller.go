@@ -50,9 +50,9 @@ type Reconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("pipelinerun", req.NamespacedName)
+	log := r.Log.WithValues("PipelineRun", req.NamespacedName)
 
-	// get pipeline run
+	// get PipelineRun
 	var pr devopsv1alpha4.PipelineRun
 	if err := r.Client.Get(ctx, req.NamespacedName, &pr); err != nil {
 		log.Error(err, "unable to fetch PipelineRun")
@@ -63,7 +63,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineRef := v1.GetControllerOf(&pr)
 
 	if pipelineRef == nil {
-		log.Error(nil, "skipped to reconcile this pipeline run due to not found pipeline reference in pipelinerun owner references.")
+		log.Error(nil, "skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
 		return ctrl.Result{}, nil
 	}
 
@@ -72,39 +72,61 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "unable to get pipeline")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	// set Pipeline name to the PipelineRun labels
+	if pr.Labels == nil {
+		pr.Labels = make(map[string]string)
+	}
+	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipeline.GetName()
 
 	var projectName = pipeline.Namespace
 
-	// check pipeline run status
+	// check PipelineRun status
 	if pr.HasStarted() {
-		log.V(5).Info("pipeline has already started, and we are retrieving pipeline run data from Jenkins.")
+		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 
 		runResult, err := r.getPipelineRunResult(projectName, pipeline.GetName(), &pr)
 		if err != nil {
-			log.Error(err, "unable get pipeline run data.")
+			log.Error(err, "unable get PipelineRun data.")
 			return ctrl.Result{}, err
 		}
 
 		// set latest run result into annotations
-		if pr.Annotations == nil {
-			pr.Annotations = make(map[string]string)
-		}
 		runResultJSON, err := json.Marshal(runResult)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+		if pr.Annotations == nil {
+			pr.Annotations = make(map[string]string)
+		}
 		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunDataKey] = string(runResultJSON)
 
-		// update pipeline run
+		// update PipelineRun
 		if err := r.Update(ctx, &pr); err != nil {
-			log.Error(err, "unable to update pipeline run.")
+			log.Error(err, "unable to update PipelineRun.")
 			return ctrl.Result{}, err
 		}
 
-		// TODO Update pipeline run status according to run result
 		if runResult.EndTime != "" {
-			// this means the pipeline run has ended
+			// this means the PipelineRun has ended
+			if err := r.completePipelineRun(&pr, runResult); err != nil {
+				return ctrl.Result{}, err
+			}
+			// update PipelineRun
+			if err := r.Status().Update(ctx, &pr); err != nil {
+				log.Error(err, "unable to update PipelineRun status.")
+				return ctrl.Result{}, err
+			}
+			log.Info("PipelineRun has been finished")
 			return ctrl.Result{}, nil
+		}
+
+		// update updateTime
+		now := v1.Now()
+		pr.Status.UpdateTime = &now
+
+		if err := r.Status().Update(ctx, &pr); err != nil {
+			log.Error(err, "unable to update PipelineRun status.")
+			return ctrl.Result{}, err
 		}
 
 		// until the status is okay
@@ -140,22 +162,22 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	// label pipelinerun as running
+	// set Jenkins PipelineRun id
 	if pr.Annotations == nil {
 		pr.Annotations = make(map[string]string)
 	}
 	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIdKey] = runResponse.ID
-	pr.Status.MarkPending()
-	now := v1.NewTime(time.Now())
-	pr.Status.StartTime = &now
-	pr.Status.UpdateTime = &now
 
+	// label PipelineRun as running
+	pr.Status.MarkPending()
+
+	// The Update method only updates fields except status
 	if err := r.Client.Update(ctx, &pr); err != nil {
-		log.Error(err, "unable to update pipeline run")
+		log.Error(err, "unable to update PipelineRun.")
 		return ctrl.Result{}, err
 	}
 	if err := r.Client.Status().Update(ctx, &pr); err != nil {
-		log.Error(err, "unable to update pipeline run status.")
+		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
 
@@ -164,7 +186,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (runResult *devopsClient.PipelineRun, err error) {
-	// get pipeline run id
+	// get PipelineRun id
 	runId, _ := pr.GetPipelineRunId()
 	// get latest runs data from Jenkins
 	if pr.IsMultiBranchPipeline() {
@@ -181,9 +203,26 @@ func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *
 	return
 }
 
+func (r *Reconciler) completePipelineRun(pr *devopsv1alpha4.PipelineRun, jenkinsRunResult *devopsClient.PipelineRun) error {
+	// time sample: 2021-08-18T16:36:47.236+0000
+	endTime, err := time.Parse(time.RFC3339, jenkinsRunResult.EndTime)
+	if err != nil {
+		return err
+	}
+
+	pr.Status.MarkCompleted(endTime)
+
+	// resolve status
+	jenkinsRunData := JenkinsRunData{jenkinsRunResult}
+	if err := jenkinsRunData.resolveStatus(pr); err != nil {
+		return err
+	}
+	return nil
+}
+
 func buildHttpParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClient.HttpParameters, error) {
 	if pr == nil {
-		return nil, errors.New("invalid pipeline run")
+		return nil, errors.New("invalid PipelineRun")
 	}
 	// first run
 	parameters := pr.Spec.Parameters
@@ -218,6 +257,37 @@ func getStubUrl() *url.URL {
 		panic("invalid stub url: " + stubDevOpsHost)
 	}
 	return stubUrl
+}
+
+type JenkinsRunState string
+
+const (
+	Queued        JenkinsRunState = "QUEUED"
+	Running       JenkinsRunState = "RUNNING"
+	Paused        JenkinsRunState = "PAUSED"
+	Skipped       JenkinsRunState = "SKIPPED"
+	NotBuiltState JenkinsRunState = "NOT_BUILT"
+	Finished      JenkinsRunState = "FINISHED"
+)
+
+type JenkinsRunResult string
+
+const (
+	Success        JenkinsRunResult = "SUCCESS"
+	Unstable       JenkinsRunResult = "UNSTABLE"
+	Failure        JenkinsRunResult = "FAILURE"
+	NotBuiltResult JenkinsRunResult = "NOT_BUILT"
+	Unknown        JenkinsRunResult = "UNKNOWN"
+	Aborted        JenkinsRunResult = "ABORTED"
+)
+
+type JenkinsRunData struct {
+	*devopsClient.PipelineRun
+}
+
+func (jrs *JenkinsRunData) resolveStatus(pr *devopsv1alpha4.PipelineRun) error {
+	// TODO Complete the conversion
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -6,6 +6,3 @@ spec:
   parameters:
     - name: foo
       value: bar
-  scm:
-    refType: branch
-    refName: master

@@ -37,7 +37,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 		want    *devopsClient.HttpParameters
 		wantErr bool
 	}{{
-		name: "nil pipeline run",
+		name: "nil PipelineRun",
 		args: args{
 			pr: nil,
 		},
