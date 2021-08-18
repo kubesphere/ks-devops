@@ -58,11 +58,15 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth.Username, auth.Password)))
 		header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
 
-		// set crumb
-		if err := j.Requester.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
-			header.Set(crumbRequestField, crumb)
-		}); err != nil {
-			return nil, nil, err
+		// we only set crumb to request header for POST method
+		// See also https://github.com/jenkinsci/jenkins/blob/ca646b3742e6921d332078d0b287fd359970d7e9/core/src/main/java/hudson/security/csrf/CrumbFilter.java#L126
+		if httpParameters.Method == http.MethodPost {
+			if err := j.Requester.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
+				header.Set(crumbRequestField, crumb)
+			}); err != nil {
+				klog.Error("unable to set crumb to http parameters, err: %v", err)
+				return nil, nil, err
+			}
 		}
 	}
 	// TODO consider to remove below
