@@ -2,6 +2,9 @@ package jenkinsconfig
 
 import (
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/client/devops/fake"
 	"reflect"
 	"testing"
 )
@@ -107,6 +110,161 @@ func TestSetContainersLimit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setContainersLimit(cloneMapString(tt.providedConfig), tt.containers, "go")
 			tt.assertion(&tt)
+		})
+	}
+}
+
+func TestReloadJenkinsConfig(t *testing.T) {
+	ctrl := Controller{}
+	err := ctrl.reloadJenkinsConfig()
+	assert.NotNil(t, err)
+
+	ctrl.configOperator = &fake.Devops{}
+	err = ctrl.reloadJenkinsConfig()
+	assert.Nil(t, err)
+}
+
+func TestCheckJenkinsConfigData(t *testing.T) {
+	ctrl := Controller{}
+	err := ctrl.checkJenkinsConfigData(&v1.ConfigMap{})
+	assert.Nil(t, err, "failed when check an empty ConfigMap")
+
+	targetConfigMap := &v1.ConfigMap{
+		Data: map[string]string{
+			"jenkins.yaml": "fake",
+		},
+	}
+	err = ctrl.checkJenkinsConfigData(targetConfigMap)
+	assert.Nil(t, err, "failed when check a ConfigMap with the expected data field")
+	assert.Equal(t, "fake", targetConfigMap.Data["ks-jenkins.yaml"], "didn't get the expected data field")
+
+	targetConfigMap = &v1.ConfigMap{
+		Data: map[string]string{
+			"jenkins.yaml":    "jenkins",
+			"ks-jenkins.yaml": "ks-jenkins",
+		},
+	}
+	err = ctrl.checkJenkinsConfigData(targetConfigMap)
+	assert.Nil(t, err, "failed when check a ConfigMap which contains ks-jenkins.yaml")
+	assert.Equal(t, "ks-jenkins", targetConfigMap.Data["ks-jenkins.yaml"],
+		"the existing ks-jenkins.yaml should not be override")
+}
+
+func TestCheckJenkinsConfigFormula(t *testing.T) {
+	ctrl := Controller{}
+	cm := &v1.ConfigMap{}
+	err := ctrl.checkJenkinsConfigFormula(cm)
+	assert.Nil(t, err, "failed when check the Jenkins config formula from an empty ConfigMap")
+	assert.Equal(t, "custom", cm.Annotations["devops.kubesphere.io/jenkins-config-formula"],
+		"the formula name should be custom if it's empty")
+
+	cm = &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"devops.kubesphere.io/jenkins-config-formula": "invalid",
+			},
+		},
+	}
+	err = ctrl.checkJenkinsConfigFormula(cm)
+	assert.Nil(t, err, "failed when check the Jenkins config which contains an invalid formula name")
+	assert.Equal(t, "custom", cm.Annotations["devops.kubesphere.io/jenkins-config-formula"],
+		"the formula name should be custom if it's invalid")
+
+	cm = &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"devops.kubesphere.io/jenkins-config-formula": "high",
+			},
+		},
+	}
+	err = ctrl.checkJenkinsConfigFormula(cm)
+	assert.Nil(t, err, "failed when check the Jenkins config which contains an valid formula name")
+	assert.Equal(t, "high", cm.Annotations["devops.kubesphere.io/jenkins-config-formula"],
+		"the formula name should not be changed if it's high")
+}
+
+func Test_isValidJenkinsConfigFormulaName(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{{
+		name: "emtpy string",
+		args: args{},
+		want: false,
+	}, {
+		name: "invalid name",
+		args: args{name: "invalid"},
+		want: false,
+	}, {
+		name: "formula: custom",
+		args: args{name: "custom"},
+		want: true,
+	}, {
+		name: "formula: high",
+		args: args{name: "high"},
+		want: true,
+	}, {
+		name: "formula: low",
+		args: args{name: "low"},
+		want: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isValidJenkinsConfigFormulaName(tt.args.name); got != tt.want {
+				t.Errorf("isValidJenkinsConfigFormulaName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isJenkinsConfigCustomized(t *testing.T) {
+	type args struct {
+		annos map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{{
+		name: "map is nil",
+		want: false,
+	}, {
+		name: "map is empty",
+		want: false,
+	}, {
+		name: "with valid value: custom",
+		args: args{
+			annos: map[string]string{
+				ANNOJenkinsConfigFormula: "custom",
+			},
+		},
+		want: true,
+	}, {
+		name: "with valid value: customized",
+		args: args{
+			annos: map[string]string{
+				ANNOJenkinsConfigCustomized: "true",
+			},
+		},
+		want: true,
+	}, {
+		name: "with invalid value: fake",
+		args: args{
+			annos: map[string]string{
+				ANNOJenkinsConfigFormula: "fake",
+			},
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isJenkinsConfigCustomized(tt.args.annos); got != tt.want {
+				t.Errorf("isJenkinsConfigCustomized() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

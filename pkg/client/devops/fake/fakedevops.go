@@ -602,3 +602,7 @@ func (d *Devops) GetGlobalRole(roleName string) (string, error) {
 func (d *Devops) ReloadConfiguration() error {
 	return nil
 }
+
+func (d *Devops) ApplyNewSource(string) error {
+	return nil
+}

@@ -1,39 +1,18 @@
 package jenkinsconfig
 
-import (
-	"context"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/klog"
-	"strings"
-)
-
 // ResourceLimit describes the limitation level of jenkins agent pod resource
 type ResourceLimit string
 
 const (
-	// default resource limit level
-	defaultLimit ResourceLimit = "default"
-
-	// high resource limit level
-	highLimit ResourceLimit = "high"
-
-	// custom resource limit level
-	customLimit ResourceLimit = "custom"
-
 	// Resource limit key of map
 	resourceLimitKey = "resource.limit"
 
-	jenkinsConfigName          = "jenkins-agent-config"
-	podResourceLimitConfigName = "agent.pod_resource_limit"
-	customizedLabel            = "config.devops.kubesphere.io/customized"
-	templateConfigMapName      = "jenkins-casc-config-template"
-	jenkinsYamlKey             = "jenkins.yaml"
-	jenkinsCasCConfigName      = "jenkins-casc-config"
-	workerLimitRangeName       = "worker-limit-range"
-	workerResQuotaName         = "worker-resource-quota"
+	jenkinsConfigName     = "jenkins-casc-config"
+	jenkinsYamlKey        = "jenkins.yaml"
+	ksJenkinsYAMLKey      = "ks-jenkins.yaml"
+	jenkinsCasCConfigName = "jenkins-casc-config"
+	workerLimitRangeName  = "worker-limit-range"
+	workerResQuotaName    = "worker-resource-quota"
 )
 
 const (
@@ -102,54 +81,4 @@ func getHighConfig() map[string]string {
 		goLimitCPUKey:        "3000m",
 		goLimitMemoryKey:     "4096Mi",
 	}
-}
-
-// getOrCreateJenkinsCasCTemplate fetches or creates Jenkins CasC template. If there has no template before, the provided
-// template will be used.
-func getOrCreateJenkinsCasCTemplate(configMapClient v1core.ConfigMapsGetter, namespace string, template string) (string, error) {
-	// get ConfigMap
-	agentConfigTemplate, err := configMapClient.ConfigMaps(namespace).Get(context.Background(), templateConfigMapName, metav1.GetOptions{})
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			return "", err
-		}
-		klog.V(5).Infof("%s/%s was not found, and we would create a fresh one", namespace, templateConfigMapName)
-		// create ConfigMap
-		agentConfigTemplate, err = createJenkinsCascTemplate(configMapClient, namespace, template)
-		if err != nil {
-			return "", err
-		}
-	}
-	return agentConfigTemplate.Data[jenkinsYamlKey], nil
-}
-
-// createJenkinsCascTemplate creates a newly Jenkins CasC template ConfigMap with provided namespace and template.
-func createJenkinsCascTemplate(configMapClient v1core.ConfigMapsGetter, namespace string, template string) (*v1.ConfigMap, error) {
-	immutable := true
-	// construct new template ConfigMap
-	templateConfigMap := &v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      templateConfigMapName,
-		},
-		Data: map[string]string{
-			jenkinsYamlKey: template,
-		},
-		Immutable: &immutable,
-	}
-	templateConfigMap, err := configMapClient.ConfigMaps(namespace).Create(context.Background(), templateConfigMap, metav1.CreateOptions{})
-	if err != nil {
-		klog.Errorf("failed to create Jenkins CasC template ConfigMap: %s/%s", namespace, templateConfigMapName)
-		return nil, err
-	}
-	return templateConfigMap, nil
-}
-
-// Check if provided resource limit is considered as default.
-func isDefaultResourceLimit(resourceLimit string) bool {
-	return len(resourceLimit) == 0 || strings.Compare(strings.ToLower(resourceLimit), string(defaultLimit)) == 0
 }

@@ -22,5 +22,5 @@ func TestNewWebService(t *testing.T) {
 	})
 
 	assert.NotNil(t, ws)
-	assert.Equal(t, ApiRootPath + "/devops/v2", ws.RootPath())
+	assert.Equal(t, ApiRootPath+"/devops/v2", ws.RootPath())
 }

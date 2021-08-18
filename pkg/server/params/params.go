@@ -79,7 +79,7 @@ func parseConditions(conditionsStr string) (*Conditions, error) {
 	// string likes: key1=value1,key2~value2,key3=
 	// exact query: key=value, if value is empty means label value must be ""
 	// fuzzy query: key~value, if value is empty means label value is "" or label key not exist
-	var conditions = &Conditions{Match: make(map[string]string, 0), Fuzzy: make(map[string]string, 0)}
+	var conditions = &Conditions{Match: make(map[string]string), Fuzzy: make(map[string]string)}
 
 	for conditionsStr != "" {
 		key := conditionsStr

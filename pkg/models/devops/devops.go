@@ -170,7 +170,7 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 	}
 	// metadata override
 	if project.Labels == nil {
-		project.Labels = make(map[string]string, 0)
+		project.Labels = make(map[string]string)
 	}
 	project.Name = ""
 	//project.Labels[tenantv1alpha1.WorkspaceLabel] = workspace
@@ -189,7 +189,7 @@ func (d devopsOperator) DeleteDevOpsProject(workspace string, projectName string
 
 func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error) {
 	if project.Labels == nil {
-		project.Labels = make(map[string]string, 0)
+		project.Labels = make(map[string]string)
 	}
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = StatusPending
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncTimeAnnoKey] = GetSyncNowTime()
