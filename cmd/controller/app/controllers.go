@@ -17,6 +17,8 @@ limitations under the License.
 package app
 
 import (
+	"fmt"
+
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
@@ -26,6 +28,8 @@ import (
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
+	tknPipeline "kubesphere.io/devops/controllers/tekton/pipeline"
+	tknPipelineRun "kubesphere.io/devops/controllers/tekton/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -66,36 +70,66 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects())
 
-		devopsPipelineController = pipeline.NewController(client.Kubernetes(),
-			client.KubeSphere(), devopsClient,
-			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-			informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
-
 		devopsCredentialController = devopscredential.NewController(client.Kubernetes(),
 			devopsClient,
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
 
-		jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
-			LimitRangeClient:    client.Kubernetes().CoreV1(),
-			ResourceQuotaClient: client.Kubernetes().CoreV1(),
-			ConfigMapClient:     client.Kubernetes().CoreV1(),
+		// Choose controllers of CRDs (Pipeline and PipelineRun),
+		// by the field `PipelineBackend`in options.DevOpsControllerManagerOptions
+		klog.Infof("%s was chosen to be the pipeline backend.", s.PipelineBackend)
+		if s.PipelineBackend == "Jenkins" {
+			devopsPipelineController = pipeline.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
 
-			ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
-			NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-			InformerFactory:   informerFactory,
+			jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
+				LimitRangeClient:    client.Kubernetes().CoreV1(),
+				ResourceQuotaClient: client.Kubernetes().CoreV1(),
+				ConfigMapClient:     client.Kubernetes().CoreV1(),
 
-			ConfigOperator:  devopsClient,
-			ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
-		}, s.JenkinsOptions)
+				ConfigMapInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().ConfigMaps(),
+				NamespaceInformer: informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				InformerFactory:   informerFactory,
 
-		// add PipelineRun controller
-		if err := (&pipelinerun.Reconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-			Log:    ctrl.Log.WithName("pipelinerun-controller"),
-		}).SetupWithManager(mgr); err != nil {
-			klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
+				ConfigOperator:  devopsClient,
+				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
+			}, s.JenkinsOptions)
+
+			// add PipelineRun controller
+			if err := (&pipelinerun.Reconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+				Log:    ctrl.Log.WithName("pipelinerun-controller"),
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
+				return err
+			}
+		} else if s.PipelineBackend == "Tekton" {
+			// add tekton pipeline controller
+			if err := (&tknPipeline.Reconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
+				return err
+			}
+
+			// add tekton pipelinerun controller
+			if err := (&tknPipelineRun.Reconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
+				return err
+			}
+		} else {
+			// We currently only support two backends: Tekton and Jenkins,
+			// and the other choices are illegal.
+			errorMessage := fmt.Sprintf("Pipeline backend does not found. Expected value Jenkins or Tekton, but given %s", s.PipelineBackend)
+			klog.Error(errorMessage)
+			return fmt.Errorf(errorMessage)
 		}
 	}
 

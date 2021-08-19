@@ -1,0 +1,8 @@
+apiVersion: devops.kubesphere.io/v2alpha1
+kind: PipelineRun
+metadata:
+  name: pipelinerun-sample
+spec:
+  # Add fields here
+  name: run-test-demo
+  ref: hello-world

@@ -36,97 +36,20 @@ spec:
         spec:
           description: PipelineRunSpec defines the desired state of PipelineRun
           properties:
-            parameters:
-              description: Parameters are some key/value pairs passed to runner.
-              items:
-                description: Parameter is an option that can be passed with the endpoint
-                  to influence the Pipeline Run
-                properties:
-                  name:
-                    description: Name indicates that name of the parameter.
-                    type: string
-                  value:
-                    description: Value indicates that value of the parameter.
-                    type: string
-                required:
-                - name
-                - value
-                type: object
-              type: array
-            scm:
-              description: Scm is a SCM configuration that target pipeline run requires.
-              properties:
-                refName:
-                  description: RefName indicates that SCM reference name, such as
-                    master, dev, release-v1.
-                  type: string
-                refType:
-                  description: RefType indicates that SCM reference type, such as
-                    branch, tag, pr, mr.
-                  type: string
-              required:
-              - refName
-              - refType
-              type: object
+            name:
+              description: Foo is an example field of PipelineRun. Edit pipelinerun_types.go
+                to remove/update
+              type: string
+            ref:
+              type: string
           type: object
         status:
           description: PipelineRunStatus defines the observed state of PipelineRun
-          properties:
-            completionTime:
-              description: Completion timestamp of the pipeline run.
-              format: date-time
-              type: string
-            conditions:
-              description: Current state of pipeline run.
-              items:
-                description: Condition contains details for the current condition
-                  of this pipeline run. Reference from PodCondition
-                properties:
-                  lastProbeTime:
-                    description: Last time we probed the condition.
-                    format: date-time
-                    type: string
-                  lastTransitionTime:
-                    description: Last time the condition transitioned from one status
-                      to another.
-                    format: date-time
-                    type: string
-                  message:
-                    description: Human-readable message indicating details about last
-                      transition.
-                    type: string
-                  reason:
-                    description: Unique, one-word, CamelCase reason for the condition's
-                      last transition.
-                    type: string
-                  status:
-                    description: Status is the status of the condition. Can be True,
-                      False, Unknown.
-                    type: string
-                  type:
-                    description: Type is the type of the condition.
-                    type: string
-                required:
-                - status
-                - type
-                type: object
-              type: array
-            phase:
-              description: Current phase of pipeline run.
-              type: string
-            startTime:
-              description: Start timestamp of the pipeline run.
-              format: date-time
-              type: string
-            updateTime:
-              description: Update timestamp of the pipeline run.
-              format: date-time
-              type: string
           type: object
       type: object
-  version: v1alpha4
+  version: v2alpha1
   versions:
-  - name: v1alpha4
+  - name: v2alpha1
     served: true
     storage: true
 status:
