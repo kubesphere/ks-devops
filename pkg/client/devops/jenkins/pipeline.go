@@ -98,7 +98,7 @@ func (p *Pipeline) GetPipeline() (*devops.Pipeline, error) {
 
 	err = json.Unmarshal(res, &pipeline)
 	if err != nil {
-		klog.Error(err)
+		err = fmt.Errorf("failed to unmarshal JSON data to Pipeline, raw: %s, error: %v", res, err)
 		return nil, err
 	}
 	return &pipeline, err
