@@ -47,13 +47,27 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 	apiURL.RawQuery = httpParameters.Url.RawQuery
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	header := httpParameters.Header
+	header := httpParameters.Header.Clone()
+	if header == nil {
+		header = http.Header{}
+	}
 
 	if j.Requester != nil {
 		auth := j.Requester.BasicAuth
 
 		creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", auth.Username, auth.Password)))
 		header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		// we only set crumb to request header for POST method
+		// See also https://github.com/jenkinsci/jenkins/blob/ca646b3742e6921d332078d0b287fd359970d7e9/core/src/main/java/hudson/security/csrf/CrumbFilter.java#L126
+		if httpParameters.Method == http.MethodPost {
+			if err := j.Requester.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
+				header.Set(crumbRequestField, crumb)
+			}); err != nil {
+				klog.Errorf("unable to set crumb to HTTP header, err: %v", err)
+				return nil, nil, err
+			}
+		}
 	}
 	// TODO consider to remove below
 	SetBasicBearTokenHeader(&header)
