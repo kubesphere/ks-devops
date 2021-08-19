@@ -51,8 +51,15 @@ func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alph
 }
 
 func (j *JenkinsClient) DeleteProjectPipeline(projectID string, pipelineID string) (string, error) {
-	// TODO: delete a pipeline
-	return j.jenkins.DeleteProjectPipeline(pipelineID, pipelineID)
+	jclient := job.Client{
+		JenkinsCore: j.Core,
+	}
+	projectPipelineName := fmt.Sprintf("%s %s", projectID, projectID)
+	err := jclient.Delete(projectPipelineName)
+	if err != nil {
+		return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+	}
+	return pipelineID, nil
 }
 func (j *JenkinsClient) UpdateProjectPipeline(projectID string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	// TODO: Update a pipeline
