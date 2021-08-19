@@ -58,7 +58,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// get pipeline
 	pipelineRef := v1.GetControllerOf(&pr)
 	if pipelineRef == nil {
-		log.Error(nil, "skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
+		log.Info("skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
 		return ctrl.Result{}, nil
 	}
 
