@@ -1,6 +1,7 @@
 apiVersion: devops.kubesphere.io/v1alpha3
 kind: Pipeline
 metadata:
+  namespace: defaultg58cw
   name: pipeline-sample
 spec:
   # Add fields here

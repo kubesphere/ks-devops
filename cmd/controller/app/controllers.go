@@ -91,9 +91,10 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 		// add PipelineRun controller
 		if err := (&pipelinerun.Reconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-			Log:    ctrl.Log.WithName("pipelinerun-controller"),
+			Client:       mgr.GetClient(),
+			Scheme:       mgr.GetScheme(),
+			Log:          ctrl.Log.WithName("pipelinerun-controller"),
+			DevOpsClient: devopsClient,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
 		}

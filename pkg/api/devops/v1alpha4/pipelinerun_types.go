@@ -25,7 +25,7 @@ import (
 type PipelineRunSpec struct {
 	// Parameters are some key/value pairs passed to runner.
 	// +optional
-	Parameters []*Parameter `json:"parameters,omitempty"`
+	Parameters []Parameter `json:"parameters,omitempty"`
 
 	// SCM is a SCM configuration that target pipeline run requires.
 	SCM *SCM `json:"scm,omitempty"`
@@ -75,6 +75,28 @@ type PipelineRunList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PipelineRun `json:"items"`
+}
+
+// MarkPending marks current pipeline pending.
+func (status *PipelineRunStatus) MarkPending() {
+	//TODO Complete pipeline run status
+	status.Phase = Pending
+}
+
+// HasStarted indicates if the pipeline run has started already.
+func (pr *PipelineRun) HasStarted() bool {
+	_, ok := pr.GetPipelineRunId()
+	return pr.Status.StartTime != nil && ok
+}
+
+// IsMultiBranchPipeline indicates if the pipeline run belongs a multi-branch pipeline.
+func (pr *PipelineRun) IsMultiBranchPipeline() bool {
+	return pr.Spec.SCM != nil && len(pr.Spec.SCM.RefName) > 0
+}
+
+func (pr *PipelineRun) GetPipelineRunId() (pipelineRunId string, exist bool) {
+	pipelineRunId, exist = pr.Annotations[JenkinsPipelineRunIdKey]
+	return
 }
 
 // Parameter is an option that can be passed with the endpoint to influence the Pipeline Run
