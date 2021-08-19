@@ -14,7 +14,7 @@ import (
 
 const (
 	jenkinsTimeLayout = "2006-01-02T15:04:05+0000"
-	staticDevOpsUrl   = "https://devops.kubesphere.io/"
+	staticDevOpsURL   = "https://devops.kubesphere.io/"
 )
 
 func parseJenkinsTime(jenkinsTime string) (time.Time, error) {
@@ -24,10 +24,10 @@ func parseJenkinsTime(jenkinsTime string) (time.Time, error) {
 // mockClientURL is only for HttpParameters.
 // Generated URL has no practical significance, but it is indispensable.
 func mockClientURL() *url.URL {
-	stubURL, err := url.Parse(staticDevOpsUrl)
+	stubURL, err := url.Parse(staticDevOpsURL)
 	if err != nil {
 		// should never happen
-		panic("invalid stub URL: " + staticDevOpsUrl)
+		panic("invalid stub URL: " + staticDevOpsURL)
 	}
 	return stubURL
 }

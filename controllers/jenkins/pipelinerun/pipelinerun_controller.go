@@ -57,10 +57,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// get pipeline
 	pipelineRef := v1.GetControllerOf(&pr)
-	pipelineRef = &v1.OwnerReference{
-		Name: "demo-pipeline",
-	}
-
 	if pipelineRef == nil {
 		log.Error(nil, "skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
 		return ctrl.Result{}, nil
@@ -200,8 +196,7 @@ func (r *Reconciler) apply(runResult *devopsClient.PipelineRun, prStatus *devops
 		Reason:        runResult.State,
 	}
 
-	var phase devopsv1alpha4.RunPhase
-	prStatus.Phase = phase
+	var phase = devopsv1alpha4.Unknown
 
 	switch runResult.State {
 	case Queued.String():
@@ -258,6 +253,7 @@ func (r *Reconciler) apply(runResult *devopsClient.PipelineRun, prStatus *devops
 		condition.Status = devopsv1alpha4.ConditionUnknown
 	}
 
+	prStatus.Phase = phase
 	prStatus.AddCondition(&condition)
 	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
 	return nil
