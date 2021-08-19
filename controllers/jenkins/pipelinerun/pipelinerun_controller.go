@@ -19,19 +19,15 @@ package pipelinerun
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"github.com/go-logr/logr"
-	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"net/http"
-	"net/url"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 	"time"
 )
 
@@ -61,6 +57,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// get pipeline
 	pipelineRef := v1.GetControllerOf(&pr)
+	pipelineRef = &v1.OwnerReference{
+		Name: "demo-pipeline",
+	}
 
 	if pipelineRef == nil {
 		log.Error(nil, "skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
@@ -100,77 +99,49 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunDataKey] = string(runResultJSON)
 
+		if err := r.apply(runResult, &pr.Status); err != nil {
+			log.Error(err, "unable to apply Jenkins run result to PipelineRun", "jenkinsRunData", runResult)
+			return ctrl.Result{}, err
+		}
+
 		// update PipelineRun
 		if err := r.Update(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun.")
 			return ctrl.Result{}, err
 		}
-
-		if runResult.EndTime != "" {
-			// this means the PipelineRun has ended
-			if err := r.completePipelineRun(&pr, runResult); err != nil {
-				return ctrl.Result{}, err
-			}
-			// update PipelineRun
-			if err := r.Status().Update(ctx, &pr); err != nil {
-				log.Error(err, "unable to update PipelineRun status.")
-				return ctrl.Result{}, err
-			}
-			log.Info("PipelineRun has been finished")
-			return ctrl.Result{}, nil
-		}
-
-		// update updateTime
-		now := v1.Now()
-		pr.Status.UpdateTime = &now
-
+		// update PipelineStatus
 		if err := r.Status().Update(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun status.")
 			return ctrl.Result{}, err
 		}
-
+		if pr.HasCompleted() {
+			log.Info("PipelineRun has been finished")
+			return ctrl.Result{}, nil
+		}
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// first run
-	// build http parameters
-	httpParameters, err := buildHTTPParametersForRunning(&pr)
+	runResult, err := r.RunPipeline(projectName, pipeline.GetName(), &pr.Spec)
 	if err != nil {
-		log.Error(err, "unable to create http parameters for running pipeline.")
+		log.Error(err, "unable to run pipeline", "projectName", projectName, "pipeline", pipeline)
 		return ctrl.Result{}, err
-	}
-	// run pipeline
-	var runResponse *devopsClient.RunPipeline
-	if pr.IsMultiBranchPipeline() {
-		// run multi branch pipeline
-		runResponse, err = r.DevOpsClient.RunBranchPipeline(projectName, pipeline.GetName(), pr.Spec.SCM.RefName, httpParameters)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else {
-		// run normal pipeline
-		runResponse, err = r.DevOpsClient.RunPipeline(projectName, pipeline.GetName(), httpParameters)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	// set Jenkins PipelineRun id
 	if pr.Annotations == nil {
 		pr.Annotations = make(map[string]string)
 	}
-	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = runResponse.ID
-
-	// label PipelineRun as running
-	pr.Status.MarkPending()
-
+	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = runResult.ID
 	// The Update method only updates fields except status
 	if err := r.Client.Update(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun.")
 		return ctrl.Result{}, err
 	}
+
+	pr.Status.StartTime = &v1.Time{Time: time.Now()}
 	if err := r.Client.Status().Update(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
@@ -180,106 +151,115 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{Requeue: true}, nil
 }
 
+func (r *Reconciler) RunPipeline(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*devopsClient.RunPipeline, error) {
+	// build http parameters
+	httpParameters, err := buildHTTPParametersForRunning(prSpec)
+	if err != nil {
+		return nil, err
+	}
+	// run pipeline
+	var runResponse *devopsClient.RunPipeline
+	if prSpec.IsMultiBranchPipeline() {
+		// run multi branch pipeline
+		runResponse, err = r.DevOpsClient.RunBranchPipeline(projectName, pipelineName, prSpec.SCM.RefName, httpParameters)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// run normal pipeline
+		runResponse, err = r.DevOpsClient.RunPipeline(projectName, pipelineName, httpParameters)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return runResponse, nil
+}
+
 func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (runResult *devopsClient.PipelineRun, err error) {
 	// get PipelineRun id
 	runID, _ := pr.GetPipelineRunID()
 	// get latest runs data from Jenkins
-	if pr.IsMultiBranchPipeline() {
+	if pr.Spec.IsMultiBranchPipeline() {
 		runResult, err = r.DevOpsClient.GetBranchPipelineRun(projectName, pipelineName, pr.Spec.SCM.RefName, runID, &devopsClient.HttpParameters{
-			Url:    getStubURL(),
+			Url:    mockClientURL(),
 			Method: http.MethodGet,
 		})
 	} else {
 		runResult, err = r.DevOpsClient.GetPipelineRun(projectName, pipelineName, runID, &devopsClient.HttpParameters{
-			Url:    getStubURL(),
+			Url:    mockClientURL(),
 			Method: http.MethodGet,
 		})
 	}
 	return
 }
 
-func (r *Reconciler) completePipelineRun(pr *devopsv1alpha4.PipelineRun, jenkinsRunResult *devopsClient.PipelineRun) error {
-	// time sample: 2021-08-18T16:36:47.236+0000
-	endTime, err := time.Parse(time.RFC3339, jenkinsRunResult.EndTime)
-	if err != nil {
-		return err
+func (r *Reconciler) apply(runResult *devopsClient.PipelineRun, prStatus *devopsv1alpha4.PipelineRunStatus) error {
+	condition := devopsv1alpha4.Condition{
+		Type:          devopsv1alpha4.ConditionReady,
+		LastProbeTime: v1.Now(),
+		Reason:        runResult.State,
 	}
 
-	pr.Status.MarkCompleted(endTime)
+	var phase devopsv1alpha4.RunPhase
+	prStatus.Phase = phase
 
-	// resolve status
-	jenkinsRunData := JenkinsRunData{jenkinsRunResult}
-	return jenkinsRunData.resolveStatus(pr)
-}
-
-func buildHTTPParametersForRunning(pr *devopsv1alpha4.PipelineRun) (*devopsClient.HttpParameters, error) {
-	if pr == nil {
-		return nil, errors.New("invalid PipelineRun")
+	switch runResult.State {
+	case Queued.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Pending
+	case Running.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Running
+	case Paused.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Pending
+	case Skipped.String():
+		condition.Type = devopsv1alpha4.ConditionSucceeded
+		condition.Status = devopsv1alpha4.ConditionTrue
+		phase = devopsv1alpha4.Succeeded
+	case NotBuiltState.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Unknown
+	case Finished.String():
+		// mark as completed
+		if runResult.EndTime != "" {
+			// get end time
+			endTime, err := parseJenkinsTime(runResult.EndTime)
+			if err != nil {
+				return err
+			}
+			prStatus.CompletionTime = &v1.Time{Time: endTime}
+		} else {
+			prStatus.CompletionTime = &v1.Time{Time: time.Now()}
+		}
+		// handle result
+		switch runResult.Result {
+		case Success.String():
+			condition.Type = devopsv1alpha4.ConditionSucceeded
+			condition.Status = devopsv1alpha4.ConditionTrue
+			phase = devopsv1alpha4.Succeeded
+		case Unstable.String():
+			condition.Status = devopsv1alpha4.ConditionFalse
+			phase = devopsv1alpha4.Failed
+		case Failure.String():
+			condition.Status = devopsv1alpha4.ConditionFalse
+			phase = devopsv1alpha4.Failed
+		case NotBuiltResult.String():
+			condition.Status = devopsv1alpha4.ConditionUnknown
+			phase = devopsv1alpha4.Unknown
+		case Unknown.String():
+			condition.Status = devopsv1alpha4.ConditionUnknown
+			phase = devopsv1alpha4.Unknown
+		case Aborted.String():
+			condition.Status = devopsv1alpha4.ConditionFalse
+			phase = devopsv1alpha4.Failed
+		}
+	default:
+		condition.Status = devopsv1alpha4.ConditionUnknown
 	}
-	// first run
-	parameters := pr.Spec.Parameters
-	if parameters == nil {
-		parameters = make([]devopsv1alpha4.Parameter, 0)
-	}
 
-	// build http parameters
-	var body = map[string]interface{}{
-		"parameters": parameters,
-	}
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	return &devopsClient.HttpParameters{
-		Url:    getStubURL(),
-		Method: http.MethodPost,
-		Header: map[string][]string{
-			"Content-Type": {"application/json"},
-		},
-		Body: io.NopCloser(strings.NewReader(string(bodyJSON))),
-	}, nil
-}
-
-// getStubURL is only for HttpParameters
-func getStubURL() *url.URL {
-	// this url isn't meaningful.
-	const stubDevOpsHost = "https://devops.kubesphere.io/"
-	stubURL, err := url.Parse(stubDevOpsHost)
-	if err != nil {
-		// should never happen
-		panic("invalid stub URL: " + stubDevOpsHost)
-	}
-	return stubURL
-}
-
-type JenkinsRunState string
-
-const (
-	Queued        JenkinsRunState = "QUEUED"
-	Running       JenkinsRunState = "RUNNING"
-	Paused        JenkinsRunState = "PAUSED"
-	Skipped       JenkinsRunState = "SKIPPED"
-	NotBuiltState JenkinsRunState = "NOT_BUILT"
-	Finished      JenkinsRunState = "FINISHED"
-)
-
-type JenkinsRunResult string
-
-const (
-	Success        JenkinsRunResult = "SUCCESS"
-	Unstable       JenkinsRunResult = "UNSTABLE"
-	Failure        JenkinsRunResult = "FAILURE"
-	NotBuiltResult JenkinsRunResult = "NOT_BUILT"
-	Unknown        JenkinsRunResult = "UNKNOWN"
-	Aborted        JenkinsRunResult = "ABORTED"
-)
-
-type JenkinsRunData struct {
-	*devopsClient.PipelineRun
-}
-
-func (jrs *JenkinsRunData) resolveStatus(pr *devopsv1alpha4.PipelineRun) error {
-	// TODO Complete the conversion
+	prStatus.AddCondition(&condition)
+	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
 	return nil
 }
 

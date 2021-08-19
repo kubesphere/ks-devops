@@ -254,6 +254,9 @@ func (c *Controller) syncHandler(key string) error {
 					klog.V(8).Info(err, fmt.Sprintf("failed to set ownerreference %s ", key))
 					return err
 				}
+				if copyNs.Labels == nil {
+					copyNs.Labels = make(map[string]string)
+				}
 				copyNs.Labels[constants.DevOpsProjectLabelKey] = project.Name
 				_, err = c.client.CoreV1().Namespaces().Update(context.Background(), copyNs, metav1.UpdateOptions{})
 				if err != nil {

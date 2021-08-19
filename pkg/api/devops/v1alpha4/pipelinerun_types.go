@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/apis"
+	"sort"
 	"time"
 )
 
@@ -28,31 +29,31 @@ type PipelineRunSpec struct {
 	// +optional
 	Parameters []Parameter `json:"parameters,omitempty"`
 
-	// SCM is a SCM configuration that target pipeline run requires.
+	// SCM is a SCM configuration that target PipelineRun requires.
 	SCM *SCM `json:"scm,omitempty"`
 }
 
 // PipelineRunStatus defines the observed state of PipelineRun
 type PipelineRunStatus struct {
-	// Start timestamp of the pipeline run.
+	// Start timestamp of the PipelineRun.
 	// +optional
 	StartTime *metav1.Time `json:"startTime,omitempty"`
 
-	// Completion timestamp of the pipeline run.
+	// Completion timestamp of the PipelineRun.
 	// +optional
 	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
 
-	// Update timestamp of the pipeline run.
+	// Update timestamp of the PipelineRun.
 	// +optional
 	UpdateTime *metav1.Time `json:"updateTime,omitempty"`
 
-	// Current state of pipeline run.
+	// Current state of PipelineRun.
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []Condition `json:"conditions,omitempty"`
 
-	// Current phase of pipeline run.
+	// Current phase of PipelineRun.
 	// +optional
 	Phase RunPhase `json:"phase,omitempty"`
 }
@@ -78,21 +79,29 @@ type PipelineRunList struct {
 	Items           []PipelineRun `json:"items"`
 }
 
-// MarkPending marks current pipeline pending.
-func (status *PipelineRunStatus) MarkPending() {
-	status.Phase = Pending
-	status.MarkStarted()
-	status.MarkUpdated()
+func (status *PipelineRunStatus) GetLatestCondition() *Condition {
+	if len(status.Conditions) == 0 {
+		return nil
+	}
+	return &status.Conditions[0]
 }
 
-func (status *PipelineRunStatus) MarkStarted() {
-	now := metav1.Now()
-	status.StartTime = &now
-}
-
-func (status *PipelineRunStatus) MarkUpdated() {
-	now := metav1.Now()
-	status.UpdateTime = &now
+func (status *PipelineRunStatus) AddCondition(newCondition *Condition) {
+	// compare newCondition
+	var typeExist bool
+	for i, condition := range status.Conditions {
+		if condition.Type == newCondition.Type {
+			// replace with new condition as same condition type
+			typeExist = true
+			status.Conditions[i] = *newCondition
+		}
+	}
+	if !typeExist {
+		newCondition.LastTransitionTime = metav1.Now()
+		status.Conditions = append(status.Conditions, *newCondition)
+	}
+	// sort conditions
+	sort.Sort(conditionSlice(status.Conditions))
 }
 
 func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
@@ -100,15 +109,20 @@ func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
 	status.CompletionTime = &completionTime
 }
 
-// HasStarted indicates if the pipeline run has started already.
+// HasStarted indicates if the PipelineRun has started already.
 func (pr *PipelineRun) HasStarted() bool {
 	_, ok := pr.GetPipelineRunID()
-	return pr.Status.StartTime != nil && ok
+	return !pr.Status.StartTime.IsZero() && ok
 }
 
-// IsMultiBranchPipeline indicates if the pipeline run belongs a multi-branch pipeline.
-func (pr *PipelineRun) IsMultiBranchPipeline() bool {
-	return pr.Spec.SCM != nil && len(pr.Spec.SCM.RefName) > 0
+// HasCompleted indicates if the PipelineRun has already completed.
+func (pr *PipelineRun) HasCompleted() bool {
+	return !pr.Status.CompletionTime.IsZero()
+}
+
+// IsMultiBranchPipeline indicates if the PipelineRun belongs a multi-branch pipeline.
+func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
+	return prSpec.SCM != nil && len(prSpec.SCM.RefName) > 0
 }
 
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
@@ -142,7 +156,7 @@ const (
 	MergeRequest RefType = "mr"
 )
 
-// SCM is a SCM configuration that target pipeline run requires.
+// SCM is a SCM configuration that target PipelineRun requires.
 type SCM struct {
 	// RefType indicates that SCM reference type, such as branch, tag, pr, mr.
 	RefType RefType `json:"refType"`
@@ -151,27 +165,27 @@ type SCM struct {
 	RefName string `json:"refName"`
 }
 
-// RunPhase is a label for the condition of a pipeline run at the current time.
+// RunPhase is a label for the condition of a PipelineRun at the current time.
 type RunPhase string
 
 const (
-	// Pending indicates that the pipeline run is pending.
+	// Pending indicates that the PipelineRun is pending.
 	Pending RunPhase = "Pending"
 
-	// Running indicates that the pipeline run is running.
+	// Running indicates that the PipelineRun is running.
 	Running RunPhase = "Running"
 
-	// Succeeded indicates that the pipeline run has succeeded.
+	// Succeeded indicates that the PipelineRun has succeeded.
 	Succeeded RunPhase = "Succeeded"
 
-	// Failed indicates that the pipeline run has failed.
+	// Failed indicates that the PipelineRun has failed.
 	Failed RunPhase = "Failed"
 
-	// Unknown indicates that the pipeline run has an unknown status.
+	// Unknown indicates that the PipelineRun has an unknown status.
 	Unknown RunPhase = "Unknown"
 )
 
-// ConditionType is type of pipeline run condition.
+// ConditionType is type of PipelineRun condition.
 type ConditionType string
 
 const (
@@ -198,11 +212,11 @@ const (
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
-// Condition contains details for the current condition of this pipeline run.
+// Condition contains details for the current condition of this PipelineRun.
 // Reference from PodCondition
 type Condition struct {
 	// Type is the type of the condition.
-	Type ConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=PodConditionType"`
+	Type ConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ConditionType"`
 
 	// Status is the status of the condition.
 	// Can be True, False, Unknown.
@@ -223,6 +237,21 @@ type Condition struct {
 	// Human-readable message indicating details about last transition.
 	// +optional
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
+}
+
+// conditionSlice is a sort.Interface instance for sorting conditions.
+type conditionSlice []Condition
+
+func (cs conditionSlice) Len() int {
+	return len(cs)
+}
+
+func (cs conditionSlice) Less(i, j int) bool {
+	return !cs[i].LastProbeTime.Equal(&cs[j].LastProbeTime) && !cs[i].LastProbeTime.Before(&cs[j].LastProbeTime)
+}
+
+func (cs conditionSlice) Swap(i, j int) {
+	cs[i], cs[j] = cs[j], cs[i]
 }
 
 func init() {
