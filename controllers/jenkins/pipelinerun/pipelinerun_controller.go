@@ -158,8 +158,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	// requeue after 1 second.
-	// if we requeue immediately, the controller will complain `the object has been modified`.
+	// requeue immediately
 	return ctrl.Result{Requeue: true}, nil
 }
 
