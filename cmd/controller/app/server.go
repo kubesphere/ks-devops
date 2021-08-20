@@ -27,7 +27,6 @@ import (
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/informers"
-	"kubesphere.io/devops/pkg/utils/term"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,10 +81,9 @@ func NewControllerManagerCommand() *cobra.Command {
 	}
 
 	usageFmt := "Usage:\n  %s\n"
-	cols, _, _ := term.TerminalSize(cmd.OutOrStdout())
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n\n"+usageFmt, cmd.Long, cmd.UseLine())
-		cliflag.PrintSections(cmd.OutOrStdout(), namedFlagSets, cols)
+		cliflag.PrintSections(cmd.OutOrStdout(), namedFlagSets, 0)
 	})
 
 	versionCmd := &cobra.Command{
