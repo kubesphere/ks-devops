@@ -122,7 +122,9 @@ func parsePipelineConfigXml(config string) (*devopsv1alpha3.NoScmPipeline, error
 	if flow == nil {
 		return nil, fmt.Errorf("can not find pipeline definition")
 	}
-	pipeline.Description = flow.SelectElement("description").Text()
+	if node := flow.SelectElement("description"); node != nil {
+		pipeline.Description = node.Text()
+	}
 
 	properties := flow.SelectElement("properties")
 	if properties.
