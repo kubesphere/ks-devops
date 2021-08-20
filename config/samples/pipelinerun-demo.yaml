@@ -48,6 +48,8 @@ metadata:
   name: demo-pipelinerun
   namespace: default
 spec:
+  pipelineRef:
+    name: demo-pipeline
   parameters:
     - name: foo
       value: bar

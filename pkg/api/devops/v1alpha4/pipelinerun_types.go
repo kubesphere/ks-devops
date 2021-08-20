@@ -17,7 +17,9 @@ limitations under the License.
 package v1alpha4
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apis"
 	"sort"
 	"time"
@@ -25,6 +27,13 @@ import (
 
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
+
+	// PipelineRef is the Pipeline to which the current PipelineRun belongs
+	PipelineRef *v1.ObjectReference `json:"pipelineRef"`
+
+	// PipelineSpec is the specification of Pipeline when the current PipelineRun is created.
+	PipelineSpec *v1alpha3.PipelineSpec `json:"pipelineSpec,omitempty"`
+
 	// Parameters are some key/value pairs passed to runner.
 	// +optional
 	Parameters []Parameter `json:"parameters,omitempty"`

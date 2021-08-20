@@ -55,37 +55,31 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// get pipeline
-	pipelineRef := v1.GetControllerOf(&pr)
-	if pipelineRef == nil {
-		log.Info("skipped to reconcile this PipelineRun due to not found pipeline reference in owner references of PipelineRun.")
+	if pr.Spec.PipelineRef == nil || pr.Spec.PipelineRef.Name == "" {
+		// ignore this PipelineRun
+		log.Info("skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.")
 		return ctrl.Result{}, nil
 	}
 
-	var pipeline v1alpha3.Pipeline
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pr.GetNamespace(), Name: pipelineRef.Name}, &pipeline); err != nil {
-		log.Error(err, "unable to get pipeline")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-	// set Pipeline name to the PipelineRun labels
-	if pr.Labels == nil {
-		pr.Labels = make(map[string]string)
-	}
-	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipeline.GetName()
+	var projectName = pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey]
+	var pipelineName = pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey]
 
-	var projectName = pipeline.Namespace
+	if pr.HasCompleted() {
+		// Pipeline has been completed
+		return ctrl.Result{}, nil
+	}
 
 	// check PipelineRun status
 	if pr.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 
-		runResult, err := r.getPipelineRunResult(projectName, pipeline.GetName(), &pr)
+		runResult, err := r.getPipelineRunResult(projectName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			return ctrl.Result{}, err
 		}
 
-		// set latest run result into annotations
+		// set the latest run result into annotations
 		runResultJSON, err := json.Marshal(runResult)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -94,25 +88,22 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			pr.Annotations = make(map[string]string)
 		}
 		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunDataKey] = string(runResultJSON)
+		// update PipelineRun
+		if err := r.Update(ctx, &pr); err != nil {
+			log.Error(err, "unable to update PipelineRun.")
+			return ctrl.Result{RequeueAfter: time.Second}, err
+		}
 
 		if err := r.apply(runResult, &pr.Status); err != nil {
 			log.Error(err, "unable to apply Jenkins run result to PipelineRun", "jenkinsRunData", runResult)
 			return ctrl.Result{}, err
 		}
 
-		// update PipelineRun
-		if err := r.Update(ctx, &pr); err != nil {
-			log.Error(err, "unable to update PipelineRun.")
-			return ctrl.Result{}, err
-		}
-		// update PipelineStatus
+		// Because the status is a subresource of PipelineRun, we have to update status separately.
+		// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
 		if err := r.Status().Update(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun status.")
-			return ctrl.Result{}, err
-		}
-		if pr.HasCompleted() {
-			log.Info("PipelineRun has been finished")
-			return ctrl.Result{}, nil
+			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
@@ -120,7 +111,29 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	runResult, err := r.RunPipeline(projectName, pipeline.GetName(), &pr.Spec)
+	// get pipeline
+	pipelineNamespace := pr.Spec.PipelineRef.Namespace
+	if pipelineNamespace == "" {
+		pipelineNamespace = pr.Namespace
+	}
+	var pipeline v1alpha3.Pipeline
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pipelineNamespace, Name: pr.Spec.PipelineRef.Name}, &pipeline); err != nil {
+		log.Error(err, "unable to get pipeline")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	projectName = pipeline.Namespace
+	pipelineName = pipeline.GetName()
+
+	// set Pipeline name to the PipelineRun labels
+	if pr.Labels == nil {
+		pr.Labels = make(map[string]string)
+	}
+
+	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipelineName
+	pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey] = projectName
+
+	runResult, err := r.RunPipeline(projectName, pipelineName, &pr.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "projectName", projectName, "pipeline", pipeline)
 		return ctrl.Result{}, err
@@ -131,19 +144,22 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pr.Annotations = make(map[string]string)
 	}
 	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = runResult.ID
-	// The Update method only updates fields except status
+	pr.Status.StartTime = &v1.Time{Time: time.Now()}
+
+	// the Update method only updates fields except status
 	if err := r.Client.Update(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun.")
 		return ctrl.Result{}, err
 	}
-
-	pr.Status.StartTime = &v1.Time{Time: time.Now()}
+	// due to the status is subresource of PipelineRun, we have to update status separately.
+	// see also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
 	if err := r.Client.Status().Update(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
 
-	// requeue immediately
+	// requeue after 1 second.
+	// if we requeue immediately, the controller will complain `the object has been modified`.
 	return ctrl.Result{Requeue: true}, nil
 }
 
