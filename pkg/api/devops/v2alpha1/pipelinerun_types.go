@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const PipelineRunFinalizerName = "tknpipelinerun.finalizers.kubesphere.io"
+
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
 	Name        string `json:"name,omitempty"`

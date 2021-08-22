@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const PipelineFinalizerName = "tknpipeline.finalizers.kubesphere.io"
+
 // Step defines the content of the step
 type Step struct {
 	// Name of the container specified as a DNS_LABEL.

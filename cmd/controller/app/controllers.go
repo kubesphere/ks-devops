@@ -19,6 +19,8 @@ package app
 import (
 	"fmt"
 
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
@@ -107,10 +109,26 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				return err
 			}
 		} else if s.PipelineBackend == "Tekton" {
-			// add tekton pipeline controller
+			// create rest.Config from kubeconfig file
+			var kubeConfigPath = "/root/.kube/config"
+			cfg, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+			if err != nil {
+				klog.Errorf("unable to build config from %s", kubeConfigPath)
+				return err
+			}
+
+			// create Tekton client-set for managing Tekton resources
+			cs, err := versioned.NewForConfig(cfg)
+			if err != nil {
+				klog.Errorf("unable to create Tekton clientset")
+				return err
+			}
+
+			// add Tekton pipeline controller
 			if err := (&tknPipeline.Reconciler{
-				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
+				Client:    mgr.GetClient(),
+				Scheme:    mgr.GetScheme(),
+				TknClient: cs,
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
 				return err
@@ -118,8 +136,9 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 			// add tekton pipelinerun controller
 			if err := (&tknPipelineRun.Reconciler{
-				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
+				Client:    mgr.GetClient(),
+				Scheme:    mgr.GetScheme(),
+				TknClient: cs,
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
 				return err
