@@ -3,7 +3,6 @@ package pipelinerun
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"net/http"
@@ -55,7 +54,7 @@ func buildHTTPParametersForRunning(prSpec *devopsv1alpha4.PipelineRunSpec) (*dev
 		Header: map[string][]string{
 			"Content-Type": {"application/json"},
 		},
-		Body: io.NopCloser(strings.NewReader(string(bodyJSON))),
+		Body: NopCloser(strings.NewReader(string(bodyJSON))),
 	}, nil
 }
 
@@ -87,4 +86,38 @@ const (
 
 func (result JenkinsRunResult) String() string {
 	return string(result)
+}
+
+// TODO Remove those Closer, Reader, ReaderCloser. Because those types and functions from io.go with version 1.16, but
+// we are using go v1.13.
+// See also: https://github.com/golang/go/issues/40025
+
+// NopCloser returns a ReadCloser with a no-op Close method wrapping
+// the provided Reader r.
+func NopCloser(r Reader) ReadCloser {
+	return nopCloser{r}
+}
+
+type nopCloser struct {
+	Reader
+}
+
+func (nopCloser) Close() error { return nil }
+
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+// ReadCloser is the interface that groups the basic Read and Close methods.
+type ReadCloser interface {
+	Reader
+	Closer
+}
+
+// Closer is the interface that wraps the basic Close method.
+//
+// The behavior of Close after the first call is undefined.
+// Specific implementations may document their own behavior.
+type Closer interface {
+	Close() error
 }

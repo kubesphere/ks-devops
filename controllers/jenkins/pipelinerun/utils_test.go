@@ -1,7 +1,6 @@
 package pipelinerun
 
 import (
-	"io"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"net/http"
@@ -73,7 +72,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 			Header: map[string][]string{
 				"Content-Type": {"application/json"},
 			},
-			Body: io.NopCloser(strings.NewReader(`{"parameters":[]}`)),
+			Body: NopCloser(strings.NewReader(`{"parameters":[]}`)),
 		},
 	}, {
 		name: "with one parameters",
@@ -93,7 +92,7 @@ func Test_buildHttpParametersForRunning(t *testing.T) {
 			Header: map[string][]string{
 				"Content-Type": {"application/json"},
 			},
-			Body: io.NopCloser(strings.NewReader(`{"parameters":[{"name":"devops","value":"wow"}]}`)),
+			Body: NopCloser(strings.NewReader(`{"parameters":[{"name":"devops","value":"wow"}]}`)),
 		},
 	}}
 	for _, tt := range tests {
