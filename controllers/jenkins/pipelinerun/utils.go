@@ -3,16 +3,7 @@ package pipelinerun
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
-	"time"
 )
-
-const (
-	jenkinsTimeLayout = "2006-01-02T15:04:05+0000"
-)
-
-func parseJenkinsTime(jenkinsTime string) (time.Time, error) {
-	return time.Parse(jenkinsTimeLayout, jenkinsTime)
-}
 
 type JenkinsRunState string
 
