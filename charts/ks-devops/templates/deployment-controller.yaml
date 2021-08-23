@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ks-devops.fullname" . }}-controller
+  name: {{ include "ks-devops.controller-fullname" . }}
   labels:
     {{- include "ks-devops-controller.labels" . | nindent 4 }}
 spec:

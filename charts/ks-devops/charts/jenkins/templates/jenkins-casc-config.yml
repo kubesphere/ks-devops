@@ -173,7 +173,7 @@ data:
                     mountPath: "/root/.sonar/cache"
                 yaml: "spec:\r\n  affinity:\r\n    nodeAffinity:\r\n      preferredDuringSchedulingIgnoredDuringExecution:\r\n      - weight: 1\r\n        preference:\r\n          matchExpressions:\r\n          - key: node-role.kubernetes.io/worker\r\n            operator: In\r\n            values:\r\n            - ci\r\n  tolerations:\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"NoSchedule\"\r\n  - key: \"node.kubernetes.io/ci\"\r\n    operator: \"Exists\"\r\n    effect: \"PreferNoSchedule\"\r\n  containers:\r\n  - name: \"go\"\r\n    resources:\r\n      requests:\r\n        ephemeral-storage: \"1Gi\"\r\n      limits:\r\n        ephemeral-storage: \"10Gi\"\r\n  securityContext:\r\n    fsGroup: 1000\r\n "
       securityRealm:
-    {{ if eq .Values.securityRealm.type "ldap" }}
+    {{- if eq .Values.securityRealm.type "ldap" }}
         ldap:
           configurations:
           - displayNameAttributeName: "uid"
@@ -191,7 +191,7 @@ data:
           disableRolePrefixing: true
     {{ else }}
       authorizationStrategy: loggedInUsersCanDoAnything
-    {{end}}
+    {{- end }}
 
     unclassified:
       location:
@@ -201,7 +201,13 @@ data:
           size: 20
           ttl: 300
         enabled: {{ .Values.ksAuth.enabled }}
-        server: "http://{{ .Release.Name }}-ks-devops-apiserver.{{ .Release.Namespace }}:9090/"
+        {{- if .Values.ksAuth.enabled }}
+        {{- if .Values.ksAuth.server }}
+        server: {{ .Values.ksAuth.server }}
+        {{ else }}
+        server: "http://{{ include "ks-devops.apiserver-fullname" . }}.{{ .Release.Namespace }}:9090/"
+        {{- end }}
+        {{- end }}
       gitLabServers:
         servers:
         - name: "https://gitlab.com"

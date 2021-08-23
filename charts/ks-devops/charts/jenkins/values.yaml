@@ -462,7 +462,7 @@ securityRealm:
 
 ksAuth:
   enabled: false
-#  server:
+  #server: ""
 
 # Install service monitor
 prometheus:

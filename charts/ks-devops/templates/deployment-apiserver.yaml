@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ks-devops.fullname" . }}-apiserver
+  name: {{ include "ks-devops.apiserver-fullname" . }}
   labels:
     {{- include "ks-devops-apiserver.labels" . | nindent 4 }}
 spec:
