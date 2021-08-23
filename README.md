@@ -1,6 +1,7 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/kubesphere/ks-devops)
+[![](https://goreportcard.com/badge/kubesphere/ks-devops)](https://goreportcard.com/report/kubesphere/ks-devops)
 [![codecov](https://codecov.io/gh/kubesphere/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/kubesphere/ks-devops)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_shield)
+[![Contributors](https://img.shields.io/github/contributors/kubesphere/ks-devops.svg)](https://github.com/kubesphere/ks-devops/graphs/contributors)
 
 ## Get started
 
@@ -87,7 +88,6 @@ golangci-lint run controllers/jenkinsconfig
 ## TODO
 
 * A separate front-end project of ks-devops
-* Install `ks-devops` via helm chart in [ks-installer](https://github.com/kubesphere/ks-installer)
 * Auth support
     * OIDC support as a default provider
 
@@ -106,8 +106,4 @@ It provides a dashboard for Kubernetes and ks-devops.
 
 ## Additional links 
 
-- [collection of KubeSphere Devops related projects](docs/projects.md)
-
-## License
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubesphere%2Fks-devops?ref=badge_large)
+- [Collection of KubeSphere Devops related projects](docs/projects.md)
