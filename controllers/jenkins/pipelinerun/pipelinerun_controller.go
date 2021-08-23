@@ -227,7 +227,6 @@ func (r *Reconciler) apply(jobBuild *job.Build, prStatus *devopsv1alpha4.Pipelin
 			phase = devopsv1alpha4.Failed
 		default:
 			condition.Status = devopsv1alpha4.ConditionUnknown
-			phase = devopsv1alpha4.Unknown
 		}
 
 		// set completion time
