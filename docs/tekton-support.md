@@ -1,11 +1,11 @@
 # Tekton integration
 
-* [Goal](##Goal)
-* [Background](##Background)
-* [Quick start](##Quick-start)
-* [Design](##Design)
-  * [Syntax design](###Syntax-design)
-  * [Controllers implementation](###Controllers-implementation)
+* [Goal](#goal)
+* [Background](#background)
+* [Quick start](#quick-start)
+* [Design](#design)
+  * [Syntax design](#syntax-design)
+  * [Controllers implementation](#controllers-implementation)
 
 ## Goal
 
