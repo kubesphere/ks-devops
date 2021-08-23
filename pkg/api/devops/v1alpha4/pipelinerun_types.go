@@ -104,6 +104,7 @@ func (status *PipelineRunStatus) AddCondition(newCondition *Condition) {
 			// replace with new condition as same condition type
 			typeExist = true
 			status.Conditions[i] = *newCondition
+			break
 		}
 	}
 	if !typeExist {
@@ -111,7 +112,11 @@ func (status *PipelineRunStatus) AddCondition(newCondition *Condition) {
 		status.Conditions = append(status.Conditions, *newCondition)
 	}
 	// sort conditions
-	sort.Sort(conditionSlice(status.Conditions))
+	sort.Slice(status.Conditions, func(i, j int) bool {
+		// desc order by last probe time
+		return !status.Conditions[i].LastProbeTime.Equal(&status.Conditions[j].LastProbeTime) &&
+			!status.Conditions[i].LastProbeTime.Before(&status.Conditions[j].LastProbeTime)
+	})
 }
 
 func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
@@ -247,21 +252,6 @@ type Condition struct {
 	// Human-readable message indicating details about last transition.
 	// +optional
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
-}
-
-// conditionSlice is a sort.Interface instance for sorting conditions.
-type conditionSlice []Condition
-
-func (cs conditionSlice) Len() int {
-	return len(cs)
-}
-
-func (cs conditionSlice) Less(i, j int) bool {
-	return !cs[i].LastProbeTime.Equal(&cs[j].LastProbeTime) && !cs[i].LastProbeTime.Before(&cs[j].LastProbeTime)
-}
-
-func (cs conditionSlice) Swap(i, j int) {
-	cs[i], cs[j] = cs[j], cs[i]
 }
 
 func init() {
