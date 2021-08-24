@@ -29,7 +29,7 @@ If you want to try it out, you can follow the below instructions.
     * `helm repo add cdf https://cdfoundation.github.io/tekton-helm-chart`
     * `helm install tekton cdf/tekton-pipeline`
 3. Install Pipeline and PipelineRun CRDs to the cluster using `make` command at the root directory of `ks-devops:tekton-support`.
-    * `make install`
+    * `kustomize build config/crd | kubectl apply -f -`
 4. Set up the CRD controllers.
     * `go run cmd/controller/main.go --pipeline-backend=Tekton`
 5. Create a sample pipeline and pipelinerun using `kubectl`.
