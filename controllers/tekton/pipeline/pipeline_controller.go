@@ -57,9 +57,6 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
-	// for debug
-	// klog.Infof("req: %v", req)
-
 	// First, we get the Pipeline resource by its name in the request namespace
 	pipeline := &devopsv2alpha1.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
