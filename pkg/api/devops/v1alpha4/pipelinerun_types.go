@@ -27,11 +27,11 @@ import (
 
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
-
 	// PipelineRef is the Pipeline to which the current PipelineRun belongs
 	PipelineRef *v1.ObjectReference `json:"pipelineRef"`
 
 	// PipelineSpec is the specification of Pipeline when the current PipelineRun is created.
+	// +optional
 	PipelineSpec *v1alpha3.PipelineSpec `json:"pipelineSpec,omitempty"`
 
 	// Parameters are some key/value pairs passed to runner.
@@ -39,6 +39,7 @@ type PipelineRunSpec struct {
 	Parameters []Parameter `json:"parameters,omitempty"`
 
 	// SCM is a SCM configuration that target PipelineRun requires.
+	// +optional
 	SCM *SCM `json:"scm,omitempty"`
 }
 
