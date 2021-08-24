@@ -110,7 +110,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			}
 		} else if s.PipelineBackend == "Tekton" {
 			// create rest.Config from kubeconfig file
-			var kubeConfigPath = "/root/.kube/config"
+			kubeConfigPath := s.KubernetesOptions.KubeConfig
 			cfg, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 			if err != nil {
 				klog.Errorf("unable to build config from %s", kubeConfigPath)
