@@ -185,7 +185,6 @@ func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, p
 	klog.Infof("Pipeline name: %s\tTask num: %d", pipeline.Name, len(pipeline.Spec.Tasks))
 
 	// transform tasks included in the pipeline to Tekton Tasks
-	// klog.Info("Going to transform tasks included in the pipeline to Tekton Tasks.")
 	for _, task := range pipeline.Spec.Tasks {
 		if err := r.reconcileTektonTask(ctx, namespace, &task, pipeline.Name); err != nil {
 			klog.Error(err, "Failed to reconcile tekton task resources.")
@@ -193,7 +192,6 @@ func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, p
 		}
 	}
 
-	// klog.Info("Going to transform Pipeline CRD to Tekton Pipeline CRD.")
 	if err := r.reconcileTektonPipeline(ctx, namespace, pipeline); err != nil {
 		klog.Error(err, "Failed to reconcile tekton pipeline resources.")
 		return err
