@@ -56,6 +56,12 @@ If you want to try it out, you can follow the below instructions.
     * `tkn pipelinerun list`
     * The above command will show no resources if deletion operation is done.
 
+### Notes
+
+* kubebuilder marker `//+kubebuilder:storageversion` was added to `v2alpha1` version Pipeline and PipelineRun definition go files.
+    * This is necessary for `controller-gen` to generate Pipeline and PipelineRun CRD by `make install` command.
+    * The `storageversion` marker indicates that this version will be stored in etcd if there exists multiple versions.
+
 
 ## Design
 
