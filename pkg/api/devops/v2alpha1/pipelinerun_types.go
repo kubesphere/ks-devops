@@ -34,6 +34,7 @@ type PipelineRunStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:storageversion
 
 // PipelineRun is the Schema for the pipelineruns API
 type PipelineRun struct {
