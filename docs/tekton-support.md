@@ -23,14 +23,14 @@ If you want to try it out, you can follow the below instructions.
 
 1. Change the branch to [tekton-support](https://github.com/kubesphere/ks-devops/tree/tekton-support).
     * `git checkout tekton-support`
-1. Setup a clean kubernetes cluster (v1.19.8 is **recommended**) using [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) or [kk](https://github.com/kubesphere/kubekey).
+1. Setup a clean Kubernetes cluster (v1.19.8 is **recommended**) using [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) or [kk](https://github.com/kubesphere/kubekey).
     * `kk create cluster --with-kubernetes v1.19.8`
 2. Install the tekton pipeline using helm.
     * `helm repo add cdf https://cdfoundation.github.io/tekton-helm-chart`
     * `helm install tekton cdf/tekton-pipeline`
 3. Install Pipeline and PipelineRun CRDs to the cluster using `make` command at the root directory of `ks-devops:tekton-support`.
     * `make install`
-4. Set up the crd controllers.
+4. Set up the CRD controllers.
     * `go run cmd/controller/main.go --pipeline-backend=Tekton`
 5. Create a sample pipeline and pipelinerun using `kubectl`.
     * `kubectl apply -f config/samples/devops_v2alpha1_pipeline.yaml`
@@ -175,8 +175,8 @@ Depending on the above examples, we can briefly describe the usage of an image-b
 
 * `Pipeline` controller is located at `controllers/tekton/pipeline/pipeline_controller.go`.
 * The controller is registered at `cmd/controller/app/controllers.go` in `addControllers` function.
-* The core logic of reconcile Pipeline crd resources is as follows:
-  1. Get the requested Pipeline crd resources.
+* The core logic of reconcile Pipeline CRD resources is as follows:
+  1. Get the requested Pipeline CRD resources.
   2. Process the finalizer of it.
   3. Create Tekton Tasks and Pipelines based on the below rules:
       1. Tekton Task name is composed of Pipeline name and task name, concatenating with a `-` symbol, which can avoid the conflicts of task names in different pipelines.
@@ -187,8 +187,8 @@ Depending on the above examples, we can briefly describe the usage of an image-b
 
 * `PipelineRun` controller is located at `controllers/tekton/pipelinerun/pipelinerun_controller.go`.
 * The controller is registered at `cmd/controller/app/controllers.go` in `addControllers` function.
-* The core logic of reconcile PipelineRun crd resources is as follows:
-  1. Get the requested Pipeline crd resources.
+* The core logic of reconcile PipelineRun CRD resources is as follows:
+  1. Get the requested Pipeline CRD resources.
   2. Process the finalizer of it.
   3. Create Tekton PipelineRun based on the below rules:
       1. Create Tekton PipelineRun only if it does not exist.
