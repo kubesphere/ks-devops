@@ -19,6 +19,7 @@ package pipelinerun
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
@@ -29,7 +30,6 @@ import (
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 	time "time"
 )
 
@@ -76,14 +76,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pr.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 
-		buildResult, err := r.getPipelineRunResult(projectName, pipelineName, &pr)
+		pipelineBuild, err := r.getPipelineRunResult(projectName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			return ctrl.Result{}, err
 		}
 
 		// set the latest run result into annotations
-		runResultJSON, err := json.Marshal(buildResult)
+		runResultJSON, err := json.Marshal(pipelineBuild)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -97,8 +97,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 
-		if err := r.apply(buildResult, &pr.Status); err != nil {
-			log.Error(err, "unable to apply Jenkins run result to PipelineRun", "jenkinsRunData", buildResult)
+		if err := r.apply(pipelineBuild, &pr.Status); err != nil {
+			log.Error(err, "unable to apply Jenkins run result to PipelineRun", "jenkinsRunData", pipelineBuild)
 			return ctrl.Result{}, err
 		}
 
@@ -136,7 +136,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipelineName
 	pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey] = projectName
 
-	jobBuild, err := r.RunPipeline(projectName, pipelineName, &pr.Spec)
+	pipelineBuild, err := r.RunPipeline(projectName, pipelineName, &pr.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "projectName", projectName, "pipeline", pipeline.Name)
 		return ctrl.Result{}, err
@@ -146,14 +146,15 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pr.Annotations == nil {
 		pr.Annotations = make(map[string]string)
 	}
-	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = jobBuild.ID
-	pr.Status.StartTime = &v1.Time{Time: time.Now()}
-
+	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = pipelineBuild.ID
 	// the Update method only updates fields except status
 	if err := r.Client.Update(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun.")
 		return ctrl.Result{}, err
 	}
+
+	pr.Status.StartTime = &v1.Time{Time: time.Now()}
+	pr.Status.UpdateTime = &v1.Time{Time: time.Now()}
 	// due to the status is subresource of PipelineRun, we have to update status separately.
 	// see also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
 	if err := r.Client.Status().Update(ctx, &pr); err != nil {
@@ -165,50 +166,56 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *Reconciler) RunPipeline(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.Build, error) {
-	jobName := generateJobName(projectName, pipelineName, prSpec)
-	jobClient := job.Client{JenkinsCore: r.JenkinsCore} // run normal pipeline
-	//*runResult, err = jobClient.BuildAndReturn(fmt.Sprintf("%s %s", projectName, pipelineName), "Triggered by PipelineRun reconciler", 0, 0)
-	// build pipeline with params
-	err := jobClient.BuildWithParams(jobName, convertParam(prSpec.Parameters))
-	if err != nil {
-		return nil, err
-	}
-	// get latest build
-	identityBuild, err := jobClient.GetBuild(jobName, -1)
-	if err != nil {
-		return nil, err
-	}
-	return identityBuild, nil
+func (r *Reconciler) RunPipeline(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: ""}
+	return boClient.Build("jenkins", projectName, pipelineName)
 }
 
-func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (runResult *job.Build, err error) {
-	runIDStr, _ := pr.GetPipelineRunID()
-	runID, err := strconv.Atoi(runIDStr)
-	if err != nil {
-		return nil, err
+func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
+	runIDStr, exists := pr.GetPipelineRunID()
+	if !exists {
+		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
-	jobName := generateJobName(projectName, pipelineName, &pr.Spec)
-	jobClient := job.Client{JenkinsCore: r.JenkinsCore}
-	return jobClient.GetBuild(jobName, runID)
+	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+	return boClient.GetBuild("jenkins", runIDStr, projectName, pipelineName)
 }
 
-func (r *Reconciler) apply(jobBuild *job.Build, prStatus *devopsv1alpha4.PipelineRunStatus) error {
+func (r *Reconciler) apply(pipelineBuild *job.PipelineBuild, prStatus *devopsv1alpha4.PipelineRunStatus) error {
 	condition := devopsv1alpha4.Condition{
 		Type:          devopsv1alpha4.ConditionReady,
 		LastProbeTime: v1.Now(),
-		Reason:        jobBuild.Result,
+		Reason:        pipelineBuild.State,
 	}
 
 	var phase = devopsv1alpha4.Unknown
 
-	if jobBuild.Building {
-		// when pipeline is building
+	switch pipelineBuild.State {
+	case Queued.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Pending
+	case Running.String():
 		condition.Status = devopsv1alpha4.ConditionUnknown
 		phase = devopsv1alpha4.Running
-	} else {
-		// when pipeline is not building
-		switch jobBuild.Result {
+	case Paused.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Pending
+	case Skipped.String():
+		condition.Type = devopsv1alpha4.ConditionSucceeded
+		condition.Status = devopsv1alpha4.ConditionTrue
+		phase = devopsv1alpha4.Succeeded
+	case NotBuiltState.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		phase = devopsv1alpha4.Unknown
+	case Finished.String():
+		// mark as completed
+		if !pipelineBuild.EndTime.IsZero() {
+			prStatus.CompletionTime = &v1.Time{Time: pipelineBuild.EndTime.Time}
+		} else {
+			// should never happen
+			prStatus.CompletionTime = &v1.Time{Time: time.Now()}
+		}
+		// handle result
+		switch pipelineBuild.Result {
 		case Success.String():
 			condition.Type = devopsv1alpha4.ConditionSucceeded
 			condition.Status = devopsv1alpha4.ConditionTrue
@@ -222,16 +229,15 @@ func (r *Reconciler) apply(jobBuild *job.Build, prStatus *devopsv1alpha4.Pipelin
 		case NotBuiltResult.String():
 			condition.Status = devopsv1alpha4.ConditionUnknown
 			phase = devopsv1alpha4.Unknown
+		case Unknown.String():
+			condition.Status = devopsv1alpha4.ConditionUnknown
+			phase = devopsv1alpha4.Unknown
 		case Aborted.String():
 			condition.Status = devopsv1alpha4.ConditionFalse
 			phase = devopsv1alpha4.Failed
-		default:
-			condition.Status = devopsv1alpha4.ConditionUnknown
 		}
-
-		// set completion time
-		completionTime := time.UnixMilli(jobBuild.Timestamp + jobBuild.Duration)
-		prStatus.CompletionTime = &v1.Time{Time: completionTime}
+	default:
+		condition.Status = devopsv1alpha4.ConditionUnknown
 	}
 
 	prStatus.Phase = phase

@@ -1,10 +1,5 @@
 package pipelinerun
 
-import (
-	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
-)
-
 type JenkinsRunState string
 
 const (
@@ -33,26 +28,4 @@ const (
 
 func (result JenkinsRunResult) String() string {
 	return string(result)
-}
-
-func generateJobName(projectName, pipelineName string, prSpec *v1alpha4.PipelineRunSpec) string {
-	jobName := projectName + " " + pipelineName
-	if prSpec != nil && prSpec.IsMultiBranchPipeline() {
-		jobName = jobName + " " + prSpec.SCM.RefName
-	}
-	return jobName
-}
-
-func convertParam(params []v1alpha4.Parameter) []job.ParameterDefinition {
-	if params == nil {
-		return []job.ParameterDefinition{}
-	}
-	var paramDefs []job.ParameterDefinition
-	for _, param := range params {
-		paramDefs = append(paramDefs, job.ParameterDefinition{
-			Name:  param.Name,
-			Value: param.Value,
-		})
-	}
-	return paramDefs
 }
