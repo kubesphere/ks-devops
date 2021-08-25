@@ -31,10 +31,11 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "base"
-                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Base.Image }}:{{ .Values.Agent.Builder.Base.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Base.Image }}:{{ .Values.Agent.Builder.Base.Tag }}{{ template "jenkins.agent.variant" . }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
+                  privileged: {{ template "jenkins.agent.privileged" . }}
                   resourceRequestCpu: "100m"
                   resourceLimitCpu: "4000m"
                   resourceRequestMemory: "100Mi"
@@ -65,10 +66,11 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "nodejs"
-                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.NodeJs.Image }}:{{ .Values.Agent.Builder.NodeJs.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.NodeJs.Image }}:{{ .Values.Agent.Builder.NodeJs.Tag }}{{ template "jenkins.agent.variant" . }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
+                  privileged: {{ template "jenkins.agent.privileged" . }}
                   resourceRequestCpu: "100m"
                   resourceLimitCpu: "4000m"
                   resourceRequestMemory: "100Mi"
@@ -105,10 +107,11 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "maven"
-                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Maven.Image }}:{{ .Values.Agent.Builder.Maven.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Maven.Image }}:{{ .Values.Agent.Builder.Maven.Tag }}{{ template "jenkins.agent.variant" . }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
+                  privileged: {{ template "jenkins.agent.privileged" . }}
                   resourceRequestCpu: "100m"
                   resourceLimitCpu: "4000m"
                   resourceRequestMemory: "100Mi"
@@ -142,10 +145,11 @@ data:
                 idleMinutes: 0
                 containers:
                 - name: "go"
-                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Golang.Image }}:{{ .Values.Agent.Builder.Golang.Tag }}"
+                  image: "{{ .Values.Agent.Builder.Registry }}/{{ .Values.Agent.Builder.Golang.Image }}:{{ .Values.Agent.Builder.Golang.Tag }}{{ template "jenkins.agent.variant" . }}"
                   command: "cat"
                   args: ""
                   ttyEnabled: true
+                  privileged: {{ template "jenkins.agent.privileged" . }}
                   resourceRequestCpu: "100m"
                   resourceLimitCpu: "4000m"
                   resourceRequestMemory: "100Mi"

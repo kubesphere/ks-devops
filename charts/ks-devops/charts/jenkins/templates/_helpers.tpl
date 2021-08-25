@@ -46,3 +46,17 @@ https://github.com/helm/charts/issues/5167#issuecomment-619137759
     {{- end -}}
   {{- end -}}
 {{- end -}}
+
+{{- define "jenkins.agent.variant" -}}
+    {{ if eq .Values.Agent.Builder.ContainerRuntime "podman" }}
+    {{- print "-podman" -}}
+    {{- end -}}
+{{- end -}}
+
+{{- define "jenkins.agent.privileged" -}}
+    {{ if eq .Values.Agent.Builder.ContainerRuntime "podman" }}
+    {{- print "true" -}}
+    {{- else -}}
+    {{- print "false" -}}
+    {{- end -}}
+{{- end -}}
