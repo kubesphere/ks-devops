@@ -8,6 +8,7 @@ categories:
     labels:
       - 'feature'
       - 'enhancement'
+      - 'kind/feature'
   - title: '🐛 Bug Fixes'
     labels:
       - 'fix'
@@ -18,15 +19,16 @@ categories:
   - title: '💥 Breaking changes'
     labels:
       - 'break'
+      - 'kind/break'
   - title: '📝 Documentation updates'
     labels:
       - 'documentation'
       - 'kind/doc'
   - title: '👻 Maintenance'
     labels:
-      - chore
+      - 'chore'
       - 'kind/chore'
-      - dependencies
+      - 'dependencies'
   - title: '🚦 Tests'
     labels:
       - test
@@ -45,5 +47,7 @@ replacers:
     replace: ''
 template: |
   ## What’s Changed
+
   $CHANGES
+
   Thanks again to $CONTRIBUTORS! 🎉
