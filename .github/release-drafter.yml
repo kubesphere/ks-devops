@@ -41,6 +41,8 @@ change-template: '* $TITLE (#$NUMBER) @$AUTHOR'
 replacers:
   - search: '/(?:and )?@dependabot-preview(?:\[bot\])?,?/g'
     replace: ''
+  - search: '/(?:and )?@ks-ci-bot,?/g'
+    replace: ''
 template: |
   ## What’s Changed
   $CHANGES
