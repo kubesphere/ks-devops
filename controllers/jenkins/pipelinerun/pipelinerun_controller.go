@@ -25,9 +25,11 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	time "time"
@@ -58,25 +60,37 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// the PipelineRun cannot allow building
+	if !pr.Buildable() {
+		return ctrl.Result{}, nil
+	}
+
+	// don't modify the cache in other places, like informer cache.
+	pr = *pr.DeepCopy()
+
+	// check PipelineRef
 	if pr.Spec.PipelineRef == nil || pr.Spec.PipelineRef.Name == "" {
-		// ignore this PipelineRun
-		log.Info("skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.")
-		return ctrl.Result{}, nil
+		// make the PipelineRun as orphan
+		return ctrl.Result{}, r.makePipelineRunOrphan(ctx, &pr)
 	}
 
-	var projectName = pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey]
-	var pipelineName = pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey]
-
-	if pr.HasCompleted() {
-		// Pipeline has been completed
-		return ctrl.Result{}, nil
+	// get pipeline
+	var pipeline v1alpha3.Pipeline
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Spec.PipelineRef.Name}, &pipeline); err != nil {
+		log.Error(err, "unable to get pipeline")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	devopsProjectName := pipeline.Namespace
+	pipelineName := pipeline.GetName()
+
+	log = log.WithValues("DevOpsProject", devopsProjectName, "Pipeline", pipelineName)
 
 	// check PipelineRun status
 	if pr.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 
-		pipelineBuild, err := r.getPipelineRunResult(projectName, pipelineName, &pr)
+		pipelineBuild, err := r.getPipelineRunResult(devopsProjectName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			return ctrl.Result{}, err
@@ -92,41 +106,38 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunDataKey] = string(runResultJSON)
 		// update PipelineRun
-		if err := r.Update(ctx, &pr); err != nil {
-			log.Error(err, "unable to update PipelineRun.")
+		if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
+			log.Error(err, "unable to update PipelineRun labels and annotations.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 
-		if err := r.apply(pipelineBuild, &pr.Status); err != nil {
-			log.Error(err, "unable to apply Jenkins run result to PipelineRun", "jenkinsRunData", pipelineBuild)
-			return ctrl.Result{}, err
-		}
+		status := pr.Status.DeepCopy()
+		convertPipelineBuild(pipelineBuild, status)
 
 		// Because the status is a subresource of PipelineRun, we have to update status separately.
 		// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
-		if err := r.Status().Update(ctx, &pr); err != nil {
+		if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
 			log.Error(err, "unable to update PipelineRun status.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
-		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 	}
 
 	// first run
-	// get pipeline
-	pipelineNamespace := pr.Spec.PipelineRef.Namespace
-	if pipelineNamespace == "" {
-		pipelineNamespace = pr.Namespace
+	pipelineBuild, err := r.triggerJenkinsJob(devopsProjectName, pipelineName)
+	if err != nil {
+		log.Error(err, "unable to run pipeline", "devopsProjectName", devopsProjectName, "pipeline", pipeline.Name)
+		return ctrl.Result{}, err
 	}
-	var pipeline v1alpha3.Pipeline
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pipelineNamespace, Name: pr.Spec.PipelineRef.Name}, &pipeline); err != nil {
-		log.Error(err, "unable to get pipeline")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
+	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
 
-	projectName = pipeline.Namespace
-	pipelineName = pipeline.GetName()
+	// set Jenkins run ID
+	if pr.Annotations == nil {
+		pr.Annotations = make(map[string]string)
+	}
+	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = pipelineBuild.ID
 
 	// set Pipeline name to the PipelineRun labels
 	if pr.Labels == nil {
@@ -134,22 +145,10 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipelineName
-	pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey] = projectName
-
-	pipelineBuild, err := r.RunPipeline(projectName, pipelineName, &pr.Spec)
-	if err != nil {
-		log.Error(err, "unable to run pipeline", "projectName", projectName, "pipeline", pipeline.Name)
-		return ctrl.Result{}, err
-	}
-
-	// set Jenkins PipelineRun id
-	if pr.Annotations == nil {
-		pr.Annotations = make(map[string]string)
-	}
-	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = pipelineBuild.ID
-	// the Update method only updates fields except status
-	if err := r.Client.Update(ctx, &pr); err != nil {
-		log.Error(err, "unable to update PipelineRun.")
+	pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey] = devopsProjectName
+	// the Update method only updates fields except subresource: status
+	if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
+		log.Error(err, "unable to update PipelineRun labels and annotations.")
 		return ctrl.Result{}, err
 	}
 
@@ -157,16 +156,17 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pr.Status.UpdateTime = &v1.Time{Time: time.Now()}
 	// due to the status is subresource of PipelineRun, we have to update status separately.
 	// see also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
-	if err := r.Client.Status().Update(ctx, &pr); err != nil {
+
+	if err := r.updateStatus(ctx, &pr.Status, req.NamespacedName); err != nil {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
 
 	// requeue immediately
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) RunPipeline(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string) (*job.PipelineBuild, error) {
 	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: ""}
 	return boClient.Build("jenkins", projectName, pipelineName)
 }
@@ -180,70 +180,56 @@ func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *
 	return boClient.GetBuild("jenkins", runIDStr, projectName, pipelineName)
 }
 
-func (r *Reconciler) apply(pipelineBuild *job.PipelineBuild, prStatus *devopsv1alpha4.PipelineRunStatus) error {
+func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {
+	// get pipeline
+	prToUpdate := devopsv1alpha4.PipelineRun{}
+	err := r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate)
+	if err != nil {
+		return err
+	}
+	if reflect.DeepEqual(pr.Labels, prToUpdate.Labels) && reflect.DeepEqual(pr.Annotations, prToUpdate.Annotations) {
+		return nil
+	}
+	prToUpdate = *prToUpdate.DeepCopy()
+	prToUpdate.Labels = pr.Labels
+	prToUpdate.Annotations = pr.Annotations
+	return r.Update(ctx, &prToUpdate)
+}
+
+func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *devopsv1alpha4.PipelineRunStatus, prKey client.ObjectKey) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		prToUpdate := devopsv1alpha4.PipelineRun{}
+		err := r.Get(ctx, prKey, &prToUpdate)
+		if err != nil {
+			return err
+		}
+		if reflect.DeepEqual(*desiredStatus, prToUpdate.Status) {
+			return nil
+		}
+		prToUpdate = *prToUpdate.DeepCopy()
+		prToUpdate.Status = *desiredStatus
+		return r.Status().Update(ctx, &prToUpdate)
+	})
+}
+
+func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {
+	// make the PipelineRun as orphan
+	prToUpdate := pr.DeepCopy()
+	prToUpdate.LabelAsAnOrphan()
+	if err := r.updateLabelsAndAnnotations(ctx, prToUpdate); err != nil {
+		return err
+	}
 	condition := devopsv1alpha4.Condition{
-		Type:          devopsv1alpha4.ConditionReady,
-		LastProbeTime: v1.Now(),
-		Reason:        pipelineBuild.State,
+		Type:               devopsv1alpha4.ConditionSucceeded,
+		Status:             devopsv1alpha4.ConditionUnknown,
+		Reason:             "SKIPPED",
+		Message:            "skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.",
+		LastTransitionTime: v1.Now(),
+		LastProbeTime:      v1.Now(),
 	}
-
-	var phase = devopsv1alpha4.Unknown
-
-	switch pipelineBuild.State {
-	case Queued.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Pending
-	case Running.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Running
-	case Paused.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Pending
-	case Skipped.String():
-		condition.Type = devopsv1alpha4.ConditionSucceeded
-		condition.Status = devopsv1alpha4.ConditionTrue
-		phase = devopsv1alpha4.Succeeded
-	case NotBuiltState.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Unknown
-	case Finished.String():
-		// mark as completed
-		if !pipelineBuild.EndTime.IsZero() {
-			prStatus.CompletionTime = &v1.Time{Time: pipelineBuild.EndTime.Time}
-		} else {
-			// should never happen
-			prStatus.CompletionTime = &v1.Time{Time: time.Now()}
-		}
-		// handle result
-		switch pipelineBuild.Result {
-		case Success.String():
-			condition.Type = devopsv1alpha4.ConditionSucceeded
-			condition.Status = devopsv1alpha4.ConditionTrue
-			phase = devopsv1alpha4.Succeeded
-		case Unstable.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		case Failure.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		case NotBuiltResult.String():
-			condition.Status = devopsv1alpha4.ConditionUnknown
-			phase = devopsv1alpha4.Unknown
-		case Unknown.String():
-			condition.Status = devopsv1alpha4.ConditionUnknown
-			phase = devopsv1alpha4.Unknown
-		case Aborted.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		}
-	default:
-		condition.Status = devopsv1alpha4.ConditionUnknown
-	}
-
-	prStatus.Phase = phase
-	prStatus.AddCondition(&condition)
-	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
-	return nil
+	prToUpdate.Status.AddCondition(&condition)
+	prToUpdate.Status.Phase = devopsv1alpha4.Unknown
+	return r.updateStatus(ctx, &pr.Status, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name})
 }
 
 // SetupWithManager sets up the controller with the Manager.

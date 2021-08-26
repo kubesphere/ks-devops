@@ -127,12 +127,28 @@ func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
 // HasStarted indicates if the PipelineRun has started already.
 func (pr *PipelineRun) HasStarted() bool {
 	_, ok := pr.GetPipelineRunID()
-	return !pr.Status.StartTime.IsZero() && ok
+	return ok
 }
 
 // HasCompleted indicates if the PipelineRun has already completed.
 func (pr *PipelineRun) HasCompleted() bool {
 	return !pr.Status.CompletionTime.IsZero()
+}
+
+// LabelAsAnOrphan labels PipelineRun as an orphan.
+func (pr *PipelineRun) LabelAsAnOrphan() {
+	if pr == nil {
+		return
+	}
+	if pr.Labels == nil {
+		pr.Labels = make(map[string]string)
+	}
+	pr.Labels[PipelineRunOrphanKey] = "true"
+}
+
+// Buildable returns true if the PipelineRun is buildable, false otherwise.
+func (pr *PipelineRun) Buildable() bool {
+	return !pr.HasCompleted() && pr.Labels[PipelineRunOrphanKey] != "true"
 }
 
 // IsMultiBranchPipeline indicates if the PipelineRun belongs a multi-branch pipeline.

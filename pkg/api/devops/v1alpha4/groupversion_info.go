@@ -32,6 +32,7 @@ const (
 	JenkinsPipelineRunIDKey            = GroupName + "/jenkins-pipelinerun-id"
 	JenkinsPipelineRunDataKey          = GroupName + "/jenkins-pipelinerun-last-run-data"
 	JenkinsPipelineRunNodesKey         = GroupName + "/jenkins-pipelinerun-last-nodes-data"
+	PipelineRunOrphanKey               = GroupName + "/orphan"
 )
 
 var (
