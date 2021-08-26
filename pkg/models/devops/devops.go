@@ -382,12 +382,7 @@ func (d devopsOperator) filterCredentialObj(object runtime.Object, filter query.
 
 // others
 func (d devopsOperator) GetPipeline(projectName, pipelineName string, req *http.Request) (*devops.Pipeline, error) {
-
-	res, err := d.devopsClient.GetPipeline(projectName, pipelineName, convertToHttpParameters(req))
-	if err != nil {
-		klog.Error(err)
-	}
-	return res, err
+	return d.devopsClient.GetPipeline(projectName, pipelineName, convertToHttpParameters(req))
 }
 
 func (d devopsOperator) ListPipelines(req *http.Request) (*devops.PipelineList, error) {

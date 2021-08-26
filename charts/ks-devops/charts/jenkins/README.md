@@ -95,6 +95,7 @@ The following tables list the configurable parameters of the Jenkins chart and t
 | `Agent.resources`           | Resources allocation (Requests and Limits)                                                                       | `{requests: {cpu: 200m, memory: 256Mi}, limits: {cpu: 200m, memory: 256Mi}}` |
 | `Agent.volumes`             | Additional volumes                                                                                               | `nil`                                                                        |
 | `Agent.Builder.Registry`    | Agent builder image registry with namespace. Available values: `docker.io/kubesphere`, `docker.io/kubespheredev` | `docker.io/kubesphere`                                                       |
+| `Agent.Builder.ContainerRuntime` | The container engine type, available values: `docker`, `podman`                                             | `docker`                                                                     |
 
 ### Prometheus monitor
 

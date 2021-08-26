@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "ks-devops.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ include "ks-devops.apiserver-fullname" . }}:9090']
   restartPolicy: Never

@@ -421,6 +421,7 @@ Agent:
     Golang:
       Image: builder-go
       Tag: v3.1.0
+    ContainerRuntime: docker # Available values: docker, podman
 
 Persistence:
   Enabled: true
@@ -462,7 +463,7 @@ securityRealm:
 
 ksAuth:
   enabled: false
-#  server:
+  #server: ""
 
 # Install service monitor
 prometheus:

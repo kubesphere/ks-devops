@@ -1,12 +1,35 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.191.1/containers/go
 {
-	"name": "Existing Dockerfile",
-	"context": "..",
-	"dockerFile": "../.gitpod.Dockerfile",
-	"settings": {},
+	"name": "Go",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"VARIANT": "focal",
+		}
+	},
+	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"go.toolsManagement.checkForUpdates": "local",
+		"go.useLanguageServer": true,
+		"go.gopath": "/home/vscode/go",
+		"go.goroot": "/usr/lib/go-1.16"
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"golang.go",
+		"golang.Go",
 		"ms-azuretools.vscode-docker"
 	],
 
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [30880, 30180],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "bash .devcontainer/init.sh",
+
 	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+	"remoteUser": "vscode"
 }

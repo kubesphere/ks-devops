@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "ks-devops.fullname" . }}-apiserver
+  name: {{ include "ks-devops.apiserver-fullname" . }}
   labels:
     {{- include "ks-devops-apiserver.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-    - port: {{ .Values.service.port }}
+    - port: 9090
       targetPort: 9090
       protocol: TCP
   selector:
