@@ -1,0 +1,48 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "ks-devops.apiserver-fullname" . }}
+  labels:
+    app: devops-pipelinerun-gcjobs
+spec:
+  concurrencyPolicy: {{ .Values.gcJobs.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ .Values.gcJobs.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: {{ include "ks-devops.apiserver-fullname" . }}
+            release: {{ .Release.Name }}
+{{- if .Values.gcJobs.podAnnotations }}
+          annotations:
+{{ toYaml .Values.gcJobs.podAnnotations | indent 12 }}
+{{- end }}
+        spec:
+          containers:
+            - command:
+                - ks
+                - pip
+                - gc
+              image: {{ tpl .Values.image.gc.repository . }}:{{ tpl .Values.image.gc.tag . }}
+              imagePullPolicy: {{ tpl .Values.image.pullPolicy . }}
+              args:
+                - "--max-count={{ .Values.gcJobs.maxCount }}"
+                - "--max-age={{ .Values.gcJobs.maxAge }}"
+              name: "pipeline-run-gc"
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          serviceAccountName: {{ include "ks-devops.serviceAccountName" . }}
+  successfulJobsHistoryLimit: {{ .Values.gcJobs.successfulJobsHistoryLimit }}
+  schedule: {{ .Values.gcJobs.schedule | quote }}
+  startingDeadlineSeconds: 4000
+  suspend: false

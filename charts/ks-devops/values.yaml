@@ -12,7 +12,24 @@ image:
   tools:
     repository: devops-tools
     tag: master
+  gc:
+    repository: devops-gc
+    tag: master
   pullPolicy: IfNotPresent
+
+gcJobs:
+  # gcJobs.maxAge -- Max age from which `PipelineRun`s will be deleted
+  maxAge: 168h
+  # gcJobs.maxCount -- Max count from which `PipelineRun`'s will be deleted
+  maxCount: 10
+  # gcJobs.schedule -- Cron expression to periodically delete `PipelineRun`s
+  schedule: "0/30 * * * *"
+  # gcJobs.failedJobsHistoryLimit -- Drives the failed jobs history limit
+  failedJobsHistoryLimit: 1
+  # gcJobs.successfulJobsHistoryLimit -- Drives the successful jobs history limit
+  successfulJobsHistoryLimit: 3
+  # gcJobs.concurrencyPolicy -- Drives the job's concurrency policy
+  concurrencyPolicy: Forbid
 
 authentication:
   # If not set, jwt tools will generate and set it automatically
