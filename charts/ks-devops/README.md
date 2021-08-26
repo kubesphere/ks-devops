@@ -24,7 +24,7 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 
 ## Usage
 
-### Jenkins installtion
+### Jenkins installation
 
 Once Helm is set up properly, you can install the chart with the release name `ks-ctl` using the following command in default values:
 
