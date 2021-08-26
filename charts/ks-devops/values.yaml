@@ -88,7 +88,7 @@ affinity: {}
 
 charts:
   jenkins:
-    enabled: false
+    enabled: true
   s2i:
     enabled: true
   tekton:
