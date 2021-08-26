@@ -26,13 +26,11 @@ import (
 
 // GroupName is the group name use in this package
 const (
-	GroupName                          = "devops.kubesphere.io"
-	JenkinsPipelineRunPipelineKey      = GroupName + "/pipeline"
-	JenkinsPipelineRunDevOpsProjectKey = GroupName + "/devops-project"
-	JenkinsPipelineRunIDKey            = GroupName + "/jenkins-pipelinerun-id"
-	JenkinsPipelineRunDataKey          = GroupName + "/jenkins-pipelinerun-last-run-data"
-	JenkinsPipelineRunNodesKey         = GroupName + "/jenkins-pipelinerun-last-nodes-data"
-	PipelineRunOrphanKey               = GroupName + "/orphan"
+	GroupName                  = "devops.kubesphere.io"
+	JenkinsPipelineRunIDKey    = GroupName + "/jenkins-pipelinerun-id"
+	JenkinsPipelineRunDataKey  = GroupName + "/jenkins-pipelinerun-last-run-data"
+	JenkinsPipelineRunNodesKey = GroupName + "/jenkins-pipelinerun-last-nodes-data"
+	PipelineRunOrphanKey       = GroupName + "/orphan"
 )
 
 var (

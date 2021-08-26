@@ -144,8 +144,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pr.Labels = make(map[string]string)
 	}
 
-	pr.Labels[devopsv1alpha4.JenkinsPipelineRunPipelineKey] = pipelineName
-	pr.Labels[devopsv1alpha4.JenkinsPipelineRunDevOpsProjectKey] = devopsProjectName
 	// the Update method only updates fields except subresource: status
 	if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
 		log.Error(err, "unable to update PipelineRun labels and annotations.")
