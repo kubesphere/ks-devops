@@ -26,7 +26,7 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 
 ### Jenkins installation
 
-Once Helm is set up properly, you can install the chart with the release name `ks-ctl` using the following command in default values:
+Once Helm is set up properly, you can install the chart with the release name `ks-devops` using the following command in default values:
 
 ```bash
 helm install ks-devops . -n kubesphere-devops-system --create-namespace 
