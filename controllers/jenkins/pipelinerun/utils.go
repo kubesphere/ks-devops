@@ -37,68 +37,73 @@ func (result JenkinsRunResult) String() string {
 	return string(result)
 }
 
-func convertPipelineBuild(pipelineBuild *job.PipelineBuild, prStatus *devopsv1alpha4.PipelineRunStatus) {
+// pipelineBuildApplier applies PipelineBuilder to PipelineRunStatus.
+type pipelineBuildApplier struct {
+	*job.PipelineBuild
+}
+
+func (pbApplier *pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRunStatus) {
 	condition := devopsv1alpha4.Condition{
 		Type:               devopsv1alpha4.ConditionReady,
+		Status:             devopsv1alpha4.ConditionUnknown,
 		LastProbeTime:      v1.Now(),
 		LastTransitionTime: v1.Now(),
-		Reason:             pipelineBuild.State,
+		Reason:             pbApplier.State,
 	}
 
-	var phase = devopsv1alpha4.Unknown
+	prStatus.Phase = devopsv1alpha4.Unknown
 
-	switch pipelineBuild.State {
+	switch pbApplier.State {
 	case Queued.String():
 		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Pending
+		prStatus.Phase = devopsv1alpha4.Pending
 	case Running.String():
 		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Running
+		prStatus.Phase = devopsv1alpha4.Running
 	case Paused.String():
 		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Pending
+		prStatus.Phase = devopsv1alpha4.Pending
 	case Skipped.String():
 		condition.Type = devopsv1alpha4.ConditionSucceeded
 		condition.Status = devopsv1alpha4.ConditionTrue
-		phase = devopsv1alpha4.Succeeded
+		prStatus.Phase = devopsv1alpha4.Succeeded
 	case NotBuiltState.String():
 		condition.Status = devopsv1alpha4.ConditionUnknown
-		phase = devopsv1alpha4.Unknown
 	case Finished.String():
-		// mark as completed
-		if !pipelineBuild.EndTime.IsZero() {
-			prStatus.CompletionTime = &v1.Time{Time: pipelineBuild.EndTime.Time}
-		} else {
-			// should never happen
-			prStatus.CompletionTime = &v1.Time{Time: time.Now()}
-		}
-		// handle result
-		switch pipelineBuild.Result {
-		case Success.String():
-			condition.Type = devopsv1alpha4.ConditionSucceeded
-			condition.Status = devopsv1alpha4.ConditionTrue
-			phase = devopsv1alpha4.Succeeded
-		case Unstable.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		case Failure.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		case NotBuiltResult.String():
-			condition.Status = devopsv1alpha4.ConditionUnknown
-			phase = devopsv1alpha4.Unknown
-		case Unknown.String():
-			condition.Status = devopsv1alpha4.ConditionUnknown
-			phase = devopsv1alpha4.Unknown
-		case Aborted.String():
-			condition.Status = devopsv1alpha4.ConditionFalse
-			phase = devopsv1alpha4.Failed
-		}
-	default:
-		condition.Status = devopsv1alpha4.ConditionUnknown
+		pbApplier.whenPipelineRunFinished(&condition, prStatus)
 	}
-
-	prStatus.Phase = phase
 	prStatus.AddCondition(&condition)
 	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
+}
+
+func (pbApplier *pipelineBuildApplier) whenPipelineRunFinished(condition *devopsv1alpha4.Condition, prStatus *devopsv1alpha4.PipelineRunStatus) {
+	// mark as completed
+	if !pbApplier.EndTime.IsZero() {
+		prStatus.CompletionTime = &v1.Time{Time: pbApplier.EndTime.Time}
+	} else {
+		// should never happen
+		prStatus.CompletionTime = &v1.Time{Time: time.Now()}
+	}
+	condition.Type = devopsv1alpha4.ConditionSucceeded
+	// handle result
+	switch pbApplier.Result {
+	case Success.String():
+		condition.Status = devopsv1alpha4.ConditionTrue
+		prStatus.Phase = devopsv1alpha4.Succeeded
+	case Unstable.String():
+		condition.Status = devopsv1alpha4.ConditionFalse
+		prStatus.Phase = devopsv1alpha4.Failed
+	case Failure.String():
+		condition.Status = devopsv1alpha4.ConditionFalse
+		prStatus.Phase = devopsv1alpha4.Failed
+	case NotBuiltResult.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		prStatus.Phase = devopsv1alpha4.Unknown
+	case Unknown.String():
+		condition.Status = devopsv1alpha4.ConditionUnknown
+		prStatus.Phase = devopsv1alpha4.Unknown
+	case Aborted.String():
+		condition.Status = devopsv1alpha4.ConditionFalse
+		prStatus.Phase = devopsv1alpha4.Failed
+	}
 }

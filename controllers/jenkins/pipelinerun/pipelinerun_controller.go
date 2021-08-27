@@ -112,7 +112,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		status := pr.Status.DeepCopy()
-		convertPipelineBuild(pipelineBuild, status)
+		pbApplier := pipelineBuildApplier{pipelineBuild}
+		pbApplier.apply(status)
 
 		// Because the status is a subresource of PipelineRun, we have to update status separately.
 		// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
