@@ -25,7 +25,13 @@ import (
 )
 
 // GroupName is the group name use in this package
-const GroupName = "devops.kubesphere.io"
+const (
+	GroupName                  = "devops.kubesphere.io"
+	JenkinsPipelineRunIDKey    = GroupName + "/jenkins-pipelinerun-id"
+	JenkinsPipelineRunDataKey  = GroupName + "/jenkins-pipelinerun-last-run-data"
+	JenkinsPipelineRunNodesKey = GroupName + "/jenkins-pipelinerun-last-nodes-data"
+	PipelineRunOrphanKey       = GroupName + "/orphan"
+)
 
 var (
 	// GroupVersion is group version used to register these objects

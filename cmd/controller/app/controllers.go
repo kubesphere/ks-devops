@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
@@ -34,9 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
-	devopsClient devops.Interface, s3Client s3.Interface, s *options.DevOpsControllerManagerOptions,
-	stopCh <-chan struct{}) error {
+func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory, devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface, s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
 
 	kubesphereInformer := informerFactory.KubeSphereSharedInformerFactory()
 
@@ -91,9 +90,11 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 		// add PipelineRun controller
 		if err := (&pipelinerun.Reconciler{
-			Client: mgr.GetClient(),
-			Scheme: mgr.GetScheme(),
-			Log:    ctrl.Log.WithName("pipelinerun-controller"),
+			Client:       mgr.GetClient(),
+			Scheme:       mgr.GetScheme(),
+			Log:          ctrl.Log.WithName("pipelinerun-controller"),
+			DevOpsClient: devopsClient,
+			JenkinsCore:  jenkinsCore,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
 		}

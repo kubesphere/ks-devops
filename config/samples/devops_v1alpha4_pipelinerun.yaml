@@ -1,11 +1,52 @@
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: DevOpsProject
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-devopsproject
+status:
+  adminNamespace: default
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-pipeline
+  namespace: default
+spec:
+  pipeline:
+    disable_concurrent: true
+    discarder:
+      days_to_keep: "7"
+      num_to_keep: "10"
+    jenkinsfile: |
+      pipeline {
+        agent {
+          node {
+            label 'base'
+          }
+        }
+        stages {
+          stage('Greeting') {
+            steps {
+              container('base') {
+                sh 'sleep 5 && echo "Hello, ks-devops!"'
+              }
+            }
+          }
+        }
+      }
+    name: good
+  type: pipeline
+
+---
 apiVersion: devops.kubesphere.io/v1alpha4
 kind: PipelineRun
 metadata:
-  name: pipelinerun-sample
+  name: demo-pipelinerun
+  namespace: default
 spec:
-  parameters:
-    - name: foo
-      value: bar
-  scm:
-    refType: branch
-    refName: master
+  pipelineRef:
+    name: demo-pipeline

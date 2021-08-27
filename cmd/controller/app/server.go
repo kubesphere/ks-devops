@@ -19,6 +19,7 @@ package app
 import (
 	"fmt"
 
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -116,6 +117,13 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		}
 	}
 
+	// Init Jenkins client
+	jenkinsCore := core.JenkinsCore{
+		URL:      s.JenkinsOptions.Host,
+		UserName: s.JenkinsOptions.Username,
+		Token:    s.JenkinsOptions.Password,
+	}
+
 	// Init informers
 	informerFactory := informers.NewInformerFactories(
 		kubernetesClient.Kubernetes(),
@@ -168,6 +176,7 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		kubernetesClient,
 		informerFactory,
 		devopsClient,
+		jenkinsCore,
 		s3Client,
 		s,
 		stopCh); err != nil {
