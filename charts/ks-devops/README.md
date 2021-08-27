@@ -24,8 +24,18 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 
 ## Usage
 
-Once Helm is set up properly, you can install the chart with the release name `ks-ctl` using the following command:
+### Jenkins installation
+
+Once Helm is set up properly, you can install the chart with the release name `ks-devops` using the following command in default values:
 
 ```bash
-helm install ks-ctl . -n kubesphere-devops-system --create-namespace
+helm install ks-devops . -n kubesphere-devops-system --create-namespace 
+```
+
+### Tekton installation
+
+If you want to use tekton as the pipeline backend, you are supposed to use the following command:
+
+```bash
+helm install ks-devops . -n kubesphere-devops-system --create-namespace --set charts.tekton.enabled=true --set image.controller.tag=tekton-support  --set charts.jenkins.enabled=false
 ```
