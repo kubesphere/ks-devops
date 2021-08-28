@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/jenkins-zh/jenkins-cli/client"
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -13,10 +13,14 @@ import (
 )
 
 func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alpha3.Pipeline) (string, error) {
-	jclient := client.JobClient{
-		JenkinsCore: client.JenkinsCore{},
+	core, err := GetJenkinsCore()
+	jclient := job.Client{
+		JenkinsCore: core,
+		Parent: "",
 	}
-	getCurrentJenkinsClient(&(jclient.JenkinsCore))
+	if err != nil {
+		return "", err
+	}
 	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipeline.Spec.Pipeline.Name)
 	job, _ := jclient.GetJob(projectPipelineName)
 	if job != nil {
@@ -65,18 +69,18 @@ func (j *JenkinsClient) GetProjectPipelineConfig(projectID, pipelineID string) (
 	return nil, nil
 }
 
-func getCreatePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *client.CreateJobPayload, err error) {
+func getCreatePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *job.CreateJobPayload, err error) {
 	// NoScmPipeline do not have copy mode to create a pipeline
-	jobPayload = &client.CreateJobPayload{
+	jobPayload = &job.CreateJobPayload{
 		Mode: "org.jenkinsci.plugins.workflow.job.WorkflowJob",
 		Name: pipeline.Name,
 	}
 	return
 }
 
-func getCreateMultiBranchPipelinePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *client.CreateJobPayload, err error) {
+func getCreateMultiBranchPipelinePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *job.CreateJobPayload, err error) {
 	// NoScmPipeline do not have copy mode to create a pipeline
-	jobPayload = &client.CreateJobPayload{
+	jobPayload = &job.CreateJobPayload{
 		Mode: "org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject",
 		Name: pipeline.Name,
 	}

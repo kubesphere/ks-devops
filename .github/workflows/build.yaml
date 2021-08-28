@@ -73,7 +73,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -83,7 +82,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -142,7 +140,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -152,7 +149,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -211,7 +207,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -221,7 +216,6 @@ jobs:
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
-          context: .
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -239,8 +233,6 @@ jobs:
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2.3.4
-        with: 
-          submodules: true
       - name: Test
         run: |
           make test

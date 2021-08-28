@@ -19,13 +19,13 @@ require (
 	github.com/go-openapi/spec v0.19.3
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
-	github.com/golang/mock v1.5.0
+	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/jenkins-zh/jenkins-cli v0.0.32
+	github.com/jenkins-zh/jenkins-client v0.0.2
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.14.0
+	github.com/onsi/gomega v1.15.0
 	github.com/prometheus/client_golang v1.8.0 // indirect
 	github.com/sony/sonyflake v1.0.0
 	github.com/speps/go-hashids v2.0.0+incompatible
@@ -57,7 +57,6 @@ replace (
 	github.com/go-redis/redis => github.com/go-redis/redis v6.15.2+incompatible
 	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/jenkins-zh/jenkins-cli => ./pkg/client/devops/jenkins-cli
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6

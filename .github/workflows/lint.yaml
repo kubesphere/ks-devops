@@ -15,8 +15,6 @@ jobs:
         with:
           go-version: 1.13
       - uses: actions/checkout@v2
-        with:
-          submodules: true
       # See also https://github.com/GoogleCloudPlatform/golang-samples/blob/78dfa41f10b449ba7a06d9793cbd81878d44a4fb/.github/workflows/go.yaml#L29-L53
       - name: Run go mod tidy on root modules
         run: go mod tidy

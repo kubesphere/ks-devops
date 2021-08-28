@@ -21,7 +21,6 @@ import (
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/jclient"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -116,7 +115,6 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		if err != nil {
 			return fmt.Errorf("failed to connect jenkins, please check jenkins status, error: %v", err)
 		}
-		jclient.NewJenkinsRootOptions(s.JenkinsOptions)
 	}
 
 	// Init informers
