@@ -45,20 +45,12 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the PipelineRun object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
 	// First, we get the pipelinerun resource
 	pipelineRun := &devopsv2alpha1.PipelineRun{}
 	if err := r.Get(ctx, req.NamespacedName, pipelineRun); err != nil {
-		klog.Error(err, "unable to fetch pipelinerun crd resource")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -76,16 +68,16 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 	} else {
-		// The object is being deleted
+		// The object is being deleted.
 		if containsString(pipelineRun.GetFinalizers(), pipelineRunFinalizerName) {
-			// our finalizer is present, so lets handle any external dependency
+			// Our finalizer is present, so lets handle any external dependency.
 			if err := r.deleteExternalResources(ctx, pipelineRun); err != nil {
-				// if fail to delete the external dependency here, return with error
-				// so that it can be retried
+				// If fail to delete the external dependency here, return with error.
+				// So that it can be retried.
 				return ctrl.Result{}, err
 			}
 
-			// remove our finalizer from the list and update it.
+			// Remove our finalizer from the list and update it.
 			controllerutil.RemoveFinalizer(pipelineRun, pipelineRunFinalizerName)
 			if err := r.Update(ctx, pipelineRun); err != nil {
 				return ctrl.Result{}, err
@@ -117,24 +109,24 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *d
 	tknPipelineRunName := pipelineRun.Spec.Name
 	klog.Infof("PipelineRun [%s] is under deletion.", tknPipelineRunName)
 
-	// Find and delete the related Tekton TaskRuns
+	// We will first find the target Tekton PipelineRun CRD resources in the given
+	// namespace. If we do not find it, we will return directly.
 	if _, err := r.TknClient.TektonV1beta1().
 		PipelineRuns(pipelineRun.Namespace).
 		Get(ctx, tknPipelineRunName, metav1.GetOptions{}); err != nil {
-		klog.Infof("PipelineRun [%s] was not found in namespace %s.", tknPipelineRunName, pipelineRun.Namespace)
-		// Tekton PipelineRun resource does not exist.
-		// We do nothing here.
+		// Tekton PipelineRun resource does not exist, so we just do nothing here.
+		klog.Infof("unable to find Tekton PipelineRun [%s] in namespace %s", tknPipelineRunName, pipelineRun.Namespace)
 		return nil
 	}
 
-	// If Tekton PipelineRun resource exists,
+	// If we find that target Tekton PipelineRun resource exists,
 	// we should delete it and its corresponding resources,
 	// e.g. Tekton TaskRuns and Pods created by it.
 	if err := r.TknClient.TektonV1beta1().
 		PipelineRuns(pipelineRun.Namespace).
 		Delete(ctx, tknPipelineRunName, metav1.DeleteOptions{}); err != nil {
-		// Failed to delete tekton pipelinerun
-		klog.Errorf("Failed to delete pipelinerun [%s] using tekton client.", tknPipelineRunName)
+		// When we failed to delete tekton pipelinerun, return with an error.
+		klog.Errorf("unable to delete Tekton PipelineRun [%s]", tknPipelineRunName)
 		return err
 	}
 
@@ -143,7 +135,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *d
 	return nil
 }
 
-// Helper functions to check and remove string from a slice of strings.
+// containsString helps to check string from a slice of strings.
 func containsString(slice []string, s string) bool {
 	for _, item := range slice {
 		if item == s {
@@ -160,13 +152,10 @@ func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, p
 
 // reconcileTektonPipelineRun translates our PipelineRun to Tekton PipelineRun
 func (r *Reconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
-	// print the pipelinerun name
-	klog.Infof("Creating Tekton PipelineRun resource called %s...", pipelineRun.Name)
-
 	// translate PipelineRun to Tekton PipelineRun
 	tPipelineRun := &tektonv1.PipelineRun{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipelineRun.Name}, tPipelineRun); err != nil {
-		// this means the current Tekton PipelineRun does not exist in the given namespace
+		// This means the current Tekton PipelineRun does not exist in the given namespace,
 		// i.e. we can safely create it.
 
 		// set up struct of tekton pipelinerun
