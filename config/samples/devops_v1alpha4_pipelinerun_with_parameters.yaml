@@ -1,0 +1,75 @@
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: DevOpsProject
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-devopsproject
+status:
+  adminNamespace: default
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-pipeline
+  namespace: default
+spec:
+  pipeline:
+    disable_concurrent: true
+    discarder:
+      days_to_keep: "7"
+      num_to_keep: "10"
+    jenkinsfile: |
+      pipeline {
+        agent any
+
+        parameters {
+          string defaultValue: 'rick', description: 'just for testing', name: 'name', trim: true
+          booleanParam defaultValue: false, description: 'You can use this flag to debug your Pipeline', name: 'debug'
+          choice choices: ['v1.18.8', 'v1.18.9'], description: 'Please choose the target Kubernetes version', name: 'kubernetesVersion'
+        }
+
+        stages{
+          stage('simple'){
+            steps{
+              echo "My name is ${params.name}."
+              echo "Target Kubernetes version is " + params.kubernetesVersion
+
+              script {
+                if ("${params.debug}" == "true") {
+                  echo "You can put some debug info at here."
+                  echo "Another way to use param: " + params.name
+                }
+              }
+            }
+          }
+
+          stage('debug stage') {
+            when {
+              equals expected: true, actual: params.debug
+            }
+            steps {
+              echo "It's joke, there're debug info here."
+            }
+          }
+        }
+      }
+    name: good
+  type: pipeline
+
+---
+apiVersion: devops.kubesphere.io/v1alpha4
+kind: PipelineRun
+metadata:
+  name: demo-pipelinerun
+  namespace: default
+spec:
+  pipelineRef:
+    name: demo-pipeline
+  parameters:
+    - name: "debug"
+      value: "true"
+    - name: "name"
+      value: "devops"

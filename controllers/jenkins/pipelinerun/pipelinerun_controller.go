@@ -127,7 +127,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	pipelineBuild, err := r.triggerJenkinsJob(devopsProjectName, pipelineName)
+	pipelineBuild, err := r.triggerJenkinsJob(devopsProjectName, pipelineName, &pr.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "devopsProjectName", devopsProjectName, "pipeline", pipeline.Name)
 		return ctrl.Result{}, err
@@ -165,9 +165,12 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string) (*job.PipelineBuild, error) {
-	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: ""}
-	return boClient.Build("jenkins", projectName, pipelineName)
+func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+	return boClient.Build(job.BuildOption{
+		Pipelines:  []string{devopsProjectName, pipelineName},
+		Parameters: parameterConverter{parameters: prSpec.Parameters}.convert(),
+	})
 }
 
 func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
@@ -176,7 +179,7 @@ func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
 	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-	return boClient.GetBuild("jenkins", runIDStr, projectName, pipelineName)
+	return boClient.GetBuild(runIDStr, projectName, pipelineName)
 }
 
 func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {
