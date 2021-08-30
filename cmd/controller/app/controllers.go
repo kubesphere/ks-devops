@@ -118,7 +118,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			}
 
 			// create Tekton client-set for managing Tekton resources
-			cs, err := versioned.NewForConfig(cfg)
+			tknClientset, err := versioned.NewForConfig(cfg)
 			if err != nil {
 				klog.Errorf("unable to create Tekton clientset")
 				return err
@@ -126,9 +126,9 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 			// add Tekton pipeline controller
 			if err := (&tknPipeline.Reconciler{
-				Client:    mgr.GetClient(),
-				Scheme:    mgr.GetScheme(),
-				TknClient: cs,
+				Client:       mgr.GetClient(),
+				Scheme:       mgr.GetScheme(),
+				TknClientset: tknClientset,
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipeline-controller, err: %v", err)
 				return err
@@ -138,7 +138,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			if err := (&tknPipelineRun.Reconciler{
 				Client:    mgr.GetClient(),
 				Scheme:    mgr.GetScheme(),
-				TknClient: cs,
+				TknClientset: tknClientset,
 			}).SetupWithManager(mgr); err != nil {
 				klog.Errorf("unable to create tekton-pipelinerun-controller, err: %v", err)
 				return err
