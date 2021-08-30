@@ -37,8 +37,8 @@ import (
 // Reconciler reconciles a Pipeline object
 type Reconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	TknClient *tknclient.Clientset
+	Scheme       *runtime.Scheme
+	TknClientset *tknclient.Clientset
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelines,verbs=get;list;watch;create;update;patch;delete
@@ -117,7 +117,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 	var tknTaskName string
 	for _, taskSpec := range pipeline.Spec.Tasks {
 		tknTaskName = pipeline.Name + "-" + taskSpec.Name
-		if _, err := r.TknClient.TektonV1beta1().
+		if _, err := r.TknClientset.TektonV1beta1().
 			Tasks(pipeline.Namespace).
 			Get(ctx, tknTaskName, metav1.GetOptions{}); err != nil {
 			klog.Infof("unable to find Tekton Task [%s] in namespace %s", tknTaskName, pipeline.Namespace)
@@ -126,7 +126,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 		}
 
 		// Since Tekton Task exists, we need to delete it.
-		if err := r.TknClient.TektonV1beta1().
+		if err := r.TknClientset.TektonV1beta1().
 			Tasks(pipeline.Namespace).
 			Delete(ctx, tknTaskName, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("unable to delete Tekton Task [%s] using tekton client", tknTaskName)
@@ -136,7 +136,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 
 	// Secondly, we should find and delete all the related Tekton Pipelines.
 	tknPipelineName := pipeline.Spec.Name
-	if _, err := r.TknClient.TektonV1beta1().
+	if _, err := r.TknClientset.TektonV1beta1().
 		Pipelines(pipeline.Namespace).
 		Get(ctx, tknPipelineName, metav1.GetOptions{}); err != nil {
 		// Tekton Pipeline resource does not exist and that means we ought to do nothing here.
@@ -145,7 +145,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 	}
 
 	// If there exists related Tekton Pipelines, we will delete it.
-	if err := r.TknClient.TektonV1beta1().
+	if err := r.TknClientset.TektonV1beta1().
 		Pipelines(pipeline.Namespace).
 		Delete(ctx, tknPipelineName, metav1.DeleteOptions{}); err != nil {
 		// When we failed to delete Tekton PipelineRun resource, then we should return an error here.
@@ -178,7 +178,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 	// 2. Clean Tekton PipelineRun CRD resources
 	var err error
 	var tknPipelineRunList *tektonv1.PipelineRunList
-	if tknPipelineRunList, err = r.TknClient.TektonV1beta1().PipelineRuns(pipeline.Namespace).List(ctx, metav1.ListOptions{}); err != nil {
+	if tknPipelineRunList, err = r.TknClientset.TektonV1beta1().PipelineRuns(pipeline.Namespace).List(ctx, metav1.ListOptions{}); err != nil {
 		// If we fail to list any Tekton PipelineRun resource, we will return an error here.
 		klog.Error("unable to list Tekton PipelineRun resources")
 		return err
@@ -189,7 +189,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 			continue
 		}
 		// delete target Tekton PipelineRun CRD resources
-		if err := r.TknClient.TektonV1beta1().
+		if err := r.TknClientset.TektonV1beta1().
 			PipelineRuns(pipeline.Namespace).
 			Delete(ctx, tknPipelineRun.Name, metav1.DeleteOptions{}); err != nil {
 			// When we fail to delete tekton pipelinerun, we will return an error.
