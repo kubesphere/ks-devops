@@ -44,7 +44,7 @@ var _ = Describe("Pipeline controller", func() {
 		interval = time.Millisecond * 250
 	)
 
-	Context("When updating CronJob Status", func() {
+	Context("When updating Pipeline Status", func() {
 		It("Should create Devops Pipeline and Tekton Pipeline", func() {
 			By("By creating a new Devops Pipeline")
 			ctx := context.Background()
@@ -76,7 +76,7 @@ var _ = Describe("Pipeline controller", func() {
 								{
 									Name:   "test-step",
 									Image:  "alpine:latest",
-									Script: "date\nls",
+									Script: "cd workspace\npwd",
 								},
 							},
 						},
