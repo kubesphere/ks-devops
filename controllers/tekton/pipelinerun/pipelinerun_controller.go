@@ -35,8 +35,8 @@ import (
 // Reconciler reconciles a PipelineRun object
 type Reconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	TknClient *tknclient.Clientset
+	Scheme       *runtime.Scheme
+	TknClientset *tknclient.Clientset
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -111,7 +111,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *d
 
 	// We will first find the target Tekton PipelineRun CRD resources in the given
 	// namespace. If we do not find it, we will return directly.
-	if _, err := r.TknClient.TektonV1beta1().
+	if _, err := r.TknClientset.TektonV1beta1().
 		PipelineRuns(pipelineRun.Namespace).
 		Get(ctx, tknPipelineRunName, metav1.GetOptions{}); err != nil {
 		// Tekton PipelineRun resource does not exist, so we just do nothing here.
@@ -122,7 +122,7 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *d
 	// If we find that target Tekton PipelineRun resource exists,
 	// we should delete it and its corresponding resources,
 	// e.g. Tekton TaskRuns and Pods created by it.
-	if err := r.TknClient.TektonV1beta1().
+	if err := r.TknClientset.TektonV1beta1().
 		PipelineRuns(pipelineRun.Namespace).
 		Delete(ctx, tknPipelineRunName, metav1.DeleteOptions{}); err != nil {
 		// When we failed to delete tekton pipelinerun, return with an error.
