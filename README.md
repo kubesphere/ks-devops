@@ -5,35 +5,39 @@
 
 ## Get started
 
-1. Install KubeSphere via [kk](https://github.com/kubesphere/kubekey/) (or other ways). 
-    This is an optional step, basically we need a Kubernetes Cluster and the front-end of DevOps.
-1. Install `ks-devops` via [chart](charts/ks-devops)
-1. Replace the images of `ks-apiserver` and `ks-controller-manager`. In current phase, we need to use a temporary images of [KubeSphere](https://github.com/kubesphere/kubesphere/) 
-which comes from [the branch remove-devops-ctrl](https://github.com/LinuxSuRen/kubesphere/tree/remove-devops-ctrl):
+### Quick Start
 
-* `kubespheredev/ks-apiserver:remove-devops-ctrl`
-* `kubespheredev/ks-controller-manager:remove-devops-ctrl`
+- Install KubeSphere via [kk](https://github.com/kubesphere/kubekey/) (or other ways).
+
+  ```bash
+  kk create cluster --with-kubesphere nightly-$(date -d yesterday '+%Y%m%d')
+  ```
+
+- Enable DevOps application
+
+  ```bash
+  kubectl patch -nkubesphere-system cc ks-installer --type=json -p='[{"op": "replace", "path": "/spec/devops/enabled", "value": true}]'
+  ```
 
 Want to go into deep? Please checkout the [documentation](docs).
 
 ### Install it as a Helm Chart
 
 First, please clone this git repository. Then run command: `make install-chart`
- - Because the default registry uses `ghcr.io/kubesphere`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
+
+- Because the default registry uses `ghcr.io/kubesphere`, if you want to use `docker.io` as the registry for image pull, you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
 
 ### Run it locally
 
-Technically, [apiserver](cmd/apiserver) and [controller](cmd/controller) are all binary files. So, 
-it's possible to run them in your local environment. You just need to make sure that the connection 
-between your environment and a Kubernetes cluster works well. This is a default config file of these 
+Technically, [apiserver](cmd/apiserver) and [controller](cmd/controller) are all binary files. So,
+it's possible to run them in your local environment. You just need to make sure that the connection
+between your environment and a Kubernetes cluster works well. This is a default config file of these
 components, please see also [the sample file](config/samples/kubesphere.yaml).
 
 ### Development locally
 
 - Run [kind](https://github.com/kubernetes-sigs/kind) in local or remote machine
-  
 - Make sure that you can access cluster via kubectl command in local machine
-  
 - Execute the following command to install our CRDs:
 
 ```shell
@@ -87,9 +91,9 @@ golangci-lint run controllers/jenkinsconfig
 
 ## TODO
 
-* A separate front-end project of ks-devops
-* Auth support
-    * OIDC support as a default provider
+- A separate front-end project of ks-devops
+- Auth support
+  - OIDC support as a default provider
 
 ## Experimental support
 
@@ -104,6 +108,6 @@ It provides a dashboard for Kubernetes and ks-devops.
 - [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
 
-## Additional links 
+## Additional links
 
 - [Collection of KubeSphere Devops related projects](docs/projects.md)
