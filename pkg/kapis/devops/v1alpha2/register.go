@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"net/url"
@@ -49,17 +50,17 @@ var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"
 
 func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
-	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore) error {
 	wsWithGroup := runtime.NewWebService(GroupVersion)
 	// the API endpoint with group version will be removed in the future release
 	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
-		s3Client, endpoint, k8sClient, wsWithGroup); err != nil {
+		s3Client, endpoint, k8sClient, jenkinsClient, wsWithGroup); err != nil {
 		return err
 	}
 
 	ws := runtime.NewWebServiceWithoutGroup(GroupVersion)
 	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
-		s3Client, endpoint, k8sClient, ws); err != nil {
+		s3Client, endpoint, k8sClient, jenkinsClient, ws); err != nil {
 		return err
 	}
 	return nil
@@ -67,7 +68,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 
 func addToContainerWithWebService(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
-	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, ws *restful.WebService) error {
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore, ws *restful.WebService) error {
 	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func addToContainerWithWebService(container *restful.Container, ksInformers exte
 		return err
 	}
 
-	err = addJenkinsToContainer(ws, devopsClient, endpoint, k8sClient)
+	err = addJenkinsToContainer(ws, devopsClient, endpoint, jenkinsClient)
 	if err != nil {
 		return err
 	}
@@ -682,7 +683,7 @@ func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Inter
 	return nil
 }
 
-func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string, client k8s.Client) error {
+func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string, jenkinsClient core.JenkinsCore) error {
 	if devopsClient == nil {
 		return nil
 	}
@@ -717,6 +718,14 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/devops/%s/jenkins",
 			GroupVersion.Group, GroupVersion.Version, devops), "", 1)
 		httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
+
+		if request.Request.Method == http.MethodPost {
+			if err := jenkinsClient.CrumbHandle(request.Request); err != nil {
+				klog.V(4).Infof("%v", err)
+				_, _ = response.Write([]byte("failed to communicate with Jenkins, cannot get crumb"))
+				return
+			}
+		}
 		httpProxy.ServeHTTP(response, request.Request)
 	}
 	// some Jenkins API against with POST method
