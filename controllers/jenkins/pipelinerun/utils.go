@@ -114,7 +114,7 @@ type parameterConverter struct {
 }
 
 func (converter parameterConverter) convert() []job.Parameter {
-	var params []job.Parameter = nil
+	var params []job.Parameter
 	for _, param := range converter.parameters {
 		params = append(params, job.Parameter{
 			Name:  param.Name,
