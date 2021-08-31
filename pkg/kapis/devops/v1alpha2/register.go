@@ -35,7 +35,6 @@ import (
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/client/sonarqube"
@@ -701,7 +700,6 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 			u := request.Request.URL
 			u.Host = parse.Host
 			u.Scheme = parse.Scheme
-			jenkins.SetBasicBearTokenHeader(&request.Request.Header)
 			u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/jenkins", GroupVersion.Group, GroupVersion.Version), "", 1)
 			httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
 			httpProxy.ServeHTTP(response, request.Request)
@@ -711,18 +709,27 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 
 	handlerWithDevOps := func(request *restful.Request, response *restful.Response) {
 		u := request.Request.URL
-		devops := request.PathParameter("devops")
+		devopsPath := request.PathParameter("devops")
 		u.Host = parse.Host
 		u.Scheme = parse.Scheme
-		jenkins.SetBasicBearTokenHeader(&request.Request.Header)
 		u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/devops/%s/jenkins",
-			GroupVersion.Group, GroupVersion.Version, devops), "", 1)
+			GroupVersion.Group, GroupVersion.Version, devopsPath), "", 1)
+		u.Path = strings.Replace(u.Path, fmt.Sprintf("/%s/devops/%s/jenkins",
+			GroupVersion.Version, devopsPath), "", 1)
 		httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
+
+		if err := jenkinsClient.AuthHandle(request.Request); err != nil {
+			msg := "failed to set auth header for Jenkins API request"
+			klog.V(4).Infof("%s, error: %v", msg, err)
+			_, _ = response.Write([]byte(msg))
+			return
+		}
 
 		if request.Request.Method == http.MethodPost {
 			if err := jenkinsClient.CrumbHandle(request.Request); err != nil {
-				klog.V(4).Infof("%v", err)
-				_, _ = response.Write([]byte("failed to communicate with Jenkins, cannot get crumb"))
+				msg := "failed to communicate with Jenkins, cannot get crumb"
+				klog.V(4).Infof("%s, error: %v", msg, err)
+				_, _ = response.Write([]byte(msg))
 				return
 			}
 		}
