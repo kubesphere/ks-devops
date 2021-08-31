@@ -21,7 +21,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/jenkins-zh/jenkins-client v0.0.3-0.20210830015934-b0d674f61d22
+	github.com/jenkins-zh/jenkins-client v0.0.3-0.20210830140903-1ae131e1f28b
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0
@@ -65,5 +65,4 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.18.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	sigs.k8s.io/application => sigs.k8s.io/application v0.8.4-0.20201016185654-c8e2959e57a0
-	github.com/jenkins-zh/jenkins-client => /home/johnniang/workspace/jenkins/jenkins-client
 )
