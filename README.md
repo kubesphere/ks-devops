@@ -8,7 +8,6 @@
 ### Quick Start
 
 - Install KubeSphere via [kk](https://github.com/kubesphere/kubekey/) (or other ways).
-  This is an optional step, basically we need a Kubernetes Cluster and the front-end of DevOps.
 
   ```bash
   kk create cluster --with-kubesphere nightly-$(date -d yesterday '+%Y%m%d')
