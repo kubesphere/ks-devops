@@ -69,8 +69,6 @@ func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *dev
 			}
 		}
 	}
-	// TODO consider to remove below
-	SetBasicBearTokenHeader(&header)
 
 	newRequest := &http.Request{
 		Method:   httpParameters.Method,

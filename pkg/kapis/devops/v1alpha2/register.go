@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"net/url"
@@ -34,7 +35,6 @@ import (
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/client/sonarqube"
@@ -49,17 +49,17 @@ var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"
 
 func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
-	s3Client s3.Interface, endpoint string, k8sClient k8s.Client) error {
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore) error {
 	wsWithGroup := runtime.NewWebService(GroupVersion)
 	// the API endpoint with group version will be removed in the future release
 	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
-		s3Client, endpoint, k8sClient, wsWithGroup); err != nil {
+		s3Client, endpoint, k8sClient, jenkinsClient, wsWithGroup); err != nil {
 		return err
 	}
 
 	ws := runtime.NewWebServiceWithoutGroup(GroupVersion)
 	if err := addToContainerWithWebService(container, ksInformers, devopsClient, sonarqubeClient, ksClient,
-		s3Client, endpoint, k8sClient, ws); err != nil {
+		s3Client, endpoint, k8sClient, jenkinsClient, ws); err != nil {
 		return err
 	}
 	return nil
@@ -67,7 +67,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 
 func addToContainerWithWebService(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
-	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, ws *restful.WebService) error {
+	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore, ws *restful.WebService) error {
 	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func addToContainerWithWebService(container *restful.Container, ksInformers exte
 		return err
 	}
 
-	err = addJenkinsToContainer(ws, devopsClient, endpoint, k8sClient)
+	err = addJenkinsToContainer(ws, devopsClient, endpoint, jenkinsClient)
 	if err != nil {
 		return err
 	}
@@ -682,7 +682,7 @@ func AddS2IToWebService(webservice *restful.WebService, ksClient versioned.Inter
 	return nil
 }
 
-func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string, client k8s.Client) error {
+func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.Interface, endpoint string, jenkinsClient core.JenkinsCore) error {
 	if devopsClient == nil {
 		return nil
 	}
@@ -700,7 +700,6 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 			u := request.Request.URL
 			u.Host = parse.Host
 			u.Scheme = parse.Scheme
-			jenkins.SetBasicBearTokenHeader(&request.Request.Header)
 			u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/jenkins", GroupVersion.Group, GroupVersion.Version), "", 1)
 			httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
 			httpProxy.ServeHTTP(response, request.Request)
@@ -708,28 +707,18 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 
-	handlerWithDevOps := func(request *restful.Request, response *restful.Response) {
-		u := request.Request.URL
-		devops := request.PathParameter("devops")
-		u.Host = parse.Host
-		u.Scheme = parse.Scheme
-		jenkins.SetBasicBearTokenHeader(&request.Request.Header)
-		u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/devops/%s/jenkins",
-			GroupVersion.Group, GroupVersion.Version, devops), "", 1)
-		httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
-		httpProxy.ServeHTTP(response, request.Request)
-	}
+	jenkinsProxy := newJenkinsProxy(jenkinsClient, parse.Host, parse.Scheme, nil)
 	// some Jenkins API against with POST method
 	webservice.Route(webservice.GET("/devops/{devops}/jenkins/{path:*}").
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-		To(handlerWithDevOps).
+		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	webservice.Route(webservice.POST("/devops/{devops}/jenkins/{path:*}").
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-		To(handlerWithDevOps).
+		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	return nil

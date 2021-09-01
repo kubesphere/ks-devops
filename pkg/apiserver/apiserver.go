@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
@@ -121,6 +122,12 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 // Installation happens before all informers start to cache objects, so
 //   any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
+	jenkinsCore := core.JenkinsCore{
+		URL:      s.Config.JenkinsOptions.Host,
+		UserName: s.Config.JenkinsOptions.Username,
+		Token:    s.Config.JenkinsOptions.Password,
+	}
+
 	urlruntime.Must(devopsv1alpha2.AddToContainer(s.container,
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.DevopsClient,
@@ -128,7 +135,8 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.KubernetesClient.KubeSphere(),
 		s.S3Client,
 		s.Config.JenkinsOptions.Host,
-		s.KubernetesClient))
+		s.KubernetesClient,
+		jenkinsCore))
 	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient))
 	urlruntime.Must(oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
