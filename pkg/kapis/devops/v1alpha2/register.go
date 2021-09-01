@@ -707,45 +707,18 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 
-	handlerWithDevOps := func(request *restful.Request, response *restful.Response) {
-		u := request.Request.URL
-		devopsPath := request.PathParameter("devops")
-		u.Host = parse.Host
-		u.Scheme = parse.Scheme
-		u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/devops/%s/jenkins",
-			GroupVersion.Group, GroupVersion.Version, devopsPath), "", 1)
-		u.Path = strings.Replace(u.Path, fmt.Sprintf("/%s/devops/%s/jenkins",
-			GroupVersion.Version, devopsPath), "", 1)
-		httpProxy := proxy.NewUpgradeAwareHandler(u, http.DefaultTransport, false, false, &errorResponder{})
-
-		if err := jenkinsClient.AuthHandle(request.Request); err != nil {
-			msg := "failed to set auth header for Jenkins API request"
-			klog.V(4).Infof("%s, error: %v", msg, err)
-			_, _ = response.Write([]byte(msg))
-			return
-		}
-
-		if request.Request.Method == http.MethodPost {
-			if err := jenkinsClient.CrumbHandle(request.Request); err != nil {
-				msg := "failed to communicate with Jenkins, cannot get crumb"
-				klog.V(4).Infof("%s, error: %v", msg, err)
-				_, _ = response.Write([]byte(msg))
-				return
-			}
-		}
-		httpProxy.ServeHTTP(response, request.Request)
-	}
+	jenkinsProxy := newJenkinsProxy(jenkinsClient, parse.Host, parse.Scheme, nil)
 	// some Jenkins API against with POST method
 	webservice.Route(webservice.GET("/devops/{devops}/jenkins/{path:*}").
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-		To(handlerWithDevOps).
+		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	webservice.Route(webservice.POST("/devops/{devops}/jenkins/{path:*}").
 		Param(webservice.PathParameter("path", "Path stands for any suffix path.")).
 		Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-		To(handlerWithDevOps).
+		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
 	return nil

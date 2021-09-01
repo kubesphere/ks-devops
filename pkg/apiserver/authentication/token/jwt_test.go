@@ -82,7 +82,7 @@ func Test_getUserFromClaims(t *testing.T) {
 		name: "with key: username and sub, take sub first",
 		args: args{
 			claims: jwt.MapClaims{
-				"sub": "rick",
+				"sub":      "rick",
 				"username": "mark",
 			},
 		},
