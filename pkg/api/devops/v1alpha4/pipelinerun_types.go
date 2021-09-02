@@ -153,7 +153,7 @@ func (pr *PipelineRun) Buildable() bool {
 
 // IsMultiBranchPipeline indicates if the PipelineRun belongs a multi-branch pipeline.
 func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
-	return prSpec.SCM != nil && len(prSpec.SCM.RefName) > 0
+	return prSpec.PipelineSpec != nil && prSpec.PipelineSpec.Type == v1alpha3.MultiBranchPipelineType
 }
 
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
