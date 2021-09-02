@@ -56,6 +56,7 @@ replace (
 	github.com/go-redis/redis => github.com/go-redis/redis v6.15.2+incompatible
 	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
+	github.com/jenkins-zh/jenkins-client => github.com/johnniang/jenkins-client v0.0.0-20210901155310-49d249fa8968
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6
@@ -65,5 +66,4 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.18.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	sigs.k8s.io/application => sigs.k8s.io/application v0.8.4-0.20201016185654-c8e2959e57a0
-	github.com/jenkins-zh/jenkins-client => /home/johnniang/workspace/jenkins/jenkins-client
 )
