@@ -42,7 +42,7 @@ type pipelineBuildApplier struct {
 	*job.PipelineBuild
 }
 
-func (pbApplier *pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRunStatus) {
+func (pbApplier pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRunStatus) {
 	condition := devopsv1alpha4.Condition{
 		Type:               devopsv1alpha4.ConditionReady,
 		Status:             devopsv1alpha4.ConditionUnknown,
@@ -76,7 +76,7 @@ func (pbApplier *pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRu
 	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
 }
 
-func (pbApplier *pipelineBuildApplier) whenPipelineRunFinished(condition *devopsv1alpha4.Condition, prStatus *devopsv1alpha4.PipelineRunStatus) {
+func (pbApplier pipelineBuildApplier) whenPipelineRunFinished(condition *devopsv1alpha4.Condition, prStatus *devopsv1alpha4.PipelineRunStatus) {
 	// mark as completed
 	if !pbApplier.EndTime.IsZero() {
 		prStatus.CompletionTime = &v1.Time{Time: pbApplier.EndTime.Time}
@@ -106,4 +106,20 @@ func (pbApplier *pipelineBuildApplier) whenPipelineRunFinished(condition *devops
 		condition.Status = devopsv1alpha4.ConditionFalse
 		prStatus.Phase = devopsv1alpha4.Failed
 	}
+}
+
+// parameterConverter is responsible to convert Parameter slice of PipelineRun into job.Parameter slice.
+type parameterConverter struct {
+	parameters []devopsv1alpha4.Parameter
+}
+
+func (converter parameterConverter) convert() []job.Parameter {
+	var params []job.Parameter
+	for _, param := range converter.parameters {
+		params = append(params, job.Parameter{
+			Name:  param.Name,
+			Value: param.Value,
+		})
+	}
+	return params
 }

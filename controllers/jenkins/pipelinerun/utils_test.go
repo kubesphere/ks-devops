@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -277,6 +278,56 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			}
 			pbApplier.apply(tt.args.prStatus)
 			tt.assertion(tt.args.prStatus)
+		})
+	}
+}
+
+func Test_parameterConverter_convert(t *testing.T) {
+	type fields struct {
+		parameters []devopsv1alpha4.Parameter
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []job.Parameter
+	}{{
+		name: "Nil parameters",
+		fields: fields{
+			parameters: nil,
+		},
+		want: nil,
+	}, {
+		name: "Single parameter",
+		fields: fields{
+			parameters: []devopsv1alpha4.Parameter{
+				{Name: "fake_name", Value: "fake_value"},
+			},
+		},
+		want: []job.Parameter{
+			{Name: "fake_name", Value: "fake_value"},
+		},
+	}, {
+		name: "Two parameters",
+		fields: fields{
+			parameters: []devopsv1alpha4.Parameter{
+				{Name: "fake_name_1", Value: "fake_value_1"},
+				{Name: "fake_name_2", Value: "fake_value_2"},
+			},
+		},
+		want: []job.Parameter{
+			{Name: "fake_name_1", Value: "fake_value_1"},
+			{Name: "fake_name_2", Value: "fake_value_2"},
+		},
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			converter := parameterConverter{
+				parameters: tt.fields.parameters,
+			}
+			if got := converter.convert(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convert() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
