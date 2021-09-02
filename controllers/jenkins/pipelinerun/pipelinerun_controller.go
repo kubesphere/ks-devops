@@ -174,9 +174,9 @@ func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string, prSpec 
 	}
 
 	return c.Build(job.BuildOption{
-		Pipelines: []string{projectName, pipelineName},
+		Pipelines:  []string{projectName, pipelineName},
 		Parameters: parameterConverter{parameters: prSpec.Parameters}.convert(),
-		Branch:    branch,
+		Branch:     branch,
 	})
 }
 
@@ -184,7 +184,7 @@ func getBranch(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
 	var branch = ""
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
-			return "", fmt.Errorf("please configure SCM reference name and type for multi branch Pipeline")
+			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
 		}
 		branch = prSpec.SCM.RefName
 	}
