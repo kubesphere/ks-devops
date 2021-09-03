@@ -20,11 +20,10 @@ package scheme
 
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	typesv1beta1 "kubesphere.io/api/types/v1beta1"
 	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
@@ -35,7 +34,6 @@ var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	devopsv1alpha1.AddToScheme,
 	devopsv1alpha3.AddToScheme,
-	typesv1beta1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

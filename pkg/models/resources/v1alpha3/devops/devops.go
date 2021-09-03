@@ -19,7 +19,7 @@ package devops
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	devopsv1alpha3 "kubesphere.io/api/devops/v1alpha3"
+	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
