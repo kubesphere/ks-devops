@@ -33,7 +33,7 @@ ks install kk --components devops
 
 ### k3d
 
-[k3d]((https://github.com/rancher/k3d)) is a little helper to run Rancher Lab's [k3s](https://github.com/k3s-io/k3s) in Docker.
+[k3d](https://github.com/rancher/k3d) is a little helper to run Rancher Lab's [k3s](https://github.com/k3s-io/k3s) in Docker.
 
 ```shell
 ks install k3d --components devops
