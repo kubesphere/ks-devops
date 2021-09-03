@@ -23,7 +23,7 @@ CI/CD workflow efficiency, and helps organizations accelerate the time to market
 - Install KubeSphere via [kubekey](https://github.com/kubesphere/kubekey/) (or [other ways](docs/installation.md)).
 
   ```bash
-  kk create cluster
+  kk create cluster --with-kubesphere
   ```
 
 - Enable DevOps application
