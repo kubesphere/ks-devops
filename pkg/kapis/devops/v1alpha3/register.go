@@ -26,7 +26,7 @@ import (
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"kubesphere.io/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"

@@ -47,7 +47,6 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
-	kubesphere.io/api v0.0.0-20210511124541-08f2d682bd07
 	sigs.k8s.io/controller-runtime v0.6.3
 )
 

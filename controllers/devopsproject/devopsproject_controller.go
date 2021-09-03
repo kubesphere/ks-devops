@@ -84,7 +84,6 @@ func NewController(client clientset.Interface,
 	devopsClinet devopsClient.Interface,
 	namespaceInformer corev1informer.NamespaceInformer,
 	devopsInformer devopsinformers.DevOpsProjectInformer) *Controller {
-
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartLogging(func(format string, args ...interface{}) {
 		klog.Info(fmt.Sprintf(format, args))
