@@ -161,16 +161,34 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	// requeue immediately
+	// requeue after 1 second
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
-	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-	return boClient.Build(job.BuildOption{
-		Pipelines:  []string{devopsProjectName, pipelineName},
+func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+
+	branch, err := getBranch(prSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Build(job.BuildOption{
+		Pipelines:  []string{projectName, pipelineName},
 		Parameters: parameterConverter{parameters: prSpec.Parameters}.convert(),
+		Branch:     branch,
 	})
+}
+
+func getBranch(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
+	var branch = ""
+	if prSpec.IsMultiBranchPipeline() {
+		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
+			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
+		}
+		branch = prSpec.SCM.RefName
+	}
+	return branch, nil
 }
 
 func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
@@ -179,7 +197,16 @@ func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
 	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-	return boClient.GetBuild(runIDStr, projectName, pipelineName)
+
+	branch, err := getBranch(&pr.Spec)
+	if err != nil {
+		return nil, err
+	}
+	return boClient.GetBuild(job.GetBuildOption{
+		RunID:     runIDStr,
+		Pipelines: []string{projectName, pipelineName},
+		Branch:    branch,
+	})
 }
 
 func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {

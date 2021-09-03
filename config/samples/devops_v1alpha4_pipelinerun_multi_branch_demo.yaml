@@ -1,0 +1,53 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-devopsproject
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: DevOpsProject
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-devopsproject
+status:
+  adminNamespace: demo-devopsproject
+
+---
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  annotations:
+    kubesphere.io/creator: admin
+  name: demo-multi-branch-pipeline
+  namespace: demo-devopsproject
+spec:
+  multi_branch_pipeline:
+    discarder:
+      days_to_keep: '-1'
+      num_to_keep: '-1'
+    git_source:
+      discover_branches: true
+      git_clone_option:
+        depth: 1
+        timeout: 20
+      url: 'https://gitlab.com/johnniang/jenkinsfile-demo.git'
+    name: demo-multi-branch-pipeline
+    script_path: Jenkinsfile
+    source_type: git
+  type: multi-branch-pipeline
+
+---
+apiVersion: devops.kubesphere.io/v1alpha4
+kind: PipelineRun
+metadata:
+  name: demo-pipelinerun
+  namespace: demo-devopsproject
+spec:
+  pipelineRef:
+    name: demo-multi-branch-pipeline
+  pipelineSpec:
+    type: multi-branch-pipeline
+  scm:
+    refName: main
+    refType: branch
