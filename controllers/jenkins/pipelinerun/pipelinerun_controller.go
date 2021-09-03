@@ -23,8 +23,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
@@ -32,7 +34,7 @@ import (
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	time "time"
+	"time"
 )
 
 // Reconciler reconciles a PipelineRun object
@@ -42,6 +44,7 @@ type Reconciler struct {
 	Scheme       *runtime.Scheme
 	DevOpsClient devopsClient.Interface
 	JenkinsCore  core.JenkinsCore
+	recorder     record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -89,10 +92,10 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check PipelineRun status
 	if pr.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
-
 		pipelineBuild, err := r.getPipelineRunResult(devopsProjectName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
+			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
@@ -121,6 +124,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "unable to update PipelineRun status.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
+		r.recorder.Eventf(&pr, corev1.EventTypeNormal, devopsv1alpha4.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -130,6 +134,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineBuild, err := r.triggerJenkinsJob(devopsProjectName, pipelineName, &pr.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "devopsProjectName", devopsProjectName, "pipeline", pipeline.Name)
+		r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
 	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
@@ -160,7 +165,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
-
+	r.recorder.Eventf(&pr, corev1.EventTypeNormal, devopsv1alpha4.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
@@ -263,6 +268,8 @@ func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *devopsv1alph
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// the name should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
+	r.recorder = mgr.GetEventRecorderFor("pipelinerun-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv1alpha4.PipelineRun{}).
 		Complete(r)
