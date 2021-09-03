@@ -126,10 +126,10 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory)
 	c.eventRecorder = &record.FakeRecorder{}
 
 	for _, f := range f.s2ibinaryLister {
-		i.Devops().V1alpha1().S2iBinaries().Informer().GetIndexer().Add(f)
+		_ = i.Devops().V1alpha1().S2iBinaries().Informer().GetIndexer().Add(f)
 	}
 	for _, f := range f.s2irunLister {
-		i.Devops().V1alpha1().S2iRuns().Informer().GetIndexer().Add(f)
+		_ = i.Devops().V1alpha1().S2iRuns().Informer().GetIndexer().Add(f)
 	}
 
 	return c, i
@@ -137,10 +137,6 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory)
 
 func (f *fixture) run(fooName string) {
 	f.runController(fooName, true, false)
-}
-
-func (f *fixture) runExpectError(fooName string) {
-	f.runController(fooName, true, true)
 }
 
 func (f *fixture) runController(s2iRunName string, startInformers bool, expectError bool) {

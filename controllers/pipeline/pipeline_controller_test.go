@@ -155,11 +155,11 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 	c.eventRecorder = &record.FakeRecorder{}
 
 	for _, f := range f.pipelineLister {
-		i.Devops().V1alpha3().Pipelines().Informer().GetIndexer().Add(f)
+		_ = i.Devops().V1alpha3().Pipelines().Informer().GetIndexer().Add(f)
 	}
 
 	for _, d := range f.namespaceLister {
-		k8sI.Core().V1().Namespaces().Informer().GetIndexer().Add(d)
+		_ = k8sI.Core().V1().Namespaces().Informer().GetIndexer().Add(d)
 	}
 
 	return c, i, k8sI, dI
@@ -167,10 +167,6 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 
 func (f *fixture) run(fooName string) {
 	f.runController(fooName, true, false)
-}
-
-func (f *fixture) runExpectError(fooName string) {
-	f.runController(fooName, true, true)
 }
 
 func (f *fixture) runController(projectName string, startInformers bool, expectError bool) {

@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/diff"
 	kubeinformers "k8s.io/client-go/informers"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/testing"
@@ -150,11 +149,11 @@ func (f *fixture) newController() (*Controller, kubeinformers.SharedInformerFact
 	c.secretSynced = alwaysReady
 	c.eventRecorder = &record.FakeRecorder{}
 	for _, f := range f.secretLister {
-		k8sI.Core().V1().Secrets().Informer().GetIndexer().Add(f)
+		_ = k8sI.Core().V1().Secrets().Informer().GetIndexer().Add(f)
 	}
 
 	for _, d := range f.namespaceLister {
-		k8sI.Core().V1().Namespaces().Informer().GetIndexer().Add(d)
+		_ = k8sI.Core().V1().Namespaces().Informer().GetIndexer().Add(d)
 	}
 
 	return c, k8sI, dI
@@ -162,10 +161,6 @@ func (f *fixture) newController() (*Controller, kubeinformers.SharedInformerFact
 
 func (f *fixture) run(fooName string) {
 	f.runController(fooName, true, false)
-}
-
-func (f *fixture) runExpectError(fooName string) {
-	f.runController(fooName, true, true)
 }
 
 func (f *fixture) runController(name string, startInformers bool, expectError bool) {
@@ -197,53 +192,6 @@ func (f *fixture) runController(name string, startInformers bool, expectError bo
 		if !reflect.DeepEqual(actualCredential, credential) {
 			f.t.Errorf(" credential %+v not match \n %+v", credential, actualCredential)
 		}
-	}
-}
-
-// checkAction verifies that expected and actual actions are equal and both have
-// same attached resources
-func checkAction(expected, actual core.Action, t *testing.T) {
-	if !(expected.Matches(actual.GetVerb(), actual.GetResource().Resource) && actual.GetSubresource() == expected.GetSubresource()) {
-		t.Errorf("Expected\n\t%#v\ngot\n\t%#v", expected, actual)
-		return
-	}
-
-	if reflect.TypeOf(actual) != reflect.TypeOf(expected) {
-		t.Errorf("Action has wrong type. Expected: %t. Got: %t", expected, actual)
-		return
-	}
-
-	switch a := actual.(type) {
-	case core.CreateActionImpl:
-		e, _ := expected.(core.CreateActionImpl)
-		expObject := e.GetObject()
-		object := a.GetObject()
-
-		if !reflect.DeepEqual(expObject, object) {
-			t.Errorf("Action %s %s has wrong object\nDiff:\n %s",
-				a.GetVerb(), a.GetResource().Resource, diff.ObjectGoPrintSideBySide(expObject, object))
-		}
-	case core.UpdateActionImpl:
-		e, _ := expected.(core.UpdateActionImpl)
-		expObject := e.GetObject()
-		object := a.GetObject()
-
-		if !reflect.DeepEqual(expObject, object) {
-			t.Errorf("Action %s %s has wrong object\nDiff:\n %s",
-				a.GetVerb(), a.GetResource().Resource, diff.ObjectGoPrintSideBySide(expObject, object))
-		}
-	case core.PatchActionImpl:
-		e, _ := expected.(core.PatchActionImpl)
-		expPatch := e.GetPatch()
-		patch := a.GetPatch()
-
-		if !reflect.DeepEqual(expPatch, patch) {
-			t.Errorf("Action %s %s has wrong patch\nDiff:\n %s",
-				a.GetVerb(), a.GetResource().Resource, diff.ObjectGoPrintSideBySide(expPatch, patch))
-		}
-	default:
-		t.Errorf("Uncaptured Action %s %s, you should explicitly add a case to capture it",
-			actual.GetVerb(), actual.GetResource().Resource)
 	}
 }
 
