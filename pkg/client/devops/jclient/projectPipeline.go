@@ -13,15 +13,10 @@ import (
 )
 
 func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alpha3.Pipeline) (string, error) {
-	core, err := GetJenkinsCore()
 	jclient := job.Client{
-		JenkinsCore: core,
-		Parent: "",
+		JenkinsCore: j.Core,
 	}
-	if err != nil {
-		return "", err
-	}
-	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipeline.Spec.Pipeline.Name)
+	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipeline.Name)
 	job, _ := jclient.GetJob(projectPipelineName)
 	if job != nil {
 		err := fmt.Errorf("job name [%s] has been used", job.Name)

@@ -73,11 +73,13 @@ type Controller struct {
 
 	workerLoopPeriod time.Duration
 	devopsClient     devopsClient.Interface
+	jenkinsClient    jclient.JenkinsClient
 }
 
 func NewController(client clientset.Interface,
 	kubesphereClient kubesphereclient.Interface,
 	devopsClient devopsClient.Interface,
+	jenkinsClient jclient.JenkinsClient,
 	namespaceInformer corev1informer.NamespaceInformer,
 	devopsInformer devopsinformers.PipelineInformer) *Controller {
 	broadcaster := record.NewBroadcaster()
@@ -90,6 +92,7 @@ func NewController(client clientset.Interface,
 	v := &Controller{
 		client:              client,
 		devopsClient:        devopsClient,
+		jenkinsClient:       jenkinsClient,
 		kubesphereClient:    kubesphereClient,
 		workqueue:           workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pipeline"),
 		devOpsProjectLister: devopsInformer.Lister(),
@@ -271,8 +274,7 @@ func (c *Controller) syncHandler(key string) error {
 			}
 		} else {
 			// _, err := c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
-			jcli := jclient.JenkinsClient{}
-			_, err = jcli.CreateProjectPipeline(nsName, copyPipeline)
+			_, err = c.jenkinsClient.CreateProjectPipeline(nsName, copyPipeline)
 			if err != nil {
 				klog.V(8).Info(err, fmt.Sprintf("failed to create copyPipeline %s ", key))
 				return err
