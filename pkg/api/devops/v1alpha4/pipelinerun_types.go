@@ -270,6 +270,18 @@ type Condition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
 }
 
+// Valid values for event reasons (new reasons could be added in future)
+const (
+	// Started indicates PipelineRun has been triggered
+	Started string = "Started"
+	// Updated indicates PipelineRun's running data has been updated
+	Updated string = "Updated"
+	// TriggerFailed indicates that it failed to trigger build API
+	TriggerFailed string = "TriggerFailed"
+	// RetrieveFailed indicates that it failed to retrieve the latest running data
+	RetrieveFailed string = "RetrieveFailed"
+)
+
 func init() {
 	SchemeBuilder.Register(&PipelineRun{}, &PipelineRunList{})
 	apis.AddToSchemes = append(apis.AddToSchemes, AddToScheme)
