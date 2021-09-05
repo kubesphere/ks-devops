@@ -54,7 +54,7 @@ make uninstall
 
 ## Create Pipeline via CLI
 
-[ks](https://github.com/linuxsuren/ks) is an official client of KubeSphere. You can create a Pipeline by it.
+[ks](https://github.com/kubesphere-sigs/ks) is an official client of KubeSphere. You can create a Pipeline by it.
 
 `ks pip create --ws simple --template java --project default --skip-check -b good`
 
