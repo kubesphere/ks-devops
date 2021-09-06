@@ -2,3 +2,4 @@
 ignore:
   - "*generated*.go"
   - "**/*generated*.go"         # glob accepted
+  - "pkg/client/clientset/versioned"
