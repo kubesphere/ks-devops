@@ -23,6 +23,8 @@ on:
 jobs:
   BuildController:
     runs-on: ubuntu-20.04
+    needs:
+      - UnitTest
     steps:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
@@ -90,6 +92,8 @@ jobs:
 
   BuildAPIServer:
     runs-on: ubuntu-20.04
+    needs:
+      - UnitTest
     steps:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
@@ -157,6 +161,8 @@ jobs:
 
   BuildTools:
     runs-on: ubuntu-20.04
+    needs:
+      - UnitTest
     steps:
       - uses: actions/checkout@v2
       - name: Docker meta for kubesphere
