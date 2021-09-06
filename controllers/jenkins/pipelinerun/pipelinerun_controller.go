@@ -99,15 +99,27 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
+		prNodes, err := r.getPipelineNodes(devopsProjectName, pipelineName, &pr)
+		if err != nil {
+			log.Error(err, "unable to get PipelineRun nodes detail")
+			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
+			return ctrl.Result{}, err
+		}
+
 		// set the latest run result into annotations
 		runResultJSON, err := json.Marshal(pipelineBuild)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		prNodesJSON, err := json.Marshal(prNodes)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 		if pr.Annotations == nil {
 			pr.Annotations = make(map[string]string)
 		}
-		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunDataKey] = string(runResultJSON)
+		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunStatusKey] = string(runResultJSON)
+		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
 		// update PipelineRun
 		if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
@@ -170,7 +182,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
 	branch, err := getBranch(prSpec)
@@ -179,7 +191,7 @@ func (r *Reconciler) triggerJenkinsJob(projectName, pipelineName string, prSpec 
 	}
 
 	return c.Build(job.BuildOption{
-		Pipelines:  []string{projectName, pipelineName},
+		Pipelines:  []string{devopsProjectName, pipelineName},
 		Parameters: parameterConverter{parameters: prSpec.Parameters}.convert(),
 		Branch:     branch,
 	})
@@ -196,21 +208,38 @@ func getBranch(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
 	return branch, nil
 }
 
-func (r *Reconciler) getPipelineRunResult(projectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
-	runIDStr, exists := pr.GetPipelineRunID()
+func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
+	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
-	boClient := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
 	branch, err := getBranch(&pr.Spec)
 	if err != nil {
 		return nil, err
 	}
-	return boClient.GetBuild(job.GetBuildOption{
-		RunID:     runIDStr,
-		Pipelines: []string{projectName, pipelineName},
+	return c.GetBuild(job.GetBuildOption{
+		RunID:     runID,
+		Pipelines: []string{devopsProjectName, pipelineName},
 		Branch:    branch,
+	})
+}
+
+func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) ([]job.Node, error) {
+	runID, exists := pr.GetPipelineRunID()
+	if !exists {
+		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
+	}
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+	branch, err := getBranch(&pr.Spec)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetNodes(job.GetNodesOption{
+		Pipelines: []string{devopsProjectName, pipelineName},
+		Branch:    branch,
+		RunID:     runID,
 	})
 }
 
