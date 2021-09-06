@@ -1,37 +1,38 @@
-name: IntegrationTest
-# Need GitHub secret: DOCKER_HUB_USER, DOCKER_HUB_SECRETS, GHCR_TOKEN
+# name: IntegrationTest
+# # Need GitHub secret: DOCKER_HUB_USER, DOCKER_HUB_SECRETS, GHCR_TOKEN
 
-on:
-  push:
-    branches:
-      - master
-      - tekton-support
-      - jenkins-client-refactor
-      - feat/*
-      - fix/*
-      - test-* # make it be easier for contributors to test
-    tags:
-      - 'v*.*.*'
-  pull_request:
-    branches:
-      - 'master'
-      - 'tekton-support'
-      - 'jenkins-client-refactor'
-      - 'feat/*'
-      - 'fix/*'
+# on:
+#   push:
+#     branches:
+#       - master
+#       - tekton-support
+#       - jenkins-client-refactor
+#       - feat/*
+#       - fix/*
+#       - test-* # make it be easier for contributors to test
+#     tags:
+#       - 'v*.*.*'
+#   pull_request:
+#     branches:
+#       - 'master'
+#       - 'tekton-support'
+#       - 'jenkins-client-refactor'
+#       - 'feat/*'
+#       - 'fix/*'
 
-jobs:
-  IntegrationTest:
-    runs-on: ubuntu-18.04
-    steps:
-      - name: TektonControllerTest
-        run: |
-          curl -L https://github.com/linuxsuren/http-downloader/releases/latest/download/hd-linux-amd64.tar.gz | tar xzv
-          mv hd /usr/local/bin
-          hd fetch
-          hd install kubectl
-          hd install ks
-          ks install k3d
-          k3d cluster create
-          kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.25.0/release.yaml
-          make tekton-support-test
+# jobs:
+#   IntegrationTest:
+#     runs-on: ubuntu-18.04
+#     steps:
+#       - name: TektonControllerTest
+#         run: |
+#           curl -L https://github.com/linuxsuren/http-downloader/releases/latest/download/hd-linux-amd64.tar.gz | tar xzv
+#           mv hd /usr/local/bin
+#           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+#           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+#           hd fetch
+#           hd install ks
+#           ks install k3d
+#           k3d cluster create
+#           kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.25.0/release.yaml
+#           make tekton-support-test
