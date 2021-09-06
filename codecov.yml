@@ -1,2 +1,4 @@
+# https://docs.codecov.com/docs/ignoring-paths
 ignore:
+  - "*generated*.go"
   - "**/*generated*.go"         # glob accepted
