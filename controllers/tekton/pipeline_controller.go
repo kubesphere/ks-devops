@@ -166,24 +166,15 @@ func (r *PipelineReconciler) deleteExternalResources(ctx context.Context, pipeli
 		return err
 	}
 	// delete the relevant devops PipelineRun resources
-	devopsPipelineRun := &devopsv2alpha1.PipelineRun{}
-	if err := r.DeleteAllOf(ctx, devopsPipelineRun,
-		client.InNamespace(pipeline.Namespace),
-		client.MatchingFields{"spec.ref": pipeline.Name}); err != nil {
-		klog.Error("unable to delete relevant devops PipelineRuns")
-		return err
+	for _, devopsPipelineRun := range devopsPipelineRunList.Items {
+		if devopsPipelineRun.Spec.PipelineRef != pipeline.Spec.Name {
+			continue
+		}
+		if err := r.Delete(ctx, &devopsPipelineRun); err != nil {
+			klog.Errorf("unable to delete devops PipelineRun [%s]", devopsPipelineRun.Name)
+			return err
+		}
 	}
-
-	// for _, devopsPipelineRun := range devopsPipelineRunList.Items {
-
-	// 	if devopsPipelineRun.Spec.PipelineRef != pipeline.Spec.Name {
-	// 		continue
-	// 	}
-	// 	if err := r.Delete(ctx, &devopsPipelineRun); err != nil {
-	// 		klog.Errorf("unable to delete devops PipelineRun [%s]", devopsPipelineRun.Name)
-	// 		return err
-	// 	}
-	// }
 
 	// 2. Clean Tekton PipelineRun CRD resources
 	var err error
@@ -211,16 +202,6 @@ func (r *PipelineReconciler) deleteExternalResources(ctx context.Context, pipeli
 	klog.Infof("Pipeline [%s] and its related Tekton resources were deleted successfully.", pipeline.Name)
 
 	return nil
-}
-
-// containsString helps to check string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
 }
 
 // reconcileTektonCrd transforms our Pipeline CRD to Tekton CRDs

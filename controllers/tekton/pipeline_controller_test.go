@@ -16,38 +16,6 @@ limitations under the License.
 
 package tekton
 
-import "testing"
-
-func Test_containsString(t *testing.T) {
-	tests := []struct {
-		name  string
-		slice []string
-		s     string
-		want  bool
-	}{
-		{
-			name:  "String slice does not contain the given string",
-			slice: []string{"a", "bb", "ccc"},
-			s:     "dddd",
-			want:  false,
-		},
-		{
-			name:  "String slice contains the given string",
-			slice: []string{"a", "bb", "ccc"},
-			s:     "bb",
-			want:  true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := containsString(tt.slice, tt.s)
-			if got != tt.want {
-				t.Errorf("containsString() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 // Potential integration test template
 // import (
 // 	"context"
