@@ -31,34 +31,32 @@ func TestParseQueryParameter(t *testing.T) {
 		description string
 		queryString string
 		expected    *Query
-	}{
-		{
-			"test normal case",
-			"label=app.kubernetes.io/name=book&name=foo&status=Running&page=1&limit=10&ascending=true",
-			&Query{
-				Pagination: newPagination(10, 0),
-				SortBy:     FieldCreationTimeStamp,
-				Ascending:  true,
-				Filters: map[Field]Value{
-					FieldLabel:  Value("app.kubernetes.io/name=book"),
-					FieldName:   Value("foo"),
-					FieldStatus: Value("Running"),
-				},
+	}{{
+		"test normal case",
+		"label=app.kubernetes.io/name=book&name=foo&status=Running&page=1&limit=10&ascending=true",
+		&Query{
+			Pagination: newPagination(10, 0),
+			SortBy:     FieldCreationTimeStamp,
+			Ascending:  true,
+			Filters: map[Field]Value{
+				FieldLabel:  Value("app.kubernetes.io/name=book"),
+				FieldName:   Value("foo"),
+				FieldStatus: Value("Running"),
 			},
 		},
-		{
-			"test bad case",
-			"xxxx=xxxx&dsfsw=xxxx&page=abc&limit=add&ascending=ssss",
-			&Query{
-				Pagination: NoPagination,
-				SortBy:     FieldCreationTimeStamp,
-				Ascending:  false,
-				Filters: map[Field]Value{
-					Field("xxxx"):  Value("xxxx"),
-					Field("dsfsw"): Value("xxxx"),
-				},
+	}, {
+		"test bad case",
+		"xxxx=xxxx&dsfsw=xxxx&page=abc&limit=add&ascending=ssss",
+		&Query{
+			Pagination: NoPagination,
+			SortBy:     FieldCreationTimeStamp,
+			Ascending:  false,
+			Filters: map[Field]Value{
+				Field("xxxx"):  Value("xxxx"),
+				Field("dsfsw"): Value("xxxx"),
 			},
 		},
+	},
 	}
 
 	for _, test := range tests {
@@ -71,9 +69,7 @@ func TestParseQueryParameter(t *testing.T) {
 
 		t.Run(test.description, func(t *testing.T) {
 			got := ParseQueryParameter(request)
-
 			if diff := cmp.Diff(got, test.expected); diff != "" {
-
 				t.Errorf("%T differ (-got, +want): %s", test.expected, diff)
 				return
 			}
@@ -88,7 +84,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 		offset     int
 		total      int
 		startIndex int
-		endIndx    int
+		endIndex   int
 	}{
 		{
 			name:       "Valid pagination 1",
@@ -96,7 +92,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     0,
 			total:      1,
 			startIndex: 0,
-			endIndx:    1,
+			endIndex:   1,
 		},
 		{
 			name:       "Valid pagination 3",
@@ -104,7 +100,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     1,
 			total:      20,
 			startIndex: 1,
-			endIndx:    11,
+			endIndex:   11,
 		},
 		{
 			name:       "Invalid pagination 1",
@@ -112,7 +108,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     1,
 			total:      1,
 			startIndex: 1,
-			endIndx:    1,
+			endIndex:   1,
 		},
 		{
 			name:       "Invalid pagination 2",
@@ -120,7 +116,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     10,
 			total:      10,
 			startIndex: 10,
-			endIndx:    10,
+			endIndex:   10,
 		},
 		{
 			name:       "Unlimited: Offset = 0",
@@ -128,7 +124,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     0,
 			total:      1000,
 			startIndex: 0,
-			endIndx:    1000,
+			endIndex:   10,
 		},
 		{
 			name:       "Unlimited: Offset > 0",
@@ -136,7 +132,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     10,
 			total:      5,
 			startIndex: 0,
-			endIndx:    0,
+			endIndex:   0,
 		},
 		{
 			name:       "Unlimited: Offset > total",
@@ -144,7 +140,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			offset:     10,
 			total:      5,
 			startIndex: 0,
-			endIndx:    0,
+			endIndex:   0,
 		},
 	}
 	for _, test := range tests {
@@ -152,7 +148,7 @@ func TestPagination_GetValidPagination(t *testing.T) {
 			pagination := newPagination(test.limit, test.offset)
 			startIndex, endIndex := pagination.GetValidPagination(test.total)
 			assert.Equal(t, test.startIndex, startIndex)
-			assert.Equal(t, test.endIndx, endIndex)
+			assert.Equal(t, test.endIndex, endIndex)
 		})
 	}
 

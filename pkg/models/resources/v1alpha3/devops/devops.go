@@ -19,8 +19,6 @@ package devops
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	ksinformers "kubesphere.io/devops/pkg/client/informers/externalversions"
@@ -50,26 +48,5 @@ func (n devopsGetter) List(_ string, query *query.Query) (*api.ListResult, error
 		result = append(result, project)
 	}
 
-	return v1alpha3.DefaultList(result, query, n.compare, n.filter), nil
-}
-
-func (n devopsGetter) filter(item runtime.Object, filter query.Filter) bool {
-	devOpsProject, ok := item.(*devopsv1alpha3.DevOpsProject)
-	if !ok {
-		return false
-	}
-	return v1alpha3.DefaultObjectMetaFilter(devOpsProject.ObjectMeta, filter)
-}
-
-func (n devopsGetter) compare(left runtime.Object, right runtime.Object, field query.Field) bool {
-	leftProject, ok := left.(*devopsv1alpha3.DevOpsProject)
-	if !ok {
-		return false
-	}
-
-	rightProject, ok := right.(*devopsv1alpha3.DevOpsProject)
-	if !ok {
-		return true
-	}
-	return v1alpha3.DefaultObjectMetaCompare(leftProject.ObjectMeta, rightProject.ObjectMeta, field)
+	return v1alpha3.DefaultList(result, query, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter()), nil
 }

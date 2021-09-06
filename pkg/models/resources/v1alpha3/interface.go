@@ -40,11 +40,19 @@ type CompareFunc func(runtime.Object, runtime.Object, query.Field) bool
 
 type FilterFunc func(runtime.Object, query.Filter) bool
 
-type TransformFunc func(runtime.Object) runtime.Object
+type TransformFunc func(runtime.Object) interface{}
+
+// NoTransformFunc keeps original data without any transformation.
+func NoTransformFunc() TransformFunc {
+	return func(object runtime.Object) interface{} {
+		return object
+	}
+}
 
 func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFunc, filterFunc FilterFunc, transformFuncs ...TransformFunc) *api.ListResult {
 	// selected matched ones
 	var filtered []runtime.Object
+	// filter objects
 	for _, object := range objects {
 		selected := true
 		for field, value := range q.Filters {
@@ -53,13 +61,7 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 				break
 			}
 		}
-
 		if selected {
-			for _, transform := range transformFuncs {
-				if transform != nil {
-					object = transform(object)
-				}
-			}
 			filtered = append(filtered, object)
 		}
 	}
@@ -82,53 +84,98 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 
 	start, end := q.Pagination.GetValidPagination(total)
 
+	// transform objects
+	var result = make([]interface{}, end-start)
+	transformFuncs = nilFilter(transformFuncs)
+	if len(transformFuncs) == 0 {
+		transformFuncs = append(transformFuncs, NoTransformFunc())
+	}
+	for i, obj := range filtered[start:end] {
+		var transferred interface{}
+		for _, transform := range transformFuncs {
+			transferred = transform(obj)
+			if transferredObj, ok := transferred.(runtime.Object); ok {
+				obj = transferredObj
+			}
+		}
+		result[i] = transferred
+	}
+
 	return &api.ListResult{
-		TotalItems: len(filtered),
-		Items:      objectsToInterfaces(filtered[start:end]),
+		TotalItems: total,
+		Items:      result,
 	}
 }
 
-// DefaultObjectMetaCompare return true is left great than right
-func DefaultObjectMetaCompare(left, right metav1.ObjectMeta, sortBy query.Field) bool {
+// DefaultCompare creates a default ObjectMeta compare function.
+func DefaultCompare() CompareFunc {
+	return func(left runtime.Object, right runtime.Object, field query.Field) bool {
+		leftOma, ok := left.(metav1.ObjectMetaAccessor)
+		if !ok {
+			return false
+		}
+		rightOma, ok := right.(metav1.ObjectMetaAccessor)
+		if !ok {
+			return false
+		}
+		return DefaultObjectMetaCompare(leftOma.GetObjectMeta(), rightOma.GetObjectMeta(), field)
+	}
+}
+
+// DefaultFilter creates a default ObjectMeta filter function.
+func DefaultFilter() FilterFunc {
+	return func(obj runtime.Object, filter query.Filter) bool {
+		oma, ok := obj.(metav1.ObjectMetaAccessor)
+		if !ok {
+			return true
+		}
+		return DefaultObjectMetaFilter(oma.GetObjectMeta(), filter)
+	}
+}
+
+// DefaultObjectMetaCompare return true is left greater than right
+func DefaultObjectMetaCompare(left, right metav1.Object, sortBy query.Field) bool {
 	switch sortBy {
 	// ?sortBy=name
 	case query.FieldName:
 		// sort the name in ascending order
-		return strings.Compare(left.Name, right.Name) > 0
+		return strings.Compare(left.GetName(), right.GetName()) > 0
 	//	?sortBy=creationTimestamp
 	default:
 		fallthrough
 	case query.FieldCreationTimeStamp:
 		// compare by name if creation timestamp is equal
-		if left.CreationTimestamp.Equal(&right.CreationTimestamp) {
-			return strings.Compare(left.Name, right.Name) > 0
+		leftTime := left.GetCreationTimestamp()
+		rightTime := right.GetCreationTimestamp()
+		if leftTime.Equal(&rightTime) {
+			return strings.Compare(left.GetName(), right.GetName()) > 0
 		}
-		return left.CreationTimestamp.After(right.CreationTimestamp.Time)
+		return leftTime.After(rightTime.Time)
 	}
 }
 
 // DefaultObjectMetaFilter filters data with given filter
-func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
+func DefaultObjectMetaFilter(item metav1.Object, filter query.Filter) bool {
 	switch filter.Field {
 	case query.FieldNames:
 		for _, name := range strings.Split(string(filter.Value), ",") {
-			if item.Name == name {
+			if item.GetName() == name {
 				return true
 			}
 		}
 		return false
 	// /namespaces?page=1&limit=10&name=default
 	case query.FieldName:
-		return strings.Contains(item.Name, string(filter.Value))
+		return strings.Contains(item.GetName(), string(filter.Value))
 		// /namespaces?page=1&limit=10&uid=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldUID:
-		return string(item.UID) == string(filter.Value)
+		return string(item.GetUID()) == string(filter.Value)
 		// /deployments?page=1&limit=10&namespace=kubesphere-system
 	case query.FieldNamespace:
-		return item.Namespace == string(filter.Value)
+		return item.GetNamespace() == string(filter.Value)
 		// /namespaces?page=1&limit=10&ownerReference=a8a8d6cf-f6a5-4fea-9c1b-e57610115706
 	case query.FieldOwnerReference:
-		for _, ownerReference := range item.OwnerReferences {
+		for _, ownerReference := range item.GetOwnerReferences() {
 			if string(ownerReference.UID) == string(filter.Value) {
 				return true
 			}
@@ -136,7 +183,7 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		return false
 		// /namespaces?page=1&limit=10&ownerKind=Workspace
 	case query.FieldOwnerKind:
-		for _, ownerReference := range item.OwnerReferences {
+		for _, ownerReference := range item.GetOwnerReferences() {
 			if ownerReference.Kind == string(filter.Value) {
 				return true
 			}
@@ -144,10 +191,10 @@ func DefaultObjectMetaFilter(item metav1.ObjectMeta, filter query.Filter) bool {
 		return false
 		// /namespaces?page=1&limit=10&annotation=openpitrix_runtime
 	case query.FieldAnnotation:
-		return labelsMatch(item.Annotations, string(filter.Value))
+		return labelsMatch(item.GetAnnotations(), string(filter.Value))
 		// /namespaces?page=1&limit=10&label=kubesphere.io/workspace=system-workspace
 	case query.FieldLabel:
-		return labelsMatch(item.Labels, string(filter.Value))
+		return labelsMatch(item.GetLabels(), string(filter.Value))
 	default:
 		// We should allow fields that are not found
 		return true
@@ -197,10 +244,12 @@ func labelMatch(labels map[string]string, filter string) bool {
 	return false
 }
 
-func objectsToInterfaces(objs []runtime.Object) []interface{} {
-	res := make([]interface{}, 0)
-	for _, obj := range objs {
-		res = append(res, obj)
+func nilFilter(transformFuncs []TransformFunc) []TransformFunc {
+	var result []TransformFunc
+	for i := range transformFuncs {
+		if transformFuncs[i] != nil {
+			result = append(result, transformFuncs[i])
+		}
 	}
-	return res
+	return result
 }
