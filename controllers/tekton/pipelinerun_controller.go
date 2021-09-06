@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipelinerun
+package tekton
 
 import (
 	"context"
@@ -32,8 +32,8 @@ import (
 	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 )
 
-// Reconciler reconciles a PipelineRun object
-type Reconciler struct {
+// PipelineRunReconciler reconciles a PipelineRun object
+type PipelineRunReconciler struct {
 	client.Client
 	Scheme       *runtime.Scheme
 	TknClientset *tknclient.Clientset
@@ -45,7 +45,7 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *PipelineRunReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
 	// First, we get the pipelinerun resource
@@ -98,14 +98,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv2alpha1.PipelineRun{}).
 		Complete(r)
 }
 
 // deleteExternalResources deletes any external resources associated with the devopsv2alpha1.Pipeline
-func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *devopsv2alpha1.PipelineRun) error {
+func (r *PipelineRunReconciler) deleteExternalResources(ctx context.Context, pipelineRun *devopsv2alpha1.PipelineRun) error {
 	tknPipelineRunName := pipelineRun.Spec.Name
 	klog.Infof("PipelineRun [%s] is under deletion.", tknPipelineRunName)
 
@@ -135,23 +135,13 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipelineRun *d
 	return nil
 }
 
-// containsString helps to check string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
 // reconcileTektonCrd translates our crd to Tekton crd
-func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRun) error {
+func (r *PipelineRunReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRun) error {
 	return r.reconcileTektonPipelineRun(ctx, namespace, &pipelineRun.Spec)
 }
 
 // reconcileTektonPipelineRun translates our PipelineRun to Tekton PipelineRun
-func (r *Reconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
+func (r *PipelineRunReconciler) reconcileTektonPipelineRun(ctx context.Context, namespace string, pipelineRun *devopsv2alpha1.PipelineRunSpec) error {
 	// translate PipelineRun to Tekton PipelineRun
 	tPipelineRun := &tektonv1.PipelineRun{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipelineRun.Name}, tPipelineRun); err != nil {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipeline
+package tekton
 
 import (
 	"context"
@@ -34,8 +34,8 @@ import (
 	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 )
 
-// Reconciler reconciles a Pipeline object
-type Reconciler struct {
+// PipelineReconciler reconciles a Pipeline object
+type PipelineReconciler struct {
 	client.Client
 	Scheme       *runtime.Scheme
 	TknClientset *tknclient.Clientset
@@ -47,9 +47,10 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
+	klog.Errorf("%v\n", req.NamespacedName)
 	// First, we get the Pipeline resource by its name in the request namespace.
 	pipeline := &devopsv2alpha1.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
@@ -103,14 +104,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv2alpha1.Pipeline{}).
 		Complete(r)
 }
 
 // deleteExternalResources deletes any external resources associated with the devopsv2alpha1.Pipeline
-func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) deleteExternalResources(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
 	klog.Infof("Pipeline [%s] is under deletion.", pipeline.Name)
 
 	// Firstly, we are to find and delete all the related Tekton Tasks.
@@ -165,15 +166,24 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 		return err
 	}
 	// delete the relevant devops PipelineRun resources
-	for _, devopsPipelineRun := range devopsPipelineRunList.Items {
-		if devopsPipelineRun.Spec.PipelineRef != pipeline.Spec.Name {
-			continue
-		}
-		if err := r.Delete(ctx, &devopsPipelineRun); err != nil {
-			klog.Errorf("unable to delete devops PipelineRun [%s]", devopsPipelineRun.Name)
-			return err
-		}
+	devopsPipelineRun := &devopsv2alpha1.PipelineRun{}
+	if err := r.DeleteAllOf(ctx, devopsPipelineRun,
+		client.InNamespace(pipeline.Namespace),
+		client.MatchingFields{"spec.ref": pipeline.Name}); err != nil {
+		klog.Error("unable to delete relevant devops PipelineRuns")
+		return err
 	}
+
+	// for _, devopsPipelineRun := range devopsPipelineRunList.Items {
+
+	// 	if devopsPipelineRun.Spec.PipelineRef != pipeline.Spec.Name {
+	// 		continue
+	// 	}
+	// 	if err := r.Delete(ctx, &devopsPipelineRun); err != nil {
+	// 		klog.Errorf("unable to delete devops PipelineRun [%s]", devopsPipelineRun.Name)
+	// 		return err
+	// 	}
+	// }
 
 	// 2. Clean Tekton PipelineRun CRD resources
 	var err error
@@ -214,7 +224,7 @@ func containsString(slice []string, s string) bool {
 }
 
 // reconcileTektonCrd transforms our Pipeline CRD to Tekton CRDs
-func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	klog.Infof("Devops pipeline name: %s\ttask num: %d", pipeline.Name, len(pipeline.Spec.Tasks))
 
 	// transform tasks included in the pipeline to Tekton Tasks
@@ -234,7 +244,7 @@ func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, p
 }
 
 // reconcileTektonTask transforms tasks in our Pipeline CRD to Tekton Task CRD
-func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
+func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
 	task := &tektonv1.Task{}
 	// Notes: in order to differentiate tasks from pipelines, we add pipeline name before the task name and concatenate them with a dash character
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipelineName + "-" + taskSpec.Name}, task); err != nil {
@@ -278,7 +288,7 @@ func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, 
 }
 
 // reconcileTektonPipeline transforms our Pipeline CRD to Tekton Pipeline CRD
-func (r *Reconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	tPipeline := &tektonv1.Pipeline{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipeline.Name}, tPipeline); err != nil {
 		// This means the current Tekton Pipeline does not exist in the given namespace,

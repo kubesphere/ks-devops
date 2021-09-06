@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipelinerun
+package tekton
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -47,21 +48,21 @@ var _ = Describe("PipelineRun controller", func() {
 		It("Should create Devops PipelineRun", func() {
 			By("By creating a new Devops PipelineRun")
 			ctx := context.Background()
-			// devopsPipelineRun := &devopsv2alpha1.PipelineRun{
-			// 	TypeMeta: metav1.TypeMeta{
-			// 		APIVersion: "devops.kubesphere.io/v2alpha1",
-			// 		Kind:       "PipelineRun",
-			// 	},
-			// 	ObjectMeta: metav1.ObjectMeta{
-			// 		Name:      DevopsPipelineRunName,
-			// 		Namespace: DevopsPipelineRunNamespace,
-			// 	},
-			// 	Spec: devopsv2alpha1.PipelineRunSpec{
-			// 		Name:        DevopsPipelineRunName,
-			// 		PipelineRef: DevopsPipelineRefName,
-			// 	},
-			// }
-			// Expect(k8sClient.Create(ctx, devopsPipelineRun)).Should(Succeed())
+			devopsPipelineRun := &devopsv2alpha1.PipelineRun{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "devops.kubesphere.io/v2alpha1",
+					Kind:       "PipelineRun",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      DevopsPipelineRunName,
+					Namespace: DevopsPipelineRunNamespace,
+				},
+				Spec: devopsv2alpha1.PipelineRunSpec{
+					Name:        DevopsPipelineRunName,
+					PipelineRef: DevopsPipelineRefName,
+				},
+			}
+			Expect(k8sClient.Create(ctx, devopsPipelineRun)).Should(Succeed())
 
 			devopPipelineRunLookupKey := types.NamespacedName{Name: DevopsPipelineRunName, Namespace: DevopsPipelineRunNamespace}
 			createdDevopsPipelineRun := &devopsv2alpha1.PipelineRun{}
@@ -74,7 +75,7 @@ var _ = Describe("PipelineRun controller", func() {
 				return true
 			}, timeout, interval).Should(BeTrue())
 
-			// We then need to verify the execution of Tekton PipelineRun.
+			// We then need to verify the creation of Tekton PipelineRun.
 			Eventually(func() bool {
 				tknPipelineRunLookupKey := types.NamespacedName{Name: DevopsPipelineRunName, Namespace: DevopsPipelineRunNamespace}
 				tknPipelineRun := &tektonv1.PipelineRun{}

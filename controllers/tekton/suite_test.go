@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipeline
+package tekton
 
 import (
 	"os"
@@ -58,6 +58,7 @@ var _ = BeforeSuite(func() {
 		First, the envtest cluster is configured to read CRDs from the CRD directory Kubebuilder scaffolds for you.
 	*/
 	By("bootstrapping test environment")
+	// Using exsiting cluster is not recommended.
 	useExistingCluster := true
 	if os.Getenv("TEST_USE_EXISTING_CLUSTER") == "true" {
 		testEnv = &envtest.Environment{
@@ -65,7 +66,7 @@ var _ = BeforeSuite(func() {
 		}
 	} else {
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 			ErrorIfCRDPathMissing: true,
 		}
 	}
@@ -103,14 +104,22 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: "0",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
 	tknClientset, err := versioned.NewForConfig(cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&Reconciler{
+	err = (&PipelineReconciler{
+		Client:       k8sManager.GetClient(),
+		Scheme:       k8sManager.GetScheme(),
+		TknClientset: tknClientset,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&PipelineRunReconciler{
 		Client:       k8sManager.GetClient(),
 		Scheme:       k8sManager.GetScheme(),
 		TknClientset: tknClientset,
