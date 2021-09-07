@@ -31,7 +31,7 @@ ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 
 # Run all unit tests.
 test: manifests generate fmt vet
-	 go test --tags=unit ./... -coverprofile coverage.out
+	 go test ./... -coverprofile coverage.out
 
 # Run tekton backend controller integration test
 tekton-support-integration-test:
