@@ -29,18 +29,15 @@ all: manager
 # This is the path to save binary files used in integration test.
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 
-prepare-test-suite:
+# Run all unit tests.
+test: manifests generate fmt vet
+	 go test --tags=unit ./... -coverprofile coverage.out
+
+# Run tekton backend controller integration test
+tekton-support-integration-test:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.6.3/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR);
-
-# Run all tests.
-test: manifests generate fmt vet prepare-test-suite
-	 go test ./... -coverprofile coverage.out
-
-# Run tekton backend controller test
-tekton-support-test: prepare-test-suite
-	export TEST_USE_EXISTING_CLUSTER=true; export ACK_GINKGO_DEPRECATIONS=1.16.2; go test ./controllers/tekton
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); export ACK_GINKGO_DEPRECATIONS=1.16.2; go test --tags=integration ./controllers/tekton
 
 # Build manager binary
 manager: generate fmt vet

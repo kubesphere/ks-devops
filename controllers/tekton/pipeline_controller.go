@@ -50,7 +50,6 @@ type PipelineReconciler struct {
 func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
-	klog.Errorf("%v\n", req.NamespacedName)
 	// First, we get the Pipeline resource by its name in the request namespace.
 	pipeline := &devopsv2alpha1.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
