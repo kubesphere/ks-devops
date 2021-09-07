@@ -34,12 +34,10 @@ jobs:
         run: |
           curl -L https://github.com/linuxsuren/http-downloader/releases/latest/download/hd-linux-amd64.tar.gz | tar xzv
           mv hd /usr/local/bin
-          hd fetch
-          hd install kubectl
+          sudo hd fetch
+          sudo hd install kubectl
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           k3d cluster create
-          kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.25.0/release.yaml
       - name: Integration test
         run: |
           make tekton-support-integration-test
-          
