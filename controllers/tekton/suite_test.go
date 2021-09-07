@@ -69,7 +69,9 @@ var _ = BeforeSuite(func() {
 	} else {
 		testEnv = &envtest.Environment{
 			CRDDirectoryPaths: []string{
+				// path to devops CRDs
 				filepath.Join("..", "..", "config", "crd", "bases"),
+				// path to CRDs used in test, here it is tekton CRDs
 				filepath.Join("..", "..", "config", "crd", "tests"),
 			},
 			ErrorIfCRDPathMissing: true,
