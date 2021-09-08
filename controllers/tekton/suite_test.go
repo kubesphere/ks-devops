@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 				// path to devops CRDs
 				filepath.Join("..", "..", "config", "crd", "bases"),
 				// path to CRDs used in test, here it is tekton CRDs
-				filepath.Join("..", "..", "config", "crd", "tests"),
+				filepath.Join("testdata"),
 			},
 			ErrorIfCRDPathMissing: true,
 		}

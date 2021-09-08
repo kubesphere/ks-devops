@@ -1,5 +1,4 @@
 name: IntegrationTest
-# Need GitHub secret: DOCKER_HUB_USER, DOCKER_HUB_SECRETS, GHCR_TOKEN
 
 on:
   push:
@@ -27,8 +26,8 @@ jobs:
           mv hd /usr/local/bin
           sudo hd fetch
           sudo hd install kubectl
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          k3d cluster create
+          sudo hd install ks
+          sudo ks install k3d
       - name: Integration test
         run: |
-          make tekton-support-integration-test
+          make integration-test

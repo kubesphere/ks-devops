@@ -10,6 +10,8 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 
 GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3"
 
+TEKTON_TESTDATA_VERSION="v0.25.0"
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -34,8 +36,9 @@ test: manifests generate fmt vet
 	 go test ./... -coverprofile coverage.out
 
 # Run tekton backend controller integration test
-tekton-support-integration-test:
+integration-test:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
+	bash hack/download_tekton_testdata.sh ${TEKTON_TESTDATA_VERSION}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.6.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); export ACK_GINKGO_DEPRECATIONS=1.16.2; go test --tags=integration ./controllers/tekton
 
