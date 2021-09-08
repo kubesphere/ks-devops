@@ -27,7 +27,7 @@ jobs:
           sudo hd fetch
           sudo hd install kubectl
           sudo hd install ks
-          sudo ks install k3d
+          sudo ks install k3d --with-ks=false --reinstall=true
       - name: Integration test
         run: |
           make integration-test
