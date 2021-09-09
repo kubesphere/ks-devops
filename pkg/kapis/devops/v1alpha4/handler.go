@@ -11,7 +11,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"kubesphere.io/devops/pkg/apiserver/query"
-	v1alpha32 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 )
@@ -66,24 +66,29 @@ func (h *apiHandler) listPipelineRuns() restful.RouteFunction {
 			api.HandleError(request, response, err)
 			return
 		}
-		var transformFunc = v1alpha32.NoTransformFunc()
+		var transformFunc = resourcesV1alpha3.NoTransformFunc()
 		if backward {
 			transformFunc = backwardTransform()
 		}
 
-		apiResult := v1alpha32.DefaultList(convertPipelineRunsToObject(prs.Items), queryParam, v1alpha32.DefaultCompare(), v1alpha32.DefaultFilter(), transformFunc)
+		apiResult := resourcesV1alpha3.DefaultList(convertPipelineRunsToObject(prs.Items), queryParam, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter(), transformFunc)
 		_ = response.WriteAsJson(apiResult)
 	}
 }
 
 // backwardTransform transforms PipelineRun into JSON raw message of Jenkins run status.
-func backwardTransform() v1alpha32.TransformFunc {
+func backwardTransform() resourcesV1alpha3.TransformFunc {
 	return func(object runtime.Object) interface{} {
 		pr := object.(*v1alpha4.PipelineRun)
 		runStatusJSON := pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey]
 		rawRunStatus := json.RawMessage{}
 		// the error will never happen due to raw message won't be nil, so we ignore the error explicitly
 		_ = rawRunStatus.UnmarshalJSON([]byte(runStatusJSON))
+		// check the run status is a valid JSON
+		valid := json.Valid(rawRunStatus)
+		if !valid {
+			rawRunStatus = []byte("{}")
+		}
 		return rawRunStatus
 	}
 }

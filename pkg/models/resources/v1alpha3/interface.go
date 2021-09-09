@@ -101,10 +101,7 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 		result[i] = transferred
 	}
 
-	return &api.ListResult{
-		TotalItems: total,
-		Items:      result,
-	}
+	return api.NewListResult(result, total)
 }
 
 // DefaultCompare creates a default ObjectMeta compare function.

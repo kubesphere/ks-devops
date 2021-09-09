@@ -36,7 +36,9 @@ func addToContainer(o Option, ws *restful.WebService, handler *apiHandler) {
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
 		Param(ws.QueryParameter("branch", "The name of SCM reference")).
-		Param(ws.QueryParameter("backward", "Backward compatibility. Default value: true").
+		Param(ws.QueryParameter("backward", "Backward compatibility for v1alpha2 API "+
+			"`/devops/{devops}/pipelines/{pipeline}/runs`. By default, the backward is true. If you want to list "+
+			"full data of PipelineRuns, just set the parameters to false.").
 			DataType("bool").
 			DefaultValue("true")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha4.PipelineRunList{}),

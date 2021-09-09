@@ -26,6 +26,7 @@ type ListResult struct {
 	TotalItems int           `json:"totalItems"`
 }
 
+// NewListResult creates a ListResult for the given items and total.
 func NewListResult(items []interface{}, total int) *ListResult {
 	if items == nil {
 		items = make([]interface{}, 0)

@@ -174,7 +174,6 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 		klog.Errorf("unable to create manager for getting client and cache, err = %v", err)
 		return nil, err
 	}
-	//m.GetFieldIndexer().IndexField(context.Background(), )
 	apiServer.Client = m.GetClient()
 	apiServer.RuntimeCache = m.GetCache()
 	apiServer.Server = server
