@@ -3,10 +3,12 @@ package v1alpha4
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
@@ -81,12 +83,12 @@ func backwardTransform() resourcesV1alpha3.TransformFunc {
 	return func(object runtime.Object) interface{} {
 		pr := object.(*v1alpha4.PipelineRun)
 		runStatusJSON := pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey]
-		rawRunStatus := json.RawMessage{}
-		// the error will never happen due to raw message won't be nil, so we ignore the error explicitly
-		_ = rawRunStatus.UnmarshalJSON([]byte(runStatusJSON))
-		// check the run status is a valid JSON
+		rawRunStatus := json.RawMessage(runStatusJSON)
+		// check if the run status is a valid JSON
 		valid := json.Valid(rawRunStatus)
 		if !valid {
+			klog.ErrorS(nil, "invalid Jenkins run status",
+				"PipelineRun", fmt.Sprintf("%s/%s", pr.GetNamespace(), pr.GetName()), "runStatusJSON", runStatusJSON)
 			rawRunStatus = []byte("{}")
 		}
 		return rawRunStatus

@@ -32,7 +32,7 @@ func Test_compatibleTransform(t *testing.T) {
 		obj: &v1alpha4.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{},
 		},
-		want: json.RawMessage(""),
+		want: json.RawMessage("{}"),
 	},
 	}
 	for _, tt := range tests {
