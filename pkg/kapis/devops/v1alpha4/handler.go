@@ -69,29 +69,46 @@ func (h *apiHandler) listPipelineRuns() restful.RouteFunction {
 			return
 		}
 		var transformFunc = resourcesV1alpha3.NoTransformFunc()
+		var filterFunc = resourcesV1alpha3.DefaultFilter()
 		if backward {
 			transformFunc = backwardTransform()
+			filterFunc = backwardFilter()
 		}
-
-		apiResult := resourcesV1alpha3.DefaultList(convertPipelineRunsToObject(prs.Items), queryParam, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter(), transformFunc)
+		apiResult := resourcesV1alpha3.DefaultList(convertPipelineRunsToObject(prs.Items), queryParam, resourcesV1alpha3.DefaultCompare(), filterFunc, transformFunc)
 		_ = response.WriteAsJson(apiResult)
 	}
+}
+
+// backwardFilter is used to filter PipelineRuns that have started and have Jenkins run status.
+func backwardFilter() resourcesV1alpha3.FilterFunc {
+	return resourcesV1alpha3.DefaultFilter().And(func(object runtime.Object, filter query.Filter) bool {
+		pr, ok := object.(*v1alpha4.PipelineRun)
+		if !ok || pr == nil {
+			return false
+		}
+		return pr.HasStarted() && pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey] != ""
+	})
 }
 
 // backwardTransform transforms PipelineRun into JSON raw message of Jenkins run status.
 func backwardTransform() resourcesV1alpha3.TransformFunc {
 	return func(object runtime.Object) interface{} {
-		pr := object.(*v1alpha4.PipelineRun)
-		runStatusJSON := pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey]
-		rawRunStatus := json.RawMessage(runStatusJSON)
-		// check if the run status is a valid JSON
-		valid := json.Valid(rawRunStatus)
-		if !valid {
-			klog.ErrorS(nil, "invalid Jenkins run status",
-				"PipelineRun", fmt.Sprintf("%s/%s", pr.GetNamespace(), pr.GetName()), "runStatusJSON", runStatusJSON)
-			rawRunStatus = []byte("{}")
-		}
-		return rawRunStatus
+		return func(object runtime.Object) json.Marshaler {
+			pr, ok := object.(*v1alpha4.PipelineRun)
+			if !ok || pr == nil {
+				return json.RawMessage("{}")
+			}
+			runStatusJSON := pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey]
+			rawRunStatus := json.RawMessage(runStatusJSON)
+			// check if the run status is a valid JSON
+			valid := json.Valid(rawRunStatus)
+			if !valid {
+				klog.ErrorS(nil, "invalid Jenkins run status",
+					"PipelineRun", fmt.Sprintf("%s/%s", pr.GetNamespace(), pr.GetName()), "runStatusJSON", runStatusJSON)
+				rawRunStatus = []byte("{}")
+			}
+			return rawRunStatus
+		}(object)
 	}
 }
 

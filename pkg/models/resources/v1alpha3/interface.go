@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"reflect"
 	"sort"
 	"strings"
 
@@ -39,6 +40,18 @@ type Interface interface {
 type CompareFunc func(runtime.Object, runtime.Object, query.Field) bool
 
 type FilterFunc func(runtime.Object, query.Filter) bool
+
+func (ff FilterFunc) And(anotherFf FilterFunc) FilterFunc {
+	return func(object runtime.Object, filter query.Filter) bool {
+		return ff(object, filter) && anotherFf(object, filter)
+	}
+}
+
+func (ff FilterFunc) Or(anotherFf FilterFunc) FilterFunc {
+	return func(object runtime.Object, filter query.Filter) bool {
+		return ff(object, filter) || anotherFf(object, filter)
+	}
+}
 
 type TransformFunc func(runtime.Object) interface{}
 
@@ -123,7 +136,7 @@ func DefaultCompare() CompareFunc {
 func DefaultFilter() FilterFunc {
 	return func(obj runtime.Object, filter query.Filter) bool {
 		oma, ok := obj.(metav1.ObjectMetaAccessor)
-		if !ok {
+		if !ok || oma == nil || reflect.ValueOf(oma).IsNil() {
 			return true
 		}
 		return DefaultObjectMetaFilter(oma.GetObjectMeta(), filter)

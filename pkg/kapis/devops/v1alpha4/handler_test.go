@@ -22,16 +22,24 @@ func Test_compatibleTransform(t *testing.T) {
 		obj: &v1alpha4.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Annotations: map[string]string{
-					v1alpha4.JenkinsPipelineRunStatusKey: "{}",
+					v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
 				},
 			},
 		},
-		want: json.RawMessage("{}"),
+		want: json.RawMessage(`{"id": "123"}`),
 	}, {
 		name: "Without annotations",
 		obj: &v1alpha4.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{},
 		},
+		want: json.RawMessage("{}"),
+	}, {
+		name: "Nil PipelineRun",
+		obj:  (*v1alpha4.PipelineRun)(nil),
+		want: json.RawMessage("{}"),
+	}, {
+		name: "Nil object",
+		obj:  nil,
 		want: json.RawMessage("{}"),
 	},
 	}
@@ -39,6 +47,8 @@ func Test_compatibleTransform(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := backwardTransform()(tt.obj); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("backwardTransform() = %v, want %v", got, tt.want)
+			} else if !reflect.TypeOf(got).AssignableTo(reflect.TypeOf((*json.Marshaler)(nil)).Elem()) {
+				t.Errorf("backwardTransform() should return an instance of json.Marshaler, current type is %s", reflect.TypeOf(got))
 			}
 		})
 	}
@@ -138,6 +148,97 @@ func Test_convertPipelineRunsToObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := convertPipelineRunsToObject(tt.args.prs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertPipelineRunsToObject() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_backwardFilter(t *testing.T) {
+	type args struct {
+		obj    runtime.Object
+		filter query.Filter
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{{
+		name: "Nil object",
+		args: args{
+			obj: nil,
+		},
+		want: false,
+	}, {
+		name: "Nil PipelineRun",
+		args: args{
+			obj: (*v1alpha4.PipelineRun)(nil),
+		},
+		want: false,
+	}, {
+		name: "PipelineRun has started but without Jenkins run status",
+		args: args{
+			obj: &v1alpha4.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha4.JenkinsPipelineRunIDKey: "123",
+					},
+				},
+			},
+		},
+		want: false,
+	}, {
+		name: "PipelineRun hasn't started but with Jenkins run status",
+		args: args{
+			obj: &v1alpha4.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+					},
+				},
+			},
+		},
+		want: false,
+	}, {
+		name: "PipelineRun has started and with Jenkins run status",
+		args: args{
+			obj: &v1alpha4.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "abc",
+					Annotations: map[string]string{
+						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha4.JenkinsPipelineRunIDKey:     "123",
+					},
+				},
+			},
+			filter: query.Filter{
+				Field: "name",
+				Value: "abc",
+			},
+		},
+		want: true,
+	}, {
+		name: "PipelineRun has started and with Jenkins run status but failed with default filter",
+		args: args{
+			obj: &v1alpha4.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "abc",
+					Annotations: map[string]string{
+						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha4.JenkinsPipelineRunIDKey:     "123",
+					},
+				},
+			},
+			filter: query.Filter{
+				Field: "name",
+				Value: "def",
+			},
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := backwardFilter()(tt.args.obj, tt.args.filter); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("backwardFilter() = %v, want %v", got, tt.want)
 			}
 		})
 	}
