@@ -1,0 +1,33 @@
+name: IntegrationTest
+
+on:
+  push:
+    branches:
+      - master
+      - tekton-support
+  pull_request:
+    branches:
+      - 'master'
+      - 'tekton-support'
+
+jobs:
+  IntegrationTest:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.13
+        id: go
+      - name: Prepare integration test environment
+        run: |
+          curl -L https://github.com/linuxsuren/http-downloader/releases/latest/download/hd-linux-amd64.tar.gz | tar xzv
+          mv hd /usr/local/bin
+          sudo hd fetch
+          sudo hd install kubectl
+          sudo hd install ks
+          sudo ks install k3d --with-ks=false --reinstall=true
+      - name: Integration test
+        run: |
+          make integration-test

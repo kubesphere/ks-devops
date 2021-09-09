@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipeline
+package tekton
 
 import (
 	"context"
@@ -34,11 +34,11 @@ import (
 	devopsv2alpha1 "kubesphere.io/devops/pkg/api/devops/v2alpha1"
 )
 
-// Reconciler reconciles a Pipeline object
-type Reconciler struct {
+// PipelineReconciler reconciles a Pipeline object
+type PipelineReconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	TknClient *tknclient.Clientset
+	Scheme       *runtime.Scheme
+	TknClientset *tknclient.Clientset
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelines,verbs=get;list;watch;create;update;patch;delete
@@ -47,20 +47,12 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Pipeline object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
-func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *PipelineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
-	// First, we get the Pipeline resource by its name in the request namespace
+	// First, we get the Pipeline resource by its name in the request namespace.
 	pipeline := &devopsv2alpha1.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
-		klog.Error(err, "unable to fetch pipeline crd resources")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -72,9 +64,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
 		if !containsString(pipeline.GetFinalizers(), pipelineFinalizerName) {
-			klog.Infof("Add finalizer to %s", pipeline.Name)
 			controllerutil.AddFinalizer(pipeline, pipelineFinalizerName)
 			if err := r.Update(ctx, pipeline); err != nil {
+				klog.Errorf("unable to add finalizer to pipeline [%s]", pipeline.Spec.Name)
 				return ctrl.Result{}, err
 			}
 		}
@@ -111,55 +103,97 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PipelineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv2alpha1.Pipeline{}).
 		Complete(r)
 }
 
 // deleteExternalResources deletes any external resources associated with the devopsv2alpha1.Pipeline
-func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
+func (r *PipelineReconciler) deleteExternalResources(ctx context.Context, pipeline *devopsv2alpha1.Pipeline) error {
 	klog.Infof("Pipeline [%s] is under deletion.", pipeline.Name)
 
-	// Firstly, we are to find and delete all the related Tekton Tasks
+	// Firstly, we are to find and delete all the related Tekton Tasks.
 	var tknTaskName string
 	for _, taskSpec := range pipeline.Spec.Tasks {
 		tknTaskName = pipeline.Name + "-" + taskSpec.Name
-		if _, err := r.TknClient.TektonV1beta1().
+		if _, err := r.TknClientset.TektonV1beta1().
 			Tasks(pipeline.Namespace).
 			Get(ctx, tknTaskName, metav1.GetOptions{}); err != nil {
-			klog.Infof("Tekton Task [%s] was not found in namespace %s.", tknTaskName, pipeline.Namespace)
-			// Tekton Task resource does not exist.
-			// We do nothing here.
+			klog.Infof("unable to find Tekton Task [%s] in namespace %s", tknTaskName, pipeline.Namespace)
+			// Tekton Task resource does not exist, which means we should do nothing here.
 			continue
 		}
 
-		// Tekton Task exists, we need to delete it.
-		if err := r.TknClient.TektonV1beta1().
+		// Since Tekton Task exists, we need to delete it.
+		if err := r.TknClientset.TektonV1beta1().
 			Tasks(pipeline.Namespace).
 			Delete(ctx, tknTaskName, metav1.DeleteOptions{}); err != nil {
-			// Failed to delete tekton pipelinerun
-			klog.Errorf("Failed to delete Tekton Task [%s] using tekton client.", tknTaskName)
+			klog.Errorf("unable to delete Tekton Task [%s] using tekton client", tknTaskName)
 			return err
 		}
 	}
 
-	// Secondly, we should find and delete all the related Tekton Pipelines
+	// Secondly, we should find and delete all the related Tekton Pipelines.
 	tknPipelineName := pipeline.Spec.Name
-	if _, err := r.TknClient.TektonV1beta1().
+	if _, err := r.TknClientset.TektonV1beta1().
 		Pipelines(pipeline.Namespace).
 		Get(ctx, tknPipelineName, metav1.GetOptions{}); err != nil {
-		klog.Infof("Tekton Pipeline [%s] was not found in namespace %s.", tknPipelineName, pipeline.Namespace)
-		// Tekton Pipeline resource does not exist.
-		// We do nothing here.
-	} else {
-		// If there exists related Tekton Pipelines,
-		// we will delete it.
-		if err := r.TknClient.TektonV1beta1().
-			Pipelines(pipeline.Namespace).
-			Delete(ctx, tknPipelineName, metav1.DeleteOptions{}); err != nil {
-			// Failed to delete tekton pipelinerun
-			klog.Errorf("Failed to delete Tekton Pipeline [%s] using tekton client.", tknPipelineName)
+		// Tekton Pipeline resource does not exist and that means we ought to do nothing here.
+		klog.V(5).Infof("unable to find Tekton Pipeline [%s] in namespace %s", tknPipelineName, pipeline.Namespace)
+		return nil
+	}
+
+	// If there exists related Tekton Pipelines, we will delete it.
+	if err := r.TknClientset.TektonV1beta1().
+		Pipelines(pipeline.Namespace).
+		Delete(ctx, tknPipelineName, metav1.DeleteOptions{}); err != nil {
+		// When we failed to delete Tekton PipelineRun resource, then we should return an error here.
+		klog.Errorf("unable to delete Tekton Pipeline [%s] using tekton client", tknPipelineName)
+		return err
+	}
+
+	// What's more, there is no need to hold related PipelineRun CRD resources if
+	// the Pipeline CRD is deleted.
+	// As a result, we need to delete all the devops and Tekton PipelineRun CRD resources,
+	// whose pipelineRef is the deleting pipeline, when deleting a Pipeline.
+
+	// 1. Clean devops PipelineRun CRD resources
+	devopsPipelineRunList := devopsv2alpha1.PipelineRunList{}
+	if err := r.List(ctx, &devopsPipelineRunList); err != nil {
+		klog.Error(err, "unable to fetch pipeline crd resources")
+		return err
+	}
+	// delete the relevant devops PipelineRun resources
+	for _, devopsPipelineRun := range devopsPipelineRunList.Items {
+		if devopsPipelineRun.Spec.PipelineRef != pipeline.Spec.Name {
+			continue
+		}
+		if err := r.Delete(ctx, &devopsPipelineRun); err != nil {
+			klog.Errorf("unable to delete devops PipelineRun [%s]", devopsPipelineRun.Name)
+			return err
+		}
+	}
+
+	// 2. Clean Tekton PipelineRun CRD resources
+	var err error
+	var tknPipelineRunList *tektonv1.PipelineRunList
+	if tknPipelineRunList, err = r.TknClientset.TektonV1beta1().PipelineRuns(pipeline.Namespace).List(ctx, metav1.ListOptions{}); err != nil {
+		// If we fail to list any Tekton PipelineRun resource, we will return an error here.
+		klog.Error("unable to list Tekton PipelineRun resources")
+		return err
+	}
+	for _, tknPipelineRun := range tknPipelineRunList.Items {
+		// filter unrelated Tekton PipelineRun CRD resources
+		if tknPipelineRun.Spec.PipelineRef.Name != tknPipelineName {
+			continue
+		}
+		// delete target Tekton PipelineRun CRD resources
+		if err := r.TknClientset.TektonV1beta1().
+			PipelineRuns(pipeline.Namespace).
+			Delete(ctx, tknPipelineRun.Name, metav1.DeleteOptions{}); err != nil {
+			// When we fail to delete tekton pipelinerun, we will return an error.
+			klog.Errorf("unable to delete pipelinerun [%s]", tknPipelineRun.Name)
 			return err
 		}
 	}
@@ -169,31 +203,20 @@ func (r *Reconciler) deleteExternalResources(ctx context.Context, pipeline *devo
 	return nil
 }
 
-// Helper functions to check and remove string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
 // reconcileTektonCrd transforms our Pipeline CRD to Tekton CRDs
-func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
-	// print the pipeline name and the number of its tasks.
-	klog.Infof("Pipeline name: %s\tTask num: %d", pipeline.Name, len(pipeline.Spec.Tasks))
+func (r *PipelineReconciler) reconcileTektonCrd(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
+	klog.Infof("Devops pipeline name: %s\ttask num: %d", pipeline.Name, len(pipeline.Spec.Tasks))
 
 	// transform tasks included in the pipeline to Tekton Tasks
 	for _, task := range pipeline.Spec.Tasks {
 		if err := r.reconcileTektonTask(ctx, namespace, &task, pipeline.Name); err != nil {
-			klog.Error(err, "Failed to reconcile tekton task resources.")
+			klog.Error(err, "unable to reconcile Tekton task resources")
 			return err
 		}
 	}
 
 	if err := r.reconcileTektonPipeline(ctx, namespace, pipeline); err != nil {
-		klog.Error(err, "Failed to reconcile tekton pipeline resources.")
+		klog.Error(err, "unable to reconcile Tekton pipeline resources")
 		return err
 	}
 
@@ -201,15 +224,11 @@ func (r *Reconciler) reconcileTektonCrd(ctx context.Context, namespace string, p
 }
 
 // reconcileTektonTask transforms tasks in our Pipeline CRD to Tekton Task CRD
-func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
-	// print the task name
-	klog.Infof("Transforming task %s to Tekton Task.", taskSpec.Name)
-
-	// check if the task already exists
-	// in order to differentiate tasks from pipelines, we add pipeline name before the task name
+func (r *PipelineReconciler) reconcileTektonTask(ctx context.Context, namespace string, taskSpec *devopsv2alpha1.TaskSpec, pipelineName string) error {
 	task := &tektonv1.Task{}
+	// Notes: in order to differentiate tasks from pipelines, we add pipeline name before the task name and concatenate them with a dash character
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipelineName + "-" + taskSpec.Name}, task); err != nil {
-		// this means that we do not find the Tekton Task in the given namespace
+		// This means that we do not find the Tekton Task in the given namespace,
 		// i.e. we need to create it.
 
 		// construct steps first
@@ -240,7 +259,6 @@ func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, 
 			return err
 		}
 
-		// if create tekton task successfully, log it.
 		klog.Infof("Tekton Task %s was created successfully.", tektonTask.ObjectMeta.Name)
 	} else {
 		klog.Infof("Tekton Task %s already exists.", task.ObjectMeta.Name)
@@ -250,15 +268,11 @@ func (r *Reconciler) reconcileTektonTask(ctx context.Context, namespace string, 
 }
 
 // reconcileTektonPipeline transforms our Pipeline CRD to Tekton Pipeline CRD
-func (r *Reconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
-	// print the pipeline name
-	klog.Infof("Transforming Pipeline %s to Tekton Pipeline.", pipeline.Name)
-
-	// check if the task already exists
+func (r *PipelineReconciler) reconcileTektonPipeline(ctx context.Context, namespace string, pipeline *devopsv2alpha1.Pipeline) error {
 	tPipeline := &tektonv1.Pipeline{}
 	if err := r.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pipeline.Name}, tPipeline); err != nil {
-		// this means the current Tekton Pipeline does not exist in the given namespace
-		// i.e. we are supposed to create it
+		// This means the current Tekton Pipeline does not exist in the given namespace,
+		// i.e. we are supposed to create it.
 
 		// set up tekton tasks
 		tasks := make([]tektonv1.PipelineTask, len(pipeline.Spec.Tasks))
@@ -280,10 +294,10 @@ func (r *Reconciler) reconcileTektonPipeline(ctx context.Context, namespace stri
 
 		// create tekton pipeline
 		if err := r.Create(ctx, tektonPipeline); err != nil {
+			klog.Error("unable to create tekton pipeline")
 			return err
 		}
 
-		// if create tekton pipeline successfully, log it.
 		klog.Infof("Tekton Pipeline resource %s was created successfully.", tektonPipeline.ObjectMeta.Name)
 	} else {
 		klog.Infof("Tekton Pipeline resource %s already exists.", tPipeline.ObjectMeta.Name)
