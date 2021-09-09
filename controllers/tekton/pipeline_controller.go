@@ -140,7 +140,7 @@ func (r *PipelineReconciler) deleteExternalResources(ctx context.Context, pipeli
 		Pipelines(pipeline.Namespace).
 		Get(ctx, tknPipelineName, metav1.GetOptions{}); err != nil {
 		// Tekton Pipeline resource does not exist and that means we ought to do nothing here.
-		klog.Infof("unable to find Tekton Pipeline [%s] in namespace %s", tknPipelineName, pipeline.Namespace)
+		klog.V(5).Infof("unable to find Tekton Pipeline [%s] in namespace %s", tknPipelineName, pipeline.Namespace)
 		return nil
 	}
 

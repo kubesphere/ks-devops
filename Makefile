@@ -36,6 +36,8 @@ test: manifests generate fmt vet
 	 go test ./... -coverprofile coverage.out
 
 # Run tekton backend controller integration test
+# To mark a xxx_test.go file as integration test,
+# we just need to add a `// +build integration` tag at the head of this file (See controllers/tekton/pipeline_test.go).
 integration-test:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	bash hack/download_tekton_testdata.sh ${TEKTON_TESTDATA_VERSION}

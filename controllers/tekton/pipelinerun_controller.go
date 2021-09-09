@@ -115,7 +115,7 @@ func (r *PipelineRunReconciler) deleteExternalResources(ctx context.Context, pip
 		PipelineRuns(pipelineRun.Namespace).
 		Get(ctx, tknPipelineRunName, metav1.GetOptions{}); err != nil {
 		// Tekton PipelineRun resource does not exist, so we just do nothing here.
-		klog.Infof("unable to find Tekton PipelineRun [%s] in namespace %s", tknPipelineRunName, pipelineRun.Namespace)
+		klog.V(5).Infof("unable to find Tekton PipelineRun [%s] in namespace %s", tknPipelineRunName, pipelineRun.Namespace)
 		return nil
 	}
 
