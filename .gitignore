@@ -23,6 +23,5 @@ bin
 *.swo
 *~
 
-charts/*.tgz
 kubesphere.yaml
 */**/*.xml

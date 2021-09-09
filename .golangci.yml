@@ -11,7 +11,6 @@ run:
     - .git
     - .github
     - bin
-    - charts
     - docs
     - hack
   skip-files:
