@@ -485,3 +485,167 @@ func Test_nilFilter(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterFunc_And(t *testing.T) {
+	type args struct {
+		anotherFf FilterFunc
+	}
+	tests := []struct {
+		name string
+		ff   FilterFunc
+		args args
+		want bool
+	}{{
+		name: "false && true",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: false,
+	}, {
+		name: "true && false",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "false && false",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "true && true",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil && nil",
+		ff:   nil,
+		args: args{
+			nil,
+		},
+		want: true,
+	}, {
+		name: "true && nil",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: nil,
+		},
+		want: true,
+	}, {
+		name: "false && nil",
+		ff:   alwaysFalseFilter,
+		args: args{
+			nil,
+		},
+		want: false,
+	}, {
+		name: "nil && true",
+		ff:   nil,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil && false",
+		ff:   nil,
+		args: args{
+			alwaysFalseFilter,
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ff.And(tt.args.anotherFf)(nil, query.Filter{}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("And() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterFunc_Or(t *testing.T) {
+	type args struct {
+		anotherFf FilterFunc
+	}
+	tests := []struct {
+		name string
+		ff   FilterFunc
+		args args
+		want bool
+	}{{
+		name: "false || true",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "true || false",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: true,
+	}, {
+		name: "false || false",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "true || true",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil || nil",
+		ff:   nil,
+		args: args{
+			anotherFf: nil,
+		},
+		want: false,
+	}, {
+		name: "nil || true",
+		ff:   nil,
+		args: args{
+			alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil || false",
+		ff:   nil,
+		args: args{
+			alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "false || nil",
+		ff:   alwaysFalseFilter,
+		args: args{
+			nil,
+		},
+		want: false,
+	}, {
+		name: "true || nil",
+		ff:   alwaysTrueFilter,
+		args: args{
+			nil,
+		},
+		want: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ff.Or(tt.args.anotherFf)(nil, query.Filter{}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Or() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

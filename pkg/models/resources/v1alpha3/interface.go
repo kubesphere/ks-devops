@@ -41,14 +41,36 @@ type CompareFunc func(runtime.Object, runtime.Object, query.Field) bool
 
 type FilterFunc func(runtime.Object, query.Filter) bool
 
+var alwaysTrueFilter FilterFunc = func(object runtime.Object, filter query.Filter) bool {
+	return true
+}
+
+var alwaysFalseFilter FilterFunc = func(object runtime.Object, filter query.Filter) bool {
+	return false
+}
+
+// And performs like logical operation a && b
 func (ff FilterFunc) And(anotherFf FilterFunc) FilterFunc {
 	return func(object runtime.Object, filter query.Filter) bool {
+		if ff == nil {
+			ff = alwaysTrueFilter
+		}
+		if anotherFf == nil {
+			anotherFf = alwaysTrueFilter
+		}
 		return ff(object, filter) && anotherFf(object, filter)
 	}
 }
 
+// Or performs like logical operation a || b
 func (ff FilterFunc) Or(anotherFf FilterFunc) FilterFunc {
 	return func(object runtime.Object, filter query.Filter) bool {
+		if ff == nil {
+			ff = alwaysFalseFilter
+		}
+		if anotherFf == nil {
+			anotherFf = alwaysFalseFilter
+		}
 		return ff(object, filter) || anotherFf(object, filter)
 	}
 }
@@ -60,6 +82,15 @@ func NoTransformFunc() TransformFunc {
 	return func(object runtime.Object) interface{} {
 		return object
 	}
+}
+
+// ToListResult converts array of runtime.Object to ListResult, if the handler is not provided, we will
+// create a defaultListHandler to handle the list.
+func ToListResult(objects []runtime.Object, q *query.Query, handler ListHandler) *api.ListResult {
+	if handler == nil {
+		handler = defaultListHandler{}
+	}
+	return DefaultList(objects, q, handler.Comparator(), handler.Filter(), handler.Transformer())
 }
 
 func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFunc, filterFunc FilterFunc, transformFuncs ...TransformFunc) *api.ListResult {
