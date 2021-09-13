@@ -5,6 +5,7 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/client/devops"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,6 +43,15 @@ func addToContainer(o Option, ws *restful.WebService, handler *apiHandler) {
 			DataType("bool").
 			DefaultValue("true")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha4.PipelineRunList{}),
+	)
+	ws.Route(ws.POST("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
+		To(handler.createPipelineRuns()).
+		Doc("Create a PipelineRun for the specified pipeline").
+		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
+		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
+		Param(ws.QueryParameter("branch", "The name of SCM reference, only for multi-branch pipeline")).
+		Reads(devops.RunPayload{}).
+		Returns(http.StatusCreated, api.StatusOK, v1alpha4.PipelineRun{}),
 	)
 	o.Container.Add(ws)
 }

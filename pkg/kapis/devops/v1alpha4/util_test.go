@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/client/devops"
 	"reflect"
 	"testing"
 )
@@ -105,6 +106,84 @@ func Test_convertPipelineRunsToObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := convertPipelineRunsToObject(tt.args.prs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertPipelineRunsToObject() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertParameters(t *testing.T) {
+	type args struct {
+		payload *devops.RunPayload
+	}
+	tests := []struct {
+		name string
+		args args
+		want []v1alpha4.Parameter
+	}{{
+		name: "Nil payload",
+		args: args{
+			payload: nil,
+		},
+		want: nil,
+	}, {
+		name: "Nil parameters",
+		args: args{
+			payload: &devops.RunPayload{
+				Parameters: nil,
+			},
+		},
+		want: nil,
+	}, {
+		name: "Single parameter",
+		args: args{
+			payload: &devops.RunPayload{
+				Parameters: []devops.Parameter{{
+					Name:  "aname",
+					Value: "avalue",
+				}},
+			},
+		},
+		want: []v1alpha4.Parameter{{
+			Name:  "aname",
+			Value: "avalue",
+		}},
+	}, {
+		name: "Empty parameter",
+		args: args{
+			payload: &devops.RunPayload{
+				Parameters: []devops.Parameter{{
+					Name:  "",
+					Value: "",
+				}},
+			},
+		},
+		want: nil,
+	}, {
+		name: "Two parameters",
+		args: args{
+			payload: &devops.RunPayload{
+				Parameters: []devops.Parameter{{
+					Name:  "aname",
+					Value: "avalue",
+				}, {
+					Name:  "bname",
+					Value: "bvalue",
+				}},
+			},
+		},
+		want: []v1alpha4.Parameter{{
+			Name:  "aname",
+			Value: "avalue",
+		}, {
+			Name:  "bname",
+			Value: "bvalue",
+		}},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertParameters(tt.args.payload); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertParameters() = %v, want %v", got, tt.want)
 			}
 		})
 	}

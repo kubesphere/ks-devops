@@ -546,14 +546,16 @@ type PipelineBranchItem struct {
 	} `json:"pullRequest,omitempty"`
 }
 
-// RunPipeline
-type RunPayload struct {
-	Parameters []struct {
-		Name  string      `json:"name,omitempty" description:"name"`
-		Value interface{} `json:"value,omitempty" description:"value"`
-	} `json:"parameters,omitempty"`
+type Parameter struct {
+	Name  string      `json:"name,omitempty" description:"name"`
+	Value interface{} `json:"value,omitempty" description:"value"`
 }
 
+type RunPayload struct {
+	Parameters []Parameter `json:"parameters,omitempty"`
+}
+
+// RunPipeline
 type RunPipeline struct {
 	Class string `json:"_class,omitempty" description:"It’s a fully qualified name and is an identifier of the producer of this resource's capability."`
 	Links struct {
