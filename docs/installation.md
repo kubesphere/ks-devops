@@ -8,10 +8,16 @@ kk create cluster --with-kubesphere nightly-$(date -d yesterday '+%Y%m%d')
 
 ## Install via helm
 
-First, please clone this git repository. Then run command: `make install-chart`
+First, add helm chart repo: `helm repo add ks-devops https://kubesphere-sigs.github.io/ks-devops-helm-chart/`
 
-> Because the default registry uses `ghcr.io/kubesphere`, if you want to use `docker.io` as the registry for image pull, 
-> you can exec `helm install ks-devops chart/ks-devops --set image.registry=kubespheredev`
+then, install it via:
+```shell
+helm install ks-devops ks-devops/ks-devops -n kubesphere-devops-system --create-namespace \
+		 --set image.pullPolicy=Always --set jenkins.ksAuth.enabled=true
+```
+
+> The default registry is `ghcr.io/kubesphere`, if you want to use `docker.io` as the registry, 
+> you can use the flags `--set image.registry=kubespheredev`
 
 ## KubeSphere CLI
 
