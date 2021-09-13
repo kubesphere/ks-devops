@@ -22,6 +22,7 @@ bin
 *.swp
 *.swo
 *~
+__debug_bin
 
 kubesphere.yaml
 */**/*.xml
