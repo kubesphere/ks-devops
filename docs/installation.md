@@ -8,7 +8,7 @@ kk create cluster --with-kubesphere nightly-$(date -d yesterday '+%Y%m%d')
 
 ## Install via helm
 
-First, add helm chart repo: `helm repo add ks https://kubesphere-sigs.github.io/ks-devops-helm-chart/`
+First, add helm chart repo: `helm repo add ks-devops https://kubesphere-sigs.github.io/ks-devops-helm-chart/`
 
 then, install it via:
 ```shell
