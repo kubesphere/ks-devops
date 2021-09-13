@@ -12,7 +12,7 @@ First, add helm chart repo: `helm repo add ks-devops https://kubesphere-sigs.git
 
 then, install it via:
 ```shell
-helm install ks-devops ks/ks-devops -n kubesphere-devops-system --create-namespace \
+helm install ks-devops ks-devops/ks-devops -n kubesphere-devops-system --create-namespace \
 		 --set image.pullPolicy=Always --set jenkins.ksAuth.enabled=true
 ```
 
