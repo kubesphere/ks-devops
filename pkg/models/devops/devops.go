@@ -280,7 +280,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) 
 		result = append(result, &pipelines.Items[i])
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, d.compare, d.filter), nil
+	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
 //credentialobj in crd
@@ -351,33 +351,7 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		}
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, d.compareCredentialObj, d.filterCredentialObj), nil
-}
-
-func (d devopsOperator) compareCredentialObj(left runtime.Object, right runtime.Object, field query.Field) bool {
-
-	leftObj, ok := left.(*v1.Secret)
-	if !ok {
-		return false
-	}
-
-	rightObj, ok := right.(*v1.Secret)
-	if !ok {
-		return false
-	}
-
-	return resourcesV1alpha3.DefaultObjectMetaCompare(leftObj.ObjectMeta, rightObj.ObjectMeta, field)
-}
-
-func (d devopsOperator) filterCredentialObj(object runtime.Object, filter query.Filter) bool {
-
-	secret, ok := object.(*v1.Secret)
-
-	if !ok {
-		return false
-	}
-
-	return resourcesV1alpha3.DefaultObjectMetaFilter(secret.ObjectMeta, filter)
+	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
 // others
@@ -991,25 +965,4 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 		rc = ioutil.NopCloser(body)
 	}
 	return rc
-}
-
-func (d devopsOperator) filter(item runtime.Object, filter query.Filter) bool {
-	devOpsProject, ok := item.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-	return resourcesV1alpha3.DefaultObjectMetaFilter(devOpsProject.ObjectMeta, filter)
-}
-
-func (d devopsOperator) compare(left runtime.Object, right runtime.Object, field query.Field) bool {
-	leftProject, ok := left.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-
-	rightProject, ok := right.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-	return resourcesV1alpha3.DefaultObjectMetaCompare(leftProject.ObjectMeta, rightProject.ObjectMeta, field)
 }

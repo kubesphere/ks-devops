@@ -41,7 +41,7 @@ spec:
 apiVersion: devops.kubesphere.io/v1alpha4
 kind: PipelineRun
 metadata:
-  name: demo-pipelinerun
+  generateName: demo-pipelinerun-
   namespace: demo-devopsproject
 spec:
   pipelineRef:

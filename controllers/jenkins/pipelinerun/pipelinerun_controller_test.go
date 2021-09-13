@@ -67,13 +67,13 @@ func Test_getBranch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getBranch(tt.args.prSpec)
+			got, err := getSCMRefName(tt.args.prSpec)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getBranch() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getSCMRefName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getBranch() got = %v, want %v", got, tt.want)
+				t.Errorf("getSCMRefName() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -33,6 +33,9 @@ const (
 	ParameterLimit         = "limit"
 	ParameterOrderBy       = "sortBy"
 	ParameterAscending     = "ascending"
+
+	DefaultLimit = 10
+	DefaultPage  = 1
 )
 
 // Query represents api search terms
@@ -63,6 +66,12 @@ var NoPagination = newPagination(-1, 0)
 
 // make sure that pagination is valid
 func newPagination(limit int, offset int) *Pagination {
+	if limit < 0 {
+		limit = DefaultLimit
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	return &Pagination{
 		Limit:  limit,
 		Offset: offset,
@@ -78,15 +87,6 @@ func (q *Query) Selector() labels.Selector {
 }
 
 func (p *Pagination) GetValidPagination(total int) (startIndex, endIndex int) {
-
-	// no pagination
-	if p.Limit == NoPagination.Limit {
-		if p.Offset >= total {
-			return 0, 0
-		}
-		return 0, total
-	}
-
 	// out of range
 	if p.Limit < 0 || p.Offset < 0 || p.Offset > total {
 		return 0, 0
@@ -122,12 +122,12 @@ func ParseQueryParameter(request *restful.Request) *Query {
 	limit, err := strconv.Atoi(request.QueryParameter(ParameterLimit))
 	// equivalent to undefined, use the default value
 	if err != nil || limit < -1 {
-		limit = -1
+		limit = DefaultLimit
 	}
 	page, err := strconv.Atoi(request.QueryParameter(ParameterPage))
 	// equivalent to undefined, use the default value
 	if err != nil || page < 1 {
-		page = 1
+		page = DefaultPage
 	}
 
 	query.Pagination = newPagination(limit, (page-1)*limit)

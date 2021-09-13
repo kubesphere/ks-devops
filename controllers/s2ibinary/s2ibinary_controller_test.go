@@ -67,7 +67,7 @@ func newFixture(t *testing.T) *fixture {
 
 func newS2iBinary(name string, spec s2i.S2iBinarySpec) *s2i.S2iBinary {
 	return &s2i.S2iBinary{
-		TypeMeta: metav1.TypeMeta{APIVersion: s2i.SchemeGroupVersion.String()},
+		TypeMeta: metav1.TypeMeta{APIVersion: s2i.GroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceDefault,
@@ -78,7 +78,7 @@ func newS2iBinary(name string, spec s2i.S2iBinarySpec) *s2i.S2iBinary {
 func newDeletingS2iBinary(name string) *s2i.S2iBinary {
 	deleteTime := metav1.Now()
 	return &s2i.S2iBinary{
-		TypeMeta: metav1.TypeMeta{APIVersion: s2i.SchemeGroupVersion.String()},
+		TypeMeta: metav1.TypeMeta{APIVersion: s2i.GroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              name,
 			Namespace:         metav1.NamespaceDefault,

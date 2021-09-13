@@ -19,12 +19,15 @@
 package v1alpha3
 
 import (
+	assert2 "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
+	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -238,32 +241,13 @@ func TestDefaultObjectMetaCompare(t *testing.T) {
 
 	for _, item := range tables {
 		t.Run(item.name, func(t *testing.T) {
-			result := DefaultObjectMetaCompare(item.left, item.right, item.field)
+			result := DefaultObjectMetaCompare(&item.left, &item.right, item.field)
 			assert.Equal(t, item.expectedCmpResult, result)
 		})
 	}
 }
 
 func TestDefaultList(t *testing.T) {
-	objectMetaFilterFunc := func(object runtime.Object, filter query.Filter) bool {
-		pipeline, ok := object.(*v1alpha3.Pipeline)
-		if !ok {
-			return false
-		}
-		return DefaultObjectMetaFilter(pipeline.ObjectMeta, filter)
-	}
-	objectMetaCompareFunc := func(leftObj runtime.Object, rightObj runtime.Object, field query.Field) bool {
-		leftPipeline, ok := leftObj.(*v1alpha3.Pipeline)
-		if !ok {
-			return false
-		}
-		rightPipeline, ok := rightObj.(*v1alpha3.Pipeline)
-		if !ok {
-			return false
-		}
-		return DefaultObjectMetaCompare(leftPipeline.ObjectMeta, rightPipeline.ObjectMeta, field)
-	}
-
 	table := []struct {
 		name           string
 		items          []runtime.Object
@@ -326,7 +310,7 @@ func TestDefaultList(t *testing.T) {
 				},
 			},
 		},
-		filterFunc:  objectMetaFilterFunc,
+		filterFunc:  DefaultFilter(),
 		compareFunc: nil,
 		query: query.Query{
 			Filters: map[query.Field]query.Value{
@@ -358,7 +342,7 @@ func TestDefaultList(t *testing.T) {
 			},
 		},
 		filterFunc:  nil,
-		compareFunc: objectMetaCompareFunc,
+		compareFunc: DefaultCompare(),
 		query: query.Query{
 			SortBy:    query.FieldName,
 			Ascending: false,
@@ -397,8 +381,8 @@ func TestDefaultList(t *testing.T) {
 				},
 			},
 		},
-		filterFunc:  objectMetaFilterFunc,
-		compareFunc: objectMetaCompareFunc,
+		filterFunc:  DefaultFilter(),
+		compareFunc: DefaultCompare(),
 		query: query.Query{
 			Filters: map[query.Field]query.Value{
 				query.FieldName: "cd",
@@ -426,6 +410,242 @@ func TestDefaultList(t *testing.T) {
 		t.Run(item.name, func(t *testing.T) {
 			result := DefaultList(item.items, &item.query, item.compareFunc, item.filterFunc, item.transform)
 			assert.DeepEqual(t, item.expectedResult, *result)
+		})
+	}
+}
+
+func Test_noTransformFunc(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  runtime.Object
+		want runtime.Object
+	}{{
+		name: "Nil object",
+		arg:  nil,
+	}, {
+		name: "Non-nil object",
+		arg:  &v12.Pod{},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NoTransformFunc()(tt.arg); got != tt.arg {
+				t.Errorf("NoTransformFunc() = %v, want %v", got, tt.arg)
+			}
+		})
+	}
+}
+
+func Test_nilFilter(t *testing.T) {
+	defaultTransformFunc := NoTransformFunc()
+	fakeTransformFunc := func() TransformFunc {
+		return func(object runtime.Object) interface{} {
+			return nil
+		}
+	}
+	type args struct {
+		transformFuncs []TransformFunc
+	}
+	tests := []struct {
+		name      string
+		args      args
+		assertion func([]TransformFunc)
+	}{{
+		name: "Nil transform functions",
+		args: args{
+			transformFuncs: nil,
+		},
+		assertion: func(funcs []TransformFunc) {
+			assert2.Nil(t, funcs)
+		},
+	}, {
+		name: "Contain nil transformFuncs",
+		args: args{
+			transformFuncs: []TransformFunc{defaultTransformFunc, nil},
+		},
+		assertion: func(funcs []TransformFunc) {
+			assert2.Equal(t, 1, len(funcs))
+			assert2.Equal(t, reflect.TypeOf(defaultTransformFunc), reflect.TypeOf(funcs[0]))
+		},
+	}, {
+		name: "Keep the same sequence",
+		args: args{
+			transformFuncs: []TransformFunc{defaultTransformFunc, nil, fakeTransformFunc()},
+		},
+		assertion: func(funcs []TransformFunc) {
+			assert2.Equal(t, 2, len(funcs))
+			assert2.Equal(t, reflect.TypeOf(defaultTransformFunc), reflect.TypeOf(funcs[0]))
+			assert2.Equal(t, reflect.TypeOf(fakeTransformFunc()), reflect.TypeOf(funcs[1]))
+		},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.assertion(nilFilter(tt.args.transformFuncs))
+		})
+	}
+}
+
+func TestFilterFunc_And(t *testing.T) {
+	type args struct {
+		anotherFf FilterFunc
+	}
+	tests := []struct {
+		name string
+		ff   FilterFunc
+		args args
+		want bool
+	}{{
+		name: "false && true",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: false,
+	}, {
+		name: "true && false",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "false && false",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "true && true",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil && nil",
+		ff:   nil,
+		args: args{
+			nil,
+		},
+		want: true,
+	}, {
+		name: "true && nil",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: nil,
+		},
+		want: true,
+	}, {
+		name: "false && nil",
+		ff:   alwaysFalseFilter,
+		args: args{
+			nil,
+		},
+		want: false,
+	}, {
+		name: "nil && true",
+		ff:   nil,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil && false",
+		ff:   nil,
+		args: args{
+			alwaysFalseFilter,
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ff.And(tt.args.anotherFf)(nil, query.Filter{}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("And() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterFunc_Or(t *testing.T) {
+	type args struct {
+		anotherFf FilterFunc
+	}
+	tests := []struct {
+		name string
+		ff   FilterFunc
+		args args
+		want bool
+	}{{
+		name: "false || true",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "true || false",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: true,
+	}, {
+		name: "false || false",
+		ff:   alwaysFalseFilter,
+		args: args{
+			anotherFf: alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "true || true",
+		ff:   alwaysTrueFilter,
+		args: args{
+			anotherFf: alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil || nil",
+		ff:   nil,
+		args: args{
+			anotherFf: nil,
+		},
+		want: false,
+	}, {
+		name: "nil || true",
+		ff:   nil,
+		args: args{
+			alwaysTrueFilter,
+		},
+		want: true,
+	}, {
+		name: "nil || false",
+		ff:   nil,
+		args: args{
+			alwaysFalseFilter,
+		},
+		want: false,
+	}, {
+		name: "false || nil",
+		ff:   alwaysFalseFilter,
+		args: args{
+			nil,
+		},
+		want: false,
+	}, {
+		name: "true || nil",
+		ff:   alwaysTrueFilter,
+		args: args{
+			nil,
+		},
+		want: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ff.Or(tt.args.anotherFf)(nil, query.Filter{}); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Or() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

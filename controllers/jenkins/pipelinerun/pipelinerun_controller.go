@@ -84,22 +84,31 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	devopsProjectName := pipeline.Namespace
+	namespaceName := pipeline.Namespace
 	pipelineName := pipeline.GetName()
 
-	log = log.WithValues("DevOpsProject", devopsProjectName, "Pipeline", pipelineName)
+	// set Pipeline name and SCM ref name into labels
+	if pr.Labels == nil {
+		pr.Labels = make(map[string]string)
+	}
+	pr.Labels[devopsv1alpha4.PipelineNameLabelKey] = pipelineName
+	if refName, err := getSCMRefName(&pr.Spec); err == nil && refName != "" {
+		pr.Labels[devopsv1alpha4.SCMRefNameLabelKey] = refName
+	}
+
+	log = log.WithValues("namespace", namespaceName, "Pipeline", pipelineName)
 
 	// check PipelineRun status
 	if pr.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
-		pipelineBuild, err := r.getPipelineRunResult(devopsProjectName, pipelineName, &pr)
+		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
-		prNodes, err := r.getPipelineNodes(devopsProjectName, pipelineName, &pr)
+		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable to get PipelineRun nodes detail")
 			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
@@ -143,9 +152,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	pipelineBuild, err := r.triggerJenkinsJob(devopsProjectName, pipelineName, &pr.Spec)
+	pipelineBuild, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pr.Spec)
 	if err != nil {
-		log.Error(err, "unable to run pipeline", "devopsProjectName", devopsProjectName, "pipeline", pipeline.Name)
+		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
 		r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
@@ -156,11 +165,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pr.Annotations = make(map[string]string)
 	}
 	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = pipelineBuild.ID
-
-	// set Pipeline name to the PipelineRun labels
-	if pr.Labels == nil {
-		pr.Labels = make(map[string]string)
-	}
 
 	// the Update method only updates fields except subresource: status
 	if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
@@ -185,7 +189,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
-	branch, err := getBranch(prSpec)
+	branch, err := getSCMRefName(prSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +201,7 @@ func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, p
 	})
 }
 
-func getBranch(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
+func getSCMRefName(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
 	var branch = ""
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
@@ -215,7 +219,7 @@ func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string
 	}
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
-	branch, err := getBranch(&pr.Spec)
+	branch, err := getSCMRefName(&pr.Spec)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +236,7 @@ func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-	branch, err := getBranch(&pr.Spec)
+	branch, err := getSCMRefName(&pr.Spec)
 	if err != nil {
 		return nil, err
 	}

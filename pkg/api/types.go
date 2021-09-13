@@ -26,6 +26,17 @@ type ListResult struct {
 	TotalItems int           `json:"totalItems"`
 }
 
+// NewListResult creates a ListResult for the given items and total.
+func NewListResult(items []interface{}, total int) *ListResult {
+	if items == nil {
+		items = make([]interface{}, 0)
+	}
+	return &ListResult{
+		Items:      items,
+		TotalItems: total,
+	}
+}
+
 type ResourceQuota struct {
 	Namespace string                     `json:"namespace" description:"namespace"`
 	Data      corev1.ResourceQuotaStatus `json:"data" description:"resource quota status"`

@@ -22,11 +22,10 @@ import (
 	"fmt"
 	"kubesphere.io/devops/pkg/client/cache"
 	"kubesphere.io/devops/pkg/client/sonarqube"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
-	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
-
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/apiserver"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
@@ -164,12 +163,19 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 		klog.Fatalf("unable add APIs to scheme: %v", err)
 	}
 
-	apiServer.RuntimeCache, err = runtimecache.New(apiServer.KubernetesClient.Config(), runtimecache.Options{Scheme: sch})
+	// we create a manager for getting client and cache, although the manager is for creating controller. At last, we
+	// won't start it up.
+	m, err := manager.New(kubernetesClient.Config(), manager.Options{
+		Scheme: sch,
+		// disable metrics server needed by controller only
+		MetricsBindAddress: "0",
+	})
 	if err != nil {
-		klog.Fatalf("unable to create runtime cache: %v", err)
+		klog.Errorf("unable to create manager for getting client and cache, err = %v", err)
+		return nil, err
 	}
-
+	apiServer.Client = m.GetClient()
+	apiServer.RuntimeCache = m.GetCache()
 	apiServer.Server = server
-
 	return apiServer, nil
 }

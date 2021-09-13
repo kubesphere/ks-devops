@@ -31,6 +31,9 @@ const (
 	JenkinsPipelineRunStatusKey       = GroupName + "/jenkins-pipelinerun-status"
 	JenkinsPipelineRunStagesStatusKey = GroupName + "/jenkins-pipelinerun-stages-status"
 	PipelineRunOrphanKey              = GroupName + "/jenkins-pipelinerun-orphan"
+
+	PipelineNameLabelKey = GroupName + "/pipeline"
+	SCMRefNameLabelKey   = GroupName + "/scm-ref-name"
 )
 
 var (
