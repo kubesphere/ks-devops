@@ -23,5 +23,8 @@ bin
 *.swo
 *~
 
+.vscode
+__debug_bin
+
 kubesphere.yaml
 */**/*.xml
