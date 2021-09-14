@@ -87,7 +87,7 @@ func createPipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	return &v1alpha4.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    pipeline.GetName() + "-runs-",
+			GenerateName:    pipeline.GetName() + "-",
 			Namespace:       pipeline.GetNamespace(),
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
 		},
