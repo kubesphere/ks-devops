@@ -1,12 +1,13 @@
 package v1alpha4
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/client/devops"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -32,7 +33,7 @@ func AddToContainer(o Option) {
 
 func addToContainer(o Option, ws *restful.WebService, handler *apiHandler) {
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
-		To(handler.listPipelineRuns()).
+		To(handler.listPipelineRuns).
 		Doc("Get all runs of the specified pipeline").
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
@@ -45,7 +46,7 @@ func addToContainer(o Option, ws *restful.WebService, handler *apiHandler) {
 		Returns(http.StatusOK, api.StatusOK, v1alpha4.PipelineRunList{}),
 	)
 	ws.Route(ws.POST("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
-		To(handler.createPipelineRuns()).
+		To(handler.createPipelineRuns).
 		Doc("Create a PipelineRun for the specified pipeline").
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
