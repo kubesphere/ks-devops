@@ -1,20 +1,21 @@
-package v1alpha4
+package pipelinerun
 
 import (
 	"context"
 	"io"
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// apiHandlerOption holds some useful tools for API handler.
 type apiHandlerOption struct {
 	client client.Client
 }
@@ -56,7 +57,7 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 		return
 	}
 
-	var prs v1alpha4.PipelineRunList
+	var prs prv1alpha3.PipelineRunList
 	// fetch PipelineRuns
 	if err := h.client.List(context.Background(), &prs,
 		client.InNamespace(pip.Namespace),
@@ -90,7 +91,7 @@ func (h *apiHandler) createPipelineRuns(request *restful.Request, response *rest
 	}
 
 	var (
-		scm *v1alpha4.SCM
+		scm *prv1alpha3.SCM
 		err error
 	)
 	if scm, err = getScm(&pipeline.Spec, branch); err != nil {
@@ -113,7 +114,7 @@ func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.
 	prName := request.PathParameter("pipelinerun")
 
 	// get pipelinerun
-	var pr v1alpha4.PipelineRun
+	var pr prv1alpha3.PipelineRun
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: prName}, &pr); err != nil {
 		api.HandleError(request, response, err)
 		return

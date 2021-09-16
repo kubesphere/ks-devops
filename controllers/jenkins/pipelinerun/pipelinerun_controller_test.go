@@ -1,14 +1,14 @@
 package pipelinerun
 
 import (
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	"testing"
 )
 
 func Test_getBranch(t *testing.T) {
 	type args struct {
-		prSpec *devopsv1alpha4.PipelineRunSpec
+		prSpec *prv1alpha3.PipelineRunSpec
 	}
 	tests := []struct {
 		name    string
@@ -18,7 +18,7 @@ func Test_getBranch(t *testing.T) {
 	}{{
 		name: "No SCM Pipeline",
 		args: args{
-			prSpec: &devopsv1alpha4.PipelineRunSpec{
+			prSpec: &prv1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.NoScmPipelineType,
 				},
@@ -28,11 +28,11 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "No SCM Pipeline but SCM set",
 		args: args{
-			prSpec: &devopsv1alpha4.PipelineRunSpec{
+			prSpec: &prv1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.NoScmPipelineType,
 				},
-				SCM: &devopsv1alpha4.SCM{
+				SCM: &prv1alpha3.SCM{
 					RefName: "main",
 					RefType: "branch",
 				},
@@ -42,7 +42,7 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "Multi-branch Pipeline but not SCM set",
 		args: args{
-			prSpec: &devopsv1alpha4.PipelineRunSpec{
+			prSpec: &prv1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.MultiBranchPipelineType,
 				},
@@ -52,11 +52,11 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "Multi-branch Pipeline and SCM set",
 		args: args{
-			prSpec: &devopsv1alpha4.PipelineRunSpec{
+			prSpec: &prv1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.MultiBranchPipelineType,
 				},
-				SCM: &devopsv1alpha4.SCM{
+				SCM: &prv1alpha3.SCM{
 					RefName: "main",
 					RefType: "branch",
 				},

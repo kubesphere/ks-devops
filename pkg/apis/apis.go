@@ -19,12 +19,21 @@ package apis
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
-// AddToSchemes may be used to add all resources defined in the project to a Scheme
-var AddToSchemes runtime.SchemeBuilder
+// addToSchemes may be used to add all resources defined in the project to a Scheme
+var addToSchemes runtime.SchemeBuilder
 
 // AddToScheme adds all Resources to the Scheme
-func AddToScheme(s *runtime.Scheme) error {
-	return AddToSchemes.AddToScheme(s)
+func AddToScheme(s *runtime.Scheme) {
+	utilruntime.Must(addToSchemes.AddToScheme(s))
+}
+
+func init() {
+	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
+	addToSchemes = append(addToSchemes, v1alpha3.SchemeBuilder.AddToScheme)
+	addToSchemes = append(addToSchemes, prv1alpha3.SchemeBuilder.AddToScheme)
 }

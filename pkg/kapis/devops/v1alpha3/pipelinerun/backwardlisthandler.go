@@ -1,11 +1,11 @@
-package v1alpha4
+package pipelinerun
 
 import (
 	"encoding/json"
 	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 )
@@ -32,8 +32,8 @@ func (b backwardListHandler) Transformer() resourcesV1alpha3.TransformFunc {
 	}
 }
 
-func checkPipelineRun(object runtime.Object) (*v1alpha4.PipelineRun, bool) {
-	pr, ok := object.(*v1alpha4.PipelineRun)
+func checkPipelineRun(object runtime.Object) (*v1alpha3.PipelineRun, bool) {
+	pr, ok := object.(*v1alpha3.PipelineRun)
 	if !ok || pr == nil {
 		return nil, false
 	}
@@ -42,7 +42,7 @@ func checkPipelineRun(object runtime.Object) (*v1alpha4.PipelineRun, bool) {
 
 func (b backwardListHandler) backwardFilter(object runtime.Object) bool {
 	if pr, valid := checkPipelineRun(object); valid {
-		return pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey] != ""
+		return pr.Annotations[v1alpha3.JenkinsPipelineRunStatusKey] != ""
 	}
 	return false
 }
@@ -53,7 +53,7 @@ func (b backwardListHandler) backwardTransformer(object runtime.Object) json.Mar
 		// should never happen
 		return json.RawMessage("{}")
 	}
-	runStatusJSON := pr.Annotations[v1alpha4.JenkinsPipelineRunStatusKey]
+	runStatusJSON := pr.Annotations[v1alpha3.JenkinsPipelineRunStatusKey]
 	rawRunStatus := json.RawMessage(runStatusJSON)
 	// check if the run status is a valid JSON
 	valid = json.Valid(rawRunStatus)

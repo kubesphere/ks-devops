@@ -2,8 +2,8 @@ package pipelinerun
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"time"
 )
 
@@ -42,33 +42,33 @@ type pipelineBuildApplier struct {
 	*job.PipelineBuild
 }
 
-func (pbApplier pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRunStatus) {
-	condition := devopsv1alpha4.Condition{
-		Type:               devopsv1alpha4.ConditionReady,
-		Status:             devopsv1alpha4.ConditionUnknown,
+func (pbApplier pipelineBuildApplier) apply(prStatus *v1alpha3.PipelineRunStatus) {
+	condition := v1alpha3.Condition{
+		Type:               v1alpha3.ConditionReady,
+		Status:             v1alpha3.ConditionUnknown,
 		LastProbeTime:      v1.Now(),
 		LastTransitionTime: v1.Now(),
 		Reason:             pbApplier.State,
 	}
 
-	prStatus.Phase = devopsv1alpha4.Unknown
+	prStatus.Phase = v1alpha3.Unknown
 
 	switch pbApplier.State {
 	case Queued.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		prStatus.Phase = devopsv1alpha4.Pending
+		condition.Status = v1alpha3.ConditionUnknown
+		prStatus.Phase = v1alpha3.Pending
 	case Running.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		prStatus.Phase = devopsv1alpha4.Running
+		condition.Status = v1alpha3.ConditionUnknown
+		prStatus.Phase = v1alpha3.Running
 	case Paused.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		prStatus.Phase = devopsv1alpha4.Pending
+		condition.Status = v1alpha3.ConditionUnknown
+		prStatus.Phase = v1alpha3.Pending
 	case Skipped.String():
-		condition.Type = devopsv1alpha4.ConditionSucceeded
-		condition.Status = devopsv1alpha4.ConditionTrue
-		prStatus.Phase = devopsv1alpha4.Succeeded
+		condition.Type = v1alpha3.ConditionSucceeded
+		condition.Status = v1alpha3.ConditionTrue
+		prStatus.Phase = v1alpha3.Succeeded
 	case NotBuiltState.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
+		condition.Status = v1alpha3.ConditionUnknown
 	case Finished.String():
 		pbApplier.whenPipelineRunFinished(&condition, prStatus)
 	}
@@ -76,7 +76,7 @@ func (pbApplier pipelineBuildApplier) apply(prStatus *devopsv1alpha4.PipelineRun
 	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
 }
 
-func (pbApplier pipelineBuildApplier) whenPipelineRunFinished(condition *devopsv1alpha4.Condition, prStatus *devopsv1alpha4.PipelineRunStatus) {
+func (pbApplier pipelineBuildApplier) whenPipelineRunFinished(condition *v1alpha3.Condition, prStatus *v1alpha3.PipelineRunStatus) {
 	// mark as completed
 	if !pbApplier.EndTime.IsZero() {
 		prStatus.CompletionTime = &v1.Time{Time: pbApplier.EndTime.Time}
@@ -84,33 +84,33 @@ func (pbApplier pipelineBuildApplier) whenPipelineRunFinished(condition *devopsv
 		// should never happen
 		prStatus.CompletionTime = &v1.Time{Time: time.Now()}
 	}
-	condition.Type = devopsv1alpha4.ConditionSucceeded
+	condition.Type = v1alpha3.ConditionSucceeded
 	// handle result
 	switch pbApplier.Result {
 	case Success.String():
-		condition.Status = devopsv1alpha4.ConditionTrue
-		prStatus.Phase = devopsv1alpha4.Succeeded
+		condition.Status = v1alpha3.ConditionTrue
+		prStatus.Phase = v1alpha3.Succeeded
 	case Unstable.String():
-		condition.Status = devopsv1alpha4.ConditionFalse
-		prStatus.Phase = devopsv1alpha4.Failed
+		condition.Status = v1alpha3.ConditionFalse
+		prStatus.Phase = v1alpha3.Failed
 	case Failure.String():
-		condition.Status = devopsv1alpha4.ConditionFalse
-		prStatus.Phase = devopsv1alpha4.Failed
+		condition.Status = v1alpha3.ConditionFalse
+		prStatus.Phase = v1alpha3.Failed
 	case NotBuiltResult.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		prStatus.Phase = devopsv1alpha4.Unknown
+		condition.Status = v1alpha3.ConditionUnknown
+		prStatus.Phase = v1alpha3.Unknown
 	case Unknown.String():
-		condition.Status = devopsv1alpha4.ConditionUnknown
-		prStatus.Phase = devopsv1alpha4.Unknown
+		condition.Status = v1alpha3.ConditionUnknown
+		prStatus.Phase = v1alpha3.Unknown
 	case Aborted.String():
-		condition.Status = devopsv1alpha4.ConditionFalse
-		prStatus.Phase = devopsv1alpha4.Failed
+		condition.Status = v1alpha3.ConditionFalse
+		prStatus.Phase = v1alpha3.Failed
 	}
 }
 
 // parameterConverter is responsible to convert Parameter slice of PipelineRun into job.Parameter slice.
 type parameterConverter struct {
-	parameters []devopsv1alpha4.Parameter
+	parameters []v1alpha3.Parameter
 }
 
 func (converter parameterConverter) convert() []job.Parameter {
