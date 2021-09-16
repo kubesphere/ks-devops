@@ -1,4 +1,4 @@
-package jenkinsconfig
+package config
 
 import (
 	"github.com/stretchr/testify/assert"

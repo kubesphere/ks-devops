@@ -1,4 +1,4 @@
-package jenkinsconfig
+package config
 
 // ResourceLimit describes the limitation level of jenkins agent pod resource
 type ResourceLimit string
@@ -9,7 +9,7 @@ const (
 
 	jenkinsConfigName     = "jenkins-casc-config"
 	jenkinsYamlKey        = "jenkins.yaml"
-	ksJenkinsYAMLKey      = "ks-jenkins.yaml"
+	jenkinsUserYamlKey    = "jenkins_user.yaml"
 	jenkinsCasCConfigName = "jenkins-casc-config"
 	workerLimitRangeName  = "worker-limit-range"
 	workerResQuotaName    = "worker-resource-quota"

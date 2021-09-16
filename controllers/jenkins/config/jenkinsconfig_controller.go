@@ -1,4 +1,4 @@
-package jenkinsconfig
+package config
 
 import (
 	"context"
@@ -174,8 +174,8 @@ func (c *Controller) processNextWorkItem() bool {
 // checkJenkinsConfigData makes sure that annotation devops.kubesphere.io/ks-jenkins-config exists
 func (c *Controller) checkJenkinsConfigData(cm *v1.ConfigMap) (err error) {
 	if data, ok := cm.Data[jenkinsYamlKey]; ok {
-		if _, ok = cm.Data[ksJenkinsYAMLKey]; !ok {
-			cm.Data[ksJenkinsYAMLKey] = data
+		if _, ok = cm.Data[jenkinsUserYamlKey]; !ok {
+			cm.Data[jenkinsUserYamlKey] = data
 		}
 	}
 	return
@@ -259,7 +259,7 @@ func (c *Controller) reloadJenkinsConfig() (err error) {
 	if c.configOperator == nil {
 		err = fmt.Errorf("failed to reload Jenkins config due to the configOperator is nil")
 	} else {
-		err = c.configOperator.ApplyNewSource(fmt.Sprintf("/var/jenkins_home/casc_configs/%s", ksJenkinsYAMLKey))
+		err = c.configOperator.ApplyNewSource(fmt.Sprintf("/var/jenkins_home/casc_configs/%s", jenkinsUserYamlKey))
 	}
 	return
 }
@@ -500,7 +500,7 @@ func (c *Controller) handleJenkinsCasCConfig(cm *v1.ConfigMap, providedConfig ma
 	var targetJenkinsYAMLConfig []byte
 	if targetJenkinsYAMLConfig, err = yaml.Marshal(cascMap); err == nil {
 		// update Jenkins config ConfigMap
-		cm.Data[ksJenkinsYAMLKey] = string(targetJenkinsYAMLConfig)
+		cm.Data[jenkinsUserYamlKey] = string(targetJenkinsYAMLConfig)
 	} else {
 		return
 	}

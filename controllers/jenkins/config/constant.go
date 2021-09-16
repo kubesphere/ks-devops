@@ -1,4 +1,4 @@
-package jenkinsconfig
+package config
 
 const (
 	// ANNOJenkinsConfigFormula represents the formula name
