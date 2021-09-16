@@ -36,6 +36,9 @@ spec:
           spec:
             description: PipelineRunSpec defines the desired state of PipelineRun
             properties:
+              action:
+                description: Action indicates what we need to do with current PipelineRun.
+                type: string
               parameters:
                 description: Parameters are some key/value pairs passed to runner.
                 items:
