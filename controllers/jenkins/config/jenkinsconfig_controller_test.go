@@ -136,17 +136,17 @@ func TestCheckJenkinsConfigData(t *testing.T) {
 	}
 	err = ctrl.checkJenkinsConfigData(targetConfigMap)
 	assert.Nil(t, err, "failed when check a ConfigMap with the expected data field")
-	assert.Equal(t, "fake", targetConfigMap.Data["ks-jenkins.yaml"], "didn't get the expected data field")
+	assert.Equal(t, "fake", targetConfigMap.Data["jenkins_user.yaml"], "didn't get the expected data field")
 
 	targetConfigMap = &v1.ConfigMap{
 		Data: map[string]string{
-			"jenkins.yaml":    "jenkins",
-			"ks-jenkins.yaml": "ks-jenkins",
+			"jenkins.yaml":      "jenkins",
+			"jenkins_user.yaml": "ks-jenkins",
 		},
 	}
 	err = ctrl.checkJenkinsConfigData(targetConfigMap)
 	assert.Nil(t, err, "failed when check a ConfigMap which contains ks-jenkins.yaml")
-	assert.Equal(t, "ks-jenkins", targetConfigMap.Data["ks-jenkins.yaml"],
+	assert.Equal(t, "ks-jenkins", targetConfigMap.Data["jenkins_user.yaml"],
 		"the existing ks-jenkins.yaml should not be override")
 }
 
