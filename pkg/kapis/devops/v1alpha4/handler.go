@@ -107,3 +107,16 @@ func (h *apiHandler) createPipelineRuns(request *restful.Request, response *rest
 
 	_ = response.WriteEntity(pr)
 }
+
+func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.Response) {
+	nsName := request.PathParameter("namespace")
+	prName := request.PathParameter("pipelinerun")
+
+	// get pipelinerun
+	var pr v1alpha4.PipelineRun
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: prName}, &pr); err != nil {
+		api.HandleError(request, response, err)
+		return
+	}
+	_ = response.WriteEntity(&pr)
+}
