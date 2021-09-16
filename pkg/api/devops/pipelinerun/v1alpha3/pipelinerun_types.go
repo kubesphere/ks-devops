@@ -40,6 +40,10 @@ type PipelineRunSpec struct {
 	// SCM is a SCM configuration that target PipelineRun requires.
 	// +optional
 	SCM *SCM `json:"scm,omitempty"`
+
+	// Action indicates what we need to do with current PipelineRun.
+	// +optional
+	Action *Action `json:"action,omitempty"`
 }
 
 // PipelineRunStatus defines the observed state of PipelineRun
@@ -268,6 +272,18 @@ type Condition struct {
 	// +optional
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
 }
+
+// Action indicates what we need to do with current PipelineRun.
+type Action string
+
+const (
+	// Stop indicates we need to stop the current PipelineRun.
+	Stop Action = "Stop"
+	// Pause indicates we need to pause the current PipelineRun.
+	Pause Action = "Pause"
+	// Resume indicates we need to resume the current PipelineRun.
+	Resume Action = "Resume"
+)
 
 // Valid values for event reasons (new reasons could be added in future)
 const (
