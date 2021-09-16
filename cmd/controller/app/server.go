@@ -156,9 +156,7 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
-	if err = apis.AddToScheme(mgr.GetScheme()); err != nil {
-		klog.Fatalf("unable add APIs to scheme: %v", err)
-	}
+	apis.AddToScheme(mgr.GetScheme())
 
 	// Init s3 client
 	var s3Client s3.Interface

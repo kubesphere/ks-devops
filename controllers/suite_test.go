@@ -17,7 +17,7 @@ limitations under the License.
 package controllers
 
 import (
-	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"path/filepath"
 	"testing"
 
@@ -31,7 +31,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	devopskubesphereiov1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	// +kubebuilder:scaffold:imports
 )
@@ -65,13 +64,13 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = devopskubesphereiov1alpha3.AddToScheme(scheme.Scheme)
+	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = devopsv1alpha4.AddToScheme(scheme.Scheme)
+	err = prv1alpha3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

@@ -9,5 +9,5 @@ resources:
   version: v1alpha3
 - group: devops
   kind: PipelineRun
-  version: v1alpha4
+  version: v1alpha3
 version: "2"

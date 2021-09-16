@@ -3,8 +3,8 @@ package pipelinerun
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"reflect"
 	"testing"
 	"time"
@@ -15,10 +15,10 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 		pb *job.PipelineBuild
 	}
 	type args struct {
-		prStatus *devopsv1alpha4.PipelineRunStatus
+		prStatus *v1alpha3.PipelineRunStatus
 	}
 
-	commonStatusAssert := func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+	commonStatusAssert := func(prStatus *v1alpha3.PipelineRunStatus) {
 		assert.Equal(t, 1, len(prStatus.Conditions))
 		assert.NotNil(t, prStatus.Conditions[0].LastProbeTime)
 		assert.NotNil(t, prStatus.Conditions[0].LastTransitionTime)
@@ -29,7 +29,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 		name      string
 		fields    fields
 		args      args
-		assertion func(prStatus *devopsv1alpha4.PipelineRunStatus)
+		assertion func(prStatus *v1alpha3.PipelineRunStatus)
 	}{{
 		name: "PipelineRun was in queue",
 		fields: fields{
@@ -39,13 +39,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Pending, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Pending, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was running",
@@ -56,13 +56,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Running, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Running, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was paused",
@@ -73,13 +73,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Pending, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Pending, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was skipped",
@@ -90,13 +90,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionTrue, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Succeeded, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionTrue, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Succeeded, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was not built",
@@ -107,13 +107,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Unknown, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Unknown, prStatus.Phase)
 		},
 	}, {
 		name: "Unknown PipelineRun state",
@@ -124,13 +124,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Unknown, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Unknown, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was finished with succeeded result",
@@ -143,13 +143,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionTrue, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Succeeded, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionTrue, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Succeeded, prStatus.Phase)
 			assert.Equal(t, time.Date(2021, 8, 27, 11, 16, 38, 0, time.Local), prStatus.CompletionTime.Time)
 		},
 	}, {
@@ -162,13 +162,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionFalse, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Failed, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionFalse, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Failed, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was finished but failed",
@@ -180,13 +180,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionFalse, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Failed, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionFalse, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Failed, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was finished but with not built result",
@@ -198,13 +198,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Unknown, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Unknown, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was finished but with unknown result",
@@ -216,13 +216,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Unknown, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Unknown, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun was finished but with aborted result",
@@ -234,13 +234,13 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{},
+			prStatus: &v1alpha3.PipelineRunStatus{},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			commonStatusAssert(prStatus)
-			assert.Equal(t, devopsv1alpha4.ConditionFalse, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.Failed, prStatus.Phase)
+			assert.Equal(t, v1alpha3.ConditionFalse, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.Failed, prStatus.Phase)
 		},
 	}, {
 		name: "PipelineRun with new condition",
@@ -252,22 +252,22 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			},
 		},
 		args: args{
-			prStatus: &devopsv1alpha4.PipelineRunStatus{
-				Conditions: []devopsv1alpha4.Condition{
+			prStatus: &v1alpha3.PipelineRunStatus{
+				Conditions: []v1alpha3.Condition{
 					{
-						Type:          devopsv1alpha4.ConditionReady,
-						Status:        devopsv1alpha4.ConditionUnknown,
-						LastProbeTime: metav1.Now(),
+						Type:          v1alpha3.ConditionReady,
+						Status:        v1alpha3.ConditionUnknown,
+						LastProbeTime: v1.Now(),
 					},
 				},
 			},
 		},
-		assertion: func(prStatus *devopsv1alpha4.PipelineRunStatus) {
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
 			assert.Equal(t, 2, len(prStatus.Conditions))
-			assert.Equal(t, devopsv1alpha4.ConditionSucceeded, prStatus.Conditions[0].Type)
-			assert.Equal(t, devopsv1alpha4.ConditionTrue, prStatus.Conditions[0].Status)
-			assert.Equal(t, devopsv1alpha4.ConditionReady, prStatus.Conditions[1].Type)
-			assert.Equal(t, devopsv1alpha4.ConditionUnknown, prStatus.Conditions[1].Status)
+			assert.Equal(t, v1alpha3.ConditionSucceeded, prStatus.Conditions[0].Type)
+			assert.Equal(t, v1alpha3.ConditionTrue, prStatus.Conditions[0].Status)
+			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[1].Type)
+			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[1].Status)
 		},
 	},
 	}
@@ -284,7 +284,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 
 func Test_parameterConverter_convert(t *testing.T) {
 	type fields struct {
-		parameters []devopsv1alpha4.Parameter
+		parameters []v1alpha3.Parameter
 	}
 	tests := []struct {
 		name   string
@@ -299,7 +299,7 @@ func Test_parameterConverter_convert(t *testing.T) {
 	}, {
 		name: "Single parameter",
 		fields: fields{
-			parameters: []devopsv1alpha4.Parameter{
+			parameters: []v1alpha3.Parameter{
 				{Name: "fake_name", Value: "fake_value"},
 			},
 		},
@@ -309,7 +309,7 @@ func Test_parameterConverter_convert(t *testing.T) {
 	}, {
 		name: "Two parameters",
 		fields: fields{
-			parameters: []devopsv1alpha4.Parameter{
+			parameters: []v1alpha3.Parameter{
 				{Name: "fake_name_1", Value: "fake_value_1"},
 				{Name: "fake_name_2", Value: "fake_value_2"},
 			},

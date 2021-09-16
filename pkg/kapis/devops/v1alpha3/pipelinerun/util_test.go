@@ -1,11 +1,11 @@
-package v1alpha4
+package pipelinerun
 
 import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
 	"reflect"
@@ -38,7 +38,7 @@ func Test_buildLabelSelector(t *testing.T) {
 			pipelineName: "pipelineA",
 			branchName:   "branchA",
 		},
-		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA", v1alpha4.PipelineNameLabelKey, v1alpha4.SCMRefNameLabelKey)),
+		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA", v1alpha3.PipelineNameLabelKey, v1alpha3.SCMRefNameLabelKey)),
 	}, {
 		name: "Label selector was provided",
 		args: args{
@@ -48,7 +48,7 @@ func Test_buildLabelSelector(t *testing.T) {
 			pipelineName: "pipelineA",
 			branchName:   "branchA",
 		},
-		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA,a=b", v1alpha4.PipelineNameLabelKey, v1alpha4.SCMRefNameLabelKey)),
+		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA,a=b", v1alpha3.PipelineNameLabelKey, v1alpha3.SCMRefNameLabelKey)),
 	},
 	}
 	for _, tt := range tests {
@@ -67,7 +67,7 @@ func Test_buildLabelSelector(t *testing.T) {
 
 func Test_convertPipelineRunsToObject(t *testing.T) {
 	type args struct {
-		prs []v1alpha4.PipelineRun
+		prs []v1alpha3.PipelineRun
 	}
 	tests := []struct {
 		name string
@@ -76,7 +76,7 @@ func Test_convertPipelineRunsToObject(t *testing.T) {
 	}{{
 		name: "Make sure the sequence is correct",
 		args: args{
-			prs: []v1alpha4.PipelineRun{
+			prs: []v1alpha3.PipelineRun{
 				{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "pipeline-run-a",
@@ -90,12 +90,12 @@ func Test_convertPipelineRunsToObject(t *testing.T) {
 			},
 		},
 		want: []runtime.Object{
-			&v1alpha4.PipelineRun{
+			&v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "pipeline-run-a",
 				},
 			},
-			&v1alpha4.PipelineRun{
+			&v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "pipeline-run-b",
 				},
@@ -118,7 +118,7 @@ func Test_convertParameters(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []v1alpha4.Parameter
+		want []v1alpha3.Parameter
 	}{{
 		name: "Nil payload",
 		args: args{
@@ -143,7 +143,7 @@ func Test_convertParameters(t *testing.T) {
 				}},
 			},
 		},
-		want: []v1alpha4.Parameter{{
+		want: []v1alpha3.Parameter{{
 			Name:  "aname",
 			Value: "avalue",
 		}},
@@ -171,7 +171,7 @@ func Test_convertParameters(t *testing.T) {
 				}},
 			},
 		},
-		want: []v1alpha4.Parameter{{
+		want: []v1alpha3.Parameter{{
 			Name:  "aname",
 			Value: "avalue",
 		}, {

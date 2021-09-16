@@ -28,8 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsv1alpha4 "kubesphere.io/devops/pkg/api/devops/v1alpha4"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -57,7 +57,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("PipelineRun", req.NamespacedName)
 
 	// get PipelineRun
-	var pr devopsv1alpha4.PipelineRun
+	var pr prv1alpha3.PipelineRun
 	if err := r.Client.Get(ctx, req.NamespacedName, &pr); err != nil {
 		log.Error(err, "unable to fetch PipelineRun")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -91,9 +91,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pr.Labels == nil {
 		pr.Labels = make(map[string]string)
 	}
-	pr.Labels[devopsv1alpha4.PipelineNameLabelKey] = pipelineName
+	pr.Labels[prv1alpha3.PipelineNameLabelKey] = pipelineName
 	if refName, err := getSCMRefName(&pr.Spec); err == nil && refName != "" {
-		pr.Labels[devopsv1alpha4.SCMRefNameLabelKey] = refName
+		pr.Labels[prv1alpha3.SCMRefNameLabelKey] = refName
 	}
 
 	log = log.WithValues("namespace", namespaceName, "Pipeline", pipelineName)
@@ -104,14 +104,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
-			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
+			r.recorder.Eventf(&pr, corev1.EventTypeWarning, prv1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
 		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, &pr)
 		if err != nil {
 			log.Error(err, "unable to get PipelineRun nodes detail")
-			r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
+			r.recorder.Eventf(&pr, corev1.EventTypeWarning, prv1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
@@ -127,8 +127,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if pr.Annotations == nil {
 			pr.Annotations = make(map[string]string)
 		}
-		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunStatusKey] = string(runResultJSON)
-		pr.Annotations[devopsv1alpha4.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
+		pr.Annotations[prv1alpha3.JenkinsPipelineRunStatusKey] = string(runResultJSON)
+		pr.Annotations[prv1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
 		// update PipelineRun
 		if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
@@ -145,7 +145,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "unable to update PipelineRun status.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
-		r.recorder.Eventf(&pr, corev1.EventTypeNormal, devopsv1alpha4.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
+		r.recorder.Eventf(&pr, corev1.EventTypeNormal, prv1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -155,7 +155,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineBuild, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pr.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
-		r.recorder.Eventf(&pr, corev1.EventTypeWarning, devopsv1alpha4.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
+		r.recorder.Eventf(&pr, corev1.EventTypeWarning, prv1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
 	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
@@ -164,7 +164,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pr.Annotations == nil {
 		pr.Annotations = make(map[string]string)
 	}
-	pr.Annotations[devopsv1alpha4.JenkinsPipelineRunIDKey] = pipelineBuild.ID
+	pr.Annotations[prv1alpha3.JenkinsPipelineRunIDKey] = pipelineBuild.ID
 
 	// the Update method only updates fields except subresource: status
 	if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
@@ -181,12 +181,12 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
-	r.recorder.Eventf(&pr, corev1.EventTypeNormal, devopsv1alpha4.Started, "Started PipelineRun %s", req.NamespacedName)
+	r.recorder.Eventf(&pr, corev1.EventTypeNormal, prv1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *devopsv1alpha4.PipelineRunSpec) (*job.PipelineBuild, error) {
+func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *prv1alpha3.PipelineRunSpec) (*job.PipelineBuild, error) {
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
 	branch, err := getSCMRefName(prSpec)
@@ -201,7 +201,7 @@ func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, p
 	})
 }
 
-func getSCMRefName(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
+func getSCMRefName(prSpec *prv1alpha3.PipelineRunSpec) (string, error) {
 	var branch = ""
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
@@ -212,7 +212,7 @@ func getSCMRefName(prSpec *devopsv1alpha4.PipelineRunSpec) (string, error) {
 	return branch, nil
 }
 
-func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) (*job.PipelineBuild, error) {
+func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *prv1alpha3.PipelineRun) (*job.PipelineBuild, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
@@ -230,7 +230,7 @@ func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string
 	})
 }
 
-func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr *devopsv1alpha4.PipelineRun) ([]job.Node, error) {
+func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr *prv1alpha3.PipelineRun) ([]job.Node, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
@@ -247,9 +247,9 @@ func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr
 	})
 }
 
-func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {
+func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *prv1alpha3.PipelineRun) error {
 	// get pipeline
-	prToUpdate := devopsv1alpha4.PipelineRun{}
+	prToUpdate := prv1alpha3.PipelineRun{}
 	err := r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate)
 	if err != nil {
 		return err
@@ -263,9 +263,9 @@ func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *devopsv
 	return r.Update(ctx, &prToUpdate)
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *devopsv1alpha4.PipelineRunStatus, prKey client.ObjectKey) error {
+func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *prv1alpha3.PipelineRunStatus, prKey client.ObjectKey) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		prToUpdate := devopsv1alpha4.PipelineRun{}
+		prToUpdate := prv1alpha3.PipelineRun{}
 		err := r.Get(ctx, prKey, &prToUpdate)
 		if err != nil {
 			return err
@@ -279,23 +279,23 @@ func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *devopsv1al
 	})
 }
 
-func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *devopsv1alpha4.PipelineRun) error {
+func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *prv1alpha3.PipelineRun) error {
 	// make the PipelineRun as orphan
 	prToUpdate := pr.DeepCopy()
 	prToUpdate.LabelAsAnOrphan()
 	if err := r.updateLabelsAndAnnotations(ctx, prToUpdate); err != nil {
 		return err
 	}
-	condition := devopsv1alpha4.Condition{
-		Type:               devopsv1alpha4.ConditionSucceeded,
-		Status:             devopsv1alpha4.ConditionUnknown,
+	condition := prv1alpha3.Condition{
+		Type:               prv1alpha3.ConditionSucceeded,
+		Status:             prv1alpha3.ConditionUnknown,
 		Reason:             "SKIPPED",
 		Message:            "skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.",
 		LastTransitionTime: v1.Now(),
 		LastProbeTime:      v1.Now(),
 	}
 	prToUpdate.Status.AddCondition(&condition)
-	prToUpdate.Status.Phase = devopsv1alpha4.Unknown
+	prToUpdate.Status.Phase = prv1alpha3.Unknown
 	return r.updateStatus(ctx, &pr.Status, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name})
 }
 
@@ -304,6 +304,6 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// the name should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 	r.recorder = mgr.GetEventRecorderFor("pipelinerun-controller")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&devopsv1alpha4.PipelineRun{}).
+		For(&prv1alpha3.PipelineRun{}).
 		Complete(r)
 }

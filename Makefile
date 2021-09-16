@@ -8,7 +8,7 @@ TOOLS_IMG ?= surenpi/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3 devops.kubesphere.io:v1alpha4"
+GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))

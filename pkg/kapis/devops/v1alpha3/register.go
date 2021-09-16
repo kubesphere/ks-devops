@@ -19,14 +19,15 @@
 package v1alpha3
 
 import (
-	"kubesphere.io/devops/pkg/client/k8s"
-	"net/http"
-
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
@@ -40,17 +41,19 @@ import (
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
 // AddToContainer adds web service into container.
-func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client) (err error) {
-	wsWithGroup := runtime.NewWebService(GroupVersion)
-	if err = addToContainerWithWebService(container, devopsClient, k8sClient, wsWithGroup); err == nil {
-		ws := runtime.NewWebServiceWithoutGroup(GroupVersion)
-		err = addToContainerWithWebService(container, devopsClient, k8sClient, ws)
-	}
-	return
+func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client) {
+	ws := runtime.NewWebService(GroupVersion)
+	registerRoutes(devopsClient, k8sClient, ws)
+	pipelinerun.RegisterRoutes(ws, client)
+	container.Add(ws)
+
+	ws = runtime.NewWebServiceWithoutGroup(GroupVersion)
+	registerRoutes(devopsClient, k8sClient, ws)
+	pipelinerun.RegisterRoutes(ws, client)
+	container.Add(ws)
 }
 
-func addToContainerWithWebService(container *restful.Container, devopsClient devopsClient.Interface,
-	k8sClient k8s.Client, ws *restful.WebService) error {
+func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, ws *restful.WebService) {
 	handler := newDevOpsHandler(devopsClient, k8sClient)
 	// credential
 	ws.Route(ws.GET("/devops/{devops}/credentials").
@@ -181,7 +184,4 @@ func addToContainerWithWebService(container *restful.Container, devopsClient dev
 		Doc("Get the devopsproject of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
-
-	container.Add(ws)
-	return nil
 }

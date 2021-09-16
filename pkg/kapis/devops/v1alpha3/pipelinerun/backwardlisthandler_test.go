@@ -1,10 +1,10 @@
-package v1alpha4
+package pipelinerun
 
 import (
 	"encoding/json"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha4"
+	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"reflect"
 	"testing"
@@ -17,23 +17,23 @@ func Test_compatibleTransform(t *testing.T) {
 		want interface{}
 	}{{
 		name: "With run status",
-		obj: &v1alpha4.PipelineRun{
+		obj: &v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Annotations: map[string]string{
-					v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+					v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
 				},
 			},
 		},
 		want: json.RawMessage(`{"id": "123"}`),
 	}, {
 		name: "Without annotations",
-		obj: &v1alpha4.PipelineRun{
+		obj: &v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{},
 		},
 		want: json.RawMessage("{}"),
 	}, {
 		name: "Nil PipelineRun",
-		obj:  (*v1alpha4.PipelineRun)(nil),
+		obj:  (*v1alpha3.PipelineRun)(nil),
 		want: json.RawMessage("{}"),
 	}, {
 		name: "Nil object",
@@ -70,16 +70,16 @@ func Test_backwardFilter(t *testing.T) {
 	}, {
 		name: "Nil PipelineRun",
 		args: args{
-			obj: (*v1alpha4.PipelineRun)(nil),
+			obj: (*v1alpha3.PipelineRun)(nil),
 		},
 		want: false,
 	}, {
 		name: "PipelineRun has started but without Jenkins run status",
 		args: args{
-			obj: &v1alpha4.PipelineRun{
+			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha4.JenkinsPipelineRunIDKey: "123",
+						v1alpha3.JenkinsPipelineRunIDKey: "123",
 					},
 				},
 			},
@@ -88,10 +88,10 @@ func Test_backwardFilter(t *testing.T) {
 	}, {
 		name: "PipelineRun hasn't started but with Jenkins run status",
 		args: args{
-			obj: &v1alpha4.PipelineRun{
+			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
 					},
 				},
 			},
@@ -100,12 +100,12 @@ func Test_backwardFilter(t *testing.T) {
 	}, {
 		name: "PipelineRun has started and with Jenkins run status",
 		args: args{
-			obj: &v1alpha4.PipelineRun{
+			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "abc",
 					Annotations: map[string]string{
-						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
-						v1alpha4.JenkinsPipelineRunIDKey:     "123",
+						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunIDKey:     "123",
 					},
 				},
 			},
@@ -118,12 +118,12 @@ func Test_backwardFilter(t *testing.T) {
 	}, {
 		name: "PipelineRun has started and with Jenkins run status but failed with default filter",
 		args: args{
-			obj: &v1alpha4.PipelineRun{
+			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "abc",
 					Annotations: map[string]string{
-						v1alpha4.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
-						v1alpha4.JenkinsPipelineRunIDKey:     "123",
+						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunIDKey:     "123",
 					},
 				},
 			},

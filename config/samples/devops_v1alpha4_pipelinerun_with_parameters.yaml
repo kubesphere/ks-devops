@@ -60,7 +60,7 @@ spec:
   type: pipeline
 
 ---
-apiVersion: devops.kubesphere.io/v1alpha4
+apiVersion: devops.kubesphere.io/v1alpha3
 kind: PipelineRun
 metadata:
   name: demo-pipelinerun

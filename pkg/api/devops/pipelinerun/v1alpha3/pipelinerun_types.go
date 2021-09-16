@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha4
+package v1alpha3
 
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apis"
 	"sort"
 	"time"
 )
@@ -284,5 +283,4 @@ const (
 
 func init() {
 	SchemeBuilder.Register(&PipelineRun{}, &PipelineRunList{})
-	apis.AddToSchemes = append(apis.AddToSchemes, AddToScheme)
 }

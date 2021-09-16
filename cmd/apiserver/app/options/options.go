@@ -159,9 +159,7 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 	}
 
 	sch := scheme.Scheme
-	if err := apis.AddToScheme(sch); err != nil {
-		klog.Fatalf("unable add APIs to scheme: %v", err)
-	}
+	apis.AddToScheme(sch)
 
 	// we create a manager for getting client and cache, although the manager is for creating controller. At last, we
 	// won't start it up.
