@@ -31,7 +31,6 @@ import (
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/informers"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -92,11 +91,20 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		if err := (&pipelinerun.Reconciler{
 			Client:       mgr.GetClient(),
 			Scheme:       mgr.GetScheme(),
-			Log:          ctrl.Log.WithName("pipelinerun-controller"),
 			DevOpsClient: devopsClient,
 			JenkinsCore:  jenkinsCore,
 		}).SetupWithManager(mgr); err != nil {
-			klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
+			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
+			return err
+		}
+
+		// add PipelineRun Synchronizer
+		if err := (&pipelinerun.SyncReconciler{
+			Client:      mgr.GetClient(),
+			JenkinsCore: jenkinsCore,
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
+			return err
 		}
 	}
 

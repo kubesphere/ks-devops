@@ -109,7 +109,13 @@ func NewController(client clientset.Interface,
 			if oldPipeline.ResourceVersion == newPipeline.ResourceVersion {
 				return
 			}
-			v.enqueuePipeline(newObj)
+
+			_, requestSync := newPipeline.Annotations[devopsv1alpha3.PipelineRequestToSyncRunsAnnoKey]
+
+			if !reflect.DeepEqual(oldPipeline.Spec, newPipeline.Spec) ||
+				(!reflect.DeepEqual(oldPipeline.ObjectMeta, newPipeline.ObjectMeta) && !requestSync) {
+				v.enqueuePipeline(newObj)
+			}
 		},
 		DeleteFunc: v.enqueuePipeline,
 	})
@@ -157,7 +163,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		klog.Error(err, "could not reconcile devopsProject")
 		utilruntime.HandleError(err)
 		return true
 	}
@@ -166,7 +171,6 @@ func (c *Controller) processNextWorkItem() bool {
 }
 
 func (c *Controller) worker() {
-
 	for c.processNextWorkItem() {
 	}
 }
@@ -192,6 +196,10 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 
 	<-stopCh
 	return nil
+}
+
+func (c *Controller) syncPipelineRuns() {
+
 }
 
 // syncHandler compares the actual state with the desired, and attempts to
