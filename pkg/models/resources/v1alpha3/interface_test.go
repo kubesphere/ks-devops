@@ -405,6 +405,39 @@ func TestDefaultList(t *testing.T) {
 				},
 			},
 		},
+	}, {
+		name: "Filter nil items",
+		items: []runtime.Object{
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-abcd",
+				},
+			},
+			nil,
+			&v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pipeline-cdef",
+				},
+			},
+			nil,
+			nil,
+		},
+		filterFunc: DefaultFilter(),
+		expectedResult: api.ListResult{
+			TotalItems: 2,
+			Items: []interface{}{
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-abcd",
+					},
+				},
+				&v1alpha3.Pipeline{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "pipeline-cdef",
+					},
+				},
+			},
+		},
 	}}
 	for _, item := range table {
 		t.Run(item.name, func(t *testing.T) {
