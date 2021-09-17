@@ -28,12 +28,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog"
 	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/utils/sliceutil"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 	"time"
 )
 
@@ -58,18 +61,28 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// get PipelineRun
 	var pr prv1alpha3.PipelineRun
-	if err := r.Client.Get(ctx, req.NamespacedName, &pr); err != nil {
+	var err error
+	if err = r.Client.Get(ctx, req.NamespacedName, &pr); err != nil {
 		log.Error(err, "unable to fetch PipelineRun")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// don't modify the cache in other places, like informer cache.
+	pr = *pr.DeepCopy()
+
+	// DeletionTimestamp.IsZero() means copyPipeline has not been deleted.
+	if !pr.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err = r.deleteJenkinsJobHistory(&pr); err != nil {
+			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
+				pr.Namespace, pr.Name, err)
+		}
+		return ctrl.Result{}, err
 	}
 
 	// the PipelineRun cannot allow building
 	if !pr.Buildable() {
 		return ctrl.Result{}, nil
 	}
-
-	// don't modify the cache in other places, like informer cache.
-	pr = *pr.DeepCopy()
 
 	// check PipelineRef
 	if pr.Spec.PipelineRef == nil || pr.Spec.PipelineRef.Name == "" {
@@ -129,6 +142,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		pr.Annotations[prv1alpha3.JenkinsPipelineRunStatusKey] = string(runResultJSON)
 		pr.Annotations[prv1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
+
 		// update PipelineRun
 		if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
@@ -184,6 +198,50 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	r.recorder.Eventf(&pr, corev1.EventTypeNormal, prv1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+}
+
+func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *prv1alpha3.PipelineRun) (err error) {
+	var buildNum int
+	if buildNum = getJenkinsBuildNumber(pipelineRun); buildNum < 0 {
+		return
+	}
+
+	jenkinsClient := job.Client{
+		JenkinsCore: r.JenkinsCore,
+	}
+	jobName := fmt.Sprintf("job/%s/job/%s", pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name)
+	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err == nil {
+		pipelineRun.ObjectMeta.Finalizers = sliceutil.RemoveString(pipelineRun.ObjectMeta.Finalizers, func(item string) bool {
+			return item == prv1alpha3.PipelineRunFinalizerName
+		})
+		err = r.Update(context.TODO(), pipelineRun)
+	} else {
+		err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobName, buildNum, err)
+	}
+	return
+}
+
+// getJenkinsBuildNumber returns the build number of a Jenkins job build which related with a PipelineRun
+// return a negative value if there is no valid build number
+func getJenkinsBuildNumber(pipelineRun *prv1alpha3.PipelineRun) (num int) {
+	num = -1
+
+	var (
+		buildNum      string
+		buildNumExist bool
+	)
+
+	if buildNum, buildNumExist = pipelineRun.GetPipelineRunID(); !buildNumExist {
+		return
+	}
+
+	var err error
+	if num, err = strconv.Atoi(buildNum); err != nil {
+		num = -1
+		klog.V(7).Infof("found an invalid build number from PipelineRun: %s/%s, err: %v",
+			pipelineRun.Namespace, pipelineRun.Name, err)
+	}
+	return
 }
 
 func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *prv1alpha3.PipelineRunSpec) (*job.PipelineBuild, error) {
@@ -260,6 +318,10 @@ func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *prv1alp
 	prToUpdate = *prToUpdate.DeepCopy()
 	prToUpdate.Labels = pr.Labels
 	prToUpdate.Annotations = pr.Annotations
+	// make sure all PipelineRuns have the finalizer
+	if !sliceutil.HasString(prToUpdate.ObjectMeta.Finalizers, prv1alpha3.PipelineRunFinalizerName) {
+		prToUpdate.ObjectMeta.Finalizers = append(prToUpdate.ObjectMeta.Finalizers, prv1alpha3.PipelineRunFinalizerName)
+	}
 	return r.Update(ctx, &prToUpdate)
 }
 

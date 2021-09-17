@@ -24,6 +24,9 @@ import (
 	"time"
 )
 
+// PipelineRunFinalizerName is the name of PipelineRun finalizer
+const PipelineRunFinalizerName = "pipelinerun.finalizers.kubesphere.io"
+
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
 	// PipelineRef is the Pipeline to which the current PipelineRun belongs
