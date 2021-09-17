@@ -98,6 +98,9 @@ func DefaultList(objects []runtime.Object, q *query.Query, compareFunc CompareFu
 	var filtered []runtime.Object
 	// filter objects
 	for _, object := range objects {
+		if object == nil || reflect.ValueOf(object).IsNil() {
+			continue
+		}
 		selected := true
 		for field, value := range q.Filters {
 			if filterFunc != nil && !filterFunc(object, query.Filter{Field: field, Value: value}) {
@@ -168,7 +171,7 @@ func DefaultFilter() FilterFunc {
 	return func(obj runtime.Object, filter query.Filter) bool {
 		oma, ok := obj.(metav1.ObjectMetaAccessor)
 		if !ok || oma == nil || reflect.ValueOf(oma).IsNil() {
-			return true
+			return false
 		}
 		return DefaultObjectMetaFilter(oma.GetObjectMeta(), filter)
 	}
