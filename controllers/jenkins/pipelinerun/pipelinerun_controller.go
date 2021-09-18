@@ -217,6 +217,7 @@ func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *prv1alpha3.PipelineRun
 	}
 	jobName := fmt.Sprintf("job/%s/job/%s", pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name)
 	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err != nil {
+		// TODO improve the way to check if the desired build record was deleted
 		if strings.Contains(err.Error(), "not found resources") {
 			err = nil
 		} else {
