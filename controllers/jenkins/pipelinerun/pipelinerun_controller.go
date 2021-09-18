@@ -37,6 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -75,6 +76,11 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err = r.deleteJenkinsJobHistory(&pr); err != nil {
 			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
 				pr.Namespace, pr.Name, err)
+		} else {
+			pr.ObjectMeta.Finalizers = sliceutil.RemoveString(pr.ObjectMeta.Finalizers, func(item string) bool {
+				return item == prv1alpha3.PipelineRunFinalizerName
+			})
+			err = r.Update(context.TODO(), &pr)
 		}
 		return ctrl.Result{}, err
 	}
@@ -210,13 +216,12 @@ func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *prv1alpha3.PipelineRun
 		JenkinsCore: r.JenkinsCore,
 	}
 	jobName := fmt.Sprintf("job/%s/job/%s", pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name)
-	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err == nil {
-		pipelineRun.ObjectMeta.Finalizers = sliceutil.RemoveString(pipelineRun.ObjectMeta.Finalizers, func(item string) bool {
-			return item == prv1alpha3.PipelineRunFinalizerName
-		})
-		err = r.Update(context.TODO(), pipelineRun)
-	} else {
-		err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobName, buildNum, err)
+	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err != nil {
+		if strings.Contains(err.Error(), "not found resources") {
+			err = nil
+		} else {
+			err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobName, buildNum, err)
+		}
 	}
 	return
 }
