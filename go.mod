@@ -16,7 +16,7 @@ require (
 	github.com/go-logr/logr v0.3.0
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.3
-	github.com/go-redis/redis v6.15.2+incompatible
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
@@ -50,8 +50,6 @@ require (
 )
 
 replace (
-	github.com/fatih/structs => github.com/fatih/structs v1.1.0
-	github.com/go-redis/redis => github.com/go-redis/redis v6.15.2+incompatible
 	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
