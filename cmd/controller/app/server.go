@@ -24,7 +24,6 @@ import (
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jclient"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
@@ -110,16 +109,11 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 
 	// Init DevOps client while Jenkins options and Jenkins host
 	var devopsClient devops.Interface
-	var jenkinsClient jclient.JenkinsClient
 	if s.JenkinsOptions != nil && len(s.JenkinsOptions.Host) != 0 {
 		// Make sure that Jenkins host is not empty
-		devopsClient, err = jenkins.NewDevopsClient(s.JenkinsOptions)
+		devopsClient, err = jclient.NewJenkinsClient(s.JenkinsOptions)
 		if err != nil {
 			return fmt.Errorf("failed to connect jenkins, please check jenkins status, error: %v", err)
-		}
-		jenkinsClient, err = jclient.NewJenkinsClient(s.JenkinsOptions)
-		if err != nil {
-			return fmt.Errorf("failed to create Jenkins client, error: %v", err)
 		}
 	}
 
@@ -183,7 +177,6 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		informerFactory,
 		devopsClient,
 		jenkinsCore,
-		jenkinsClient,
 		s3Client,
 		s,
 		stopCh); err != nil {

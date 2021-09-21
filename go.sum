@@ -362,7 +362,6 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
-github.com/jenkins-zh/jenkins-cli v0.0.32 h1:q3KyWeYegQ4ncLI6zoPAXFkRXjaAGdjCI2qEc7fmOGk=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
 github.com/jenkins-zh/jenkins-client v0.0.3-0.20210902064041-1fcb0fa89b38 h1:0b4F5kF+Kx295haTJH3pogw9NcpSuGfIkcKo8N98964=
 github.com/jenkins-zh/jenkins-client v0.0.3-0.20210902064041-1fcb0fa89b38/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=

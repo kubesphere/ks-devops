@@ -159,8 +159,7 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 	i := informers.NewSharedInformerFactory(f.client, noResyncPeriodFunc())
 	k8sI := kubeinformers.NewSharedInformerFactory(f.kubeclient, noResyncPeriodFunc())
 	dI := fakeDevOps.NewWithPipelines(f.initDevOpsProject, f.initPipeline...)
-	jc := f.jenkinsClient
-	c := NewController(f.kubeclient, f.client, dI, *jc, k8sI.Core().V1().Namespaces(),
+	c := NewController(f.kubeclient, f.client, dI, k8sI.Core().V1().Namespaces(),
 		i.Devops().V1alpha3().Pipelines())
 
 	c.pipelineSynced = alwaysReady

@@ -869,7 +869,7 @@ func (p *Pipeline) ToJenkinsfile() (*devops.ResJenkinsfile, error) {
 	return &jenkinsfile, err
 }
 
-func (p *Pipeline) ToJson() (result map[string]interface{}, err error) {
+func (p *Pipeline) ToJSON() (result map[string]interface{}, err error) {
 	var data []byte
 	if data, err = p.Jenkins.SendPureRequest(p.Path, p.HttpParameters); err == nil {
 		err = json.Unmarshal(data, &result)
