@@ -4,23 +4,23 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"net/http"
-	"testing"
 )
 
 func Test_getBranch(t *testing.T) {
 	type args struct {
-		prSpec *prv1alpha3.PipelineRunSpec
+		prSpec *v1alpha3.PipelineRunSpec
 	}
 	tests := []struct {
 		name    string
@@ -30,7 +30,7 @@ func Test_getBranch(t *testing.T) {
 	}{{
 		name: "No SCM Pipeline",
 		args: args{
-			prSpec: &prv1alpha3.PipelineRunSpec{
+			prSpec: &v1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.NoScmPipelineType,
 				},
@@ -40,11 +40,11 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "No SCM Pipeline but SCM set",
 		args: args{
-			prSpec: &prv1alpha3.PipelineRunSpec{
+			prSpec: &v1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.NoScmPipelineType,
 				},
-				SCM: &prv1alpha3.SCM{
+				SCM: &v1alpha3.SCM{
 					RefName: "main",
 					RefType: "branch",
 				},
@@ -54,7 +54,7 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "Multi-branch Pipeline but not SCM set",
 		args: args{
-			prSpec: &prv1alpha3.PipelineRunSpec{
+			prSpec: &v1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.MultiBranchPipelineType,
 				},
@@ -64,11 +64,11 @@ func Test_getBranch(t *testing.T) {
 	}, {
 		name: "Multi-branch Pipeline and SCM set",
 		args: args{
-			prSpec: &prv1alpha3.PipelineRunSpec{
+			prSpec: &v1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
 					Type: v1alpha3.MultiBranchPipelineType,
 				},
-				SCM: &prv1alpha3.SCM{
+				SCM: &v1alpha3.SCM{
 					RefName: "main",
 					RefType: "branch",
 				},
@@ -93,7 +93,7 @@ func Test_getBranch(t *testing.T) {
 
 func Test_getJenkinsBuildNumber(t *testing.T) {
 	type args struct {
-		pipelineRun *prv1alpha3.PipelineRun
+		pipelineRun *v1alpha3.PipelineRun
 	}
 	tests := []struct {
 		name    string
@@ -102,16 +102,16 @@ func Test_getJenkinsBuildNumber(t *testing.T) {
 	}{{
 		name: "no build number",
 		args: args{
-			pipelineRun: &prv1alpha3.PipelineRun{},
+			pipelineRun: &v1alpha3.PipelineRun{},
 		},
 		wantNum: -1,
 	}, {
 		name: "invalid build number",
 		args: args{
-			pipelineRun: &prv1alpha3.PipelineRun{
+			pipelineRun: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						prv1alpha3.JenkinsPipelineRunIDKey: "a",
+						v1alpha3.JenkinsPipelineRunIDKey: "a",
 					},
 				},
 			},
@@ -120,10 +120,10 @@ func Test_getJenkinsBuildNumber(t *testing.T) {
 	}, {
 		name: "valid build number",
 		args: args{
-			pipelineRun: &prv1alpha3.PipelineRun{
+			pipelineRun: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						prv1alpha3.JenkinsPipelineRunIDKey: "2",
+						v1alpha3.JenkinsPipelineRunIDKey: "2",
 					},
 				},
 			},
@@ -160,7 +160,7 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 	})
 
 	It("delete an empty PipelineRun", func() {
-		err := reconciler.deleteJenkinsJobHistory(&prv1alpha3.PipelineRun{})
+		err := reconciler.deleteJenkinsJobHistory(&v1alpha3.PipelineRun{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -189,14 +189,14 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 		roundTripper.EXPECT().
 			RoundTrip(core.NewRequestMatcher(request)).Return(response, nil)
 
-		err := reconciler.deleteJenkinsJobHistory(&prv1alpha3.PipelineRun{
+		err := reconciler.deleteJenkinsJobHistory(&v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					prv1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDKey: "2",
 				},
 			},
-			Spec: prv1alpha3.PipelineRunSpec{
+			Spec: v1alpha3.PipelineRunSpec{
 				PipelineRef: &corev1.ObjectReference{
 					Name: pipelineName,
 				},
@@ -230,14 +230,14 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 		roundTripper.EXPECT().
 			RoundTrip(core.NewRequestMatcher(request)).Return(response, nil)
 
-		err := reconciler.deleteJenkinsJobHistory(&prv1alpha3.PipelineRun{
+		err := reconciler.deleteJenkinsJobHistory(&v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					prv1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDKey: "2",
 				},
 			},
-			Spec: prv1alpha3.PipelineRunSpec{
+			Spec: v1alpha3.PipelineRunSpec{
 				PipelineRef: &corev1.ObjectReference{
 					Name: pipelineName,
 				},
@@ -271,14 +271,14 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 		roundTripper.EXPECT().
 			RoundTrip(core.NewRequestMatcher(request)).Return(response, errors.New("failed"))
 
-		err := reconciler.deleteJenkinsJobHistory(&prv1alpha3.PipelineRun{
+		err := reconciler.deleteJenkinsJobHistory(&v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					prv1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDKey: "2",
 				},
 			},
-			Spec: prv1alpha3.PipelineRunSpec{
+			Spec: v1alpha3.PipelineRunSpec{
 				PipelineRef: &corev1.ObjectReference{
 					Name: pipelineName,
 				},

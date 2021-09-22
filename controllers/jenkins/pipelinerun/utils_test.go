@@ -1,13 +1,14 @@
 package pipelinerun
 
 import (
-	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func Test_pipelineBuildApplier_apply(t *testing.T) {

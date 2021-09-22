@@ -2,14 +2,15 @@ package pipelinerun
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/client/devops"
 	"reflect"
 	"testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/client/devops"
 )
 
 func Test_buildLabelSelector(t *testing.T) {

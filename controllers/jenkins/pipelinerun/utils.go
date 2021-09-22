@@ -1,10 +1,11 @@
 package pipelinerun
 
 import (
-	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"time"
+
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 type JenkinsRunState string
