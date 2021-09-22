@@ -19,12 +19,13 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/utils"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
 	"net/http"
 	"reflect"
 	"time"
+
+	"kubesphere.io/devops/pkg/utils"
+	"kubesphere.io/devops/pkg/utils/k8sutil"
+	"kubesphere.io/devops/pkg/utils/sliceutil"
 
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
@@ -109,7 +110,13 @@ func NewController(client clientset.Interface,
 			if oldPipeline.ResourceVersion == newPipeline.ResourceVersion {
 				return
 			}
-			v.enqueuePipeline(newObj)
+
+			_, requestSync := newPipeline.Annotations[devopsv1alpha3.PipelineRequestToSyncRunsAnnoKey]
+
+			if !reflect.DeepEqual(oldPipeline.Spec, newPipeline.Spec) ||
+				(!reflect.DeepEqual(oldPipeline.ObjectMeta, newPipeline.ObjectMeta) && !requestSync) {
+				v.enqueuePipeline(newObj)
+			}
 		},
 		DeleteFunc: v.enqueuePipeline,
 	})
@@ -157,7 +164,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		klog.Error(err, "could not reconcile devopsProject")
 		utilruntime.HandleError(err)
 		return true
 	}
@@ -166,7 +172,6 @@ func (c *Controller) processNextWorkItem() bool {
 }
 
 func (c *Controller) worker() {
-
 	for c.processNextWorkItem() {
 	}
 }

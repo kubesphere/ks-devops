@@ -20,6 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
@@ -33,18 +38,14 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // Reconciler reconciles a PipelineRun object
 type Reconciler struct {
 	client.Client
-	Log          logr.Logger
+	log          logr.Logger
 	Scheme       *runtime.Scheme
 	DevOpsClient devopsClient.Interface
 	JenkinsCore  core.JenkinsCore
@@ -58,7 +59,7 @@ type Reconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("PipelineRun", req.NamespacedName)
+	log := r.log.WithValues("PipelineRun", req.NamespacedName)
 
 	// get PipelineRun
 	var pr prv1alpha3.PipelineRun
@@ -250,7 +251,7 @@ func getJenkinsBuildNumber(pipelineRun *prv1alpha3.PipelineRun) (num int) {
 	return
 }
 
-func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *prv1alpha3.PipelineRunSpec) (*job.PipelineBuild, error) {
+func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *prv1alpha3.PipelineRunSpec) (*job.PipelineRun, error) {
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
 	branch, err := getSCMRefName(prSpec)
@@ -276,7 +277,7 @@ func getSCMRefName(prSpec *prv1alpha3.PipelineRunSpec) (string, error) {
 	return branch, nil
 }
 
-func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *prv1alpha3.PipelineRun) (*job.PipelineBuild, error) {
+func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *prv1alpha3.PipelineRun) (*job.PipelineRun, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
@@ -371,6 +372,7 @@ func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *prv1alpha3.P
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// the name should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 	r.recorder = mgr.GetEventRecorderFor("pipelinerun-controller")
+	r.log = ctrl.Log.WithName("pipelinerun-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&prv1alpha3.PipelineRun{}).
 		Complete(r)

@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"errors"
 	"fmt"
+
 	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 
 	corev1 "k8s.io/api/core/v1"
@@ -59,7 +60,8 @@ func convertParameters(payload *devops.RunPayload) []prv1alpha3.Parameter {
 	return parameters
 }
 
-func getScm(ps *v1alpha3.PipelineSpec, branch string) (*prv1alpha3.SCM, error) {
+// CreateScm creates SCM for multi-branch Pipeline.
+func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*prv1alpha3.SCM, error) {
 	var scm *prv1alpha3.SCM
 	if ps.Type == v1alpha3.MultiBranchPipelineType {
 		if branch == "" {
@@ -83,13 +85,16 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 	}
 }
 
-func createPipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *prv1alpha3.SCM) *prv1alpha3.PipelineRun {
+// CreatePipelineRun creates a bare PipelineRun.
+func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *prv1alpha3.SCM) *prv1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	return &prv1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
+			// the name should be like "pipeline-xyzmnt", so we set generate name "pipeline-" here.
 			GenerateName:    pipeline.GetName() + "-",
 			Namespace:       pipeline.GetNamespace(),
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
+			Annotations:     map[string]string{},
 		},
 		Spec: prv1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),

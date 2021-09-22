@@ -2,17 +2,18 @@ package pipelinerun
 
 import (
 	"context"
-	"io"
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
-	"strconv"
-
 	"github.com/emicklei/go-restful"
+	"io"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api"
+	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 // apiHandlerOption holds some useful tools for API handler.
@@ -43,15 +44,15 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	queryParam := query.ParseQueryParameter(request)
 
 	// validate the Pipeline
-	var pip v1alpha3.Pipeline
-	err = h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: pipName}, &pip)
+	pipeline := &v1alpha3.Pipeline{}
+	err = h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: pipName}, pipeline)
 	if err != nil {
 		api.HandleError(request, response, err)
 		return
 	}
 
 	// build label selector
-	labelSelector, err := buildLabelSelector(queryParam, pip.Name, branchName)
+	labelSelector, err := buildLabelSelector(queryParam, pipeline.Name, branchName)
 	if err != nil {
 		api.HandleError(request, response, err)
 		return
@@ -60,7 +61,7 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	var prs prv1alpha3.PipelineRunList
 	// fetch PipelineRuns
 	if err := h.client.List(context.Background(), &prs,
-		client.InNamespace(pip.Namespace),
+		client.InNamespace(pipeline.Namespace),
 		client.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
 		api.HandleError(request, response, err)
 		return
@@ -72,6 +73,34 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	}
 	apiResult := resourcesV1alpha3.ToListResult(convertPipelineRunsToObject(prs.Items), queryParam, listHandler)
 	_ = response.WriteAsJson(apiResult)
+
+	go func() {
+		err := h.requestSyncPipelineRun(client.ObjectKey{Namespace: pipeline.Namespace, Name: pipeline.Name})
+		if err != nil {
+			klog.Errorf("failed to request to synchronize PipelineRuns. Pipeline = %s", pipeline.Name)
+			return
+		}
+	}()
+}
+
+func (h *apiHandler) requestSyncPipelineRun(key client.ObjectKey) error {
+	// get latest Pipeline
+	pipelineToUpdate := &v1alpha3.Pipeline{}
+	err := h.client.Get(context.Background(), key, pipelineToUpdate)
+	if err != nil {
+		return err
+	}
+	// update pipeline annotations
+	if pipelineToUpdate.Annotations == nil {
+		pipelineToUpdate.Annotations = make(map[string]string)
+	}
+	pipelineToUpdate.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey] = "true"
+	// update the pipeline
+	if err := h.client.Update(context.Background(), pipelineToUpdate); err != nil && !apierrors.IsConflict(err) {
+		// we allow the conflict error here
+		return err
+	}
+	return nil
 }
 
 func (h *apiHandler) createPipelineRuns(request *restful.Request, response *restful.Response) {
@@ -94,13 +123,13 @@ func (h *apiHandler) createPipelineRuns(request *restful.Request, response *rest
 		scm *prv1alpha3.SCM
 		err error
 	)
-	if scm, err = getScm(&pipeline.Spec, branch); err != nil {
+	if scm, err = CreateScm(&pipeline.Spec, branch); err != nil {
 		api.HandleBadRequest(response, request, err)
 		return
 	}
 
 	// create PipelineRun
-	pr := createPipelineRun(&pipeline, &payload, scm)
+	pr := CreatePipelineRun(&pipeline, &payload, scm)
 	if err := h.client.Create(context.Background(), pr); err != nil {
 		api.HandleError(request, response, err)
 		return

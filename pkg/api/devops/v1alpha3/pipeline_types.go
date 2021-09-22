@@ -34,6 +34,8 @@ const (
 	PipelineSyncStatusAnnoKey = PipelinePrefix + "syncstatus"
 	PipelineSyncTimeAnnoKey   = PipelinePrefix + "synctime"
 	PipelineSyncMsgAnnoKey    = PipelinePrefix + "syncmsg"
+	// PipelineRequestToSyncRunsAnnoKey is the key of requesting to synchronize PipelineRun after a dedicated time.
+	PipelineRequestToSyncRunsAnnoKey = PipelinePrefix + "request-to-sync-pipelineruns"
 )
 
 // PipelineSpec defines the desired state of Pipeline
