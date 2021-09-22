@@ -6,7 +6,7 @@ CONTROLLER_IMG ?= surenpi/devops-controller:$(VERSION)-$(COMMIT)
 APISERVER_IMG ?= surenpi/devops-apiserver:$(VERSION)-$(COMMIT)
 TOOLS_IMG ?= surenpi/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
 GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3"
 
@@ -117,7 +117,7 @@ mock-gen:
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.2)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
