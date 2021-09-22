@@ -18,6 +18,7 @@ package cache
 
 import "time"
 
+// NeverExpire represents a never expired time
 var NeverExpire = time.Duration(0)
 
 type Interface interface {

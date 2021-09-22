@@ -17,7 +17,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+all: test lint
 
 # Run tests
 test: fmt vet # generate manifests
@@ -58,6 +58,10 @@ fmt:
 # Run go vet against code
 vet:
 	go vet ./...
+
+# Install golang-lint via https://golangci-lint.run/usage/install/#local-installation
+lint:
+	golangci-lint run ./...
 
 # Generate code
 generate: controller-gen

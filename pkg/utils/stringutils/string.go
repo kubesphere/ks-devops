@@ -28,7 +28,7 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 
 var re = regexp.MustCompile(ansi)
 
-// Creates an slice of slice values not included in the other given slice.
+// Diff creates an slice of slice values not included in the other given slice.
 func Diff(base, exclude []string) (result []string) {
 	excludeMap := make(map[string]bool)
 	for _, s := range exclude {

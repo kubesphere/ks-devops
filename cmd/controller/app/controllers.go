@@ -22,8 +22,8 @@ import (
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
 	"kubesphere.io/devops/controllers/devopsproject"
+	"kubesphere.io/devops/controllers/jenkins/config"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
-	"kubesphere.io/devops/controllers/jenkinsconfig"
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
@@ -75,7 +75,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
 
-		jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
+		jenkinsConfigController = config.NewController(&config.ControllerOptions{
 			LimitRangeClient:    client.Kubernetes().CoreV1(),
 			ResourceQuotaClient: client.Kubernetes().CoreV1(),
 			ConfigMapClient:     client.Kubernetes().CoreV1(),
