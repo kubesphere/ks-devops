@@ -19,12 +19,13 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/utils"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
 	"net/http"
 	"reflect"
 	"time"
+
+	"kubesphere.io/devops/pkg/utils"
+	"kubesphere.io/devops/pkg/utils/k8sutil"
+	"kubesphere.io/devops/pkg/utils/sliceutil"
 
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
@@ -196,10 +197,6 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 
 	<-stopCh
 	return nil
-}
-
-func (c *Controller) syncPipelineRuns() {
-
 }
 
 // syncHandler compares the actual state with the desired, and attempts to
