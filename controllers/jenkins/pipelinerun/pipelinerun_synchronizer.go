@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
@@ -123,6 +124,7 @@ func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job
 func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*prv1alpha3.PipelineRun, error) {
 	branch := ""
 	if run.Branch != nil {
+		// TODO(johnniang): Refine the branch structure in Jenkins client.
 		branch = fmt.Sprint(run.Branch.(map[string]interface{})["url"])
 	}
 	scm, err := pipelinerun.CreateScm(&pipeline.Spec, branch)
@@ -130,17 +132,7 @@ func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*
 		return nil, err
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
-	if pr.Annotations == nil {
-		pr.Annotations = make(map[string]string)
-	}
 	pr.Annotations[prv1alpha3.JenkinsPipelineRunIDKey] = run.ID
-	// set a **unique** name for PipelineRun to synchronize and reset generate name
-	pr.Name = pr.GenerateName
-	if branch != "" {
-		pr.Name = pr.Name + branch + "-"
-	}
-	pr.Name = pr.Name + run.ID
-	pr.GenerateName = ""
 	return pr, nil
 }
 

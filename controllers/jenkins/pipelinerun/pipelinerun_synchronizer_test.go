@@ -131,9 +131,8 @@ func Test_createBarePipelineRun(t *testing.T) {
 		},
 		want: &prv1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
-				Name:         "fake-pipeline-main-123",
 				Namespace:    "fake-namespace",
-				GenerateName: "",
+				GenerateName: "fake-pipeline-",
 				OwnerReferences: []v1.OwnerReference{
 					*v1.NewControllerRef(multiBranchPipeline, multiBranchPipeline.GroupVersionKind()),
 				},
@@ -164,9 +163,9 @@ func Test_createBarePipelineRun(t *testing.T) {
 			},
 			want: &prv1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
-					Name:         "fake-pipeline-123",
+					Name:         "",
 					Namespace:    "fake-namespace",
-					GenerateName: "",
+					GenerateName: "fake-pipeline-",
 					OwnerReferences: []v1.OwnerReference{
 						*v1.NewControllerRef(generalPipeline, generalPipeline.GroupVersionKind()),
 					},

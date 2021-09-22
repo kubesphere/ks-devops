@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"errors"
 	"fmt"
+
 	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 
 	corev1 "k8s.io/api/core/v1"
@@ -89,9 +90,11 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	return &prv1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
+			// the name should be like "pipeline-xyzmnt", so we set generate name "pipeline-" here.
 			GenerateName:    pipeline.GetName() + "-",
 			Namespace:       pipeline.GetNamespace(),
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
+			Annotations:     map[string]string{},
 		},
 		Spec: prv1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
