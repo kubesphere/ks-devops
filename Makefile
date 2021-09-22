@@ -20,10 +20,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# Setting SHELL to bash allows bash commands to be executed by recipes.
+# This is a requirement for 'setup-envtest.sh' in the test target.
+# Options are set to exit when a recipe line exits non-zero or a piped command fails.
+SHELL = /usr/bin/env bash -o pipefail
+.SHELLFLAGS = -ec
+
 all: manager
 
 # Run tests
-test: fmt vet envtest# generate manifests
+test: manifests generate fmt vet envtest# generate manifests
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile coverage.out
 
 # Build manager binary
