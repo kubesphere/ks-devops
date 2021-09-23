@@ -244,10 +244,7 @@ func (r *Reconciler) deletePipelineRun(pipelineRunKey client.ObjectKey) error {
 	if err := r.Client.Get(context.Background(), pipelineRunKey, pipelineRunToDelete); err != nil {
 		return err
 	}
-	if err := r.Client.Delete(context.Background(), pipelineRunToDelete); err != nil {
-		return err
-	}
-	return nil
+	return r.Client.Delete(context.Background(), pipelineRunToDelete)
 }
 
 func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *prv1alpha3.PipelineRun) (err error) {
