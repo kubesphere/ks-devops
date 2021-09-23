@@ -179,13 +179,23 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, prv1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
-	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
-
-	if hasPending, err := r.hasSamePendingPipelineRun(pipelineBuild.ID, req.NamespacedName, log); err != nil {
+	// check if there is still a same pending PipelineRun
+	exists, err := r.hasSamePendingPipelineRun(pipelineBuild.ID, req.NamespacedName)
+	if err != nil {
+		log.Error(err, "unable to check if there still has the same pending PipelineRun", "runID", pipelineBuild.ID)
 		return ctrl.Result{}, err
-	} else if hasPending {
+	}
+	if exists {
+		// if there still exists the same pending PipelineRun, then give up reconciling
+		if err := r.deletePipelineRun(req.NamespacedName); err != nil {
+			log.Error(err, "unable to delete PipelineRun")
+			return ctrl.Result{}, err
+		}
+		log.Info("Skipped this PipelineRun because there was still a pending Pipeline with the same parameter")
 		return ctrl.Result{}, nil
 	}
+
+	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
 
 	// set Jenkins run ID
 	if pipelineRunCopied.Annotations == nil {
@@ -214,32 +224,30 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // hasSamePendingPipelineRun checks if there is still a PipelineRun with the same run ID.
-func (r *Reconciler) hasSamePendingPipelineRun(runID string, pipelineRunKey client.ObjectKey, log logr.Logger) (bool, error) {
+func (r *Reconciler) hasSamePendingPipelineRun(runID string, pipelineRunKey client.ObjectKey) (bool, error) {
 	// check if the run ID exists in the PipelineRun
 	pipelineRuns := &prv1alpha3.PipelineRunList{}
 	if err := r.Client.List(context.Background(), pipelineRuns,
 		client.HasLabels{prv1alpha3.JenkinsPipelineRunIDKey},
 		client.MatchingLabels{prv1alpha3.JenkinsPipelineRunIDKey: runID}); err != nil {
-		log.Error(err, "unable to search all PipelineRuns with a specific run ID", "runID", runID)
 		return false, err
 	}
 	if len(pipelineRuns.Items) == 0 {
 		return false, nil
 	}
-	// if we find the PipelineRuns with the same run ID,
-	// then we will delete this one
+	return true, nil
+}
+
+// deletePipelineRun deletes PipelineRun by namespace and name.
+func (r *Reconciler) deletePipelineRun(pipelineRunKey client.ObjectKey) error {
 	pipelineRunToDelete := &prv1alpha3.PipelineRun{}
 	if err := r.Client.Get(context.Background(), pipelineRunKey, pipelineRunToDelete); err != nil {
-		log.Error(err, "uanble to get PipelineRun to be deleted")
-		return false, err
+		return err
 	}
 	if err := r.Client.Delete(context.Background(), pipelineRunToDelete); err != nil {
-		log.Error(err, "uanble to delete PipelineRun")
-		return false, err
+		return err
 	}
-	// give up this reconcile
-	log.Info("Skipped this PipelineRun because there was still a pending Pipeline with the same parameter")
-	return true, nil
+	return nil
 }
 
 func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *prv1alpha3.PipelineRun) (err error) {
