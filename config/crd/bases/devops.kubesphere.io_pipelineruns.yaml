@@ -16,7 +16,12 @@ spec:
     singular: pipelinerun
   scope: Namespaced
   versions:
-  - name: v1alpha3
+  - additionalPrinterColumns:
+    - description: The phase of a PipelineRun
+      jsonPath: .status.phase
+      name: Phase
+      type: string
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: PipelineRun is the Schema for the pipelineruns API

@@ -74,8 +74,9 @@ type PipelineRunStatus struct {
 	Phase RunPhase `json:"phase,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="The phase of a PipelineRun"
 
 // PipelineRun is the Schema for the pipelineruns API
 type PipelineRun struct {
