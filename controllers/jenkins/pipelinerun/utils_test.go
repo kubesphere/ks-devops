@@ -13,7 +13,7 @@ import (
 
 func Test_pipelineBuildApplier_apply(t *testing.T) {
 	type fields struct {
-		pb *job.PipelineBuild
+		pb *job.PipelineRun
 	}
 	type args struct {
 		prStatus *v1alpha3.PipelineRunStatus
@@ -34,7 +34,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}{{
 		name: "PipelineRun was in queue",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: Queued.String(),
 			},
@@ -51,7 +51,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was running",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: Running.String(),
 			},
@@ -68,7 +68,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was paused",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: Paused.String(),
 			},
@@ -85,7 +85,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was skipped",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: Skipped.String(),
 			},
@@ -102,7 +102,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was not built",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: NotBuiltState.String(),
 			},
@@ -119,7 +119,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "Unknown PipelineRun state",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:    "1",
 				State: "this_is_an_invalid_state",
 			},
@@ -136,7 +136,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished with succeeded result",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:      "1",
 				State:   Finished.String(),
 				Result:  Success.String(),
@@ -156,7 +156,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished but with unstable result",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: Unstable.String(),
@@ -174,7 +174,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished but failed",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: Failure.String(),
@@ -192,7 +192,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished but with not built result",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: NotBuiltResult.String(),
@@ -210,7 +210,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished but with unknown result",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: Unknown.String(),
@@ -228,7 +228,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun was finished but with aborted result",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: Aborted.String(),
@@ -246,7 +246,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	}, {
 		name: "PipelineRun with new condition",
 		fields: fields{
-			pb: &job.PipelineBuild{
+			pb: &job.PipelineRun{
 				ID:     "1",
 				State:  Finished.String(),
 				Result: Success.String(),
@@ -275,7 +275,7 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pbApplier := &pipelineBuildApplier{
-				PipelineBuild: tt.fields.pb,
+				PipelineRun: tt.fields.pb,
 			}
 			pbApplier.apply(tt.args.prStatus)
 			tt.assertion(tt.args.prStatus)

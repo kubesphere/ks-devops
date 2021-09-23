@@ -40,7 +40,7 @@ func (result JenkinsRunResult) String() string {
 
 // pipelineBuildApplier applies PipelineBuilder to PipelineRunStatus.
 type pipelineBuildApplier struct {
-	*job.PipelineBuild
+	*job.PipelineRun
 }
 
 func (pbApplier pipelineBuildApplier) apply(prStatus *v1alpha3.PipelineRunStatus) {

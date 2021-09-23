@@ -58,7 +58,8 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 	return parameters
 }
 
-func getScm(ps *v1alpha3.PipelineSpec, branch string) (*v1alpha3.SCM, error) {
+// CreateScm creates SCM for multi-branch Pipeline.
+func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*v1alpha3.SCM, error) {
 	var scm *v1alpha3.SCM
 	if ps.Type == v1alpha3.MultiBranchPipelineType {
 		if branch == "" {
@@ -82,13 +83,16 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 	}
 }
 
-func createPipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
+// CreatePipelineRun creates a bare PipelineRun.
+func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	return &v1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
+			// the name should be like "pipeline-xyzmnt", so we set generate name "pipeline-" here.
 			GenerateName:    pipeline.GetName() + "-",
 			Namespace:       pipeline.GetNamespace(),
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
+			Annotations:     map[string]string{},
 		},
 		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),

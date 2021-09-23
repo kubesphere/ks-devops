@@ -34,6 +34,8 @@ const (
 	PipelineSyncStatusAnnoKey = PipelinePrefix + "syncstatus"
 	PipelineSyncTimeAnnoKey   = PipelinePrefix + "synctime"
 	PipelineSyncMsgAnnoKey    = PipelinePrefix + "syncmsg"
+	// PipelineRequestToSyncRunsAnnoKey is the key of requesting to synchronize PipelineRun after a dedicated time.
+	PipelineRequestToSyncRunsAnnoKey = PipelinePrefix + "request-to-sync-pipelineruns"
 )
 
 // PipelineSpec defines the desired state of Pipeline
@@ -56,6 +58,7 @@ type PipelineStatus struct {
 
 // Pipeline is the Schema for the pipelines API
 // +k8s:openapi-gen=true
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.type`,description="The type of a Pipeline"
 type Pipeline struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -161,7 +161,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		klog.Error(err, "could not reconcile devopsProject")
 		utilruntime.HandleError(err)
 		return true
 	}

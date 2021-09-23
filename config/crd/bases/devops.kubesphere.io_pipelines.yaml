@@ -16,7 +16,12 @@ spec:
     singular: pipeline
   scope: Namespaced
   versions:
-  - name: v1alpha3
+  - additionalPrinterColumns:
+    - description: The type of a Pipeline
+      jsonPath: .spec.type
+      name: Type
+      type: string
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: Pipeline is the Schema for the pipelines API
@@ -333,6 +338,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 status:
   acceptedNames:
     kind: ""

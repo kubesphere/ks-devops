@@ -22,8 +22,8 @@ import (
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/devopscredential"
 	"kubesphere.io/devops/controllers/devopsproject"
+	"kubesphere.io/devops/controllers/jenkins/config"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
-	"kubesphere.io/devops/controllers/jenkinsconfig"
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
@@ -31,7 +31,6 @@ import (
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/informers"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -75,7 +74,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
 
-		jenkinsConfigController = jenkinsconfig.NewController(&jenkinsconfig.ControllerOptions{
+		jenkinsConfigController = config.NewController(&config.ControllerOptions{
 			LimitRangeClient:    client.Kubernetes().CoreV1(),
 			ResourceQuotaClient: client.Kubernetes().CoreV1(),
 			ConfigMapClient:     client.Kubernetes().CoreV1(),
@@ -92,11 +91,20 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		if err := (&pipelinerun.Reconciler{
 			Client:       mgr.GetClient(),
 			Scheme:       mgr.GetScheme(),
-			Log:          ctrl.Log.WithName("pipelinerun-controller"),
 			DevOpsClient: devopsClient,
 			JenkinsCore:  jenkinsCore,
 		}).SetupWithManager(mgr); err != nil {
-			klog.Errorf("unable to create jenkins-pipeline-controller, err: %v", err)
+			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
+			return err
+		}
+
+		// add PipelineRun Synchronizer
+		if err := (&pipelinerun.SyncReconciler{
+			Client:      mgr.GetClient(),
+			JenkinsCore: jenkinsCore,
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
+			return err
 		}
 	}
 

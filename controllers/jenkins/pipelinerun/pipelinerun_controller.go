@@ -44,7 +44,7 @@ import (
 // Reconciler reconciles a PipelineRun object
 type Reconciler struct {
 	client.Client
-	Log          logr.Logger
+	log          logr.Logger
 	Scheme       *runtime.Scheme
 	DevOpsClient devopsClient.Interface
 	JenkinsCore  core.JenkinsCore
@@ -58,7 +58,7 @@ type Reconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("PipelineRun", req.NamespacedName)
+	log := r.log.WithValues("PipelineRun", req.NamespacedName)
 
 	// get PipelineRun
 	var pr v1alpha3.PipelineRun
@@ -250,7 +250,7 @@ func getJenkinsBuildNumber(pipelineRun *v1alpha3.PipelineRun) (num int) {
 	return
 }
 
-func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *v1alpha3.PipelineRunSpec) (*job.PipelineBuild, error) {
+func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *v1alpha3.PipelineRunSpec) (*job.PipelineRun, error) {
 	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 
 	branch, err := getSCMRefName(prSpec)
@@ -276,7 +276,7 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	return branch, nil
 }
 
-func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *v1alpha3.PipelineRun) (*job.PipelineBuild, error) {
+func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *v1alpha3.PipelineRun) (*job.PipelineRun, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
@@ -371,6 +371,7 @@ func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *v1alpha3.Pip
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// the name should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 	r.recorder = mgr.GetEventRecorderFor("pipelinerun-controller")
+	r.log = ctrl.Log.WithName("pipelinerun-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha3.PipelineRun{}).
 		Complete(r)

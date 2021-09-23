@@ -1,4 +1,4 @@
-package jenkinsconfig
+package config
 
 import (
 	"context"
@@ -19,12 +19,10 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/informers"
-	"strconv"
-	"strings"
 	"time"
 )
 
-// ControllerOptions devops config controller options
+// ControllerOptions is the option of Jenkins configuration controller
 type ControllerOptions struct {
 	LimitRangeClient    v1core.LimitRangesGetter
 	ResourceQuotaClient v1core.ResourceQuotasGetter
@@ -34,8 +32,7 @@ type ControllerOptions struct {
 	NamespaceInformer corev1informer.NamespaceInformer
 
 	InformerFactory informers.InformerFactory
-
-	ConfigOperator devops.ConfigurationOperator
+	ConfigOperator  devops.ConfigurationOperator
 
 	ReloadCasCDelay time.Duration
 }
@@ -125,8 +122,8 @@ func (c *Controller) run(workers int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.Info("starting jenkinsconfig controller")
-	defer klog.Info("shutting down jenkinsconfig controller")
+	klog.Info("starting Jenkins config controller")
+	defer klog.Info("shutting down Jenkins config controller")
 
 	if !cache.WaitForCacheSync(stopCh, c.configmapSynced) {
 		return fmt.Errorf("failed to wait for caches to sync")
@@ -174,105 +171,176 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
-func (c *Controller) syncHandler(key string) error {
-	klog.Info("syncing key:", key)
-	defer klog.Info("synced key: ", key)
-	namespace, configMapName, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		klog.Error(fmt.Sprintf("could not split meta namespace key %s", key))
-		return nil
-	}
-
-	_, err = c.namespaceLister.Get(namespace)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			klog.Error(fmt.Sprintf("namespace %s in work queue no longer exists", namespace))
-			return nil
-		}
-		klog.Error(fmt.Sprintf("could not get namespace: %s", namespace))
-		return err
-	}
-
-	devopsConfig, err := c.configmapLister.ConfigMaps(namespace).Get(configMapName)
-	if err != nil {
-		return err
-	}
-
-	podResourceLimit := devopsConfig.DeepCopy().Data[podResourceLimitConfigName]
-
-	klog.Infof("Jenkins agent pod resource limit: %q", podResourceLimit)
-
-	// check if the customized label is labeled
-	customizedLabeledRaw, ok := devopsConfig.ObjectMeta.GetLabels()[customizedLabel]
-	var isCustomizedLabeled bool
-	if ok {
-		isCustomizedLabeled, err = strconv.ParseBool(customizedLabeledRaw)
-		if err != nil {
-			klog.Warningf("ConfigMap: %q has invalid label: %q, error: %q", key, customizedLabel, err)
-			// And do nothing
-			return nil
+// checkJenkinsConfigData makes sure that annotation devops.kubesphere.io/ks-jenkins-config exists
+func (c *Controller) checkJenkinsConfigData(cm *v1.ConfigMap) (err error) {
+	if data, ok := cm.Data[jenkinsYamlKey]; ok {
+		if _, ok = cm.Data[jenkinsUserYamlKey]; !ok {
+			cm.Data[jenkinsUserYamlKey] = data
 		}
 	}
+	return
+}
+
+// checkJenkinsConfigFormula makes sure that annotation devops.kubesphere.io/jenkins-config-formula exists
+func (c *Controller) checkJenkinsConfigFormula(cm *v1.ConfigMap) (err error) {
+	annos := cm.GetAnnotations()
+	if annos == nil {
+		cm.Annotations = make(map[string]string)
+		annos = cm.Annotations
+	}
+
+	if formulaName, ok := annos[ANNOJenkinsConfigFormula]; !ok || !isValidJenkinsConfigFormulaName(formulaName) {
+		cm.Annotations[ANNOJenkinsConfigFormula] = FormulaCustom
+		cm.Annotations[ANNOJenkinsConfigCustomized] = "true"
+	}
+	return
+}
+
+func isValidJenkinsConfigFormulaName(name string) bool {
+	switch name {
+	case FormulaCustom, FormulaHigh, FormulaLow:
+		return true
+	default:
+		return false
+	}
+}
+
+func (c *Controller) providePredefinedConfig(cm *v1.ConfigMap) (err error) {
+	annos := cm.GetAnnotations()
+	if annos == nil {
+		return
+	}
+
+	if isJenkinsConfigCustomized(annos) {
+		return
+	}
+
+	formula := annos[ANNOJenkinsConfigFormula]
+	klog.Infof("Jenkins config formula name: %s", formula)
 
 	var config map[string]string
-	if strings.Compare(string(customLimit), podResourceLimit) == 0 || isCustomizedLabeled {
-		// get configuration
-		config = devopsConfig.Data
-
-		// label the configmap
-		devopsConfig.SetLabels(map[string]string{
-			customizedLabel: "true",
-		})
-		config[resourceLimitKey] = string(customLimit)
-	} else if strings.Compare(string(highLimit), podResourceLimit) == 0 {
-		// get configuration
-		config = getHighConfig()
-		config[resourceLimitKey] = string(highLimit)
-	} else if isDefaultResourceLimit(podResourceLimit) {
-		// get configuration
+	switch formula {
+	case FormulaLow:
 		config = getDefaultConfig()
-		config[resourceLimitKey] = string(defaultLimit)
+	case FormulaHigh:
+		config = getHighConfig()
+	default:
+		err = fmt.Errorf("invalid formula name: %s", formula)
+		return
+	}
+	config[resourceLimitKey] = formula
+
+	if err = c.handleWorkerNamespaceQuotaLimit(config, c.devopsOptions.WorkerNamespace); err != nil {
+		err = fmt.Errorf("failed to handleWorkerNamespaceQuotaLimit, error: %v", err)
+		return
+	}
+	if err = c.handleWorkerNamespaceLimitRange(config, c.devopsOptions.WorkerNamespace); err != nil {
+		err = fmt.Errorf("failed to handleWorkerNamespaceLimitRange, error: %v", err)
+		return
+	}
+	if err = c.handleJenkinsCasCConfig(cm, config); err != nil {
+		err = fmt.Errorf("failed to handleJenkinsCasCConfig, error: %v", err)
+		return
+	}
+	return
+}
+
+func isJenkinsConfigCustomized(annos map[string]string) bool {
+	if val, ok := annos[ANNOJenkinsConfigFormula]; ok && val == FormulaCustom {
+		return true
+	}
+	if val, ok := annos[ANNOJenkinsConfigCustomized]; ok && val == "true" {
+		return true
+	}
+	return false
+}
+
+func (c *Controller) reloadJenkinsConfig() (err error) {
+	if c.configOperator == nil {
+		err = fmt.Errorf("failed to reload Jenkins config due to the configOperator is nil")
+	} else {
+		err = c.configOperator.ApplyNewSource(fmt.Sprintf("/var/jenkins_home/casc_configs/%s", jenkinsUserYamlKey))
+	}
+	return
+}
+
+func (c *Controller) delayReloadJenkinsConfig() (err error) {
+	// Wait some period to reload
+	if c.ReloadCasCDelay > 0 {
+		klog.V(5).Infof("waiting %s to reload Jenkins configuration", c.ReloadCasCDelay.String())
+		time.Sleep(c.ReloadCasCDelay)
+	}
+	return c.reloadJenkinsConfig()
+}
+
+func (c *Controller) getConfigMapFromKey(key string) (cm *v1.ConfigMap, err error) {
+	var (
+		ns   string
+		name string
+	)
+	if ns, name, err = cache.SplitMetaNamespaceKey(key); err != nil {
+		err = fmt.Errorf("could not split meta namespace key %s", key)
+		return
 	}
 
-	if len(config) > 0 {
-		err := handleWorkerNamespaceQuotaLimit(c, config, c.devopsOptions.WorkerNamespace)
-		if err != nil {
-			return err
-		}
-		err = handleWorkerNamespaceLimitRange(c, config, c.devopsOptions.WorkerNamespace)
-		if err != nil {
-			return err
-		}
-		err = handleJenkinsCasCConfig(c, config, namespace)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Update jenkinsconfig ConfigMap
-	_, err = c.configMapClient.ConfigMaps(namespace).Update(context.Background(), devopsConfig, metav1.UpdateOptions{})
+	_, err = c.namespaceLister.Get(ns)
 	if err != nil {
-		klog.Errorf("failed to update ConfigMap: %s/%s", namespace, configMapName)
+		if errors.IsNotFound(err) {
+			klog.V(6).Infof("namespace %s in work queue no longer exists", ns)
+			err = nil
+			return
+		}
+		err = fmt.Errorf("could not get namespace: %s, error is: %v", ns, err)
+		return
+	}
+
+	cm, err = c.configmapLister.ConfigMaps(ns).Get(name)
+	return
+}
+
+func (c *Controller) syncHandler(key string) (err error) {
+	klog.Info("syncing key:", key)
+	defer klog.Info("synced key: ", key)
+	var jenkinsCM *v1.ConfigMap
+	if jenkinsCM, err = c.getConfigMapFromKey(key); err != nil {
+		return
+	}
+
+	jenkinsCMCopy := jenkinsCM.DeepCopy()
+	ns, name := jenkinsCMCopy.Namespace, jenkinsCMCopy.Name
+
+	if err = c.checkJenkinsConfigData(jenkinsCMCopy); err != nil {
+		err = fmt.Errorf("failed with checking Jenkins ConfigMap data, error: %v", err)
+		return
+	}
+
+	if err = c.checkJenkinsConfigFormula(jenkinsCMCopy); err != nil {
+		err = fmt.Errorf("failed with checking Jenkins config forumla, error: %v", err)
+		return
+	}
+
+	if err = c.providePredefinedConfig(jenkinsCMCopy); err != nil {
+		err = fmt.Errorf("failed to provide the pre-defined Jenkins config, error: %v", err)
+		return
+	}
+
+	// Update Jenkins Configuration as Code ConfigMap
+	_, err = c.configMapClient.ConfigMaps(ns).Update(context.Background(), jenkinsCMCopy, metav1.UpdateOptions{})
+	if err != nil {
+		klog.Errorf("failed to update ConfigMap: %s/%s", ns, name)
 		return err
 	}
-
-	// Wait some period to reload
-	klog.V(5).Infof("waiting %s to reload Jenkins configuration", c.ReloadCasCDelay.String())
-	time.Sleep(c.ReloadCasCDelay)
 
 	// Reload configuration
 	klog.V(5).Info("reloading Jenkins configuration")
-	err = c.configOperator.ReloadConfiguration()
-	if err != nil {
-		return err
+	if err = c.delayReloadJenkinsConfig(); err == nil {
+		klog.V(5).Infof("reloaded Jenkins configuration successfully")
 	}
-	klog.V(5).Infof("reloaded Jenkins configuration successfully")
-
-	return nil
+	return
 }
 
 // Handle worker namespace quota limit
-func handleWorkerNamespaceQuotaLimit(c *Controller, providedConfig map[string]string, namespace string) error {
+func (c *Controller) handleWorkerNamespaceQuotaLimit(providedConfig map[string]string, namespace string) error {
 	// get the resource quota
 	workerResourceQuota, err := c.resourceQuotaClient.ResourceQuotas(namespace).Get(context.Background(), workerResQuotaName, metav1.GetOptions{})
 	if err != nil {
@@ -316,7 +384,7 @@ func handleWorkerNamespaceQuotaLimit(c *Controller, providedConfig map[string]st
 }
 
 // Handle worker namespace limit range
-func handleWorkerNamespaceLimitRange(c *Controller, providedConfig map[string]string, namespace string) error {
+func (c *Controller) handleWorkerNamespaceLimitRange(providedConfig map[string]string, namespace string) error {
 	workerLimitRange, err := c.limitRangeClient.LimitRanges(namespace).Get(context.Background(), workerLimitRangeName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -382,30 +450,11 @@ func handleWorkerNamespaceLimitRange(c *Controller, providedConfig map[string]st
 }
 
 // Handle Jenkins Configuration-as-Code configuration
-func handleJenkinsCasCConfig(c *Controller, providedConfig map[string]string, namespace string) error {
-	// get CasC configuration
-	jenkinsCasCConfig, err := c.configmapLister.ConfigMaps(namespace).Get(jenkinsCasCConfigName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		klog.Errorf("could not find %s/%s", namespace, jenkinsCasCConfigName)
-		return err
-	}
-	jenkinsCascConfigToUpdate := jenkinsCasCConfig.DeepCopy()
+func (c *Controller) handleJenkinsCasCConfig(cm *v1.ConfigMap, providedConfig map[string]string) (err error) {
+	jenkinsCasCConfigTemplate := cm.Data[jenkinsYamlKey]
+	namespace := cm.Namespace
 
 	cascMap := make(map[string]interface{})
-
-	jenkinsCasCConfigTemplate, err := getOrCreateJenkinsCasCTemplate(c.configMapClient, namespace, jenkinsCascConfigToUpdate.Data[jenkinsYamlKey])
-	if err != nil {
-		return err
-	}
-	// overwrite Jenkins CasC config template only while custom resource limit set
-	if strings.Compare(providedConfig[resourceLimitKey], string(customLimit)) == 0 {
-		if customJenkinsYaml, ok := providedConfig[jenkinsYamlKey]; ok {
-			jenkinsCasCConfigTemplate = customJenkinsYaml
-		}
-	}
 	err = yaml.Unmarshal([]byte(jenkinsCasCConfigTemplate), &cascMap)
 	if err != nil {
 		return err
@@ -447,22 +496,21 @@ func handleJenkinsCasCConfig(c *Controller, providedConfig map[string]string, na
 		}
 	}
 
-	// set casc config into newJenkinsCascConfig
-	jenkinsYaml, err := yaml.Marshal(cascMap)
-	if err != nil {
-		return err
+	// set CasC config into newJenkinsCascConfig
+	var targetJenkinsYAMLConfig []byte
+	if targetJenkinsYAMLConfig, err = yaml.Marshal(cascMap); err == nil {
+		// update Jenkins config ConfigMap
+		cm.Data[jenkinsUserYamlKey] = string(targetJenkinsYAMLConfig)
+	} else {
+		return
 	}
 
-	// Update jenkinsconfig configmap
-	jenkinsCascConfigToUpdate.Data[jenkinsYamlKey] = string(jenkinsYaml)
-	_, err = c.configMapClient.ConfigMaps(namespace).Update(context.Background(), jenkinsCascConfigToUpdate, metav1.UpdateOptions{})
-	if err != nil {
-		klog.Errorf("failed to update configmap: %s/%s", namespace, jenkinsCasCConfigName)
-		return err
+	if _, err = c.configMapClient.ConfigMaps(namespace).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
+		err = fmt.Errorf("failed to update ConfigMap: %s/%s, error: %v", namespace, jenkinsCasCConfigName, err)
+	} else {
+		klog.V(5).Infof("updated ConfigMap %s/%s successfully", namespace, jenkinsCasCConfigName)
 	}
-
-	klog.V(5).Infof("updated configmap %s/%s successfully", namespace, jenkinsCasCConfigName)
-	return nil
+	return
 }
 
 // Set containers limit
