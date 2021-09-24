@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"path/filepath"
 	"testing"
 
@@ -70,7 +69,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = prv1alpha3.AddToScheme(scheme.Scheme)
+	err = devopsv1alpha3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

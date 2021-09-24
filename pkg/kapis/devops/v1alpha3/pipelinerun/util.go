@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -18,14 +16,14 @@ import (
 
 func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string) (labels.Selector, error) {
 	labelSelector := queryParam.Selector()
-	rq, err := labels.NewRequirement(prv1alpha3.PipelineNameLabelKey, selection.Equals, []string{pipelineName})
+	rq, err := labels.NewRequirement(v1alpha3.PipelineNameLabelKey, selection.Equals, []string{pipelineName})
 	if err != nil {
 		// should never happen
 		return nil, err
 	}
 	labelSelector = labelSelector.Add(*rq)
 	if branchName != "" {
-		rq, err = labels.NewRequirement(prv1alpha3.SCMRefNameLabelKey, selection.Equals, []string{branchName})
+		rq, err = labels.NewRequirement(v1alpha3.SCMRefNameLabelKey, selection.Equals, []string{branchName})
 		if err != nil {
 			// should never happen
 			return nil, err
@@ -35,7 +33,7 @@ func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string
 	return labelSelector, nil
 }
 
-func convertPipelineRunsToObject(prs []prv1alpha3.PipelineRun) []runtime.Object {
+func convertPipelineRunsToObject(prs []v1alpha3.PipelineRun) []runtime.Object {
 	var result []runtime.Object
 	for i := range prs {
 		result = append(result, &prs[i])
@@ -43,16 +41,16 @@ func convertPipelineRunsToObject(prs []prv1alpha3.PipelineRun) []runtime.Object 
 	return result
 }
 
-func convertParameters(payload *devops.RunPayload) []prv1alpha3.Parameter {
+func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 	if payload == nil {
 		return nil
 	}
-	var parameters []prv1alpha3.Parameter
+	var parameters []v1alpha3.Parameter
 	for _, parameter := range payload.Parameters {
 		if parameter.Name == "" || parameter.Value == "" {
 			continue
 		}
-		parameters = append(parameters, prv1alpha3.Parameter{
+		parameters = append(parameters, v1alpha3.Parameter{
 			Name:  parameter.Name,
 			Value: fmt.Sprint(parameter.Value),
 		})
@@ -61,15 +59,15 @@ func convertParameters(payload *devops.RunPayload) []prv1alpha3.Parameter {
 }
 
 // CreateScm creates SCM for multi-branch Pipeline.
-func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*prv1alpha3.SCM, error) {
-	var scm *prv1alpha3.SCM
+func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*v1alpha3.SCM, error) {
+	var scm *v1alpha3.SCM
 	if ps.Type == v1alpha3.MultiBranchPipelineType {
 		if branch == "" {
 			return nil, errors.New("missing branch name for running a multi-branch Pipeline")
 		}
 		// TODO validate if the branch dose exist
 		// we can not determine what is reference type here. So we set reference name only for now
-		scm = &prv1alpha3.SCM{
+		scm = &v1alpha3.SCM{
 			RefName: branch,
 			RefType: "",
 		}
@@ -86,9 +84,9 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 }
 
 // CreatePipelineRun creates a bare PipelineRun.
-func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *prv1alpha3.SCM) *prv1alpha3.PipelineRun {
+func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
-	return &prv1alpha3.PipelineRun{
+	return &v1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			// the name should be like "pipeline-xyzmnt", so we set generate name "pipeline-" here.
 			GenerateName:    pipeline.GetName() + "-",
@@ -96,7 +94,7 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
 			Annotations:     map[string]string{},
 		},
-		Spec: prv1alpha3.PipelineRunSpec{
+		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
 			PipelineSpec: &pipeline.Spec,
 			Parameters:   convertParameters(payload),

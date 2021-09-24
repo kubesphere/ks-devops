@@ -2,12 +2,13 @@ package pipelinerun
 
 import (
 	"encoding/json"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
 	"reflect"
 	"testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/query"
 )
 
 func Test_compatibleTransform(t *testing.T) {

@@ -1,8 +1,9 @@
 package pipelinerun
 
 import (
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"net/http"
+
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api"
