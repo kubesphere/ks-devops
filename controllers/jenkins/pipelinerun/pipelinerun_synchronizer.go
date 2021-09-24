@@ -2,7 +2,6 @@ package pipelinerun
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
@@ -121,14 +120,11 @@ func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job
 }
 
 func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
-	branch := ""
-	if run.Branch != nil {
-		// TODO(johnniang): Refine the branch structure in Jenkins client.
-		branch = fmt.Sprint(run.Branch.(map[string]interface{})["url"])
-	}
-	scm, err := pipelinerun.CreateScm(&pipeline.Spec, branch)
-	if err != nil {
-		return nil, err
+	var scm *v1alpha3.SCM
+	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
+		// if the Pipeline is a multip-branch Pipeline, the run#Pipeline is the name of the branch
+		scm := &v1alpha3.SCM{}
+		scm.RefName = run.Pipeline
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
 	pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = run.ID
