@@ -115,7 +115,7 @@ func Test_NoScmPipelineConfig_Param(t *testing.T) {
 			Name:        "",
 			Description: "for test",
 			Jenkinsfile: "node{echo 'hello'}",
-			Parameters: []devopsv1alpha3.Parameter{
+			Parameters: []devopsv1alpha3.ParameterDefinition{
 				{
 					Name:         "d",
 					DefaultValue: "a\nb",
@@ -128,7 +128,7 @@ func Test_NoScmPipelineConfig_Param(t *testing.T) {
 			Name:        "",
 			Description: "for test",
 			Jenkinsfile: "node{echo 'hello'}",
-			Parameters: []devopsv1alpha3.Parameter{
+			Parameters: []devopsv1alpha3.ParameterDefinition{
 				{
 					Name:         "a",
 					DefaultValue: "abc",

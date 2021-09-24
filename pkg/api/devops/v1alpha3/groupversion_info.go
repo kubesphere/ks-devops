@@ -1,6 +1,4 @@
 /*
-
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -24,9 +22,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+const (
+	// GroupName is the group name use in this package
+	GroupName                         = "devops.kubesphere.io"
+	JenkinsPipelineRunIDKey           = GroupName + "/jenkins-pipelinerun-id"
+	JenkinsPipelineRunStatusKey       = GroupName + "/jenkins-pipelinerun-status"
+	JenkinsPipelineRunStagesStatusKey = GroupName + "/jenkins-pipelinerun-stages-status"
+	PipelineRunOrphanKey              = GroupName + "/jenkins-pipelinerun-orphan"
+
+	PipelineNameLabelKey = GroupName + "/pipeline"
+	SCMRefNameLabelKey   = GroupName + "/scm-ref-name"
+)
+
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "devops.kubesphere.io", Version: "v1alpha3"}
+	GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

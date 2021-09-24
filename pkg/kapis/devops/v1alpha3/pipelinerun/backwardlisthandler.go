@@ -3,9 +3,10 @@ package pipelinerun
 import (
 	"encoding/json"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 )

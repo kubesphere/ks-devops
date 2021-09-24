@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,15 +45,15 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// get all pipelineruns
-	var prList prv1alpha3.PipelineRunList
+	var prList v1alpha3.PipelineRunList
 	if err := r.Client.List(ctx, &prList, client.InNamespace(pipeline.Namespace), client.MatchingLabels{
-		prv1alpha3.PipelineNameLabelKey: pipeline.Name,
+		v1alpha3.PipelineNameLabelKey: pipeline.Name,
 	}); err != nil {
 		return ctrl.Result{}, err
 	}
-	prContainer := make(map[string]prv1alpha3.PipelineRun)
+	prContainer := make(map[string]v1alpha3.PipelineRun)
 	for _, pr := range prList.Items {
-		runID := pr.Annotations[prv1alpha3.JenkinsPipelineRunIDKey]
+		runID := pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey]
 		prContainer[runID] = pr
 	}
 
@@ -68,7 +67,7 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedPipelineRunSync, "")
 		return ctrl.Result{}, err
 	}
-	var createdPipelineRuns []prv1alpha3.PipelineRun
+	var createdPipelineRuns []v1alpha3.PipelineRun
 	for _, jenkinsRun := range jenkinsRuns {
 		if _, ok := prContainer[jenkinsRun.ID]; !ok {
 			pipelineRun, err := r.createPipelineRun(pipeline, &jenkinsRun)
@@ -110,7 +109,7 @@ func (r *SyncReconciler) synchronizedSuccessfully(key client.ObjectKey) error {
 	})
 }
 
-func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*prv1alpha3.PipelineRun, error) {
+func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
 	pipelineRun, err := createBarePipelineRun(pipeline, run)
 	if err != nil {
 		return nil, err
@@ -121,7 +120,7 @@ func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job
 	return pipelineRun, nil
 }
 
-func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*prv1alpha3.PipelineRun, error) {
+func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
 	branch := ""
 	if run.Branch != nil {
 		// TODO(johnniang): Refine the branch structure in Jenkins client.
@@ -132,7 +131,7 @@ func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*
 		return nil, err
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
-	pr.Annotations[prv1alpha3.JenkinsPipelineRunIDKey] = run.ID
+	pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = run.ID
 	return pr, nil
 }
 

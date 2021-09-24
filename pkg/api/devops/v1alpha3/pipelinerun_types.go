@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha3
 
 import (
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sort"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PipelineRunFinalizerName is the name of PipelineRun finalizer
@@ -34,7 +34,7 @@ type PipelineRunSpec struct {
 
 	// PipelineSpec is the specification of Pipeline when the current PipelineRun is created.
 	// +optional
-	PipelineSpec *v1alpha3.PipelineSpec `json:"pipelineSpec,omitempty"`
+	PipelineSpec *PipelineSpec `json:"pipelineSpec,omitempty"`
 
 	// Parameters are some key/value pairs passed to runner.
 	// +optional
@@ -160,7 +160,7 @@ func (pr *PipelineRun) Buildable() bool {
 
 // IsMultiBranchPipeline indicates if the PipelineRun belongs a multi-branch pipeline.
 func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
-	return prSpec.PipelineSpec != nil && prSpec.PipelineSpec.Type == v1alpha3.MultiBranchPipelineType
+	return prSpec.PipelineSpec != nil && prSpec.PipelineSpec.Type == MultiBranchPipelineType
 }
 
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {

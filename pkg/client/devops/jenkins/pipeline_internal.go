@@ -18,10 +18,11 @@ package jenkins
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/client/devops/jenkins/triggers"
 	"strconv"
 	"strings"
 	"time"
+
+	"kubesphere.io/devops/pkg/client/devops/jenkins/triggers"
 
 	"github.com/beevik/etree"
 
@@ -176,7 +177,7 @@ func parsePipelineConfigXml(config string) (*devopsv1alpha3.NoScmPipeline, error
 	return pipeline, nil
 }
 
-func appendParametersToEtree(properties *etree.Element, parameters []devopsv1alpha3.Parameter) {
+func appendParametersToEtree(properties *etree.Element, parameters []devopsv1alpha3.ParameterDefinition) {
 	parameterDefinitions := properties.CreateElement("hudson.model.ParametersDefinitionProperty").
 		CreateElement("parameterDefinitions")
 	for _, parameter := range parameters {
@@ -206,48 +207,48 @@ func appendParametersToEtree(properties *etree.Element, parameters []devopsv1alp
 	}
 }
 
-func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.Parameter {
-	var parameters []devopsv1alpha3.Parameter
+func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.ParameterDefinition {
+	var parameters []devopsv1alpha3.ParameterDefinition
 	if parametersProperty := properties.SelectElement("hudson.model.ParametersDefinitionProperty"); parametersProperty != nil {
 		params := parametersProperty.SelectElement("parameterDefinitions").ChildElements()
 		for _, param := range params {
 			switch param.Tag {
 			case "hudson.model.StringParameterDefinition":
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:         param.SelectElement("name").Text(),
 					Description:  param.SelectElement("description").Text(),
 					DefaultValue: param.SelectElement("defaultValue").Text(),
 					Type:         ParameterTypeMap["hudson.model.StringParameterDefinition"],
 				})
 			case "hudson.model.BooleanParameterDefinition":
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:         param.SelectElement("name").Text(),
 					Description:  param.SelectElement("description").Text(),
 					DefaultValue: param.SelectElement("defaultValue").Text(),
 					Type:         ParameterTypeMap["hudson.model.BooleanParameterDefinition"],
 				})
 			case "hudson.model.TextParameterDefinition":
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:         param.SelectElement("name").Text(),
 					Description:  param.SelectElement("description").Text(),
 					DefaultValue: param.SelectElement("defaultValue").Text(),
 					Type:         ParameterTypeMap["hudson.model.TextParameterDefinition"],
 				})
 			case "hudson.model.FileParameterDefinition":
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:        param.SelectElement("name").Text(),
 					Description: param.SelectElement("description").Text(),
 					Type:        ParameterTypeMap["hudson.model.FileParameterDefinition"],
 				})
 			case "hudson.model.PasswordParameterDefinition":
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:         param.SelectElement("name").Text(),
 					Description:  param.SelectElement("description").Text(),
 					DefaultValue: param.SelectElement("name").Text(),
 					Type:         ParameterTypeMap["hudson.model.PasswordParameterDefinition"],
 				})
 			case "hudson.model.ChoiceParameterDefinition":
-				choiceParameter := devopsv1alpha3.Parameter{
+				choiceParameter := devopsv1alpha3.ParameterDefinition{
 					Name:        param.SelectElement("name").Text(),
 					Description: param.SelectElement("description").Text(),
 					Type:        ParameterTypeMap["hudson.model.ChoiceParameterDefinition"],
@@ -268,7 +269,7 @@ func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.Paramete
 				choiceParameter.DefaultValue = strings.TrimSpace(choiceParameter.DefaultValue)
 				parameters = append(parameters, choiceParameter)
 			default:
-				parameters = append(parameters, devopsv1alpha3.Parameter{
+				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
 					Name:         param.SelectElement("name").Text(),
 					Description:  param.SelectElement("description").Text(),
 					DefaultValue: "unknown",

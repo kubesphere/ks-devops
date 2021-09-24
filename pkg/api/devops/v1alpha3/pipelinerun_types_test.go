@@ -1,15 +1,15 @@
 package v1alpha3
 
 import (
-	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestPipelineRunSpec_IsMultiBranchPipeline(t *testing.T) {
 	type fields struct {
 		PipelineRef  *v1.ObjectReference
-		PipelineSpec *v1alpha3.PipelineSpec
+		PipelineSpec *PipelineSpec
 		Parameters   []Parameter
 		SCM          *SCM
 	}
@@ -20,8 +20,8 @@ func TestPipelineRunSpec_IsMultiBranchPipeline(t *testing.T) {
 	}{{
 		name: "No SCM Pipeline",
 		fields: fields{
-			PipelineSpec: &v1alpha3.PipelineSpec{
-				Type: v1alpha3.NoScmPipelineType,
+			PipelineSpec: &PipelineSpec{
+				Type: NoScmPipelineType,
 			},
 		},
 		want: false,
@@ -32,8 +32,8 @@ func TestPipelineRunSpec_IsMultiBranchPipeline(t *testing.T) {
 	}, {
 		name: "SCM Pipeline",
 		fields: fields{
-			PipelineSpec: &v1alpha3.PipelineSpec{
-				Type: v1alpha3.MultiBranchPipelineType,
+			PipelineSpec: &PipelineSpec{
+				Type: MultiBranchPipelineType,
 			},
 		},
 		want: true,

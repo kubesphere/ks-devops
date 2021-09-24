@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -116,7 +115,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *prv1alpha3.PipelineRun
+		want    *v1alpha3.PipelineRun
 		wantErr bool
 	}{{
 		name: "Multi-branch pipeline",
@@ -129,7 +128,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 				},
 			},
 		},
-		want: &prv1alpha3.PipelineRun{
+		want: &v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace:    "fake-namespace",
 				GenerateName: "fake-pipeline-",
@@ -137,11 +136,11 @@ func Test_createBarePipelineRun(t *testing.T) {
 					*v1.NewControllerRef(multiBranchPipeline, multiBranchPipeline.GroupVersionKind()),
 				},
 				Annotations: map[string]string{
-					prv1alpha3.JenkinsPipelineRunIDKey: "123",
+					v1alpha3.JenkinsPipelineRunIDKey: "123",
 				},
 			},
-			Spec: prv1alpha3.PipelineRunSpec{
-				SCM: &prv1alpha3.SCM{
+			Spec: v1alpha3.PipelineRunSpec{
+				SCM: &v1alpha3.SCM{
 					RefName: "main",
 					RefType: "",
 				},
@@ -161,7 +160,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 					ID: "123",
 				},
 			},
-			want: &prv1alpha3.PipelineRun{
+			want: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Name:         "",
 					Namespace:    "fake-namespace",
@@ -170,10 +169,10 @@ func Test_createBarePipelineRun(t *testing.T) {
 						*v1.NewControllerRef(generalPipeline, generalPipeline.GroupVersionKind()),
 					},
 					Annotations: map[string]string{
-						prv1alpha3.JenkinsPipelineRunIDKey: "123",
+						v1alpha3.JenkinsPipelineRunIDKey: "123",
 					},
 				},
-				Spec: prv1alpha3.PipelineRunSpec{
+				Spec: v1alpha3.PipelineRunSpec{
 					PipelineRef: &corev1.ObjectReference{
 						Namespace: "fake-namespace",
 						Name:      "fake-pipeline",

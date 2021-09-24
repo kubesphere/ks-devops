@@ -20,7 +20,6 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	prv1alpha3 "kubesphere.io/devops/pkg/api/devops/pipelinerun/v1alpha3"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
@@ -35,5 +34,4 @@ func AddToScheme(s *runtime.Scheme) {
 func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	addToSchemes = append(addToSchemes, v1alpha3.SchemeBuilder.AddToScheme)
-	addToSchemes = append(addToSchemes, prv1alpha3.SchemeBuilder.AddToScheme)
 }
