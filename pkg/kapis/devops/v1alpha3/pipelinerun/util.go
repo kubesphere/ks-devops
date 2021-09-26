@@ -86,13 +86,16 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 // CreatePipelineRun creates a bare PipelineRun.
 func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
-	return &v1alpha3.PipelineRun{
+	pipelineRun := &v1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			// the name should be like "pipeline-xyzmnt", so we set generate name "pipeline-" here.
 			GenerateName:    pipeline.GetName() + "-",
 			Namespace:       pipeline.GetNamespace(),
 			OwnerReferences: []metav1.OwnerReference{*controllerRef},
 			Annotations:     map[string]string{},
+			Labels: map[string]string{
+				v1alpha3.PipelineNameLabelKey: pipeline.Name,
+			},
 		},
 		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
@@ -101,4 +104,8 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 			SCM:          scm,
 		},
 	}
+	if scm != nil && scm.RefName != "" {
+		pipelineRun.Labels[v1alpha3.SCMRefNameLabelKey] = scm.RefName
+	}
+	return pipelineRun
 }

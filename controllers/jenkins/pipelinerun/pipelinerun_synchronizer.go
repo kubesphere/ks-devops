@@ -33,6 +33,39 @@ type SyncReconciler struct {
 	JenkinsCore core.JenkinsCore
 }
 
+type pipelineRunIdentity struct {
+	id      string
+	refName string
+}
+
+type pipelineRunFinder map[pipelineRunIdentity]*v1alpha3.PipelineRun
+
+func (finder pipelineRunFinder) find(run *job.PipelineRun, isMultiBranch bool) (*v1alpha3.PipelineRun, bool) {
+	identity := pipelineRunIdentity{
+		id: run.ID,
+	}
+	if isMultiBranch {
+		identity.refName = run.Pipeline
+	}
+	pipelineRun, ok := finder[identity]
+	return pipelineRun, ok
+}
+
+func newPipelineRunFinder(pipelineRuns []v1alpha3.PipelineRun) pipelineRunFinder {
+	// convert PipelineRuns to map[pipelineRunIdentity]PipelineRun
+	finder := pipelineRunFinder{}
+	for _, pipelineRun := range pipelineRuns {
+		pipelineRunIdentity := pipelineRunIdentity{
+			id: pipelineRun.Annotations[v1alpha3.JenkinsPipelineRunIDKey],
+		}
+		if pipelineRun.Spec.SCM != nil {
+			pipelineRunIdentity.refName = pipelineRun.Spec.SCM.RefName
+		}
+		finder[pipelineRunIdentity] = &pipelineRun
+	}
+	return finder
+}
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -42,7 +75,10 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Client.Get(ctx, req.NamespacedName, pipeline); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	if _, ok := pipeline.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey]; !ok {
+		// skip the PipelineRun synchronization due to synchronized already before
+		return ctrl.Result{}, nil
+	}
 	// get all pipelineruns
 	var prList v1alpha3.PipelineRunList
 	if err := r.Client.List(ctx, &prList, client.InNamespace(pipeline.Namespace), client.MatchingLabels{
@@ -50,30 +86,27 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}); err != nil {
 		return ctrl.Result{}, err
 	}
-	prContainer := make(map[string]v1alpha3.PipelineRun)
-	for _, pr := range prList.Items {
-		runID := pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey]
-		prContainer[runID] = pr
-	}
 
 	boClient := job.BlueOceanClient{
 		JenkinsCore:  r.JenkinsCore,
 		Organization: "jenkins",
 	}
 
-	jenkinsRuns, err := boClient.GetPipelineRuns(pipeline.Name, pipeline.Namespace)
+	jobRuns, err := boClient.GetPipelineRuns(pipeline.Name, pipeline.Namespace)
 	if err != nil {
 		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedPipelineRunSync, "")
 		return ctrl.Result{}, err
 	}
 	var createdPipelineRuns []v1alpha3.PipelineRun
-	for _, jenkinsRun := range jenkinsRuns {
-		if _, ok := prContainer[jenkinsRun.ID]; !ok {
-			pipelineRun, err := r.createPipelineRun(pipeline, &jenkinsRun)
+	finder := newPipelineRunFinder(prList.Items)
+	isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
+	for _, jobRun := range jobRuns {
+		if _, ok := finder.find(&jobRun, isMultiBranch); !ok {
+			pipelineRun, err := r.createPipelineRun(pipeline, &jobRun)
 			if err == nil {
 				createdPipelineRuns = append(createdPipelineRuns, *pipelineRun)
 			} else {
-				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jenkinsRun)
+				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jobRun)
 			}
 		}
 	}
@@ -85,7 +118,7 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.Info("synchronized PipelineRun successfully")
 
 	r.recorder.Eventf(pipeline, v1.EventTypeNormal, PipelineRunSynced,
-		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(createdPipelineRuns), len(prList.Items), len(jenkinsRuns))
+		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(createdPipelineRuns), len(prList.Items), len(jobRuns))
 	return ctrl.Result{}, nil
 }
 
@@ -123,7 +156,7 @@ func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*
 	var scm *v1alpha3.SCM
 	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
 		// if the Pipeline is a multip-branch Pipeline, the run#Pipeline is the name of the branch
-		scm := &v1alpha3.SCM{}
+		scm = &v1alpha3.SCM{}
 		scm.RefName = run.Pipeline
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
