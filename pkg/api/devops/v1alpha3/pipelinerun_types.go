@@ -77,6 +77,7 @@ type PipelineRunStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="The phase of a PipelineRun"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="The age of a PipelineRun"
 
 // PipelineRun is the Schema for the pipelineruns API
 type PipelineRun struct {
