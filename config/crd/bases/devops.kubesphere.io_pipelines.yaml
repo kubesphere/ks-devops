@@ -21,6 +21,10 @@ spec:
       jsonPath: .spec.type
       name: Type
       type: string
+    - description: The age of a Pipeline
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1alpha3
     schema:
       openAPIV3Schema:
