@@ -97,8 +97,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// get pipeline
-	var pipeline v1alpha3.Pipeline
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pipelineRunCopied.Namespace, Name: pipelineRunCopied.Spec.PipelineRef.Name}, &pipeline); err != nil {
+	pipeline := &v1alpha3.Pipeline{}
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pipelineRunCopied.Namespace, Name: pipelineRunCopied.Spec.PipelineRef.Name}, pipeline); err != nil {
 		log.Error(err, "unable to get pipeline")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -172,16 +172,16 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	pipelineBuild, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
+	jobRun, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
 	// check if there is still a same pending PipelineRun
-	exists, err := r.hasSamePendingPipelineRun(pipelineBuild.ID, req.NamespacedName)
+	exists, err := r.hasSamePendingPipelineRun(jobRun, pipeline)
 	if err != nil {
-		log.Error(err, "unable to check if there still has the same pending PipelineRun", "runID", pipelineBuild.ID)
+		log.Error(err, "unable to check if there still has the same pending PipelineRun", "jobRun", jobRun)
 		return ctrl.Result{}, err
 	}
 	if exists {
@@ -194,13 +194,13 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
+	log.Info("Triggered a PipelineRun", "runID", jobRun.ID)
 
 	// set Jenkins run ID
 	if pipelineRunCopied.Annotations == nil {
 		pipelineRunCopied.Annotations = make(map[string]string)
 	}
-	pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = pipelineBuild.ID
+	pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = jobRun.ID
 
 	// the Update method only updates fields except subresource: status
 	if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
@@ -223,12 +223,19 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // hasSamePendingPipelineRun checks if there is still a PipelineRun with the same run ID.
-func (r *Reconciler) hasSamePendingPipelineRun(runID string, pipelineRunKey client.ObjectKey) (bool, error) {
+func (r *Reconciler) hasSamePendingPipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (bool, error) {
 	// check if the run ID exists in the PipelineRun
 	pipelineRuns := &v1alpha3.PipelineRunList{}
-	if err := r.Client.List(context.Background(), pipelineRuns,
-		client.HasLabels{v1alpha3.JenkinsPipelineRunIDKey},
-		client.MatchingLabels{v1alpha3.JenkinsPipelineRunIDKey: runID}); err != nil {
+	listOptions := []client.ListOption{
+		client.InNamespace(pipeline.Namespace),
+		client.MatchingLabels{v1alpha3.PipelineNameLabelKey: pipeline.Name},
+		client.MatchingLabels{v1alpha3.JenkinsPipelineRunIDKey: jobRun.ID},
+	}
+	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
+		// add SCM reference name into list options for multi-branch Pipeline
+		listOptions = append(listOptions, client.MatchingLabels{v1alpha3.SCMRefNameLabelKey: jobRun.Pipeline})
+	}
+	if err := r.Client.List(context.Background(), pipelineRuns, listOptions...); err != nil {
 		return false, err
 	}
 	if len(pipelineRuns.Items) == 0 {
