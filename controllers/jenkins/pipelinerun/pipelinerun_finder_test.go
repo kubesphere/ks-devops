@@ -186,7 +186,7 @@ func Test_newPipelineRunFinder(t *testing.T) {
 			pipelineRunIdentity{id: "456", refName: "main2"}: multiBranchPipeline2,
 		},
 	}, {
-		name: "Dumplicated multi-branch PipelineRuns",
+		name: "Duplicated multi-branch PipelineRuns",
 		args: args{
 			pipelineRuns: []v1alpha3.PipelineRun{*multiBranchPipeline1, *multiBranchPipeline11, *multiBranchPipeline2},
 		},
