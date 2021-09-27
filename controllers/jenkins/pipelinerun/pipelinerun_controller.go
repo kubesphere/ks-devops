@@ -219,20 +219,21 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exist bool, err error) {
+func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exists bool, err error) {
 	// check if the run ID exists in the PipelineRun
 	pipelineRuns := &v1alpha3.PipelineRunList{}
 	listOptions := []client.ListOption{
 		client.InNamespace(pipeline.Namespace),
 		client.MatchingLabels{v1alpha3.PipelineNameLabelKey: pipeline.Name},
-		client.MatchingLabels{v1alpha3.JenkinsPipelineRunIDKey: jobRun.ID},
 	}
 	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
 		// add SCM reference name into list options for multi-branch Pipeline
 		listOptions = append(listOptions, client.MatchingLabels{v1alpha3.SCMRefNameLabelKey: jobRun.Pipeline})
 	}
 	if err = r.Client.List(context.Background(), pipelineRuns, listOptions...); err == nil {
-		exist = len(pipelineRuns.Items) > 0
+		isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
+		finder := newPipelineRunFinder(pipelineRuns.Items)
+		_, exists = finder.find(jobRun, isMultiBranch)
 	}
 	return
 }
