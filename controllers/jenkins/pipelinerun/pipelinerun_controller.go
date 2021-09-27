@@ -178,17 +178,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
-	// check if there is still a same pending PipelineRun
-	exists, err := r.hasSamePendingPipelineRun(jobRun, pipeline)
-	if err != nil {
-		log.Error(err, "unable to check if there still has the same pending PipelineRun", "jobRun", jobRun)
+	// check if there is still a same PipelineRun
+	if exists, err := r.hasSamePipelineRun(jobRun, pipeline); err != nil {
 		return ctrl.Result{}, err
-	}
-	if exists {
+	} else if exists {
 		// if there still exists the same pending PipelineRun, then give up reconciling
-		if err := r.deletePipelineRun(req.NamespacedName); err != nil {
-			log.Error(err, "unable to delete PipelineRun")
-			return ctrl.Result{}, err
+		if err := r.Delete(ctx, pipelineRunCopied); err != nil {
+			// ignore the not found error here
+			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
 		log.Info("Skipped this PipelineRun because there was still a pending Pipeline with the same parameter")
 		return ctrl.Result{}, nil
@@ -222,8 +219,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 }
 
-// hasSamePendingPipelineRun checks if there is still a PipelineRun with the same run ID.
-func (r *Reconciler) hasSamePendingPipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (bool, error) {
+func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exist bool, err error) {
 	// check if the run ID exists in the PipelineRun
 	pipelineRuns := &v1alpha3.PipelineRunList{}
 	listOptions := []client.ListOption{
@@ -235,22 +231,10 @@ func (r *Reconciler) hasSamePendingPipelineRun(jobRun *job.PipelineRun, pipeline
 		// add SCM reference name into list options for multi-branch Pipeline
 		listOptions = append(listOptions, client.MatchingLabels{v1alpha3.SCMRefNameLabelKey: jobRun.Pipeline})
 	}
-	if err := r.Client.List(context.Background(), pipelineRuns, listOptions...); err != nil {
-		return false, err
+	if err = r.Client.List(context.Background(), pipelineRuns, listOptions...); err == nil {
+		exist = len(pipelineRuns.Items) > 0
 	}
-	if len(pipelineRuns.Items) == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
-// deletePipelineRun deletes PipelineRun by namespace and name.
-func (r *Reconciler) deletePipelineRun(pipelineRunKey client.ObjectKey) error {
-	pipelineRunToDelete := &v1alpha3.PipelineRun{}
-	if err := r.Client.Get(context.Background(), pipelineRunKey, pipelineRunToDelete); err != nil {
-		return err
-	}
-	return r.Client.Delete(context.Background(), pipelineRunToDelete)
+	return
 }
 
 func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *v1alpha3.PipelineRun) (err error) {
