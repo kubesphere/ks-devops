@@ -10,9 +10,13 @@ metadata:
 spec:
   group: devops.kubesphere.io
   names:
+    categories:
+    - devops
     kind: Pipeline
     listKind: PipelineList
     plural: pipelines
+    shortNames:
+    - pip
     singular: pipeline
   scope: Namespaced
   versions:

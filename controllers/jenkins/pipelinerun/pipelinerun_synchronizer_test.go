@@ -126,6 +126,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 				Branch: map[string]interface{}{
 					"url": "main",
 				},
+				Pipeline: "main",
 			},
 		},
 		want: &v1alpha3.PipelineRun{
@@ -137,6 +138,10 @@ func Test_createBarePipelineRun(t *testing.T) {
 				},
 				Annotations: map[string]string{
 					v1alpha3.JenkinsPipelineRunIDKey: "123",
+				},
+				Labels: map[string]string{
+					v1alpha3.PipelineNameLabelKey: "fake-pipeline",
+					v1alpha3.SCMRefNameLabelKey:   "main",
 				},
 			},
 			Spec: v1alpha3.PipelineRunSpec{
@@ -171,15 +176,16 @@ func Test_createBarePipelineRun(t *testing.T) {
 					Annotations: map[string]string{
 						v1alpha3.JenkinsPipelineRunIDKey: "123",
 					},
+					Labels: map[string]string{
+						v1alpha3.PipelineNameLabelKey: "fake-pipeline",
+					},
 				},
 				Spec: v1alpha3.PipelineRunSpec{
 					PipelineRef: &corev1.ObjectReference{
 						Namespace: "fake-namespace",
 						Name:      "fake-pipeline",
 					},
-					PipelineSpec: &generalPipeline.Spec,
-				},
-			},
+					PipelineSpec: &generalPipeline.Spec}},
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

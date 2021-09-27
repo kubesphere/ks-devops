@@ -10,9 +10,13 @@ metadata:
 spec:
   group: devops.kubesphere.io
   names:
+    categories:
+    - devops
     kind: PipelineRun
     listKind: PipelineRunList
     plural: pipelineruns
+    shortNames:
+    - pr
     singular: pipelinerun
   scope: Namespaced
   versions:

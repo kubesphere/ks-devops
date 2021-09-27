@@ -2,7 +2,6 @@ package pipelinerun
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
@@ -43,7 +42,10 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.Client.Get(ctx, req.NamespacedName, pipeline); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	if _, ok := pipeline.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey]; !ok {
+		// skip the PipelineRun synchronization due to synchronized already before
+		return ctrl.Result{}, nil
+	}
 	// get all pipelineruns
 	var prList v1alpha3.PipelineRunList
 	if err := r.Client.List(ctx, &prList, client.InNamespace(pipeline.Namespace), client.MatchingLabels{
@@ -51,30 +53,27 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}); err != nil {
 		return ctrl.Result{}, err
 	}
-	prContainer := make(map[string]v1alpha3.PipelineRun)
-	for _, pr := range prList.Items {
-		runID := pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey]
-		prContainer[runID] = pr
-	}
 
 	boClient := job.BlueOceanClient{
 		JenkinsCore:  r.JenkinsCore,
 		Organization: "jenkins",
 	}
 
-	jenkinsRuns, err := boClient.GetPipelineRuns(pipeline.Name, pipeline.Namespace)
+	jobRuns, err := boClient.GetPipelineRuns(pipeline.Name, pipeline.Namespace)
 	if err != nil {
 		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedPipelineRunSync, "")
 		return ctrl.Result{}, err
 	}
 	var createdPipelineRuns []v1alpha3.PipelineRun
-	for _, jenkinsRun := range jenkinsRuns {
-		if _, ok := prContainer[jenkinsRun.ID]; !ok {
-			pipelineRun, err := r.createPipelineRun(pipeline, &jenkinsRun)
+	finder := newPipelineRunFinder(prList.Items)
+	isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
+	for _, jobRun := range jobRuns {
+		if _, ok := finder.find(&jobRun, isMultiBranch); !ok {
+			pipelineRun, err := r.createPipelineRun(pipeline, &jobRun)
 			if err == nil {
 				createdPipelineRuns = append(createdPipelineRuns, *pipelineRun)
 			} else {
-				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jenkinsRun)
+				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jobRun)
 			}
 		}
 	}
@@ -86,7 +85,7 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.Info("synchronized PipelineRun successfully")
 
 	r.recorder.Eventf(pipeline, v1.EventTypeNormal, PipelineRunSynced,
-		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(createdPipelineRuns), len(prList.Items), len(jenkinsRuns))
+		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(createdPipelineRuns), len(prList.Items), len(jobRuns))
 	return ctrl.Result{}, nil
 }
 
@@ -121,14 +120,11 @@ func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job
 }
 
 func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
-	branch := ""
-	if run.Branch != nil {
-		// TODO(johnniang): Refine the branch structure in Jenkins client.
-		branch = fmt.Sprint(run.Branch.(map[string]interface{})["url"])
-	}
-	scm, err := pipelinerun.CreateScm(&pipeline.Spec, branch)
-	if err != nil {
-		return nil, err
+	var scm *v1alpha3.SCM
+	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
+		// if the Pipeline is a multip-branch Pipeline, the run#Pipeline is the name of the branch
+		scm = &v1alpha3.SCM{}
+		scm.RefName = run.Pipeline
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
 	pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = run.ID

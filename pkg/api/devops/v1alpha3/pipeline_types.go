@@ -60,6 +60,7 @@ type PipelineStatus struct {
 // +k8s:openapi-gen=true
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.type`,description="The type of a Pipeline"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="The age of a Pipeline"
+// +kubebuilder:resource:shortName="pip",categories="devops"
 type Pipeline struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

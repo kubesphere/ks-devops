@@ -78,7 +78,7 @@ type PipelineRunStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="The phase of a PipelineRun"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="The age of a PipelineRun"
-
+// +kubebuilder:resource:shortName="pr",categories="devops"
 // PipelineRun is the Schema for the pipelineruns API
 type PipelineRun struct {
 	metav1.TypeMeta   `json:",inline"`
