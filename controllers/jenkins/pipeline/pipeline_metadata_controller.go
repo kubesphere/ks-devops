@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -15,6 +16,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+)
+
+const (
+	MetaUpdated      = "MetaUpdated"
+	FailedMetaUpdate = "FailedMetaUpdate"
 )
 
 // Reconciler reconciles metadata of Pipeline.
@@ -32,7 +38,7 @@ type Reconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	// log := r.log.WithValues("Pipeline", req.NamespacedName)
+	log := r.log.WithValues("Pipeline", req.NamespacedName)
 	pipeline := &v1alpha3.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
 		// ignore resource not found due to deletion
@@ -43,16 +49,21 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		JenkinsCore:  r.JenkinsCore,
 		Organization: "jenkins",
 	}
-	pipelineMetadata, err := boClient.GetPipeline(pipeline.Name)
+	pipelineMetadata, err := boClient.GetPipeline(pipeline.Name, pipeline.Namespace)
 	if err != nil {
+		log.Error(err, "unable to get Pipeline metadata from Jenkins")
+		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins")
 		return ctrl.Result{}, err
 	}
 
 	// update pipeline metadata
 	if err := r.updateMetadata(pipelineMetadata, req.NamespacedName); err != nil {
+		log.Error(err, "unable to update Pipeline metadata")
+		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins")
 		return ctrl.Result{}, err
 	}
 
+	r.recorder.Eventf(pipeline, v1.EventTypeNormal, MetaUpdated, "Metadata of Pipeline has been updated from Jenkins successfully")
 	// re-synch after 10 seconds
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
@@ -81,29 +92,27 @@ func (r *Reconciler) updateMetadata(metadata *job.Pipeline, pipelineKey client.O
 	})
 }
 
-// getPipelineMetadataPredicate returns a predicate which only cares CreateEvent and GenericEvent.
-func getPipelineMetadataPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc: func(ce event.CreateEvent) bool {
-			return true
-		},
-		DeleteFunc: func(de event.DeleteEvent) bool {
-			return false
-		},
-		UpdateFunc: func(ue event.UpdateEvent) bool {
-			return false
-		},
-		GenericFunc: func(ge event.GenericEvent) bool {
-			return true
-		},
-	}
+// pipelineMetadataPredicate returns a predicate which only cares about CreateEvent.
+var pipelineMetadataPredicate = predicate.Funcs{
+	CreateFunc: func(ce event.CreateEvent) bool {
+		return true
+	},
+	DeleteFunc: func(de event.DeleteEvent) bool {
+		return false
+	},
+	UpdateFunc: func(ue event.UpdateEvent) bool {
+		return false
+	},
+	GenericFunc: func(ge event.GenericEvent) bool {
+		return false
+	},
 }
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("pipeline-metadata-controller")
 	r.log = ctrl.Log.WithName("pipeline-metadata-controller")
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(getPipelineMetadataPredicate()).
+		WithEventFilter(pipelineMetadataPredicate).
 		For(&v1alpha3.Pipeline{}).
 		Complete(r)
 }
