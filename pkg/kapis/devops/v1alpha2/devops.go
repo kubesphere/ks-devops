@@ -72,9 +72,11 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 }
 
 func buildPipelineSearchQueryParam(req *restful.Request, nameReg string) (q *query.Query) {
-	// for pagination compatibility
-	start := req.QueryParameter("start")
-	req.Request.Form.Set(query.ParameterPage, start)
+	startStr := req.QueryParameter(query.ParameterStart)
+	if req.Request.Form.Get(query.ParameterPage) == "" && startStr != "" {
+		// for pagination compatibility
+		req.Request.Form.Set(query.ParameterStart, startStr)
+	}
 
 	q = query.ParseQueryParameter(req)
 
