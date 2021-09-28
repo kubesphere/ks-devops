@@ -1175,5 +1175,5 @@ type PipelineOperator interface {
 	CheckScriptCompile(projectName, pipelineName string, httpParameters *HttpParameters) (*CheckScript, error)
 	CheckCron(projectName string, httpParameters *HttpParameters) (*CheckCronRes, error)
 	ToJenkinsfile(httpParameters *HttpParameters) (*ResJenkinsfile, error)
-	ToJson(httpParameters *HttpParameters) (map[string]interface{}, error)
+	ToJSON(httpParameters *HttpParameters) (map[string]interface{}, error)
 }

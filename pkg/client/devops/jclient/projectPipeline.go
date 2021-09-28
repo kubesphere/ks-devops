@@ -13,15 +13,10 @@ import (
 )
 
 func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alpha3.Pipeline) (string, error) {
-	core, err := GetJenkinsCore()
 	jclient := job.Client{
-		JenkinsCore: core,
-		Parent: "",
+		JenkinsCore: j.Core,
 	}
-	if err != nil {
-		return "", err
-	}
-	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipeline.Spec.Pipeline.Name)
+	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipeline.Name)
 	job, _ := jclient.GetJob(projectPipelineName)
 	if job != nil {
 		err := fmt.Errorf("job name [%s] has been used", job.Name)
@@ -57,16 +52,16 @@ func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alph
 
 func (j *JenkinsClient) DeleteProjectPipeline(projectID string, pipelineID string) (string, error) {
 	// TODO: delete a pipeline
-	return "", nil
+	return j.jenkins.DeleteProjectPipeline(pipelineID, pipelineID)
 }
 func (j *JenkinsClient) UpdateProjectPipeline(projectID string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	// TODO: Update a pipeline
-	return "", nil
+	return j.jenkins.UpdateProjectPipeline(projectID, pipeline)
 }
 
 func (j *JenkinsClient) GetProjectPipelineConfig(projectID, pipelineID string) (*devopsv1alpha3.Pipeline, error) {
 	// TODO: get a pipeline config
-	return nil, nil
+	return j.jenkins.GetProjectPipelineConfig(projectID, pipelineID)
 }
 
 func getCreatePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *job.CreateJobPayload, err error) {

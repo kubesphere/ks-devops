@@ -1,49 +1,33 @@
 package jclient
 
 import (
-	"io/ioutil"
-
-	client "github.com/jenkins-zh/jenkins-client/pkg/core"
-	"gopkg.in/yaml.v2"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/client/devops/jenkins"
 )
 
 type JenkinsClient struct {
-	
+	Core    core.JenkinsCore
+	jenkins devops.Interface // For refactor purpose only
 }
-type Config struct {
-	Jenkins JenkinsConfig `yaml:"devops,omitempty"`
-}
-type JenkinsConfig struct {
-	URL      string `yaml:"host"`
-	UserName string `yaml:"username"`
-	Password string `yaml:"password"`
-	Token    string `yaml:"token,omitempty"`
-}
-
-func GetJenkinsCore() (core client.JenkinsCore, e error) {
-	// read configuration files
-	jenkinsConfigPath := "/etc/kubesphere/kubesphere.yaml"
-	yamlFile, e := ioutil.ReadFile(jenkinsConfigPath)
-	if e != nil {
-		return
-	}
-	// yaml parse
-	var config Config
-	e = yaml.Unmarshal(yamlFile, &config)
-	if e != nil {
-		return
-	}
-	// capsulate JenkinsCore
-	core = client.JenkinsCore{
-		URL:      config.Jenkins.URL,
-		UserName: config.Jenkins.UserName,
-		Token:    config.Jenkins.Password,
+var _ devops.Interface = &JenkinsClient{}
+func NewJenkinsClient(options *jenkins.Options) (jenkinsClient *JenkinsClient, err error) {
+	core := core.JenkinsCore{
+		URL:      options.Host,
+		UserName: options.Username,
+		Token:    options.Password,
 	}
 	crumbIssuer, e := core.GetCrumb()
 	if e != nil {
 		return
 	} else if crumbIssuer != nil {
 		core.JenkinsCrumb = *crumbIssuer
+	}
+
+	jenkins, _ := jenkins.NewDevopsClient(options) // For refactor purpose only
+	jenkinsClient = &JenkinsClient{
+		Core:    core,
+		jenkins: jenkins, // For refactor purpose only
 	}
 	return
 }

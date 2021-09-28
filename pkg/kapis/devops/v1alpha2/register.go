@@ -641,7 +641,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 		 * https://github.com/jenkinsci/pipeline-model-definition-plugin/blob/fc8d22192d7d3a17badc3b8af7191a84bb7fd4ca/EXTENDING.md#conversion-to-json-representation-from-jenkinsfile
 		 */
 		webservice.Route(webservice.POST("/tojson").
-			To(projectPipelineHandler.ToJson).
+			To(projectPipelineHandler.ToJSON).
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsfileTag}).
 			Consumes("application/x-www-form-urlencoded").
 			Produces("application/json", "charset=utf-8").

@@ -884,13 +884,13 @@ func (j *Jenkins) ToJenkinsfile(httpParameters *devops.HttpParameters) (*devops.
 	return res, err
 }
 
-func (j *Jenkins) ToJson(httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+func (j *Jenkins) ToJSON(httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,
 		Jenkins:        j,
 		Path:           ToJsonUrl,
 	}
-	res, err := PipelineOjb.ToJson()
+	res, err := PipelineOjb.ToJSON()
 	return res, err
 }
 

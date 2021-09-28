@@ -873,8 +873,8 @@ func (h *ProjectPipelineHandler) ToJenkinsfile(req *restful.Request, resp *restf
 	resp.WriteAsJson(res)
 }
 
-func (h *ProjectPipelineHandler) ToJson(req *restful.Request, resp *restful.Response) {
-	res, err := h.devopsOperator.ToJson(req.Request)
+func (h *ProjectPipelineHandler) ToJSON(req *restful.Request, resp *restful.Response) {
+	res, err := h.devopsOperator.ToJSON(req.Request)
 	if err != nil {
 		parseErr(err, resp)
 		return
