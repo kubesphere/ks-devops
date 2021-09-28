@@ -34,6 +34,8 @@ const (
 	PipelineSyncStatusAnnoKey = PipelinePrefix + "syncstatus"
 	PipelineSyncTimeAnnoKey   = PipelinePrefix + "synctime"
 	PipelineSyncMsgAnnoKey    = PipelinePrefix + "syncmsg"
+	// PipelineJenkinsMetadataAnnoKey is the key of Jenkins Pipeline data.
+	PipelineJenkinsMetadataAnnoKey = PipelinePrefix + "jenkins-metadata"
 	// PipelineRequestToSyncRunsAnnoKey is the key of requesting to synchronize PipelineRun after a dedicated time.
 	PipelineRequestToSyncRunsAnnoKey = PipelinePrefix + "request-to-sync-pipelineruns"
 )
