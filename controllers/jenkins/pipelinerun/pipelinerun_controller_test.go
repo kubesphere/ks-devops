@@ -19,6 +19,12 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	// nolint
+	// The fakeclient will undeprecated starting with v0.7.0
+	// Reference:
+	// - https://github.com/kubernetes-sigs/controller-runtime/issues/768
+	// - https://github.com/kubernetes-sigs/controller-runtime/pull/1101
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
