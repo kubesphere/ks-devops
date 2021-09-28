@@ -61,44 +61,44 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.log.WithValues("PipelineRun", req.NamespacedName)
 
 	// get PipelineRun
-	var pr v1alpha3.PipelineRun
+	pipelineRun := &v1alpha3.PipelineRun{}
 	var err error
-	if err = r.Client.Get(ctx, req.NamespacedName, &pr); err != nil {
+	if err = r.Client.Get(ctx, req.NamespacedName, pipelineRun); err != nil {
 		log.Error(err, "unable to fetch PipelineRun")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// don't modify the cache in other places, like informer cache.
-	pr = *pr.DeepCopy()
+	pipelineRunCopied := pipelineRun.DeepCopy()
 
 	// DeletionTimestamp.IsZero() means copyPipeline has not been deleted.
-	if !pr.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err = r.deleteJenkinsJobHistory(&pr); err != nil {
+	if !pipelineRunCopied.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err = r.deleteJenkinsJobHistory(pipelineRunCopied); err != nil {
 			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
-				pr.Namespace, pr.Name, err)
+				pipelineRunCopied.Namespace, pipelineRunCopied.Name, err)
 		} else {
-			pr.ObjectMeta.Finalizers = sliceutil.RemoveString(pr.ObjectMeta.Finalizers, func(item string) bool {
+			pipelineRunCopied.ObjectMeta.Finalizers = sliceutil.RemoveString(pipelineRunCopied.ObjectMeta.Finalizers, func(item string) bool {
 				return item == v1alpha3.PipelineRunFinalizerName
 			})
-			err = r.Update(context.TODO(), &pr)
+			err = r.Update(context.TODO(), pipelineRunCopied)
 		}
 		return ctrl.Result{}, err
 	}
 
 	// the PipelineRun cannot allow building
-	if !pr.Buildable() {
+	if !pipelineRunCopied.Buildable() {
 		return ctrl.Result{}, nil
 	}
 
 	// check PipelineRef
-	if pr.Spec.PipelineRef == nil || pr.Spec.PipelineRef.Name == "" {
+	if pipelineRunCopied.Spec.PipelineRef == nil || pipelineRunCopied.Spec.PipelineRef.Name == "" {
 		// make the PipelineRun as orphan
-		return ctrl.Result{}, r.makePipelineRunOrphan(ctx, &pr)
+		return ctrl.Result{}, r.makePipelineRunOrphan(ctx, pipelineRunCopied)
 	}
 
 	// get pipeline
-	var pipeline v1alpha3.Pipeline
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Spec.PipelineRef.Name}, &pipeline); err != nil {
+	pipeline := &v1alpha3.Pipeline{}
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: pipelineRunCopied.Namespace, Name: pipelineRunCopied.Spec.PipelineRef.Name}, pipeline); err != nil {
 		log.Error(err, "unable to get pipeline")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -107,30 +107,30 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineName := pipeline.GetName()
 
 	// set Pipeline name and SCM ref name into labels
-	if pr.Labels == nil {
-		pr.Labels = make(map[string]string)
+	if pipelineRunCopied.Labels == nil {
+		pipelineRunCopied.Labels = make(map[string]string)
 	}
-	pr.Labels[v1alpha3.PipelineNameLabelKey] = pipelineName
-	if refName, err := getSCMRefName(&pr.Spec); err == nil && refName != "" {
-		pr.Labels[v1alpha3.SCMRefNameLabelKey] = refName
+	pipelineRunCopied.Labels[v1alpha3.PipelineNameLabelKey] = pipelineName
+	if refName, err := getSCMRefName(&pipelineRunCopied.Spec); err == nil && refName != "" {
+		pipelineRunCopied.Labels[v1alpha3.SCMRefNameLabelKey] = refName
 	}
 
 	log = log.WithValues("namespace", namespaceName, "Pipeline", pipelineName)
 
 	// check PipelineRun status
-	if pr.HasStarted() {
+	if pipelineRunCopied.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
-		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, &pr)
+		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
-			r.recorder.Eventf(&pr, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
-		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, &pr)
+		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable to get PipelineRun nodes detail")
-			r.recorder.Eventf(&pr, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
 			return ctrl.Result{}, err
 		}
 
@@ -143,19 +143,19 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if pr.Annotations == nil {
-			pr.Annotations = make(map[string]string)
+		if pipelineRunCopied.Annotations == nil {
+			pipelineRunCopied.Annotations = make(map[string]string)
 		}
-		pr.Annotations[v1alpha3.JenkinsPipelineRunStatusKey] = string(runResultJSON)
-		pr.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusKey] = string(runResultJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
 
 		// update PipelineRun
-		if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
+		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 
-		status := pr.Status.DeepCopy()
+		status := pipelineRunCopied.Status.DeepCopy()
 		pbApplier := pipelineBuildApplier{pipelineBuild}
 		pbApplier.apply(status)
 
@@ -165,45 +165,77 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "unable to update PipelineRun status.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
-		r.recorder.Eventf(&pr, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
+		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 	}
 
 	// first run
-	pipelineBuild, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pr.Spec)
+	jobRun, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
-		r.recorder.Eventf(&pr, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
+		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
-	log.Info("Triggered a PipelineRun", "runID", pipelineBuild.ID)
+	// check if there is still a same PipelineRun
+	if exists, err := r.hasSamePipelineRun(jobRun, pipeline); err != nil {
+		return ctrl.Result{}, err
+	} else if exists {
+		// if there still exists the same pending PipelineRun, then give up reconciling
+		if err := r.Delete(ctx, pipelineRunCopied); err != nil {
+			// ignore the not found error here
+			return ctrl.Result{}, client.IgnoreNotFound(err)
+		}
+		log.Info("Skipped this PipelineRun because there was still a pending Pipeline with the same parameter")
+		return ctrl.Result{}, nil
+	}
+
+	log.Info("Triggered a PipelineRun", "runID", jobRun.ID)
 
 	// set Jenkins run ID
-	if pr.Annotations == nil {
-		pr.Annotations = make(map[string]string)
+	if pipelineRunCopied.Annotations == nil {
+		pipelineRunCopied.Annotations = make(map[string]string)
 	}
-	pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = pipelineBuild.ID
+	pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = jobRun.ID
 
 	// the Update method only updates fields except subresource: status
-	if err := r.updateLabelsAndAnnotations(ctx, &pr); err != nil {
+	if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
 		log.Error(err, "unable to update PipelineRun labels and annotations.")
 		return ctrl.Result{}, err
 	}
 
-	pr.Status.StartTime = &v1.Time{Time: time.Now()}
-	pr.Status.UpdateTime = &v1.Time{Time: time.Now()}
+	pipelineRunCopied.Status.StartTime = &v1.Time{Time: time.Now()}
+	pipelineRunCopied.Status.UpdateTime = &v1.Time{Time: time.Now()}
 	// due to the status is subresource of PipelineRun, we have to update status separately.
 	// see also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
 
-	if err := r.updateStatus(ctx, &pr.Status, req.NamespacedName); err != nil {
+	if err := r.updateStatus(ctx, &pipelineRunCopied.Status, req.NamespacedName); err != nil {
 		log.Error(err, "unable to update PipelineRun status.")
 		return ctrl.Result{}, err
 	}
-	r.recorder.Eventf(&pr, corev1.EventTypeNormal, v1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
+	r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+}
+
+func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exists bool, err error) {
+	// check if the run ID exists in the PipelineRun
+	pipelineRuns := &v1alpha3.PipelineRunList{}
+	listOptions := []client.ListOption{
+		client.InNamespace(pipeline.Namespace),
+		client.MatchingLabels{v1alpha3.PipelineNameLabelKey: pipeline.Name},
+	}
+	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
+		// add SCM reference name into list options for multi-branch Pipeline
+		listOptions = append(listOptions, client.MatchingLabels{v1alpha3.SCMRefNameLabelKey: jobRun.Pipeline})
+	}
+	if err = r.Client.List(context.Background(), pipelineRuns, listOptions...); err == nil {
+		isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
+		finder := newPipelineRunFinder(pipelineRuns.Items)
+		_, exists = finder.find(jobRun, isMultiBranch)
+	}
+	return
 }
 
 func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *v1alpha3.PipelineRun) (err error) {
