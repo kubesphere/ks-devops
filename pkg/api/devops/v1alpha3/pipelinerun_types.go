@@ -18,7 +18,6 @@ package v1alpha3
 
 import (
 	"sort"
-	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,6 +78,7 @@ type PipelineRunStatus struct {
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="The phase of a PipelineRun"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="The age of a PipelineRun"
 // +kubebuilder:resource:shortName="pr",categories="devops"
+
 // PipelineRun is the Schema for the pipelineruns API
 type PipelineRun struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -97,6 +97,7 @@ type PipelineRunList struct {
 	Items           []PipelineRun `json:"items"`
 }
 
+// GetLatestCondition obtains latest condition from history of conditions.
 func (status *PipelineRunStatus) GetLatestCondition() *Condition {
 	if len(status.Conditions) == 0 {
 		return nil
@@ -104,6 +105,7 @@ func (status *PipelineRunStatus) GetLatestCondition() *Condition {
 	return &status.Conditions[0]
 }
 
+// AddCondition adds a new condition into history of conditions.
 func (status *PipelineRunStatus) AddCondition(newCondition *Condition) {
 	// compare newCondition
 	var typeExist bool
@@ -127,11 +129,6 @@ func (status *PipelineRunStatus) AddCondition(newCondition *Condition) {
 	})
 }
 
-func (status *PipelineRunStatus) MarkCompleted(endTime time.Time) {
-	completionTime := metav1.NewTime(endTime)
-	status.CompletionTime = &completionTime
-}
-
 // HasStarted indicates if the PipelineRun has started already.
 func (pr *PipelineRun) HasStarted() bool {
 	_, ok := pr.GetPipelineRunID()
@@ -151,12 +148,12 @@ func (pr *PipelineRun) LabelAsAnOrphan() {
 	if pr.Labels == nil {
 		pr.Labels = make(map[string]string)
 	}
-	pr.Labels[PipelineRunOrphanKey] = "true"
+	pr.Labels[PipelineRunOrphanLabelKey] = "true"
 }
 
 // Buildable returns true if the PipelineRun is buildable, false otherwise.
 func (pr *PipelineRun) Buildable() bool {
-	return !pr.HasCompleted() && pr.Labels[PipelineRunOrphanKey] != "true"
+	return !pr.HasCompleted() && pr.Labels[PipelineRunOrphanLabelKey] != "true"
 }
 
 // IsMultiBranchPipeline indicates if the PipelineRun belongs a multi-branch pipeline.
@@ -164,8 +161,9 @@ func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
 	return prSpec.PipelineSpec != nil && prSpec.PipelineSpec.Type == MultiBranchPipelineType
 }
 
+// GetPipelineRunID gets ID of PipelineRun.
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
-	pipelineRunID, exist = pr.Annotations[JenkinsPipelineRunIDKey]
+	pipelineRunID, exist = pr.Annotations[JenkinsPipelineRunIDAnnoKey]
 	return
 }
 

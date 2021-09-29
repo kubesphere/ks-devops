@@ -96,7 +96,54 @@ run:
     - pkg/server/params/params.go
     - pkg/utils/idutils/id_utils.go
     - pkg/utils/idutils/id_utils_test.go
-
+    - pkg/client/sonarqube/options.go
+    - pkg/client/sonarqube/sonarqube.go
+    - pkg/client/cache/simple_cache.go
+    - pkg/kapis/devops/v1alpha2.handler.go
+    - pkg/client/s3/s3.go
+    - pkg/utils/reflectutils/deep.go
+    - pkg/models/auth/token.go
+    - pkg/utils/hash.go
+    - pkg/utils/sliceutil/sliceutils.go
+    - pkg/apiserver/authentication/options/authenticate_options.go
+    - pkg/client/cache/redis.go
+    - pkg/models/devops/s2ibinary_handler.go
+    - pkg/client/devops/jenkins/options.go
+    - pkg/client/devops/jenkins/role.go
+    - pkg/client/devops/role.go
+    - pkg/api/devops/v1alpha3/devopsproject_types.go
+    - pkg/client/devops/jenkins/internal/pull_request.go
+    - controllers/fake_controller.go
+    - controllers/s2irun/s2irun_controller.go
+    - pkg/client/s3/interface.go
+    - pkg/client/k8s/options.go
+    - pkg/models/devops/jkerror.go
+    - pkg/client/devops/jenkins/devops.go
+    - pkg/utils/reflectutils/reflect.go
+    - pkg/api/devops/v1alpha1/s2ibinary_type.go
+    - pkg/client/devops/interface.go
+    - pkg/utils/stringutils/string.go
+    - pkg/models/resources/v1alpha3/devops/devops.go
+    - pkg/models/resources/v1alpha3/interface.go
+    - pkg/apiserver/query/field.go
+    - pkg/api/utils.go
+    - pkg/utils/readerutils/MD5Reader.go
+    - cmd/controller/app/options/options.go
+    - cmd/tools/jwt/app/kubernetes.go
+    - cmd/apiserver/app/options/options.go
+    - pkg/utils/net/net.go
+    - pkg/utils/hashutil/MD5.go
+    - pkg/kapis/oauth/register.go
+    - pkg/apiserver/authentication/authenticators/bearertoken/bearertoken.go
+    - pkg/apiserver/authentication/request/anonymous/anonymous.go
+    - pkg/client/cache/options.go
+    - pkg/api/devops/v1alpha1/s2ibuildertemplate_types.go
+    - pkg/api/devops/v1alpha1/s2ibinary_types.go
+    - pkg/client/cache/cache.go
+issues:
+  exclude:
+    - EXC0012
+  exclude-use-default: false
 linters:
   enable:
     - revive # replacement for golint

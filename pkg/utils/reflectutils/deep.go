@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package deep provides function deep.Equal which is like reflect.DeepEqual but
+// Package reflectutils deep provides function deep.Equal which is like reflect.DeepEqual but
 // returns a list of differences. This is helpful when comparing complex types
 // like structures and maps.
 package reflectutils

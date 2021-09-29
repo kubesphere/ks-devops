@@ -24,14 +24,19 @@ import (
 
 const (
 	// GroupName is the group name use in this package
-	GroupName                         = "devops.kubesphere.io"
-	JenkinsPipelineRunIDKey           = GroupName + "/jenkins-pipelinerun-id"
-	JenkinsPipelineRunStatusKey       = GroupName + "/jenkins-pipelinerun-status"
+	GroupName = "devops.kubesphere.io"
+	// JenkinsPipelineRunIDAnnoKey is annotation key of Jenkins PipelineRun ID.
+	JenkinsPipelineRunIDAnnoKey = GroupName + "/jenkins-pipelinerun-id"
+	// JenkinsPipelineRunStatusAnnoKey is annotation key of status of Jenkins PipelineRun.
+	JenkinsPipelineRunStatusAnnoKey = GroupName + "/jenkins-pipelinerun-status"
+	// JenkinsPipelineRunStagesStatusKey is annotation key of Jenkins stages' status of Jenkins PipelineRun.
 	JenkinsPipelineRunStagesStatusKey = GroupName + "/jenkins-pipelinerun-stages-status"
-	PipelineRunOrphanKey              = GroupName + "/jenkins-pipelinerun-orphan"
-
+	// PipelineRunOrphanLabelKey is label key of orphan Jenkins PipelineRun which type of value is bool.
+	PipelineRunOrphanLabelKey = GroupName + "/jenkins-pipelinerun-orphan"
+	// PipelineNameLabelKey is label key of Pipeline name.
 	PipelineNameLabelKey = GroupName + "/pipeline"
-	SCMRefNameLabelKey   = GroupName + "/scm-ref-name"
+	// SCMRefNameLabelKey is label key of SCM reference name.
+	SCMRefNameLabelKey = GroupName + "/scm-ref-name"
 )
 
 var (

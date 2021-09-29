@@ -21,7 +21,7 @@ func Test_compatibleTransform(t *testing.T) {
 		obj: &v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+					v1alpha3.JenkinsPipelineRunStatusAnnoKey: `{"id": "123"}`,
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func Test_backwardFilter(t *testing.T) {
 			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunIDKey: "123",
+						v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 					},
 				},
 			},
@@ -92,7 +92,7 @@ func Test_backwardFilter(t *testing.T) {
 			obj: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunStatusAnnoKey: `{"id": "123"}`,
 					},
 				},
 			},
@@ -105,8 +105,8 @@ func Test_backwardFilter(t *testing.T) {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "abc",
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
-						v1alpha3.JenkinsPipelineRunIDKey:     "123",
+						v1alpha3.JenkinsPipelineRunStatusAnnoKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunIDAnnoKey:     "123",
 					},
 				},
 			},
@@ -123,8 +123,8 @@ func Test_backwardFilter(t *testing.T) {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "abc",
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunStatusKey: `{"id": "123"}`,
-						v1alpha3.JenkinsPipelineRunIDKey:     "123",
+						v1alpha3.JenkinsPipelineRunStatusAnnoKey: `{"id": "123"}`,
+						v1alpha3.JenkinsPipelineRunIDAnnoKey:     "123",
 					},
 				},
 			},
