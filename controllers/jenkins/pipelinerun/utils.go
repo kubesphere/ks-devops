@@ -8,32 +8,48 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
+// JenkinsRunState represents current PipelineRun state.
 type JenkinsRunState string
 
 const (
-	Queued        JenkinsRunState = "QUEUED"
-	Running       JenkinsRunState = "RUNNING"
-	Paused        JenkinsRunState = "PAUSED"
-	Skipped       JenkinsRunState = "SKIPPED"
+	// Queued indicates the PipelineRun is queued.
+	Queued JenkinsRunState = "QUEUED"
+	// Running indicates the PipelineRun is running.
+	Running JenkinsRunState = "RUNNING"
+	// Paused indicates the PipelineRun has been paused.
+	Paused JenkinsRunState = "PAUSED"
+	// Skipped indicates the PipelineRun has been skipped.
+	Skipped JenkinsRunState = "SKIPPED"
+	// NotBuiltState indicates the PipelineRun hasn't been built yet.
 	NotBuiltState JenkinsRunState = "NOT_BUILT"
-	Finished      JenkinsRunState = "FINISHED"
+	// Finished indicates the PipelineRun has finished.
+	Finished JenkinsRunState = "FINISHED"
 )
 
+// String returns string value of state of PipelineRun.
 func (state JenkinsRunState) String() string {
 	return string(state)
 }
 
+// JenkinsRunResult represents result of PipelineRun.
 type JenkinsRunResult string
 
 const (
-	Success        JenkinsRunResult = "SUCCESS"
-	Unstable       JenkinsRunResult = "UNSTABLE"
-	Failure        JenkinsRunResult = "FAILURE"
+	// Success indicates the PipelineRun runs successfully.
+	Success JenkinsRunResult = "SUCCESS"
+	// Unstable indicates the PipelineRun runs with unstable result.
+	Unstable JenkinsRunResult = "UNSTABLE"
+	// Failure indicates the PipelineRun runs with failure.
+	Failure JenkinsRunResult = "FAILURE"
+	// NotBuiltResult indicates the PipelineRun hasn't been built but finishied.
 	NotBuiltResult JenkinsRunResult = "NOT_BUILT"
-	Unknown        JenkinsRunResult = "UNKNOWN"
-	Aborted        JenkinsRunResult = "ABORTED"
+	// Unknown indicates the PipelineRun hasn't running yet or runs with unknown result.
+	Unknown JenkinsRunResult = "UNKNOWN"
+	// Aborted indicates the PipelineRun runs with aborted result.
+	Aborted JenkinsRunResult = "ABORTED"
 )
 
+// String returns string value of result of PipelineRun.
 func (result JenkinsRunResult) String() string {
 	return string(result)
 }

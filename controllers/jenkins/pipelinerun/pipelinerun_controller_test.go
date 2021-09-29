@@ -121,7 +121,7 @@ func Test_getJenkinsBuildNumber(t *testing.T) {
 			pipelineRun: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunIDKey: "a",
+						v1alpha3.JenkinsPipelineRunIDAnnoKey: "a",
 					},
 				},
 			},
@@ -133,7 +133,7 @@ func Test_getJenkinsBuildNumber(t *testing.T) {
 			pipelineRun: &v1alpha3.PipelineRun{
 				ObjectMeta: v1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunIDKey: "2",
+						v1alpha3.JenkinsPipelineRunIDAnnoKey: "2",
 					},
 				},
 			},
@@ -203,7 +203,7 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "2",
 				},
 			},
 			Spec: v1alpha3.PipelineRunSpec{
@@ -244,7 +244,7 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "2",
 				},
 			},
 			Spec: v1alpha3.PipelineRunSpec{
@@ -285,7 +285,7 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "2",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "2",
 				},
 			},
 			Spec: v1alpha3.PipelineRunSpec{
@@ -334,7 +334,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Name:      "pipeline-run-2",
 				Namespace: "default",
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "123",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 				},
 				Labels: map[string]string{
 					v1alpha3.PipelineNameLabelKey: "general-pipeline",
@@ -347,7 +347,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Name:      "pipeline-run-1",
 				Namespace: "default",
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "123",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 				},
 				Labels: map[string]string{
 					v1alpha3.SCMRefNameLabelKey:   "main",

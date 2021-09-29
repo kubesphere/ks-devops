@@ -24,6 +24,7 @@ func (j *Jenkins) ReloadConfiguration() (err error) {
 	return
 }
 
+// CheckNewSource checks source of Configuration as Code from new location.
 func (j *Jenkins) CheckNewSource(source string) (err error) {
 	var response *http.Response
 	if response, err = j.Requester.PostForm(checkNewSourceEndpoint, nil, nil, map[string]string{
@@ -34,6 +35,7 @@ func (j *Jenkins) CheckNewSource(source string) (err error) {
 	return
 }
 
+// ApplyNewSource applies a new config file
 func (j *Jenkins) ApplyNewSource(source string) (err error) {
 	if err = j.CheckNewSource(source); err != nil {
 		err = fmt.Errorf("failed to check the new source: %s, error: %v", source, err)

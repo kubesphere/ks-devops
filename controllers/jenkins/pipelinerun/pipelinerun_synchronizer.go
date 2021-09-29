@@ -127,7 +127,7 @@ func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*
 		scm.RefName = run.Pipeline
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
-	pr.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = run.ID
+	pr.Annotations[v1alpha3.JenkinsPipelineRunIDAnnoKey] = run.ID
 	return pr, nil
 }
 
