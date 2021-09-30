@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	MetaUpdated      = "MetaUpdated"
+	// MetaUpdated indicates the metadata of Pipeline has updated into annotations of Pipeline CR.
+	MetaUpdated = "MetaUpdated"
+	// FailedMetaUpdate indicates the controller fails to update metadata of Pipeline.
 	FailedMetaUpdate = "FailedMetaUpdate"
 )
 
@@ -109,6 +111,7 @@ var pipelineMetadataPredicate = predicate.Funcs{
 	},
 }
 
+// SetupWithManager setups reconciler with controller manager.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("pipeline-metadata-controller")
 	r.log = ctrl.Log.WithName("pipeline-metadata-controller")
