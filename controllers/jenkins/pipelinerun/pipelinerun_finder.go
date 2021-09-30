@@ -30,7 +30,7 @@ func newPipelineRunFinder(pipelineRuns []v1alpha3.PipelineRun) pipelineRunFinder
 	for i := range pipelineRuns {
 		pipelineRun := pipelineRuns[i]
 		pipelineRunIdentity := pipelineRunIdentity{
-			id: pipelineRun.Annotations[v1alpha3.JenkinsPipelineRunIDKey],
+			id: pipelineRun.Annotations[v1alpha3.JenkinsPipelineRunIDAnnoKey],
 		}
 		if pipelineRun.Spec.SCM != nil {
 			pipelineRunIdentity.refName = pipelineRun.Spec.SCM.RefName

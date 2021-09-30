@@ -29,6 +29,7 @@ const (
 	ParameterName          = "name"
 	ParameterLabelSelector = "labelSelector"
 	ParameterFieldSelector = "fieldSelector"
+	ParameterStart         = "start"
 	ParameterPage          = "page"
 	ParameterLimit         = "limit"
 	ParameterOrderBy       = "sortBy"
@@ -118,19 +119,31 @@ type Filter struct {
 
 func ParseQueryParameter(request *restful.Request) *Query {
 	query := New()
+	var start int
+	var page int
+	var limit int
+	var err error
 
-	limit, err := strconv.Atoi(request.QueryParameter(ParameterLimit))
+	limit, err = strconv.Atoi(request.QueryParameter(ParameterLimit))
 	// equivalent to undefined, use the default value
 	if err != nil || limit < -1 {
 		limit = DefaultLimit
 	}
-	page, err := strconv.Atoi(request.QueryParameter(ParameterPage))
-	// equivalent to undefined, use the default value
-	if err != nil || page < 1 {
-		page = DefaultPage
+	if pageStr := request.QueryParameter(ParameterPage); pageStr != "" {
+		if page, err = strconv.Atoi(pageStr);err != nil {
+			page = DefaultPage
+		}
+	} else {
+		if start, err = strconv.Atoi(request.QueryParameter(ParameterStart)); err != nil {
+			start = 0
+		}
 	}
 
-	query.Pagination = newPagination(limit, (page-1)*limit)
+	if page >= 1 {
+		query.Pagination = newPagination(limit, (page-1)*limit)
+	} else if start >= 0 {
+		query.Pagination = newPagination(limit, start)
+	}
 
 	query.SortBy = Field(defaultString(request.QueryParameter(ParameterOrderBy), FieldCreationTimeStamp))
 

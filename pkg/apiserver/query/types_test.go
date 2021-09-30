@@ -19,7 +19,9 @@ package query
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/emicklei/go-restful"
@@ -32,9 +34,9 @@ func TestParseQueryParameter(t *testing.T) {
 		queryString string
 		expected    *Query
 	}{{
-		"test normal case",
-		"label=app.kubernetes.io/name=book&name=foo&status=Running&page=1&limit=10&ascending=true",
-		&Query{
+		description: "test normal case",
+		queryString: "label=app.kubernetes.io/name=book&name=foo&status=Running&page=1&limit=10&ascending=true",
+		expected: &Query{
 			Pagination: newPagination(10, 0),
 			SortBy:     FieldCreationTimeStamp,
 			Ascending:  true,
@@ -45,9 +47,9 @@ func TestParseQueryParameter(t *testing.T) {
 			},
 		},
 	}, {
-		"test bad case",
-		"xxxx=xxxx&dsfsw=xxxx&page=abc&limit=add&ascending=ssss",
-		&Query{
+		description: "invalid page and limit parameter",
+		queryString: "xxxx=xxxx&dsfsw=xxxx&page=abc&limit=add&ascending=ssss",
+		expected: &Query{
 			Pagination: NoPagination,
 			SortBy:     FieldCreationTimeStamp,
 			Ascending:  false,
@@ -56,8 +58,33 @@ func TestParseQueryParameter(t *testing.T) {
 				Field("dsfsw"): Value("xxxx"),
 			},
 		},
-	},
-	}
+	}, {
+		description: "have parameter 'start' instead of 'page'",
+		queryString: "start=10&limit=10",
+		expected: &Query{
+			Pagination: &Pagination{
+				Limit:  10,
+				Offset: 10,
+			},
+			SortBy: FieldCreationTimeStamp,
+			Filters: map[Field]Value{
+				Field("start"): Value("10"),
+			},
+		},
+	}, {
+		description: "have invalid parameter 'start'",
+		queryString: "start=a&limit=10",
+		expected: &Query{
+			Pagination: &Pagination{
+				Limit:  10,
+				Offset: 0,
+			},
+			SortBy: FieldCreationTimeStamp,
+			Filters: map[Field]Value{
+				Field("start"): Value("a"),
+			},
+		},
+	}}
 
 	for _, test := range tests {
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost?%s", test.queryString), nil)
@@ -152,4 +179,55 @@ func TestPagination_GetValidPagination(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_newPagination(t *testing.T) {
+	type args struct {
+		limit  int
+		offset int
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Pagination
+	}{{
+		name: "invalid offset and limit",
+		args: args{
+			offset: -1,
+			limit:  -1,
+		},
+		want: &Pagination{
+			Limit:  DefaultLimit,
+			Offset: 0,
+		},
+	}, {
+		name: "valid offset and limit",
+		args: args{
+			offset: 10,
+			limit:  10,
+		},
+		want: &Pagination{
+			Limit:  10,
+			Offset: 10,
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := newPagination(tt.args.limit, tt.args.offset); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newPagination() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSelector(t *testing.T) {
+	// valid query selector
+	query := &Query{}
+	assert.Equal(t, labels.NewSelector(), query.Selector())
+
+	// invalid query selector
+	query = &Query{
+		LabelSelector: "a+b",
+	}
+	assert.Equal(t, labels.Everything(), query.Selector())
 }

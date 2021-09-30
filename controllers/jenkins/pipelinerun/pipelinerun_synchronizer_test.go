@@ -137,7 +137,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 					*v1.NewControllerRef(multiBranchPipeline, multiBranchPipeline.GroupVersionKind()),
 				},
 				Annotations: map[string]string{
-					v1alpha3.JenkinsPipelineRunIDKey: "123",
+					v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 				},
 				Labels: map[string]string{
 					v1alpha3.PipelineNameLabelKey: "fake-pipeline",
@@ -174,7 +174,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 						*v1.NewControllerRef(generalPipeline, generalPipeline.GroupVersionKind()),
 					},
 					Annotations: map[string]string{
-						v1alpha3.JenkinsPipelineRunIDKey: "123",
+						v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 					},
 					Labels: map[string]string{
 						v1alpha3.PipelineNameLabelKey: "fake-pipeline",

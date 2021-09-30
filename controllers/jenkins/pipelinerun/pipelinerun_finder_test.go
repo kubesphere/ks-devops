@@ -14,7 +14,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline1",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "123",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 			},
 		},
 	}
@@ -23,7 +23,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline11",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "123",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 			},
 		},
 	}
@@ -32,7 +32,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline2",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "456",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "456",
 			},
 		},
 	}
@@ -41,7 +41,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline1",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "123",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 			},
 		},
 		Spec: v1alpha3.PipelineRunSpec{
@@ -55,7 +55,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline11",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "123",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 			},
 		},
 		Spec: v1alpha3.PipelineRunSpec{
@@ -69,7 +69,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: "pipeline2",
 			Annotations: map[string]string{
-				v1alpha3.JenkinsPipelineRunIDKey: "456",
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: "456",
 			},
 		},
 		Spec: v1alpha3.PipelineRunSpec{

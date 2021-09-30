@@ -146,7 +146,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusKey] = string(runResultJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
 
 		// update PipelineRun
@@ -197,7 +197,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if pipelineRunCopied.Annotations == nil {
 		pipelineRunCopied.Annotations = make(map[string]string)
 	}
-	pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunIDKey] = jobRun.ID
+	pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunIDAnnoKey] = jobRun.ID
 
 	// the Update method only updates fields except subresource: status
 	if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
