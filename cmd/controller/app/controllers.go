@@ -23,6 +23,7 @@ import (
 	"kubesphere.io/devops/controllers/devopscredential"
 	"kubesphere.io/devops/controllers/devopsproject"
 	"kubesphere.io/devops/controllers/jenkins/config"
+	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
 	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
@@ -104,6 +105,14 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			JenkinsCore: jenkinsCore,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
+			return err
+		}
+
+		// add Pipeline metadata controller
+		if err := (&jenkinspipeline.Reconciler{
+			Client:      mgr.GetClient(),
+			JenkinsCore: jenkinsCore,
+		}).SetupWithManager(mgr); err != nil {
 			return err
 		}
 	}
