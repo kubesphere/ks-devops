@@ -68,7 +68,8 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
-func (r *Reconciler) updateMetadata(metadata *job.Pipeline, pipelineKey client.ObjectKey) error {
+func (r *Reconciler) updateMetadata(jobPipeline *job.Pipeline, pipelineKey client.ObjectKey) error {
+	metadata := convert(jobPipeline)
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		pipeline := &v1alpha3.Pipeline{}
 		if err := r.Get(context.Background(), pipelineKey, pipeline); err != nil {
