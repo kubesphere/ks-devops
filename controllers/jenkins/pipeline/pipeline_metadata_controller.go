@@ -54,14 +54,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineMetadata, err := boClient.GetPipeline(pipeline.Name, pipeline.Namespace)
 	if err != nil {
 		log.Error(err, "unable to get Pipeline metadata from Jenkins")
-		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins")
+		r.onFailedMetaUpdate(pipeline, err)
 		return ctrl.Result{}, err
 	}
 
 	// update pipeline metadata
 	if err := r.updateMetadata(pipelineMetadata, req.NamespacedName); err != nil {
 		log.Error(err, "unable to update Pipeline metadata")
-		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins")
+		r.onFailedMetaUpdate(pipeline, err)
 		return ctrl.Result{}, err
 	}
 
@@ -70,20 +70,25 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
+func (r *Reconciler) onFailedMetaUpdate(pipeline *v1alpha3.Pipeline, err error) {
+	r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins, err = %v", err)
+}
+
 func (r *Reconciler) updateMetadata(jobPipeline *job.Pipeline, pipelineKey client.ObjectKey) error {
 	metadata := convert(jobPipeline)
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		pipeline := &v1alpha3.Pipeline{}
 		if err := r.Get(context.Background(), pipelineKey, pipeline); err != nil {
 			return client.IgnoreNotFound(err)
 		}
-		metadataJSON, err := json.Marshal(metadata)
-		if err != nil {
-			return err
-		}
+
 		// diff pipeline metadata
 		if pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey] == string(metadataJSON) {
-			// skip updation if metadata unchanged
+			// skip update if the metadata was unchanged
 			return nil
 		}
 		// update annotations
