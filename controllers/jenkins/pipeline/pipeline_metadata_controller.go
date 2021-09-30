@@ -65,13 +65,16 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	r.recorder.Eventf(pipeline, v1.EventTypeNormal, MetaUpdated, "Metadata of Pipeline has been updated from Jenkins successfully")
 	// re-synch after 10 seconds
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
 func (r *Reconciler) onFailedMetaUpdate(pipeline *v1alpha3.Pipeline, err error) {
 	r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedMetaUpdate, "Failed to update metadata of Pipeline from Jenkins, err = %v", err)
+}
+
+func (r *Reconciler) onUpdateMetaSuccessfully(pipeline *v1alpha3.Pipeline) {
+	r.recorder.Eventf(pipeline, v1.EventTypeNormal, MetaUpdated, "Metadata of Pipeline has been updated from Jenkins successfully")
 }
 
 func (r *Reconciler) updateMetadata(jobPipeline *job.Pipeline, pipelineKey client.ObjectKey) error {
@@ -96,7 +99,11 @@ func (r *Reconciler) updateMetadata(jobPipeline *job.Pipeline, pipelineKey clien
 			pipeline.Annotations = map[string]string{}
 		}
 		pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey] = string(metadataJSON)
-		return r.Update(context.Background(), pipeline)
+		err = r.Update(context.Background(), pipeline)
+		if err == nil {
+			r.onUpdateMetaSuccessfully(pipeline)
+		}
+		return err
 	})
 }
 
