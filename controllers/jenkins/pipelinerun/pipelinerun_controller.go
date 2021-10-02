@@ -123,31 +123,43 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
-			return ctrl.Result{}, err
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 		}
 
 		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable to get PipelineRun nodes detail")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
-			return ctrl.Result{}, err
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %v", err)
 		}
 
-		// set the latest run result into annotations
+		allSteps, err := r.getAllSteps(pipelineName, namespaceName, pipelineRunCopied)
+		if err != nil {
+			log.Error(err, "unable to get PipelineRun all steps")
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve all steps from Jenkins. err: %v", err)
+		}
+
 		runResultJSON, err := json.Marshal(pipelineBuild)
 		if err != nil {
-			return ctrl.Result{}, err
+			log.Error(err, "unable to marshal result data to JSON")
+			runResultJSON = []byte("{}")
 		}
 		prNodesJSON, err := json.Marshal(prNodes)
 		if err != nil {
-			return ctrl.Result{}, err
+			log.Error(err, "unable to marshal nodes data to JSON")
+			prNodesJSON = []byte("[]")
 		}
+		allStepsJSON, err := json.Marshal(allSteps)
+		if err != nil {
+			log.Error(err, "unabel to marshal nodes data to JSON")
+			allStepsJSON = []byte("[]")
+		}
+
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = string(prNodesJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStepsStatusAnnoKey] = string(allStepsJSON)
 
 		// update PipelineRun
 		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
@@ -313,12 +325,11 @@ func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
 	}
-	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-
 	branch, err := getSCMRefName(&pr.Spec)
 	if err != nil {
 		return nil, err
 	}
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 	return c.GetBuild(job.GetBuildOption{
 		RunID:     runID,
 		Pipelines: []string{devopsProjectName, pipelineName},
@@ -329,17 +340,35 @@ func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string
 func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr *v1alpha3.PipelineRun) ([]job.Node, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
-		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
+		return nil, fmt.Errorf("unable to get PipelineRun nodes due to not found run ID")
 	}
-	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 	branch, err := getSCMRefName(&pr.Spec)
 	if err != nil {
 		return nil, err
 	}
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
 	return c.GetNodes(job.GetNodesOption{
 		Pipelines: []string{devopsProjectName, pipelineName},
 		Branch:    branch,
 		RunID:     runID,
+	})
+}
+
+func (r *Reconciler) getAllSteps(pipelineName, namespace string, pr *v1alpha3.PipelineRun) ([]job.Step, error) {
+	runID, exists := pr.GetPipelineRunID()
+	if !exists {
+		return nil, fmt.Errorf("unable to get PipelineRun all steps due to not found runID")
+	}
+	branch, err := getSCMRefName(&pr.Spec)
+	if err != nil {
+		return nil, err
+	}
+	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
+	return c.GetSteps(job.GetStepsOption{
+		RunID:        runID,
+		Branch:       branch,
+		PipelineName: pipelineName,
+		Folders:      []string{namespace},
 	})
 }
 
