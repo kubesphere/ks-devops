@@ -130,7 +130,7 @@ func ParseQueryParameter(request *restful.Request) *Query {
 		limit = DefaultLimit
 	}
 	if pageStr := request.QueryParameter(ParameterPage); pageStr != "" {
-		if page, err = strconv.Atoi(pageStr);err != nil {
+		if page, err = strconv.Atoi(pageStr); err != nil {
 			page = DefaultPage
 		}
 	} else {
