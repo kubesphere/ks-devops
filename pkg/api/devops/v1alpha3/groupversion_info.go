@@ -31,8 +31,6 @@ const (
 	JenkinsPipelineRunStatusAnnoKey = GroupName + "/jenkins-pipelinerun-status"
 	// JenkinsPipelineRunStagesStatusAnnoKey is annotation key of Jenkins stages' status of Jenkins PipelineRun.
 	JenkinsPipelineRunStagesStatusAnnoKey = GroupName + "/jenkins-pipelinerun-stages-status"
-	// JenkinsPipelineRunStepsStatusAnnoKey is annotation key of Jenkins steps' status of Jenkins PipelineRun.
-	JenkinsPipelineRunStepsStatusAnnoKey = GroupName + "/jenkins-pipelinerun-steps-status"
 	// PipelineRunOrphanLabelKey is label key of orphan Jenkins PipelineRun which type of value is bool.
 	PipelineRunOrphanLabelKey = GroupName + "/jenkins-pipelinerun-orphan"
 	// PipelineNameLabelKey is label key of Pipeline name.
