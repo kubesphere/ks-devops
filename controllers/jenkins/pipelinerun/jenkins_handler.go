@@ -17,7 +17,7 @@ type jenkinsHandler struct {
 }
 
 // getPipelineNodeDetails gets node details including pipeline steps.
-func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace string, pr *v1alpha3.PipelineRun) ([]NodeDetail, error) {
+func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace string, pr *v1alpha3.PipelineRun) ([]v1alpha3.NodeDetail, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun nodes due to not found run ID")
@@ -37,13 +37,13 @@ func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace st
 	}
 
 	// get steps for every node
-	nodeDetails := []NodeDetail{}
+	nodeDetails := []v1alpha3.NodeDetail{}
 	for _, node := range nodes {
 		steps, err := handler.getSteps(node.ID, pipelineName, namespace, pr)
 		if err != nil {
 			return nil, err
 		}
-		nodeDetails = append(nodeDetails, NodeDetail{
+		nodeDetails = append(nodeDetails, v1alpha3.NodeDetail{
 			Node:  node,
 			Steps: steps,
 		})
