@@ -22,6 +22,7 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 	handler := newAPIHandler(apiHandlerOption{
 		client: c,
 	})
+
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
 		To(handler.listPipelineRuns).
 		Doc("Get all runs of the specified pipeline").
@@ -33,8 +34,8 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 			"full data of PipelineRuns, just set the parameters to false.").
 			DataType("bool").
 			DefaultValue("true")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRunList{}),
-	)
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRunList{}))
+
 	ws.Route(ws.POST("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
 		To(handler.createPipelineRuns).
 		Doc("Create a PipelineRun for the specified pipeline").
@@ -42,8 +43,8 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
 		Param(ws.QueryParameter("branch", "The name of SCM reference, only for multi-branch pipeline")).
 		Reads(devops.RunPayload{}).
-		Returns(http.StatusCreated, api.StatusOK, v1alpha3.PipelineRun{}),
-	)
+		Returns(http.StatusCreated, api.StatusOK, v1alpha3.PipelineRun{}))
+
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelineruns/{pipelinerun}").
 		To(handler.getPipelineRun).
 		Doc("Get a PipelineRun for a specified pipeline").
@@ -51,4 +52,10 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRun{}))
 
+	ws.Route(ws.GET("/namespaces/{namespace}/pipelineruns/{pipelinerun}/nodedetails").
+		To(handler.getNodeDetails).
+		Doc("Get node details including steps and approvable for a given Pipeline").
+		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
+		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
+		Returns(http.StatusOK, api.StatusOK, []v1alpha3.NodeDetail{}))
 }
