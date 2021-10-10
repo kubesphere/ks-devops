@@ -23,11 +23,6 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
-type DevOpsProjectRoleResponse struct {
-	ProjectRole *ProjectRole
-	Err         error
-}
-
 func (j *Jenkins) CreateDevOpsProject(projectId string) (string, error) {
 	_, err := j.CreateFolder(projectId, "")
 	if err != nil {

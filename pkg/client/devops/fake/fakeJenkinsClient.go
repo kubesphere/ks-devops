@@ -15,22 +15,22 @@ import (
 	"kubesphere.io/devops/pkg/client/devops/jclient"
 )
 
+// NewFakeJenkinsClient creates a fake Jenkins client
 func NewFakeJenkinsClient(roundTripper *mhttp.MockRoundTripper) (j *jclient.JenkinsClient) {
-	core := core.JenkinsCore{
-		URL:          "http://localhost",
-		UserName:     "",
-		Token:        "",
-		RoundTripper: roundTripper,
-	}
 	j = &jclient.JenkinsClient{
-		Core: core,
+		Core: core.JenkinsCore{
+			URL:          "http://localhost",
+			UserName:     "",
+			Token:        "",
+			RoundTripper: roundTripper,
+		},
 	}
 	return
 }
 
 // PrepareForGetProjectPipeline404 only for test
 func PrepareForGetProjectPipeline404(roundTripper *mhttp.MockRoundTripper, rootURL, user, password string, path, name string) {
-	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/job/%s/job/%s/api/json", rootURL, name, path), nil)
+	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/job/%s/job/%s/api/json", rootURL, path, name), nil)
 	response := &http.Response{
 		StatusCode: 404,
 		Proto:      "HTTP/1.1",

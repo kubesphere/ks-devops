@@ -70,20 +70,3 @@ type ProjectPermissionIds struct {
 	RunReplay               bool `json:"hudson.model.Run.Replay"`
 	SCMTag                  bool `json:"hudson.scm.SCM.Tag"`
 }
-
-// describe the interface of DevOps to operator role
-type RoleOperator interface {
-	AddGlobalRole(roleName string, ids GlobalPermissionIds, overwrite bool) error
-	GetGlobalRole(roleName string) (string, error)
-
-	AddProjectRole(roleName string, pattern string, ids ProjectPermissionIds, overwrite bool) error
-	DeleteProjectRoles(roleName ...string) error
-
-	AssignProjectRole(roleName string, sid string) error
-	UnAssignProjectRole(roleName string, sid string) error
-
-	AssignGlobalRole(roleName string, sid string) error
-	UnAssignGlobalRole(roleName string, sid string) error
-
-	DeleteUserInProject(sid string) error
-}

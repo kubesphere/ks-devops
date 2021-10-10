@@ -24,7 +24,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	fakeDevOps "kubesphere.io/devops/pkg/client/devops/fake"
 	"kubesphere.io/devops/pkg/client/devops/jclient"
 
@@ -223,7 +222,6 @@ func (f *fixture) runController(projectName string, startInformers bool, expectE
 		if !reflect.DeepEqual(actualPipeline, pipeline) {
 			f.t.Errorf(" pipeline %+v not match %+v", pipeline, actualPipeline)
 		}
-
 	}
 }
 
@@ -355,18 +353,32 @@ func TestCreatePipeline(t *testing.T) {
 	f := newFixture(t)
 	nsName := "test-123"
 	pipelineName := "test"
+	projectName := "test_project"
 	spec := devops.PipelineSpec{
 		Type: devops.NoScmPipelineType,
 		Pipeline: &devops.NoScmPipeline{
 			Name: pipelineName,
 		},
 	}
-	createPayload := job.CreateJobPayload{
-		Name: pipelineName,
-		Mode: "org.jenkinsci.plugins.workflow.job.WorkflowJob",
-	}
+	//createPayload := job.CreateJobPayload{
+	//	Name: pipelineName,
+	//	Mode: "org.jenkinsci.plugins.workflow.job.WorkflowJob",
+	//}
 	pipeline := newPipeline(nsName, pipelineName, spec, false, false)
-	fakeDevOps.PrepareForCreateProjectPipeline(f.roundTripper, f.jenkinsClient.Core.URL, "", "", createPayload, nsName)
+	ns := newNamespace(nsName, projectName)
+
+	f.pipelineLister = append(f.pipelineLister, pipeline)
+	f.namespaceLister = append(f.namespaceLister, ns)
+	f.objects = append(f.objects, pipeline)
+	f.initDevOpsProject = nsName
+
+	expectPipeline := pipeline.DeepCopy()
+	expectPipeline.Finalizers = []string{devops.PipelineFinalizerName}
+	expectPipeline.Annotations = map[string]string{
+		devops.PipelineSyncStatusAnnoKey: constants.StatusSuccessful,
+	}
+	f.expectPipeline = []*devops.Pipeline{expectPipeline}
+
 	f.run(getKey(pipeline, t))
 }
 

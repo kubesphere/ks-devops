@@ -35,8 +35,6 @@ type Interface interface {
 
 	ProjectOperator
 
-	RoleOperator
-
 	ConfigurationOperator
 }
 

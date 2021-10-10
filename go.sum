@@ -322,8 +322,6 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
-github.com/jenkins-zh/jenkins-client v0.0.7 h1:E0EUOx1G3RVEUrvj8WGvI5WjDTRD4tcLm8FAg0iqJJ8=
-github.com/jenkins-zh/jenkins-client v0.0.7/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
 github.com/jenkins-zh/jenkins-formulas v0.0.5/go.mod h1:zS8fm8u5L6FcjZM0QznXsLV9T2UtSVK+hT6Sm76iUZ4=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
@@ -369,6 +367,8 @@ github.com/linuxsuren/http-downloader v0.0.2-0.20201207132639-19888a6beaec/go.mo
 github.com/linuxsuren/http-downloader v0.0.6/go.mod h1:xxgh2OE7WGL9TwDE9L8Gh7Lqq9fFPuHbh5tofUitEfE=
 github.com/linuxsuren/http-downloader v0.0.29 h1:GJUoybR4SViarPfX2xipq0unUssiuB9qrSSoDDW1jao=
 github.com/linuxsuren/http-downloader v0.0.29/go.mod h1:bniEqpLyyydtCTDyjo3nco6LD2F90ruPH87fuqAznQg=
+github.com/linuxsuren/jenkins-client v0.0.0-20220110065102-906d6c59a531 h1:TyzXgKLx2hS30+TfUYqrdL0oc1PrJaZo+RsHsVbHp/w=
+github.com/linuxsuren/jenkins-client v0.0.0-20220110065102-906d6c59a531/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.5 h1:b6kJs+EmPFMYGkow9GiUyCyOvIwYetYJ3fSaWak/Gls=
