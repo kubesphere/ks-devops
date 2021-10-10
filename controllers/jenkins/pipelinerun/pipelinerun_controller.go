@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -68,12 +66,14 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	jHandler := &jenkinsHandler{&r.JenkinsCore}
+
 	// don't modify the cache in other places, like informer cache.
 	pipelineRunCopied := pipelineRun.DeepCopy()
 
 	// DeletionTimestamp.IsZero() means copyPipeline has not been deleted.
 	if !pipelineRunCopied.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err = r.deleteJenkinsJobHistory(pipelineRunCopied); err != nil {
+		if err = jHandler.deleteJenkinsJobHistory(pipelineRunCopied); err != nil {
 			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
 				pipelineRunCopied.Namespace, pipelineRunCopied.Name, err)
 		} else {
@@ -120,34 +120,33 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check PipelineRun status
 	if pipelineRunCopied.HasStarted() {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
-		pipelineBuild, err := r.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
+		pipelineBuild, err := jHandler.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %s", err)
-			return ctrl.Result{}, err
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 		}
 
-		prNodes, err := r.getPipelineNodes(namespaceName, pipelineName, pipelineRunCopied)
+		nodeDetails, err := jHandler.getPipelineNodeDetails(pipelineName, namespaceName, pipelineRunCopied)
 		if err != nil {
 			log.Error(err, "unable to get PipelineRun nodes detail")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %s", err)
-			return ctrl.Result{}, err
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %v", err)
 		}
 
-		// set the latest run result into annotations
 		runResultJSON, err := json.Marshal(pipelineBuild)
 		if err != nil {
-			return ctrl.Result{}, err
+			log.Error(err, "unable to marshal result data to JSON")
+			runResultJSON = []byte("{}")
 		}
-		prNodesJSON, err := json.Marshal(prNodes)
+		nodeDetailsJSON, err := json.Marshal(nodeDetails)
 		if err != nil {
-			return ctrl.Result{}, err
+			log.Error(err, "unable to marshal nodes details to JSON")
+			nodeDetailsJSON = []byte("[]")
 		}
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusKey] = string(prNodesJSON)
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = string(nodeDetailsJSON)
 
 		// update PipelineRun
 		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
@@ -172,7 +171,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// first run
-	jobRun, err := r.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
+	jobRun, err := jHandler.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
@@ -238,65 +237,6 @@ func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alp
 	return
 }
 
-func (r *Reconciler) deleteJenkinsJobHistory(pipelineRun *v1alpha3.PipelineRun) (err error) {
-	var buildNum int
-	if buildNum = getJenkinsBuildNumber(pipelineRun); buildNum < 0 {
-		return
-	}
-
-	jenkinsClient := job.Client{
-		JenkinsCore: r.JenkinsCore,
-	}
-	jobName := fmt.Sprintf("job/%s/job/%s", pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name)
-	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err != nil {
-		// TODO improve the way to check if the desired build record was deleted
-		if strings.Contains(err.Error(), "not found resources") {
-			err = nil
-		} else {
-			err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobName, buildNum, err)
-		}
-	}
-	return
-}
-
-// getJenkinsBuildNumber returns the build number of a Jenkins job build which related with a PipelineRun
-// return a negative value if there is no valid build number
-func getJenkinsBuildNumber(pipelineRun *v1alpha3.PipelineRun) (num int) {
-	num = -1
-
-	var (
-		buildNum      string
-		buildNumExist bool
-	)
-
-	if buildNum, buildNumExist = pipelineRun.GetPipelineRunID(); !buildNumExist {
-		return
-	}
-
-	var err error
-	if num, err = strconv.Atoi(buildNum); err != nil {
-		num = -1
-		klog.V(7).Infof("found an invalid build number from PipelineRun: %s/%s, err: %v",
-			pipelineRun.Namespace, pipelineRun.Name, err)
-	}
-	return
-}
-
-func (r *Reconciler) triggerJenkinsJob(devopsProjectName, pipelineName string, prSpec *v1alpha3.PipelineRunSpec) (*job.PipelineRun, error) {
-	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-
-	branch, err := getSCMRefName(prSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Build(job.BuildOption{
-		Pipelines:  []string{devopsProjectName, pipelineName},
-		Parameters: parameterConverter{parameters: prSpec.Parameters}.convert(),
-		Branch:     branch,
-	})
-}
-
 func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	var branch = ""
 	if prSpec.IsMultiBranchPipeline() {
@@ -306,41 +246,6 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 		branch = prSpec.SCM.RefName
 	}
 	return branch, nil
-}
-
-func (r *Reconciler) getPipelineRunResult(devopsProjectName, pipelineName string, pr *v1alpha3.PipelineRun) (*job.PipelineRun, error) {
-	runID, exists := pr.GetPipelineRunID()
-	if !exists {
-		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
-	}
-	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-
-	branch, err := getSCMRefName(&pr.Spec)
-	if err != nil {
-		return nil, err
-	}
-	return c.GetBuild(job.GetBuildOption{
-		RunID:     runID,
-		Pipelines: []string{devopsProjectName, pipelineName},
-		Branch:    branch,
-	})
-}
-
-func (r *Reconciler) getPipelineNodes(devopsProjectName, pipelineName string, pr *v1alpha3.PipelineRun) ([]job.Node, error) {
-	runID, exists := pr.GetPipelineRunID()
-	if !exists {
-		return nil, fmt.Errorf("unable to get PipelineRun result due to not found run ID")
-	}
-	c := job.BlueOceanClient{JenkinsCore: r.JenkinsCore, Organization: "jenkins"}
-	branch, err := getSCMRefName(&pr.Spec)
-	if err != nil {
-		return nil, err
-	}
-	return c.GetNodes(job.GetNodesOption{
-		Pipelines: []string{devopsProjectName, pipelineName},
-		Branch:    branch,
-		RunID:     runID,
-	})
 }
 
 func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *v1alpha3.PipelineRun) error {
