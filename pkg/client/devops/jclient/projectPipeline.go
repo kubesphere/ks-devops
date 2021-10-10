@@ -12,6 +12,7 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
+// CreateProjectPipeline creates the pipeline
 func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alpha3.Pipeline) (string, error) {
 	jclient := job.Client{
 		JenkinsCore: j.Core,
@@ -50,15 +51,26 @@ func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alph
 	}
 }
 
+// DeleteProjectPipeline deletes pipeline
 func (j *JenkinsClient) DeleteProjectPipeline(projectID string, pipelineID string) (string, error) {
-	// TODO: delete a pipeline
-	return j.jenkins.DeleteProjectPipeline(pipelineID, pipelineID)
+	jclient := job.Client{
+		JenkinsCore: j.Core,
+	}
+	projectPipelineName := fmt.Sprintf("%s %s", projectID, pipelineID)
+	err := jclient.Delete(projectPipelineName)
+	if err != nil {
+		return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+	}
+	return pipelineID, nil
 }
+
+// UpdateProjectPipeline updates pipeline
 func (j *JenkinsClient) UpdateProjectPipeline(projectID string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	// TODO: Update a pipeline
 	return j.jenkins.UpdateProjectPipeline(projectID, pipeline)
 }
 
+// GetProjectPipelineConfig returns the pipeline config
 func (j *JenkinsClient) GetProjectPipelineConfig(projectID, pipelineID string) (*devopsv1alpha3.Pipeline, error) {
 	// TODO: get a pipeline config
 	return j.jenkins.GetProjectPipelineConfig(projectID, pipelineID)

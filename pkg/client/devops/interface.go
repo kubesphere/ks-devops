@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 )
@@ -35,13 +36,12 @@ type Interface interface {
 
 	ProjectOperator
 
-	RoleOperator
-
 	ConfigurationOperator
 }
 
 func GetDevOpsStatusCode(devopsErr error) int {
-	if code, err := strconv.Atoi(devopsErr.Error()); err == nil {
+	errStr := strings.TrimPrefix(devopsErr.Error(), "unexpected status code: ")
+	if code, err := strconv.Atoi(errStr); err == nil {
 		message := http.StatusText(code)
 		if !govalidator.IsNull(message) {
 			return code
@@ -60,6 +60,12 @@ type ErrorResponse struct {
 }
 
 func (e *ErrorResponse) Error() string {
-	u := fmt.Sprintf("%s://%s%s", e.Response.Request.URL.Scheme, e.Response.Request.URL.Host, e.Response.Request.URL.RequestURI())
-	return fmt.Sprintf("%s %s: %d %s", e.Response.Request.Method, u, e.Response.StatusCode, e.Message)
+	var u string
+	var method string
+	if e.Response != nil && e.Response.Request != nil {
+		req := e.Response.Request
+		u = fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.URL.Host, req.URL.RequestURI())
+		method = req.Method
+	}
+	return fmt.Sprintf("%s %s: %d %s", method, u, e.Response.StatusCode, e.Message)
 }

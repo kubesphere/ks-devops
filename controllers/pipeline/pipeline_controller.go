@@ -287,7 +287,7 @@ func (c *Controller) syncHandler(key string) error {
 		if sliceutil.HasString(copyPipeline.ObjectMeta.Finalizers, devopsv1alpha3.PipelineFinalizerName) {
 			delSuccess := false
 			if _, err := c.devopsClient.DeleteProjectPipeline(nsName, pipeline.Name); err != nil {
-				// the status code should be 404 if the job does not exists
+				// the status code should be 404 if the job does not exist
 				if srvErr, ok := err.(restful.ServiceError); ok {
 					delSuccess = srvErr.Code == http.StatusNotFound
 				} else if srvErr, ok := err.(*devopsClient.ErrorResponse); ok {
