@@ -87,7 +87,7 @@ func (r *Reconciler) obtainAndUpdatePipelineMetadata(pipeline *v1alpha3.Pipeline
 	if err != nil {
 		return err
 	}
-	metadataJSON, err := json.Marshal((&pipelineMetadataConverter{}).convertPipeline(jobPipeline))
+	metadataJSON, err := json.Marshal(convertPipeline(jobPipeline))
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (r *Reconciler) obtainAndUpdatePipelineBranches(pipeline *v1alpha3.Pipeline
 		return err
 	}
 
-	branchesJSON, err := json.Marshal((&pipelineBranchConverter{}).convertBranches(jobBranches))
+	branchesJSON, err := json.Marshal(convertBranches(jobBranches))
 	if err != nil {
 		return err
 	}

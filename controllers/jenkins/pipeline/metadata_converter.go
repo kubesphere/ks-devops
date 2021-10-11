@@ -23,10 +23,7 @@ type pipelineMetadata struct {
 	ScriptPath                     string                    `json:"scriptPath,omitempty"`
 }
 
-type pipelineMetadataConverter struct {
-}
-
-func (*pipelineMetadataConverter) convertPipeline(jobPipeline *job.Pipeline) *pipelineMetadata {
+func convertPipeline(jobPipeline *job.Pipeline) *pipelineMetadata {
 	return &pipelineMetadata{
 		WeatherScore:                   jobPipeline.WeatherScore,
 		EstimatedDurationInMillis:      jobPipeline.EstimatedDurationInMillis,
@@ -49,17 +46,58 @@ func (*pipelineMetadataConverter) convertPipeline(jobPipeline *job.Pipeline) *pi
 }
 
 type pipelineBranch struct {
-	Name         string                  `json:"name,omitempty"`
-	WeatherScore int                     `json:"weatherScore,omitempty"`
-	LatestRun    *job.PipelineRunSummary `json:"latestRun,omitempty"`
-	Branch       *job.Branch             `json:"branch,omitempty"`
-	PullRequest  *job.PullRequest        `json:"pullRequest,omitempty"`
+	Name         string           `json:"name,omitempty"`
+	WeatherScore int              `json:"weatherScore,omitempty"`
+	LatestRun    *latestRun       `json:"latestRun,omitempty"`
+	Branch       *job.Branch      `json:"branch,omitempty"`
+	PullRequest  *job.PullRequest `json:"pullRequest,omitempty"`
 }
 
-type pipelineBranchConverter struct {
+type latestRun struct {
+	Causes    []cause  `json:"causes,omitempty"`
+	EndTime   job.Time `json:"endTime,omitempty"`
+	StartTime job.Time `json:"startTime,omitempty"`
+	ID        string   `json:"id,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	Pipeline  string   `json:"pipeline,omitempty"`
+	Result    string   `json:"result,omitempty"`
+	State     string   `json:"state,omitempty"`
 }
 
-func (*pipelineBranchConverter) convertBranches(jobBranches []job.PipelineBranch) []pipelineBranch {
+func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *latestRun {
+	if jobLatestRun == nil {
+		return nil
+	}
+	return &latestRun{
+		ID:        jobLatestRun.ID,
+		Name:      jobLatestRun.Name,
+		Pipeline:  jobLatestRun.Pipeline,
+		Result:    jobLatestRun.Result,
+		State:     jobLatestRun.State,
+		StartTime: jobLatestRun.StartTime,
+		EndTime:   jobLatestRun.EndTime,
+		Causes:    convertCauses(jobLatestRun.Causes),
+	}
+}
+
+type cause struct {
+	ShortDescription string `json:"shortDescription,omitempty"`
+}
+
+func convertCauses(jobCauses []job.Cause) []cause {
+	if jobCauses == nil {
+		return nil
+	}
+	causes := []cause{}
+	for _, jobCause := range jobCauses {
+		causes = append(causes, cause{
+			ShortDescription: jobCause.GetShortDescription(),
+		})
+	}
+	return causes
+}
+
+func convertBranches(jobBranches []job.PipelineBranch) []pipelineBranch {
 	branches := make([]pipelineBranch, 0, len(jobBranches))
 	for _, jobBranch := range jobBranches {
 		branches = append(branches, pipelineBranch{
@@ -67,7 +105,7 @@ func (*pipelineBranchConverter) convertBranches(jobBranches []job.PipelineBranch
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,
 			PullRequest:  jobBranch.PullRequest,
-			LatestRun:    jobBranch.LatestRun,
+			LatestRun:    convertLatestRun(jobBranch.LatestRun),
 		})
 	}
 	return branches
