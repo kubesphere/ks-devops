@@ -97,7 +97,9 @@ func Test_pipelineRunFinder_find(t *testing.T) {
 		args: args{
 			isMultiBranch: false,
 			run: &job.PipelineRun{
-				ID: "456",
+				BlueItemRun: job.BlueItemRun{
+					ID: "456",
+				},
 			},
 		},
 		wantPipelineRun: pipeline2,
@@ -108,8 +110,10 @@ func Test_pipelineRunFinder_find(t *testing.T) {
 		args: args{
 			isMultiBranch: true,
 			run: &job.PipelineRun{
-				ID:       "456",
-				Pipeline: "main2",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "456",
+					Pipeline: "main2",
+				},
 			},
 		},
 		wantPipelineRun: multiBranchPipeline2,
@@ -120,7 +124,9 @@ func Test_pipelineRunFinder_find(t *testing.T) {
 		args: args{
 			isMultiBranch: false,
 			run: &job.PipelineRun{
-				ID: "invalid_id",
+				BlueItemRun: job.BlueItemRun{
+					ID: "invalid_id",
+				},
 			},
 		},
 		wantPipelineRun: nil,
@@ -131,7 +137,9 @@ func Test_pipelineRunFinder_find(t *testing.T) {
 		args: args{
 			isMultiBranch: true,
 			run: &job.PipelineRun{
-				ID: "invalid_id",
+				BlueItemRun: job.BlueItemRun{
+					ID: "invalid_id",
+				},
 			},
 		},
 		wantPipelineRun: nil,

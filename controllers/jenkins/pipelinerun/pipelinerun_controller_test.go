@@ -164,8 +164,10 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Client: client,
 			}
 			jobRun := &job.PipelineRun{
-				ID:       "123",
-				Pipeline: "main",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "123",
+					Pipeline: "main",
+				},
 			}
 			exists, err := reconciler.hasSamePipelineRun(jobRun, multiBranchPipeline)
 			Expect(err).To(BeNil())
@@ -177,8 +179,10 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Client: client,
 			}
 			jobRun := &job.PipelineRun{
-				ID:       "non-existent-id",
-				Pipeline: "main",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "non-existent-id",
+					Pipeline: "main",
+				},
 			}
 			exists, err := reconciler.hasSamePipelineRun(jobRun, multiBranchPipeline)
 			Expect(err).To(BeNil())
@@ -190,8 +194,10 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Client: client,
 			}
 			jobRun := &job.PipelineRun{
-				ID:       "123",
-				Pipeline: "non-existent-branch",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "123",
+					Pipeline: "non-existent-branch",
+				},
 			}
 			exists, err := reconciler.hasSamePipelineRun(jobRun, multiBranchPipeline)
 			Expect(err).To(BeNil())
@@ -211,8 +217,10 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Client: client,
 			}
 			jobRun := &job.PipelineRun{
-				ID:       "123",
-				Pipeline: "general-pipeline",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "123",
+					Pipeline: "general-pipeline",
+				},
 			}
 			exists, err := reconciler.hasSamePipelineRun(jobRun, genernalPipeline)
 			Expect(err).To(Succeed())
@@ -224,8 +232,10 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 				Client: client,
 			}
 			jobRun := &job.PipelineRun{
-				ID:       "non-existent-id",
-				Pipeline: "general-pipeline",
+				BlueItemRun: job.BlueItemRun{
+					ID:       "non-existent-id",
+					Pipeline: "general-pipeline",
+				},
 			}
 			exists, err := reconciler.hasSamePipelineRun(jobRun, genernalPipeline)
 			Expect(err).To(Succeed())
