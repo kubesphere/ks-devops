@@ -49,11 +49,11 @@ func (*pipelineMetadataConverter) convertPipeline(jobPipeline *job.Pipeline) *pi
 }
 
 type pipelineBranch struct {
-	Name         string                 `json:"name,omitempty"`
-	WeatherScore int                    `json:"weatherScore,omitempty"`
-	LatestRun    job.PipelineRunSummary `json:"latestRun,omitempty"`
-	Branch       job.Branch             `json:"branch,omitempty"`
-	PullRequest  job.PullRequest        `json:"pullRequest,omitempty"`
+	Name         string                  `json:"name,omitempty"`
+	WeatherScore int                     `json:"weatherScore,omitempty"`
+	LatestRun    *job.PipelineRunSummary `json:"latestRun,omitempty"`
+	Branch       *job.Branch             `json:"branch,omitempty"`
+	PullRequest  *job.PullRequest        `json:"pullRequest,omitempty"`
 }
 
 type pipelineBranchConverter struct {
@@ -67,7 +67,7 @@ func (*pipelineBranchConverter) convertBranches(jobBranches []job.PipelineBranch
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,
 			PullRequest:  jobBranch.PullRequest,
-			LatestRun:    *jobBranch.LatestRun,
+			LatestRun:    jobBranch.LatestRun,
 		})
 	}
 	return branches

@@ -97,6 +97,10 @@ func (r *Reconciler) obtainAndUpdatePipelineMetadata(pipeline *v1alpha3.Pipeline
 }
 
 func (r *Reconciler) obtainAndUpdatePipelineBranches(pipeline *v1alpha3.Pipeline) error {
+	if pipeline.Spec.Type != v1alpha3.MultiBranchPipelineType {
+		// skip non multi-branch Pipeline
+		return nil
+	}
 	boClient := job.BlueOceanClient{
 		JenkinsCore:  r.JenkinsCore,
 		Organization: "jenkins",
