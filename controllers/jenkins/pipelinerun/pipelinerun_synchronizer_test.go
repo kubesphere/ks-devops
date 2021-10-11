@@ -126,7 +126,7 @@ func Test_createBarePipelineRun(t *testing.T) {
 					Pipeline: "main",
 					ID:       "123",
 				},
-				Branch: job.Branch{
+				Branch: &job.Branch{
 					URL: "main",
 				},
 			},
