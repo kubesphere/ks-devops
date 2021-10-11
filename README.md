@@ -39,8 +39,6 @@ Want to go into deep? Please check out the [documentation](docs).
 - Auth support
   - OIDC support as a default provider
 
-Want to be part of us? Please feel free to go through the [contribution guide](CONTRIBUTING.md), 
-and pick up a [good-first-issue](https://github.com/kubesphere/ks-devops/contribute).
 
 ## Available communication channels:
 
@@ -48,3 +46,12 @@ and pick up a [good-first-issue](https://github.com/kubesphere/ks-devops/contrib
 - DevOps Slack channel for [English](https://kubesphere.slack.com/archives/C010TH02010) and [Chinese](https://kubesphere.slack.com/archives/C026V4FBWBW)
 - [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
+
+## Contribution
+
+Want to be part of us? Please feel free to go through the [Contribution Guide](CONTRIBUTING.md) before making a pull request, 
+and pick up a [good-first-issue](https://github.com/kubesphere/ks-devops/contribute).
+
+Thank you to all the people who already contributed to ks-devops!
+
+<a href="https://github.com/kubesphere/ks-devops/graphs/contributors"><img src="https://opencollective.com/ks-devops/contributors.svg?width=890&button=false" /></a>
