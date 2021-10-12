@@ -124,6 +124,17 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
+		} else {
+			status := pipelineRunCopied.Status.DeepCopy()
+			pbApplier := pipelineBuildApplier{pipelineBuild}
+			pbApplier.apply(status)
+
+			// Because the status is a subresource of PipelineRun, we have to update status separately.
+			// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
+			if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
+				log.Error(err, "unable to update PipelineRun status.")
+				return ctrl.Result{RequeueAfter: time.Second}, err
+			}
 		}
 
 		nodeDetails, err := jHandler.getPipelineNodeDetails(pipelineName, namespaceName, pipelineRunCopied)
@@ -131,7 +142,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "unable to get PipelineRun nodes detail")
 			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %v", err)
 		}
-
 		runResultJSON, err := json.Marshal(pipelineBuild)
 		if err != nil {
 			log.Error(err, "unable to marshal result data to JSON")
@@ -148,22 +158,12 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = string(nodeDetailsJSON)
 
-		// update PipelineRun
+		// update labels and annotations
 		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
 			return ctrl.Result{RequeueAfter: time.Second}, err
 		}
 
-		status := pipelineRunCopied.Status.DeepCopy()
-		pbApplier := pipelineBuildApplier{pipelineBuild}
-		pbApplier.apply(status)
-
-		// Because the status is a subresource of PipelineRun, we have to update status separately.
-		// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
-		if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
-			log.Error(err, "unable to update PipelineRun status.")
-			return ctrl.Result{RequeueAfter: time.Second}, err
-		}
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable

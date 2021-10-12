@@ -2,6 +2,7 @@ package pipelinerun
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strconv"
 
@@ -149,4 +150,35 @@ func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.
 		return
 	}
 	_ = response.WriteEntity(&pr)
+}
+
+func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.Response) {
+	namespaceName := request.PathParameter("namespace")
+	pipelineRunName := request.PathParameter("pipelinerun")
+
+	// get pipelinerun
+	pr := &v1alpha3.PipelineRun{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespaceName, Name: pipelineRunName}, pr); err != nil {
+		api.HandleError(request, response, err)
+		return
+	}
+
+	// get stage status
+	stagesJSON, ok := pr.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey]
+	if !ok {
+		// If the stages status dose not exist, set it as an empty array
+		stagesJSON = "[]"
+	}
+	stages := []v1alpha3.NodeDetail{}
+	if err := json.Unmarshal([]byte(stagesJSON), &stages); err != nil {
+		api.HandleError(request, response, err)
+		return
+	}
+
+	// TODO(johnniang): Check current user Handle the approvable field of NodeDetail
+	for _, stage := range stages {
+		stage.Approvable = true
+	}
+
+	_ = response.WriteEntity(&stages)
 }
