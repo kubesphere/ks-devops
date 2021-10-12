@@ -270,8 +270,18 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[1].Type)
 			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[1].Status)
 		},
-	},
-	}
+	}, {
+		name: "Nil PipelineRun",
+		fields: fields{
+			pb: nil,
+		},
+		args: args{
+			prStatus: &v1alpha3.PipelineRunStatus{},
+		},
+		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
+			assert.Equal(t, &v1alpha3.PipelineRunStatus{}, prStatus)
+		},
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pbApplier := &pipelineBuildApplier{
