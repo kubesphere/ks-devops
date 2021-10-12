@@ -319,6 +319,8 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
 github.com/jenkins-zh/jenkins-client v0.0.5-0.20211012012127-3b69e427584d h1:Mkn/zYwPxByOJQE6wyCq/Uv2Ce6glE54rapYsybL17k=
 github.com/jenkins-zh/jenkins-client v0.0.5-0.20211012012127-3b69e427584d/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
+github.com/jenkins-zh/jenkins-client v0.0.5-0.20211012143228-b956bea32b94 h1:rtjIwFaJW8G1FVuLoahsp0DwBgJapHqPw/xGaIwqTSA=
+github.com/jenkins-zh/jenkins-client v0.0.5-0.20211012143228-b956bea32b94/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
 github.com/jenkins-zh/jenkins-formulas v0.0.5/go.mod h1:zS8fm8u5L6FcjZM0QznXsLV9T2UtSVK+hT6Sm76iUZ4=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
