@@ -60,6 +60,9 @@ type pipelineBuildApplier struct {
 }
 
 func (pbApplier pipelineBuildApplier) apply(prStatus *v1alpha3.PipelineRunStatus) {
+	if pbApplier.PipelineRun == nil {
+		return
+	}
 	condition := v1alpha3.Condition{
 		Type:               v1alpha3.ConditionReady,
 		Status:             v1alpha3.ConditionUnknown,
