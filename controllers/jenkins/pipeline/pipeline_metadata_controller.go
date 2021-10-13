@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -46,22 +47,21 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// ignore resource not found due to deletion
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	// fetch pipeline metadata from Jenkins
-	boClient := job.BlueOceanClient{
-		JenkinsCore:  r.JenkinsCore,
-		Organization: "jenkins",
-	}
-	pipelineMetadata, err := boClient.GetPipeline(pipeline.Name, pipeline.Namespace)
-	if err != nil {
-		log.Error(err, "unable to get Pipeline metadata from Jenkins")
+
+	if err := r.obtainAndUpdatePipelineMetadata(pipeline); err != nil {
+		log.Error(err, "unable to obtain and update Pipeline metadata from Jenkins")
 		r.onFailedMetaUpdate(pipeline, err)
 		return ctrl.Result{}, err
 	}
 
-	// update pipeline metadata
-	if err := r.updateMetadata(pipelineMetadata, req.NamespacedName); err != nil {
-		log.Error(err, "unable to update Pipeline metadata")
+	if err := r.obtainAndUpdatePipelineBranches(pipeline); err != nil {
+		log.Error(err, "unable to obtain and update Pipeline branches data from Jenkins")
 		r.onFailedMetaUpdate(pipeline, err)
+		return ctrl.Result{}, err
+	}
+
+	if err := r.updateAnnotations(pipeline.Annotations, req.NamespacedName); err != nil {
+		log.Error(err, "unable to update annotations of Pipeline")
 		return ctrl.Result{}, err
 	}
 
@@ -77,29 +77,68 @@ func (r *Reconciler) onUpdateMetaSuccessfully(pipeline *v1alpha3.Pipeline) {
 	r.recorder.Eventf(pipeline, v1.EventTypeNormal, MetaUpdated, "Metadata of Pipeline has been updated from Jenkins successfully")
 }
 
-func (r *Reconciler) updateMetadata(jobPipeline *job.Pipeline, pipelineKey client.ObjectKey) error {
-	metadata := convert(jobPipeline)
-	metadataJSON, err := json.Marshal(metadata)
+func (r *Reconciler) obtainAndUpdatePipelineMetadata(pipeline *v1alpha3.Pipeline) error {
+	boClient := job.BlueOceanClient{
+		JenkinsCore:  r.JenkinsCore,
+		Organization: "jenkins",
+	}
+	// fetch pipeline metadata from Jenkins
+	jobPipeline, err := boClient.GetPipeline(pipeline.Name, pipeline.Namespace)
 	if err != nil {
 		return err
 	}
+	metadataJSON, err := json.Marshal(convertPipeline(jobPipeline))
+	if err != nil {
+		return err
+	}
+	// update annotation
+	pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey] = string(metadataJSON)
+	return nil
+}
+
+func (r *Reconciler) obtainAndUpdatePipelineBranches(pipeline *v1alpha3.Pipeline) error {
+	if pipeline.Spec.Type != v1alpha3.MultiBranchPipelineType {
+		// skip non multi-branch Pipeline
+		return nil
+	}
+	boClient := job.BlueOceanClient{
+		JenkinsCore:  r.JenkinsCore,
+		Organization: "jenkins",
+	}
+	jobBranches, err := boClient.GetBranches(job.GetBranchesOption{
+		Folders:      []string{pipeline.Namespace},
+		PipelineName: pipeline.Name,
+		Limit:        100000,
+	})
+	if err != nil {
+		return err
+	}
+
+	branchesJSON, err := json.Marshal(convertBranches(jobBranches))
+	if err != nil {
+		return err
+	}
+
+	// update annotation
+	pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey] = string(branchesJSON)
+	return nil
+}
+
+func (r *Reconciler) updateAnnotations(annotations map[string]string, pipelineKey client.ObjectKey) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		pipeline := &v1alpha3.Pipeline{}
 		if err := r.Get(context.Background(), pipelineKey, pipeline); err != nil {
 			return client.IgnoreNotFound(err)
 		}
 
-		// diff pipeline metadata
-		if pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey] == string(metadataJSON) {
-			// skip update if the metadata was unchanged
+		if reflect.DeepEqual(pipeline.Annotations, annotations) {
 			return nil
 		}
+
 		// update annotations
-		if pipeline.Annotations == nil {
-			pipeline.Annotations = map[string]string{}
-		}
-		pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey] = string(metadataJSON)
-		err = r.Update(context.Background(), pipeline)
+		pipeline.Annotations = annotations
+
+		err := r.Update(context.Background(), pipeline)
 		if err == nil {
 			r.onUpdateMetaSuccessfully(pipeline)
 		}

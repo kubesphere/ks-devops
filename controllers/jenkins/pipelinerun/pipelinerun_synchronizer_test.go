@@ -122,11 +122,13 @@ func Test_createBarePipelineRun(t *testing.T) {
 		args: args{
 			pipeline: multiBranchPipeline,
 			run: &job.PipelineRun{
-				ID: "123",
-				Branch: map[string]interface{}{
-					"url": "main",
+				BlueItemRun: job.BlueItemRun{
+					Pipeline: "main",
+					ID:       "123",
 				},
-				Pipeline: "main",
+				Branch: &job.Branch{
+					URL: "main",
+				},
 			},
 		},
 		want: &v1alpha3.PipelineRun{
@@ -162,7 +164,9 @@ func Test_createBarePipelineRun(t *testing.T) {
 			args: args{
 				pipeline: generalPipeline,
 				run: &job.PipelineRun{
-					ID: "123",
+					BlueItemRun: job.BlueItemRun{
+						ID: "123",
+					},
 				},
 			},
 			want: &v1alpha3.PipelineRun{
