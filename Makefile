@@ -2,9 +2,10 @@
 COMMIT := $(shell git rev-parse --short HEAD)
 VERSION := dev-$(shell git describe --tags $(shell git rev-list --tags --max-count=1))
 
-CONTROLLER_IMG ?= surenpi/devops-controller:$(VERSION)-$(COMMIT)
-APISERVER_IMG ?= surenpi/devops-apiserver:$(VERSION)-$(COMMIT)
-TOOLS_IMG ?= surenpi/devops-tools:$(VERSION)-$(COMMIT)
+DOCKER_REPO ?= kubespheredev
+CONTROLLER_IMG ?= ${DOCKER_REPO}/devops-controller:$(VERSION)-$(COMMIT)
+APISERVER_IMG ?= ${DOCKER_REPO}/devops-apiserver:$(VERSION)-$(COMMIT)
+TOOLS_IMG ?= ${DOCKER_REPO}/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
