@@ -18,11 +18,12 @@ package options
 
 import (
 	"flag"
+	"strings"
+	"time"
+
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
-	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -39,6 +40,7 @@ type DevOpsControllerManagerOptions struct {
 	LeaderElection    *leaderelection.LeaderElectionConfig
 	WebhookCertDir    string
 	S3Options         *s3.Options
+	FeatureOptions    *FeatureOptions
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
 	// There are other projects also built on sigs.k8s.io/application, when KubeSphere installed along side
@@ -58,6 +60,7 @@ func NewDevOpsControllerManagerOptions() *DevOpsControllerManagerOptions {
 			RenewDeadline: 15 * time.Second,
 			RetryPeriod:   5 * time.Second,
 		},
+		FeatureOptions:      NewFeatureOptions(),
 		LeaderElect:         false,
 		WebhookCertDir:      "",
 		ApplicationSelector: "",
@@ -71,6 +74,7 @@ func (s *DevOpsControllerManagerOptions) Flags() cliflag.NamedFlagSets {
 
 	s.KubernetesOptions.AddFlags(fss.FlagSet("kubernetes"), s.KubernetesOptions)
 	s.JenkinsOptions.AddFlags(fss.FlagSet("devops"), s.JenkinsOptions)
+	s.FeatureOptions.AddFlags(fss.FlagSet("feature"), s.FeatureOptions)
 
 	fs := fss.FlagSet("leaderelection")
 	s.bindLeaderElectionFlags(s.LeaderElection, fs)
@@ -104,6 +108,7 @@ func (s *DevOpsControllerManagerOptions) Validate() []error {
 	var errs []error
 	errs = append(errs, s.JenkinsOptions.Validate()...)
 	errs = append(errs, s.KubernetesOptions.Validate()...)
+	errs = append(errs, s.FeatureOptions.Validate()...)
 
 	if len(s.ApplicationSelector) != 0 {
 		_, err := labels.Parse(s.ApplicationSelector)

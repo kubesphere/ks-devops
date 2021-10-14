@@ -51,6 +51,7 @@ func NewControllerManagerCommand() *cobra.Command {
 			KubernetesOptions: conf.KubernetesOptions,
 			JenkinsOptions:    conf.JenkinsOptions,
 			S3Options:         conf.S3Options,
+			FeatureOptions:    s.FeatureOptions,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,
 			WebhookCertDir:    s.WebhookCertDir,
@@ -90,7 +91,7 @@ func NewControllerManagerCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version of KubeSphere DevOps controller",
 		Run: func(cmd *cobra.Command, args []string) {
-			//cmd.Println(version.Get())
+			// cmd.Println(version.Get())
 		},
 	}
 
