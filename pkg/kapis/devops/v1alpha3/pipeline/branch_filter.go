@@ -5,12 +5,12 @@ import (
 	"kubesphere.io/devops/pkg/models/pipeline"
 )
 
-type branchPredicate func(pipeline.PipelineBranch) bool
+type branchPredicate func(pipeline.Branch) bool
 
-type branchFilter []pipeline.PipelineBranch
+type branchFilter []pipeline.Branch
 
-func (branches branchFilter) filter(predicate branchPredicate) []pipeline.PipelineBranch {
-	resultBranches := []pipeline.PipelineBranch{}
+func (branches branchFilter) filter(predicate branchPredicate) []pipeline.Branch {
+	resultBranches := []pipeline.Branch{}
 	for _, branch := range branches {
 		if predicate != nil && predicate(branch) {
 			resultBranches = append(resultBranches, branch)
@@ -19,19 +19,19 @@ func (branches branchFilter) filter(predicate branchPredicate) []pipeline.Pipeli
 	return resultBranches
 }
 
-func filterBranches(branches []pipeline.PipelineBranch, filter string) []pipeline.PipelineBranch {
+func filterBranches(branches []pipeline.Branch, filter string) []pipeline.Branch {
 	var predicate branchPredicate
 	switch filter {
 	case string(job.PullRequestFilter):
-		predicate = func(branch pipeline.PipelineBranch) bool {
+		predicate = func(branch pipeline.Branch) bool {
 			return branch.PullRequest != nil && branch.PullRequest.ID != ""
 		}
 	case string(job.OriginFilter):
-		predicate = func(branch pipeline.PipelineBranch) bool {
+		predicate = func(branch pipeline.Branch) bool {
 			return branch.PullRequest == nil || branch.PullRequest.ID == ""
 		}
 	default:
-		predicate = func(pb pipeline.PipelineBranch) bool {
+		predicate = func(pb pipeline.Branch) bool {
 			return true
 		}
 	}

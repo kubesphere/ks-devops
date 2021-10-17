@@ -11,17 +11,17 @@ import (
 
 func Test_filterBranches(t *testing.T) {
 	type args struct {
-		branches []pipeline.PipelineBranch
+		branches []pipeline.Branch
 		filter   string
 	}
 	tests := []struct {
 		name string
 		args args
-		want []pipeline.PipelineBranch
+		want []pipeline.Branch
 	}{{
 		name: "Without filter",
 		args: args{
-			branches: []pipeline.PipelineBranch{{
+			branches: []pipeline.Branch{{
 				Name: "main1",
 			}, {
 				Name: "PR1",
@@ -31,7 +31,7 @@ func Test_filterBranches(t *testing.T) {
 			}},
 			filter: "",
 		},
-		want: []pipeline.PipelineBranch{{
+		want: []pipeline.Branch{{
 			Name: "main1",
 		}, {
 			Name: "PR1",
@@ -42,7 +42,7 @@ func Test_filterBranches(t *testing.T) {
 	}, {
 		name: "With filter: origin",
 		args: args{
-			branches: []pipeline.PipelineBranch{{
+			branches: []pipeline.Branch{{
 				Name:        "main1",
 				PullRequest: nil,
 			}, {
@@ -56,7 +56,7 @@ func Test_filterBranches(t *testing.T) {
 			}},
 			filter: "origin",
 		},
-		want: []pipeline.PipelineBranch{{
+		want: []pipeline.Branch{{
 			Name:        "main1",
 			PullRequest: nil,
 		}, {
@@ -66,7 +66,7 @@ func Test_filterBranches(t *testing.T) {
 	}, {
 		name: "With filter: pull-requests",
 		args: args{
-			branches: []pipeline.PipelineBranch{{
+			branches: []pipeline.Branch{{
 				Name:        "main1",
 				PullRequest: nil,
 			}, {
@@ -80,7 +80,7 @@ func Test_filterBranches(t *testing.T) {
 			}},
 			filter: "pull-requests",
 		},
-		want: []pipeline.PipelineBranch{{
+		want: []pipeline.Branch{{
 			Name: "PR1",
 			PullRequest: &job.PullRequest{
 				ID: "1",
@@ -89,7 +89,7 @@ func Test_filterBranches(t *testing.T) {
 	}, {
 		name: "With other filter",
 		args: args{
-			branches: []pipeline.PipelineBranch{{
+			branches: []pipeline.Branch{{
 				Name: "main1",
 			}, {
 				Name: "PR1",
@@ -99,7 +99,7 @@ func Test_filterBranches(t *testing.T) {
 			}},
 			filter: rand.String(10),
 		},
-		want: []pipeline.PipelineBranch{{
+		want: []pipeline.Branch{{
 			Name: "main1",
 		}, {
 			Name: "PR1",

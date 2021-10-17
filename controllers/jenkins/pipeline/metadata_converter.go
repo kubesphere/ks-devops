@@ -5,8 +5,8 @@ import (
 	"kubesphere.io/devops/pkg/models/pipeline"
 )
 
-func convertPipeline(jobPipeline *job.Pipeline) *pipeline.PipelineMetadata {
-	return &pipeline.PipelineMetadata{
+func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
+	return &pipeline.Metadata{
 		WeatherScore:                   jobPipeline.WeatherScore,
 		EstimatedDurationInMillis:      jobPipeline.EstimatedDurationInMillis,
 		Parameters:                     jobPipeline.Parameters,
@@ -56,10 +56,10 @@ func convertCauses(jobCauses []job.Cause) []pipeline.Cause {
 	return causes
 }
 
-func convertBranches(jobBranches []job.PipelineBranch) []pipeline.PipelineBranch {
-	branches := make([]pipeline.PipelineBranch, 0, len(jobBranches))
+func convertBranches(jobBranches []job.PipelineBranch) []pipeline.Branch {
+	branches := make([]pipeline.Branch, 0, len(jobBranches))
 	for _, jobBranch := range jobBranches {
-		branches = append(branches, pipeline.PipelineBranch{
+		branches = append(branches, pipeline.Branch{
 			Name:         jobBranch.Name,
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,
