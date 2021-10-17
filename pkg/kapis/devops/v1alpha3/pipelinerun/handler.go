@@ -13,6 +13,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/models/pipelinerun"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -169,7 +170,7 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 		// If the stages status dose not exist, set it as an empty array
 		stagesJSON = "[]"
 	}
-	stages := []v1alpha3.NodeDetail{}
+	stages := []pipelinerun.NodeDetail{}
 	if err := json.Unmarshal([]byte(stagesJSON), &stages); err != nil {
 		api.HandleError(request, response, err)
 		return

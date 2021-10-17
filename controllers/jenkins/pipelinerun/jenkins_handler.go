@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/models/pipelinerun"
 )
 
 // jenkinsHandler handles some actions with Jenkins endpoint.
@@ -17,7 +18,7 @@ type jenkinsHandler struct {
 }
 
 // getPipelineNodeDetails gets node details including pipeline steps.
-func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace string, pr *v1alpha3.PipelineRun) ([]v1alpha3.NodeDetail, error) {
+func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace string, pr *v1alpha3.PipelineRun) ([]pipelinerun.NodeDetail, error) {
 	runID, exists := pr.GetPipelineRunID()
 	if !exists {
 		return nil, fmt.Errorf("unable to get PipelineRun nodes due to not found run ID")
@@ -37,13 +38,13 @@ func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace st
 	}
 
 	// get steps for every node
-	nodeDetails := []v1alpha3.NodeDetail{}
+	nodeDetails := []pipelinerun.NodeDetail{}
 	for _, node := range nodes {
 		steps, err := handler.getSteps(node.ID, pipelineName, namespace, pr)
 		if err != nil {
 			return nil, err
 		}
-		nodeDetails = append(nodeDetails, v1alpha3.NodeDetail{
+		nodeDetails = append(nodeDetails, pipelinerun.NodeDetail{
 			Node:  node,
 			Steps: steps,
 		})

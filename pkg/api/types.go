@@ -17,6 +17,9 @@ limitations under the License.
 package api
 
 import (
+	"fmt"
+	"reflect"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -27,12 +30,26 @@ type ListResult struct {
 }
 
 // NewListResult creates a ListResult for the given items and total.
-func NewListResult(items []interface{}, total int) *ListResult {
-	if items == nil {
-		items = make([]interface{}, 0)
+func NewListResult(items interface{}, total int) *ListResult {
+	itemsValue := reflect.ValueOf(items)
+	if itemsValue.Kind() == reflect.Ptr {
+		itemsValue = itemsValue.Elem()
 	}
+	if items == nil || itemsValue.IsNil() {
+		items = make([]interface{}, 0)
+	} else if itemsValue.Kind() == reflect.Slice {
+		// copy items into []interface{}
+		itemsHolder := make([]interface{}, 0, itemsValue.Len())
+		for i := 0; i < itemsValue.Len(); i++ {
+			itemsHolder = append(itemsHolder, itemsValue.Index(i).Interface())
+		}
+		items = itemsHolder
+	} else {
+		panic(fmt.Errorf("NewListResult: expected slice type, found %q", itemsValue.Kind().String()))
+	}
+
 	return &ListResult{
-		Items:      items,
+		Items:      items.([]interface{}),
 		TotalItems: total,
 	}
 }

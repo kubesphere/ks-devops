@@ -19,14 +19,16 @@
 package v1alpha3
 
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipeline"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/devops/pkg/api"
@@ -45,11 +47,13 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 	ws := runtime.NewWebService(GroupVersion)
 	registerRoutes(devopsClient, k8sClient, ws)
 	pipelinerun.RegisterRoutes(ws, client)
+	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
 
 	ws = runtime.NewWebServiceWithoutGroup(GroupVersion)
 	registerRoutes(devopsClient, k8sClient, ws)
 	pipelinerun.RegisterRoutes(ws, client)
+	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
 }
 
