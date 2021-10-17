@@ -2,9 +2,10 @@
 COMMIT := $(shell git rev-parse --short HEAD)
 VERSION := dev-$(shell git describe --tags $(shell git rev-list --tags --max-count=1))
 
-CONTROLLER_IMG ?= surenpi/devops-controller:$(VERSION)-$(COMMIT)
-APISERVER_IMG ?= surenpi/devops-apiserver:$(VERSION)-$(COMMIT)
-TOOLS_IMG ?= surenpi/devops-tools:$(VERSION)-$(COMMIT)
+DOCKER_REPO ?= kubespheredev
+CONTROLLER_IMG ?= ${DOCKER_REPO}/devops-controller:$(VERSION)-$(COMMIT)
+APISERVER_IMG ?= ${DOCKER_REPO}/devops-apiserver:$(VERSION)-$(COMMIT)
+TOOLS_IMG ?= ${DOCKER_REPO}/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -17,7 +18,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+all: test lint
 
 # Run tests
 test: fmt vet # generate manifests
@@ -42,39 +43,6 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
-lint-chart:
-	helm lint charts/ks-devops
-
-install-chart: lint-chart
-	helm install ks-ctl charts/ks-devops -n kubesphere-devops-system --set serviceAccount.create=true --create-namespace \
-		--set image.pullPolicy=Always \
-		--set jenkins.ksAuth.enabled=true
-uninstall-chart:
-	make uninstall-jenkins-chart || true
-	helm uninstall ks-ctl -n kubesphere-devops-system
-render-chart:
-	helm template ks-ctl charts/ks-devops  -n kubesphere-devops-system \
-		--set serviceAccount.create=true --create-namespace \
-		--set image.pullPolicy=Always \
-		--set jenkins.ksAuth.enabled=true --debug
-
-install-jenkins-chart:
-	helm install ks-jenkins-test charts/ks-devops/charts/jenkins --set Master.NodePort=
-
-uninstall-jenkins-chart:
-	helm uninstall ks-jenkins-test
-
-reinstall-chart:
-	make uninstall-chart || true
-	make install-chart
-
-reinstall-jenkins-chart:
-	make uninstall-jenkins-chart || true
-	make install-jenkins-chart
-
-package-chart:
-	cd charts && helm package ks-devops
-
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${CONTROLLER_IMG}
@@ -91,6 +59,10 @@ fmt:
 # Run go vet against code
 vet:
 	go vet ./...
+
+# Install golang-lint via https://golangci-lint.run/usage/install/#local-installation
+lint:
+	golangci-lint run ./...
 
 # Generate code
 generate: controller-gen
@@ -154,7 +126,7 @@ ifeq (, $(shell which controller-gen))
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$CONTROLLER_GEN_TMP_DIR ;\
 	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.2 ;\
 	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen

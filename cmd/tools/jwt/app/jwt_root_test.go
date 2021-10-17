@@ -269,7 +269,7 @@ func Test_jwtOption_generateSecret(t *testing.T) {
 	}
 
 	// the secret should be a dynamic value
-	secretMap := make(map[string]string, 0)
+	secretMap := make(map[string]string)
 	for i := 0; i < 30; i++ {
 		secret := o.generateSecret()
 		if _, ok := secretMap[secret]; ok {

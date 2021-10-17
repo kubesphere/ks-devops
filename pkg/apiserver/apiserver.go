@@ -20,9 +20,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
 	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsbearertoken "kubesphere.io/devops/pkg/apiserver/authentication/authenticators/bearertoken"
 	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
@@ -31,11 +34,12 @@ import (
 	"kubesphere.io/devops/pkg/models/auth"
 	"net/http"
 	rt "runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	urlruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/klog"
@@ -94,6 +98,8 @@ type APIServer struct {
 
 	// controller-runtime cache
 	RuntimeCache runtimecache.Cache
+
+	Client client.Client
 }
 
 func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
@@ -121,16 +127,23 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 // Installation happens before all informers start to cache objects, so
 //   any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
-	urlruntime.Must(devopsv1alpha2.AddToContainer(s.container,
+	jenkinsCore := core.JenkinsCore{
+		URL:      s.Config.JenkinsOptions.Host,
+		UserName: s.Config.JenkinsOptions.Username,
+		Token:    s.Config.JenkinsOptions.Password,
+	}
+
+	utilruntime.Must(devopsv1alpha2.AddToContainer(s.container,
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.DevopsClient,
 		s.SonarClient,
 		s.KubernetesClient.KubeSphere(),
 		s.S3Client,
 		s.Config.JenkinsOptions.Host,
-		s.KubernetesClient))
-	urlruntime.Must(devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient))
-	urlruntime.Must(oauth.AddToContainer(s.container,
+		s.KubernetesClient,
+		jenkinsCore))
+	devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client)
+	utilruntime.Must(oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
@@ -209,71 +222,21 @@ func (s *APIServer) waitForResourceSync(stopCh <-chan struct{}) error {
 		return false
 	}
 
-	// resources we have to create informer first
-	k8sGVRs := []schema.GroupVersionResource{
-		{Group: "", Version: "v1", Resource: "namespaces"},
-		{Group: "", Version: "v1", Resource: "nodes"},
-		{Group: "", Version: "v1", Resource: "resourcequotas"},
-		{Group: "", Version: "v1", Resource: "pods"},
-		{Group: "", Version: "v1", Resource: "services"},
-		{Group: "", Version: "v1", Resource: "persistentvolumeclaims"},
-		{Group: "", Version: "v1", Resource: "secrets"},
-		{Group: "", Version: "v1", Resource: "configmaps"},
-		{Group: "", Version: "v1", Resource: "serviceaccounts"},
-
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"},
-		{Group: "apps", Version: "v1", Resource: "deployments"},
-		{Group: "apps", Version: "v1", Resource: "daemonsets"},
-		{Group: "apps", Version: "v1", Resource: "replicasets"},
-		{Group: "apps", Version: "v1", Resource: "statefulsets"},
-		{Group: "apps", Version: "v1", Resource: "controllerrevisions"},
-		{Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses"},
-		{Group: "batch", Version: "v1", Resource: "jobs"},
-		{Group: "batch", Version: "v1beta1", Resource: "cronjobs"},
-		{Group: "extensions", Version: "v1beta1", Resource: "ingresses"},
-		{Group: "autoscaling", Version: "v2beta2", Resource: "horizontalpodautoscalers"},
-		{Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies"},
-	}
-
-	for _, gvr := range k8sGVRs {
-		if !isResourceExists(gvr) {
-			klog.Warningf("resource %s not exists in the cluster", gvr)
-		} else {
-			_, err := s.InformerFactory.KubernetesSharedInformerFactory().ForResource(gvr)
-			if err != nil {
-				klog.Errorf("cannot create informer for %s", gvr)
-				return err
-			}
-		}
-	}
-
 	s.InformerFactory.KubernetesSharedInformerFactory().Start(stopCh)
 	s.InformerFactory.KubernetesSharedInformerFactory().WaitForCacheSync(stopCh)
 
 	ksInformerFactory := s.InformerFactory.KubeSphereSharedInformerFactory()
 
-	ksGVRs := []schema.GroupVersionResource{
-		{Group: "devops.kubesphere.io", Version: "v1alpha3", Resource: "devopsprojects"},
-	}
-
 	devopsGVRs := []schema.GroupVersionResource{
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibinaries"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibuildertemplates"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2iruns"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibuilders"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha3", Resource: "devopsprojects"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha3", Resource: "pipelines"},
+		{Group: v1alpha1.GroupVersion.Group, Version: v1alpha1.GroupVersion.Version, Resource: "s2ibinaries"},
+		{Group: v1alpha1.GroupVersion.Group, Version: v1alpha1.GroupVersion.Version, Resource: "s2ibuildertemplates"},
+		{Group: v1alpha1.GroupVersion.Group, Version: v1alpha1.GroupVersion.Version, Resource: "s2iruns"},
+		{Group: v1alpha1.GroupVersion.Group, Version: v1alpha1.GroupVersion.Version, Resource: "s2ibuilders"},
+		{Group: v1alpha3.GroupVersion.Group, Version: v1alpha3.GroupVersion.Version, Resource: "devopsprojects"},
+		{Group: v1alpha3.GroupVersion.Group, Version: v1alpha3.GroupVersion.Version, Resource: "pipelines"},
 	}
 
-	// skip caching devops resources if devops not enabled
-	if s.DevopsClient != nil {
-		ksGVRs = append(ksGVRs, devopsGVRs...)
-	}
-
-	for _, gvr := range ksGVRs {
+	for _, gvr := range devopsGVRs {
 		if !isResourceExists(gvr) {
 			klog.Warningf("resource %s not exists in the cluster", gvr)
 		} else {
@@ -287,32 +250,14 @@ func (s *APIServer) waitForResourceSync(stopCh <-chan struct{}) error {
 	ksInformerFactory.Start(stopCh)
 	ksInformerFactory.WaitForCacheSync(stopCh)
 
-	apiextensionsInformerFactory := s.InformerFactory.ApiExtensionSharedInformerFactory()
-	apiextensionsGVRs := []schema.GroupVersionResource{
-		{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"},
-	}
-
-	for _, gvr := range apiextensionsGVRs {
-		if !isResourceExists(gvr) {
-			klog.Warningf("resource %s not exists in the cluster", gvr)
-		} else {
-			_, err = apiextensionsInformerFactory.ForResource(gvr)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	apiextensionsInformerFactory.Start(stopCh)
-	apiextensionsInformerFactory.WaitForCacheSync(stopCh)
-
 	// controller runtime cache for resources
-	go s.RuntimeCache.Start(stopCh)
+	go func() {
+		_ = s.RuntimeCache.Start(stopCh)
+	}()
 	s.RuntimeCache.WaitForCacheSync(stopCh)
 
 	klog.V(0).Info("Finished caching objects")
-
 	return nil
-
 }
 
 func logStackOnRecover(panicReason interface{}, w http.ResponseWriter) {
@@ -333,7 +278,8 @@ func logStackOnRecover(panicReason interface{}, w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte("Internal server error"))
+	// ignore this error explicitly
+	_, _ = w.Write([]byte("Internal server error"))
 }
 
 func logRequestAndResponse(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {

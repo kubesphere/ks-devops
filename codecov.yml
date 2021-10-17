@@ -1,0 +1,14 @@
+# https://docs.codecov.com/docs/ignoring-paths
+ignore:
+  - "*generated*.go"
+  - "**/*generated*.go"         # glob accepted
+  - "pkg/client/clientset/versioned"
+
+# https://docs.codecov.com/docs/commit-status
+# it's hard to have a coverage for some code lines
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 0.1%

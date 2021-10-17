@@ -30,35 +30,35 @@ import (
 var sanitizer = strings.NewReplacer(`&`, "&amp;", `<`, "&lt;", `>`, "&gt;")
 
 func HandleInternalError(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusInternalServerError, response, req, err)
+	handle(http.StatusInternalServerError, req, response, err)
 }
 
 // HandleBadRequest writes http.StatusBadRequest and log error
 func HandleBadRequest(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusBadRequest, response, req, err)
+	handle(http.StatusBadRequest, req, response, err)
 }
 
 func HandleNotFound(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusNotFound, response, req, err)
+	handle(http.StatusNotFound, req, response, err)
 }
 
 func HandleForbidden(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusForbidden, response, req, err)
+	handle(http.StatusForbidden, req, response, err)
 }
 
 func HandleUnauthorized(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusUnauthorized, response, req, err)
+	handle(http.StatusUnauthorized, req, response, err)
 }
 
 func HandleTooManyRequests(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusTooManyRequests, response, req, err)
+	handle(http.StatusTooManyRequests, req, response, err)
 }
 
 func HandleConflict(response *restful.Response, req *restful.Request, err error) {
-	handle(http.StatusConflict, response, req, err)
+	handle(http.StatusConflict, req, response, err)
 }
 
-func HandleError(response *restful.Response, req *restful.Request, err error) {
+func HandleError(request *restful.Request, response *restful.Response, err error) {
 	var statusCode int
 	switch t := err.(type) {
 	case errors.APIStatus:
@@ -68,10 +68,10 @@ func HandleError(response *restful.Response, req *restful.Request, err error) {
 	default:
 		statusCode = http.StatusInternalServerError
 	}
-	handle(statusCode, response, req, err)
+	handle(statusCode, request, response, err)
 }
 
-func handle(statusCode int, response *restful.Response, req *restful.Request, err error) {
+func handle(statusCode int, req *restful.Request, response *restful.Response, err error) {
 	_, fn, line, _ := runtime.Caller(2)
 	klog.Errorf("%s:%d %v", fn, line, err)
 	http.Error(response, sanitizer.Replace(err.Error()), statusCode)

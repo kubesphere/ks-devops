@@ -1,0 +1,18 @@
+name: Backup
+
+on:
+  push:
+   branches:
+     - master
+
+jobs:
+  Backup:
+    name: backup
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: backup
+        uses: jenkins-zh/git-backup-actions@v0.0.4
+        env:
+          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+          TARGET_GIT: "git@gitee.com:kubesphere/ks-devops.git"

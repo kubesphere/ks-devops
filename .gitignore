@@ -23,6 +23,8 @@ bin
 *.swo
 *~
 
-charts/*.tgz
+.vscode
+__debug_bin
+
 kubesphere.yaml
 */**/*.xml

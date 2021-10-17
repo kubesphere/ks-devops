@@ -45,29 +45,6 @@ type APIRequest struct {
 	Suffix   string
 }
 
-// set basic token for jenkins auth
-func SetBasicBearTokenHeader(header *http.Header) error {
-	bearTokenArray := strings.Split(header.Get("Authorization"), " ")
-	bearFlag := bearTokenArray[0]
-	//var err error
-	// TODO need to add auth here
-	if strings.ToLower(bearFlag) == "bearer" {
-		//bearToken := bearTokenArray[1]
-		//if err != nil {
-		//	return err
-		//}
-		//claim := authtoken.Claims{}
-		//parser := jwt.Parser{}
-		//_, _, err = parser.ParseUnverified(bearToken, &claim)
-		//if err != nil {
-		//	return err
-		//}
-		//creds := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", claim.Username, bearToken)))
-		//header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
-	}
-	return nil
-}
-
 func (ar *APIRequest) SetHeader(key string, value string) *APIRequest {
 	ar.Headers.Set(key, value)
 	return ar
@@ -90,6 +67,14 @@ type Requester struct {
 }
 
 func (r *Requester) SetCrumb(ar *APIRequest) error {
+	return r.SetCrumbForConsumer(func(crumbRequestField, crumb string) {
+		ar.SetHeader(crumbRequestField, crumb)
+	})
+}
+
+// SetCrumbForConsumer makes crumb consumer set the crumb. Crumb consumer accepts crumb request field and crumb
+// parameters and can handle the crumb whatever it likes.
+func (r *Requester) SetCrumbForConsumer(crumbConsumer func(crumbRequestField, crumb string)) error {
 	crumbData := map[string]string{}
 	response, err := r.GetJSON("/crumbIssuer/api/json", &crumbData, nil)
 	if err != nil {
@@ -100,7 +85,7 @@ func (r *Requester) SetCrumb(ar *APIRequest) error {
 		return err
 	}
 	if response.StatusCode == 200 && crumbData["crumbRequestField"] != "" {
-		ar.SetHeader(crumbData["crumbRequestField"], crumbData["crumb"])
+		crumbConsumer(crumbData["crumbRequestField"], crumbData["crumb"])
 	}
 
 	return nil

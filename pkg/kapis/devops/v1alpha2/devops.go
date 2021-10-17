@@ -72,9 +72,11 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 }
 
 func buildPipelineSearchQueryParam(req *restful.Request, nameReg string) (q *query.Query) {
-	// for pagination compatibility
-	start := req.QueryParameter("start")
-	req.Request.Form.Set(query.ParameterPage, start)
+	startStr := req.QueryParameter(query.ParameterStart)
+	if req.Request.Form.Get(query.ParameterPage) == "" && startStr != "" {
+		// for pagination compatibility
+		req.Request.Form.Set(query.ParameterStart, startStr)
+	}
 
 	q = query.ParseQueryParameter(req)
 
@@ -127,18 +129,16 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 	// get all pipelines which come from ks
 	pipelineList := &clientDevOps.PipelineList{
 		Total: objs.TotalItems,
-		Items: make([]clientDevOps.Pipeline, len(objs.Items)),
+		Items: make([]clientDevOps.Pipeline, 0, len(objs.Items)),
 	}
-	pipelineMap := make(map[string]int, pipelineList.Total)
-	for i, _ := range objs.Items {
-		if pipeline, ok := objs.Items[i].(*v1alpha3.Pipeline); !ok {
-			continue
-		} else {
+	pipelineMap := make(map[string]int)
+	for i := range objs.Items {
+		if pipeline, ok := objs.Items[i].(*v1alpha3.Pipeline); ok {
 			pipelineMap[pipeline.Name] = i
-			pipelineList.Items[i] = clientDevOps.Pipeline{
+			pipelineList.Items = append(pipelineList.Items, clientDevOps.Pipeline{
 				Name:        pipeline.Name,
 				Annotations: pipeline.Annotations,
-			}
+			})
 		}
 	}
 
@@ -163,8 +163,7 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 		}
 	}
 
-	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
-	resp.WriteAsJson(pipelineList)
+	_ = resp.WriteEntity(pipelineList)
 }
 
 func (h *ProjectPipelineHandler) GetPipelineRun(req *restful.Request, resp *restful.Response) {

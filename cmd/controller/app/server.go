@@ -18,6 +18,8 @@ package app
 
 import (
 	"fmt"
+
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -26,7 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/informers"
-	"kubesphere.io/devops/pkg/utils/term"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +51,7 @@ func NewControllerManagerCommand() *cobra.Command {
 			KubernetesOptions: conf.KubernetesOptions,
 			JenkinsOptions:    conf.JenkinsOptions,
 			S3Options:         conf.S3Options,
+			FeatureOptions:    s.FeatureOptions,
 			LeaderElection:    s.LeaderElection,
 			LeaderElect:       s.LeaderElect,
 			WebhookCertDir:    s.WebhookCertDir,
@@ -80,17 +82,16 @@ func NewControllerManagerCommand() *cobra.Command {
 	}
 
 	usageFmt := "Usage:\n  %s\n"
-	cols, _, _ := term.TerminalSize(cmd.OutOrStdout())
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n\n"+usageFmt, cmd.Long, cmd.UseLine())
-		cliflag.PrintSections(cmd.OutOrStdout(), namedFlagSets, cols)
+		cliflag.PrintSections(cmd.OutOrStdout(), namedFlagSets, 0)
 	})
 
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version of KubeSphere DevOps controller",
 		Run: func(cmd *cobra.Command, args []string) {
-			//cmd.Println(version.Get())
+			// cmd.Println(version.Get())
 		},
 	}
 
@@ -115,6 +116,13 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		if err != nil {
 			return fmt.Errorf("failed to connect jenkins, please check jenkins status, error: %v", err)
 		}
+	}
+
+	// Init Jenkins client
+	jenkinsCore := core.JenkinsCore{
+		URL:      s.JenkinsOptions.Host,
+		UserName: s.JenkinsOptions.Username,
+		Token:    s.JenkinsOptions.Password,
 	}
 
 	// Init informers
@@ -149,9 +157,7 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
-	if err = apis.AddToScheme(mgr.GetScheme()); err != nil {
-		klog.Fatalf("unable add APIs to scheme: %v", err)
-	}
+	apis.AddToScheme(mgr.GetScheme())
 
 	// Init s3 client
 	var s3Client s3.Interface
@@ -169,6 +175,7 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		kubernetesClient,
 		informerFactory,
 		devopsClient,
+		jenkinsCore,
 		s3Client,
 		s,
 		stopCh); err != nil {

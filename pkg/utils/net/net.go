@@ -22,7 +22,8 @@ import (
 	"strings"
 )
 
-// 0 is considered as a non valid port
+// IsValidPort check if given number is an valid port
+// 0 is considered as an inalid port
 func IsValidPort(port int) bool {
 	return port > 0 && port < 65535
 }

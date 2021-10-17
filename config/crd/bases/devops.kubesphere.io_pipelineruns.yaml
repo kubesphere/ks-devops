@@ -1,0 +1,487 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.6.2
+  creationTimestamp: null
+  name: pipelineruns.devops.kubesphere.io
+spec:
+  group: devops.kubesphere.io
+  names:
+    categories:
+    - devops
+    kind: PipelineRun
+    listKind: PipelineRunList
+    plural: pipelineruns
+    shortNames:
+    - pr
+    singular: pipelinerun
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: The phase of a PipelineRun
+      jsonPath: .status.phase
+      name: Phase
+      type: string
+    - description: The age of a PipelineRun
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: PipelineRun is the Schema for the pipelineruns API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PipelineRunSpec defines the desired state of PipelineRun
+            properties:
+              action:
+                description: Action indicates what we need to do with current PipelineRun.
+                type: string
+              parameters:
+                description: Parameters are some key/value pairs passed to runner.
+                items:
+                  description: Parameter is an option that can be passed with the
+                    endpoint to influence the Pipeline Run
+                  properties:
+                    name:
+                      description: Name indicates that name of the parameter.
+                      type: string
+                    value:
+                      description: Value indicates that value of the parameter.
+                      type: string
+                  required:
+                  - name
+                  - value
+                  type: object
+                type: array
+              pipelineRef:
+                description: PipelineRef is the Pipeline to which the current PipelineRun
+                  belongs
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+              pipelineSpec:
+                description: PipelineSpec is the specification of Pipeline when the
+                  current PipelineRun is created.
+                properties:
+                  multi_branch_pipeline:
+                    properties:
+                      bitbucket_server_source:
+                        properties:
+                          api_uri:
+                            type: string
+                          credential_id:
+                            type: string
+                          discover_branches:
+                            type: integer
+                          discover_pr_from_forks:
+                            properties:
+                              strategy:
+                                type: integer
+                              trust:
+                                type: integer
+                            type: object
+                          discover_pr_from_origin:
+                            type: integer
+                          discover_tags:
+                            type: boolean
+                          git_clone_option:
+                            properties:
+                              depth:
+                                type: integer
+                              shallow:
+                                type: boolean
+                              timeout:
+                                type: integer
+                            type: object
+                          owner:
+                            type: string
+                          regex_filter:
+                            type: string
+                          repo:
+                            type: string
+                          scm_id:
+                            type: string
+                        type: object
+                      description:
+                        type: string
+                      discarder:
+                        properties:
+                          days_to_keep:
+                            type: string
+                          num_to_keep:
+                            type: string
+                        type: object
+                      git_source:
+                        properties:
+                          credential_id:
+                            type: string
+                          discover_branches:
+                            type: boolean
+                          discover_tags:
+                            type: boolean
+                          git_clone_option:
+                            properties:
+                              depth:
+                                type: integer
+                              shallow:
+                                type: boolean
+                              timeout:
+                                type: integer
+                            type: object
+                          regex_filter:
+                            type: string
+                          scm_id:
+                            type: string
+                          url:
+                            type: string
+                        type: object
+                      github_source:
+                        description: GithubSource and BitbucketServerSource have the
+                          same structure, but we don't use one due to crd errors
+                        properties:
+                          api_uri:
+                            type: string
+                          credential_id:
+                            type: string
+                          discover_branches:
+                            type: integer
+                          discover_pr_from_forks:
+                            properties:
+                              strategy:
+                                type: integer
+                              trust:
+                                type: integer
+                            type: object
+                          discover_pr_from_origin:
+                            type: integer
+                          discover_tags:
+                            type: boolean
+                          git_clone_option:
+                            properties:
+                              depth:
+                                type: integer
+                              shallow:
+                                type: boolean
+                              timeout:
+                                type: integer
+                            type: object
+                          owner:
+                            type: string
+                          regex_filter:
+                            type: string
+                          repo:
+                            type: string
+                          scm_id:
+                            type: string
+                        type: object
+                      gitlab_source:
+                        properties:
+                          api_uri:
+                            type: string
+                          credential_id:
+                            type: string
+                          discover_branches:
+                            type: integer
+                          discover_pr_from_forks:
+                            properties:
+                              strategy:
+                                type: integer
+                              trust:
+                                type: integer
+                            type: object
+                          discover_pr_from_origin:
+                            type: integer
+                          discover_tags:
+                            type: boolean
+                          git_clone_option:
+                            properties:
+                              depth:
+                                type: integer
+                              shallow:
+                                type: boolean
+                              timeout:
+                                type: integer
+                            type: object
+                          owner:
+                            type: string
+                          regex_filter:
+                            type: string
+                          repo:
+                            type: string
+                          scm_id:
+                            type: string
+                          server_name:
+                            type: string
+                        type: object
+                      multibranch_job_trigger:
+                        properties:
+                          create_action_job_to_trigger:
+                            type: string
+                          delete_action_job_to_trigger:
+                            type: string
+                        type: object
+                      name:
+                        type: string
+                      script_path:
+                        type: string
+                      single_svn_source:
+                        properties:
+                          credential_id:
+                            type: string
+                          remote:
+                            type: string
+                          scm_id:
+                            type: string
+                        type: object
+                      source_type:
+                        type: string
+                      svn_source:
+                        properties:
+                          credential_id:
+                            type: string
+                          excludes:
+                            type: string
+                          includes:
+                            type: string
+                          remote:
+                            type: string
+                          scm_id:
+                            type: string
+                        type: object
+                      timer_trigger:
+                        properties:
+                          cron:
+                            description: user in no scm job
+                            type: string
+                          interval:
+                            description: use in multi-branch job
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    - script_path
+                    - source_type
+                    type: object
+                  pipeline:
+                    properties:
+                      description:
+                        type: string
+                      disable_concurrent:
+                        type: boolean
+                      discarder:
+                        properties:
+                          days_to_keep:
+                            type: string
+                          num_to_keep:
+                            type: string
+                        type: object
+                      generic_webhook:
+                        properties:
+                          cause:
+                            type: string
+                          enable:
+                            type: boolean
+                          filter_expression:
+                            type: string
+                          filter_text:
+                            type: string
+                          header_variables:
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                regexp_filter:
+                                  type: string
+                              type: object
+                            type: array
+                          print_post_content:
+                            type: boolean
+                          print_variables:
+                            type: boolean
+                          request_variables:
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                regexp_filter:
+                                  type: string
+                              type: object
+                            type: array
+                          token:
+                            type: string
+                        type: object
+                      jenkinsfile:
+                        type: string
+                      name:
+                        type: string
+                      parameters:
+                        items:
+                          properties:
+                            default_value:
+                              type: string
+                            description:
+                              type: string
+                            name:
+                              type: string
+                            type:
+                              type: string
+                          required:
+                          - name
+                          - type
+                          type: object
+                        type: array
+                      remote_trigger:
+                        properties:
+                          token:
+                            type: string
+                        type: object
+                      timer_trigger:
+                        properties:
+                          cron:
+                            description: user in no scm job
+                            type: string
+                          interval:
+                            description: use in multi-branch job
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  type:
+                    description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of
+                      cluster Important: Run "make" to regenerate code after modifying
+                      this file'
+                    type: string
+                required:
+                - type
+                type: object
+              scm:
+                description: SCM is a SCM configuration that target PipelineRun requires.
+                properties:
+                  refName:
+                    description: RefName indicates that SCM reference name, such as
+                      master, dev, release-v1.
+                    type: string
+                  refType:
+                    description: RefType indicates that SCM reference type, such as
+                      branch, tag, pr, mr.
+                    type: string
+                required:
+                - refName
+                - refType
+                type: object
+            required:
+            - pipelineRef
+            type: object
+          status:
+            description: PipelineRunStatus defines the observed state of PipelineRun
+            properties:
+              completionTime:
+                description: Completion timestamp of the PipelineRun.
+                format: date-time
+                type: string
+              conditions:
+                description: Current state of PipelineRun.
+                items:
+                  description: Condition contains details for the current condition
+                    of this PipelineRun. Reference from PodCondition
+                  properties:
+                    lastProbeTime:
+                      description: Last time we probed the condition.
+                      format: date-time
+                      type: string
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Human-readable message indicating details about
+                        last transition.
+                      type: string
+                    reason:
+                      description: Unique, one-word, CamelCase reason for the condition's
+                        last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition. Can be True,
+                        False, Unknown.
+                      type: string
+                    type:
+                      description: Type is the type of the condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              phase:
+                description: Current phase of PipelineRun.
+                type: string
+              startTime:
+                description: Start timestamp of the PipelineRun.
+                format: date-time
+                type: string
+              updateTime:
+                description: Update timestamp of the PipelineRun.
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

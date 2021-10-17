@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.13 as builder
+FROM golang:1.16 as builder
 
 ARG GOPROXY
 WORKDIR /workspace
@@ -17,11 +17,16 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GO111MODULE=on go build -a -o jwt cmd/tools/jwt/jwt_cmd.go
 
+FROM golang:1.16 as downloader
+RUN go install github.com/linuxsuren/http-downloader@v0.0.41
+RUN http-downloader install kubesphere-sigs/ks@v0.0.52
+
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/jwt .
+COPY --from=downloader /usr/local/bin/ks /usr/local/bin/ks
 USER nonroot:nonroot
 
-ENTRYPOINT ["/jwt"]
+CMD ["/jwt"]

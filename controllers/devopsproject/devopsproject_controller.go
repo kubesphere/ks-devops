@@ -84,7 +84,6 @@ func NewController(client clientset.Interface,
 	devopsClinet devopsClient.Interface,
 	namespaceInformer corev1informer.NamespaceInformer,
 	devopsInformer devopsinformers.DevOpsProjectInformer) *Controller {
-
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartLogging(func(format string, args ...interface{}) {
 		klog.Info(fmt.Sprintf(format, args))
@@ -162,7 +161,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		klog.Error(err, "could not reconcile devopsProject")
 		utilruntime.HandleError(err)
 		return true
 	}
@@ -253,6 +251,9 @@ func (c *Controller) syncHandler(key string) error {
 				if err != nil {
 					klog.V(8).Info(err, fmt.Sprintf("failed to set ownerreference %s ", key))
 					return err
+				}
+				if copyNs.Labels == nil {
+					copyNs.Labels = make(map[string]string)
 				}
 				copyNs.Labels[constants.DevOpsProjectLabelKey] = project.Name
 				_, err = c.client.CoreV1().Namespaces().Update(context.Background(), copyNs, metav1.UpdateOptions{})

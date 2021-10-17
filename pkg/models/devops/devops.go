@@ -170,7 +170,7 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 	}
 	// metadata override
 	if project.Labels == nil {
-		project.Labels = make(map[string]string, 0)
+		project.Labels = make(map[string]string)
 	}
 	project.Name = ""
 	//project.Labels[tenantv1alpha1.WorkspaceLabel] = workspace
@@ -189,7 +189,7 @@ func (d devopsOperator) DeleteDevOpsProject(workspace string, projectName string
 
 func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error) {
 	if project.Labels == nil {
-		project.Labels = make(map[string]string, 0)
+		project.Labels = make(map[string]string)
 	}
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = StatusPending
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncTimeAnnoKey] = GetSyncNowTime()
@@ -280,7 +280,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) 
 		result = append(result, &pipelines.Items[i])
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, d.compare, d.filter), nil
+	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
 //credentialobj in crd
@@ -351,43 +351,12 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		}
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, d.compareCredentialObj, d.filterCredentialObj), nil
-}
-
-func (d devopsOperator) compareCredentialObj(left runtime.Object, right runtime.Object, field query.Field) bool {
-
-	leftObj, ok := left.(*v1.Secret)
-	if !ok {
-		return false
-	}
-
-	rightObj, ok := right.(*v1.Secret)
-	if !ok {
-		return false
-	}
-
-	return resourcesV1alpha3.DefaultObjectMetaCompare(leftObj.ObjectMeta, rightObj.ObjectMeta, field)
-}
-
-func (d devopsOperator) filterCredentialObj(object runtime.Object, filter query.Filter) bool {
-
-	secret, ok := object.(*v1.Secret)
-
-	if !ok {
-		return false
-	}
-
-	return resourcesV1alpha3.DefaultObjectMetaFilter(secret.ObjectMeta, filter)
+	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
 // others
 func (d devopsOperator) GetPipeline(projectName, pipelineName string, req *http.Request) (*devops.Pipeline, error) {
-
-	res, err := d.devopsClient.GetPipeline(projectName, pipelineName, convertToHttpParameters(req))
-	if err != nil {
-		klog.Error(err)
-	}
-	return res, err
+	return d.devopsClient.GetPipeline(projectName, pipelineName, convertToHttpParameters(req))
 }
 
 func (d devopsOperator) ListPipelines(req *http.Request) (*devops.PipelineList, error) {
@@ -996,25 +965,4 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 		rc = ioutil.NopCloser(body)
 	}
 	return rc
-}
-
-func (d devopsOperator) filter(item runtime.Object, filter query.Filter) bool {
-	devOpsProject, ok := item.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-	return resourcesV1alpha3.DefaultObjectMetaFilter(devOpsProject.ObjectMeta, filter)
-}
-
-func (d devopsOperator) compare(left runtime.Object, right runtime.Object, field query.Field) bool {
-	leftProject, ok := left.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-
-	rightProject, ok := right.(*devopsv1alpha3.Pipeline)
-	if !ok {
-		return false
-	}
-	return resourcesV1alpha3.DefaultObjectMetaCompare(leftProject.ObjectMeta, rightProject.ObjectMeta, field)
 }

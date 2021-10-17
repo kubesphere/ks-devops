@@ -21,10 +21,10 @@ package externalversions
 import (
 	"fmt"
 
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	cache "k8s.io/client-go/tools/cache"
-	devopsv1alpha1 "kubesphere.io/api/devops/v1alpha1"
-	v1alpha3 "kubesphere.io/api/devops/v1alpha3"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
+	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
@@ -54,19 +54,19 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=devops.kubesphere.io, Version=v1alpha1
-	case devopsv1alpha1.SchemeGroupVersion.WithResource("s2ibinaries"):
+	case devopsv1alpha1.GroupVersion.WithResource("s2ibinaries"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha1().S2iBinaries().Informer()}, nil
-	case devopsv1alpha1.SchemeGroupVersion.WithResource("s2ibuilders"):
+	case devopsv1alpha1.GroupVersion.WithResource("s2ibuilders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha1().S2iBuilders().Informer()}, nil
-	case devopsv1alpha1.SchemeGroupVersion.WithResource("s2ibuildertemplates"):
+	case devopsv1alpha1.GroupVersion.WithResource("s2ibuildertemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha1().S2iBuilderTemplates().Informer()}, nil
-	case devopsv1alpha1.SchemeGroupVersion.WithResource("s2iruns"):
+	case devopsv1alpha1.GroupVersion.WithResource("s2iruns"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha1().S2iRuns().Informer()}, nil
 
-		// Group=devops.kubesphere.io, Version=v1alpha3
-	case v1alpha3.SchemeGroupVersion.WithResource("devopsprojects"):
+	// Group=devops.kubesphere.io, Version=v1alpha3
+	case v1alpha3.GroupVersion.WithResource("devopsprojects"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha3().DevOpsProjects().Informer()}, nil
-	case v1alpha3.SchemeGroupVersion.WithResource("pipelines"):
+	case v1alpha3.GroupVersion.WithResource("pipelines"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Devops().V1alpha3().Pipelines().Informer()}, nil
 
 	}
