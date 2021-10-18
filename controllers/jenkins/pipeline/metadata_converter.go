@@ -1,30 +1,12 @@
 package pipeline
 
-import "github.com/jenkins-zh/jenkins-client/pkg/job"
+import (
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"kubesphere.io/devops/pkg/models/pipeline"
+)
 
-// pipelineMetadata holds some of pipeline fields that are only things we needed instead of whole job.Pipeline.
-type pipelineMetadata struct {
-	WeatherScore                   int                       `json:"weatherScore,omitempty"`
-	EstimatedDurationInMillis      int64                     `json:"estimatedDurationInMillis,omitempty"`
-	Parameters                     []job.ParameterDefinition `json:"parameters,omitempty"`
-	Name                           string                    `json:"name,omitempty"`
-	Disabled                       bool                      `json:"disabled,omitempty"`
-	NumberOfPipelines              int                       `json:"numberOfPipelines,omitempty"`
-	NumberOfFolders                int                       `json:"numberOfFolders,omitempty"`
-	PipelineFolderNames            []string                  `json:"pipelineFolderNames,omitempty"`
-	TotalNumberOfBranches          int                       `json:"totalNumberOfBranches,omitempty"`
-	NumberOfFailingBranches        int                       `json:"numberOfFailingBranches,omitempty"`
-	NumberOfSuccessfulBranches     int                       `json:"numberOfSuccessfulBranches,omitempty"`
-	TotalNumberOfPullRequests      int                       `json:"totalNumberOfPullRequests,omitempty"`
-	NumberOfFailingPullRequests    int                       `json:"numberOfFailingPullRequests,omitempty"`
-	NumberOfSuccessfulPullRequests int                       `json:"numberOfSuccessfulPullRequests,omitempty"`
-	BranchNames                    []string                  `json:"branchNames,omitempty"`
-	SCMSource                      *job.SCMSource            `json:"scmSource,omitempty"`
-	ScriptPath                     string                    `json:"scriptPath,omitempty"`
-}
-
-func convertPipeline(jobPipeline *job.Pipeline) *pipelineMetadata {
-	return &pipelineMetadata{
+func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
+	return &pipeline.Metadata{
 		WeatherScore:                   jobPipeline.WeatherScore,
 		EstimatedDurationInMillis:      jobPipeline.EstimatedDurationInMillis,
 		Parameters:                     jobPipeline.Parameters,
@@ -45,30 +27,11 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipelineMetadata {
 	}
 }
 
-type pipelineBranch struct {
-	Name         string           `json:"name,omitempty"`
-	WeatherScore int              `json:"weatherScore,omitempty"`
-	LatestRun    *latestRun       `json:"latestRun,omitempty"`
-	Branch       *job.Branch      `json:"branch,omitempty"`
-	PullRequest  *job.PullRequest `json:"pullRequest,omitempty"`
-}
-
-type latestRun struct {
-	Causes    []cause  `json:"causes,omitempty"`
-	EndTime   job.Time `json:"endTime,omitempty"`
-	StartTime job.Time `json:"startTime,omitempty"`
-	ID        string   `json:"id,omitempty"`
-	Name      string   `json:"name,omitempty"`
-	Pipeline  string   `json:"pipeline,omitempty"`
-	Result    string   `json:"result,omitempty"`
-	State     string   `json:"state,omitempty"`
-}
-
-func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *latestRun {
+func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *pipeline.LatestRun {
 	if jobLatestRun == nil {
 		return nil
 	}
-	return &latestRun{
+	return &pipeline.LatestRun{
 		ID:        jobLatestRun.ID,
 		Name:      jobLatestRun.Name,
 		Pipeline:  jobLatestRun.Pipeline,
@@ -80,27 +43,23 @@ func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *latestRun {
 	}
 }
 
-type cause struct {
-	ShortDescription string `json:"shortDescription,omitempty"`
-}
-
-func convertCauses(jobCauses []job.Cause) []cause {
+func convertCauses(jobCauses []job.Cause) []pipeline.Cause {
 	if jobCauses == nil {
 		return nil
 	}
-	causes := []cause{}
+	causes := []pipeline.Cause{}
 	for _, jobCause := range jobCauses {
-		causes = append(causes, cause{
+		causes = append(causes, pipeline.Cause{
 			ShortDescription: jobCause.GetShortDescription(),
 		})
 	}
 	return causes
 }
 
-func convertBranches(jobBranches []job.PipelineBranch) []pipelineBranch {
-	branches := make([]pipelineBranch, 0, len(jobBranches))
+func convertBranches(jobBranches []job.PipelineBranch) []pipeline.Branch {
+	branches := make([]pipeline.Branch, 0, len(jobBranches))
 	for _, jobBranch := range jobBranches {
-		branches = append(branches, pipelineBranch{
+		branches = append(branches, pipeline.Branch{
 			Name:         jobBranch.Name,
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,

@@ -1,4 +1,4 @@
-package v1alpha3
+package pipelinerun
 
 import "github.com/jenkins-zh/jenkins-client/pkg/job"
 
