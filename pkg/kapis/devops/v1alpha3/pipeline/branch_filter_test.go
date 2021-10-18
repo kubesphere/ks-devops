@@ -117,3 +117,38 @@ func Test_filterBranches(t *testing.T) {
 		})
 	}
 }
+
+func Test_branchSlice_toGenericSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		branches branchSlice
+		want     []interface{}
+	}{{
+		name:     "Empty branches",
+		branches: branchSlice{},
+		want:     []interface{}{},
+	}, {
+		name: "Non-empty branches and sequence kept",
+		branches: branchSlice{{
+			Name: "main",
+		}, {
+			Name: "dev",
+		}, {
+			Name: "release",
+		}},
+		want: []interface{}{pipeline.Branch{
+			Name: "main",
+		}, pipeline.Branch{
+			Name: "dev",
+		}, pipeline.Branch{
+			Name: "release",
+		}},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.branches.toGenericSlice(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("branchSlice.toGenericSlice() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

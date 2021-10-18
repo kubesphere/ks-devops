@@ -19,6 +19,14 @@ func (branches branchSlice) filter(predicate branchPredicate) []pipeline.Branch 
 	return resultBranches
 }
 
+func (branches branchSlice) toGenericSlice() []interface{} {
+	genericBranches := make([]interface{}, 0, len(branches))
+	for i := range branches {
+		genericBranches = append(genericBranches, branches[i])
+	}
+	return genericBranches
+}
+
 func filterBranches(branches []pipeline.Branch, filter job.Filter) []pipeline.Branch {
 	var predicate branchPredicate
 	switch filter {

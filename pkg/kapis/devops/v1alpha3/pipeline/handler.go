@@ -59,7 +59,7 @@ func (h *apiHandler) getBranches(request *restful.Request, response *restful.Res
 	queryParam := query.ParseQueryParameter(request)
 	total := len(branches)
 	startIndex, endIndex := queryParam.Pagination.GetValidPagination(total)
-	_ = response.WriteEntity(api.NewListResult(branches[startIndex:endIndex], total))
+	_ = response.WriteEntity(api.NewListResult(branchSlice(branches[startIndex:endIndex]).toGenericSlice(), total))
 }
 
 func (h *apiHandler) getBranch(request *restful.Request, response *restful.Response) {
