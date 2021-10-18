@@ -32,6 +32,23 @@ type Branch struct {
 	PullRequest  *job.PullRequest `json:"pullRequest,omitempty"`
 }
 
+// BranchSlice is alias of branch slice.
+type BranchSlice []Branch
+
+// SearchByName searchs branch by its name.
+func (branches BranchSlice) SearchByName(name string) (bool, *Branch) {
+	i := 0
+	for ; i < len(branches); i++ {
+		if branches[i].Name == name {
+			break
+		}
+	}
+	if i == len(branches) {
+		return false, nil
+	}
+	return true, &branches[i]
+}
+
 // LatestRun contains metadata of latest PipelineRun.
 type LatestRun struct {
 	Causes    []Cause  `json:"causes,omitempty"`
