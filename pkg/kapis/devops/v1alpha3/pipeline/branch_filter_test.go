@@ -12,7 +12,7 @@ import (
 func Test_filterBranches(t *testing.T) {
 	type args struct {
 		branches []pipeline.Branch
-		filter   string
+		filter   job.Filter
 	}
 	tests := []struct {
 		name string
@@ -97,7 +97,7 @@ func Test_filterBranches(t *testing.T) {
 					ID: "1",
 				},
 			}},
-			filter: rand.String(10),
+			filter: job.Filter(rand.String(10)),
 		},
 		want: []pipeline.Branch{{
 			Name: "main1",
