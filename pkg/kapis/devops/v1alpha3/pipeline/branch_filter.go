@@ -7,9 +7,9 @@ import (
 
 type branchPredicate func(pipeline.Branch) bool
 
-type branchFilter []pipeline.Branch
+type branchSlice []pipeline.Branch
 
-func (branches branchFilter) filter(predicate branchPredicate) []pipeline.Branch {
+func (branches branchSlice) filter(predicate branchPredicate) []pipeline.Branch {
 	resultBranches := []pipeline.Branch{}
 	for _, branch := range branches {
 		if predicate != nil && predicate(branch) {
@@ -19,14 +19,14 @@ func (branches branchFilter) filter(predicate branchPredicate) []pipeline.Branch
 	return resultBranches
 }
 
-func filterBranches(branches []pipeline.Branch, filter string) []pipeline.Branch {
+func filterBranches(branches []pipeline.Branch, filter job.Filter) []pipeline.Branch {
 	var predicate branchPredicate
 	switch filter {
-	case string(job.PullRequestFilter):
+	case job.PullRequestFilter:
 		predicate = func(branch pipeline.Branch) bool {
 			return branch.PullRequest != nil && branch.PullRequest.ID != ""
 		}
-	case string(job.OriginFilter):
+	case job.OriginFilter:
 		predicate = func(branch pipeline.Branch) bool {
 			return branch.PullRequest == nil || branch.PullRequest.ID == ""
 		}
@@ -35,5 +35,5 @@ func filterBranches(branches []pipeline.Branch, filter string) []pipeline.Branch
 			return true
 		}
 	}
-	return branchFilter(branches).filter(predicate)
+	return branchSlice(branches).filter(predicate)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/emicklei/go-restful"
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -31,7 +32,7 @@ func newAPIHandler(option apiHandlerOption) *apiHandler {
 func (h *apiHandler) getBranches(request *restful.Request, response *restful.Response) {
 	namespaceName := request.PathParameter("namespace")
 	pipelineName := request.PathParameter("pipeline")
-	filter := request.QueryParameter("filter")
+	filter := job.Filter(request.QueryParameter("filter"))
 
 	// get pipelinerun
 	pipeline := &v1alpha3.Pipeline{}
@@ -41,7 +42,7 @@ func (h *apiHandler) getBranches(request *restful.Request, response *restful.Res
 	}
 
 	if pipeline.Spec.Type != v1alpha3.MultiBranchPipelineType {
-		api.HandleBadRequest(response, request, fmt.Errorf("Invalid multi-branch Pipeline provided"))
+		api.HandleBadRequest(response, request, fmt.Errorf("invalid multi-branch Pipeline provided"))
 		return
 	}
 
@@ -49,7 +50,7 @@ func (h *apiHandler) getBranches(request *restful.Request, response *restful.Res
 	branches := []modelpipeline.Branch{}
 	if err := json.Unmarshal([]byte(branchesJSON), &branches); err != nil {
 		// ignore this error
-		klog.Errorf("unable to unmarshal branches JSON: %s, adn err = %v", branchesJSON, err)
+		klog.Errorf("unable to unmarshal branches JSON: %s, and err = %v", branchesJSON, err)
 	}
 
 	// filter branches with filter
@@ -74,7 +75,7 @@ func (h *apiHandler) getBranch(request *restful.Request, response *restful.Respo
 	}
 
 	if pipeline.Spec.Type != v1alpha3.MultiBranchPipelineType {
-		api.HandleBadRequest(response, request, fmt.Errorf("Invalid multi-branch Pipeline provided"))
+		api.HandleBadRequest(response, request, fmt.Errorf("invalid multi-branch Pipeline provided"))
 		return
 	}
 
@@ -82,7 +83,7 @@ func (h *apiHandler) getBranch(request *restful.Request, response *restful.Respo
 	branches := []modelpipeline.Branch{}
 	if err := json.Unmarshal([]byte(branchesJSON), &branches); err != nil {
 		// ignore this error
-		klog.Errorf("unable to unmarshal branches JSON: %s, adn err = %v", branchesJSON, err)
+		klog.Errorf("unable to unmarshal branches JSON: %s, and err = %v", branchesJSON, err)
 	}
 
 	exist, searchedBranch := modelpipeline.BranchSlice(branches).SearchByName(branch)
