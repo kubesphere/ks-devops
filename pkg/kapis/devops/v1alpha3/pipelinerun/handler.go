@@ -176,7 +176,12 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	}
 
 	// TODO(johnniang): Check current user Handle the approvable field of NodeDetail
-	v1alpha3.NodeDetails(stages).InitApprovable()
+	// this is a temporary solution of approvable
+	for i := range stages {
+		for j := range stages[i].Steps {
+			stages[i].Steps[j].Approvable = true
+		}
+	}
 
 	_ = response.WriteEntity(&stages)
 }
