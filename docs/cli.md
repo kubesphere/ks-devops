@@ -1,4 +1,4 @@
-You can manipulate KubeSphere DevOps via [CLI](docs/installation.md#kubesphere-cli).
+You can manipulate KubeSphere DevOps via [CLI](./installation.md#kubesphere-cli).
 
 ## Create Pipeline
 

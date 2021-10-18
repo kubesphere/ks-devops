@@ -40,9 +40,15 @@ func (handler *jenkinsHandler) getPipelineNodeDetails(pipelineName, namespace st
 	// get steps for every node
 	nodeDetails := []pipelinerun.NodeDetail{}
 	for _, node := range nodes {
-		steps, err := handler.getSteps(node.ID, pipelineName, namespace, pr)
+		jobSteps, err := handler.getSteps(node.ID, pipelineName, namespace, pr)
 		if err != nil {
 			return nil, err
+		}
+		steps := make([]pipelinerun.Step, 0, len(jobSteps))
+		for i := range jobSteps {
+			steps = append(steps, pipelinerun.Step{
+				Step: jobSteps[i],
+			})
 		}
 		nodeDetails = append(nodeDetails, pipelinerun.NodeDetail{
 			Node:  node,
