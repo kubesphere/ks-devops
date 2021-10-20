@@ -25,11 +25,13 @@ type Metadata struct {
 
 // Branch contains branch metadata, like branch and pull request, and latest PipelineRun.
 type Branch struct {
-	Name         string           `json:"name,omitempty"`
-	WeatherScore int              `json:"weatherScore,omitempty"`
-	LatestRun    *LatestRun       `json:"latestRun,omitempty"`
-	Branch       *job.Branch      `json:"branch,omitempty"`
-	PullRequest  *job.PullRequest `json:"pullRequest,omitempty"`
+	Name         string                    `json:"name,omitempty"`
+	WeatherScore int                       `json:"weatherScore,omitempty"`
+	Disabled     bool                      `json:"disabled,omitempty"`
+	LatestRun    *LatestRun                `json:"latestRun,omitempty"`
+	Branch       *job.Branch               `json:"branch,omitempty"`
+	PullRequest  *job.PullRequest          `json:"pullRequest,omitempty"`
+	Parameters   []job.ParameterDefinition `json:"parameters,omitempty"`
 }
 
 // BranchSlice is alias of branch slice.
@@ -51,14 +53,15 @@ func (branches BranchSlice) SearchByName(name string) (bool, *Branch) {
 
 // LatestRun contains metadata of latest PipelineRun.
 type LatestRun struct {
-	Causes    []Cause  `json:"causes,omitempty"`
-	EndTime   job.Time `json:"endTime,omitempty"`
-	StartTime job.Time `json:"startTime,omitempty"`
-	ID        string   `json:"id,omitempty"`
-	Name      string   `json:"name,omitempty"`
-	Pipeline  string   `json:"pipeline,omitempty"`
-	Result    string   `json:"result,omitempty"`
-	State     string   `json:"state,omitempty"`
+	Causes           []Cause  `json:"causes,omitempty"`
+	EndTime          job.Time `json:"endTime,omitempty"`
+	DurationInMillis *int64   `json:"durationInMillis,omitempty"`
+	StartTime        job.Time `json:"startTime,omitempty"`
+	ID               string   `json:"id,omitempty"`
+	Name             string   `json:"name,omitempty"`
+	Pipeline         string   `json:"pipeline,omitempty"`
+	Result           string   `json:"result,omitempty"`
+	State            string   `json:"state,omitempty"`
 }
 
 // Cause contains short description of cause.
