@@ -105,7 +105,7 @@ func (h *apiHandler) requestSyncPipelineRun(key client.ObjectKey) error {
 	return nil
 }
 
-func (h *apiHandler) createPipelineRuns(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) createPipelineRun(request *restful.Request, response *restful.Response) {
 	nsName := request.PathParameter("namespace")
 	pipName := request.PathParameter("pipeline")
 	branch := request.QueryParameter("branch")

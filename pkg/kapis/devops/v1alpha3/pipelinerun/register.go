@@ -32,7 +32,7 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRunList{}))
 
 	ws.Route(ws.POST("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
-		To(handler.createPipelineRuns).
+		To(handler.createPipelineRun).
 		Doc("Create a PipelineRun for the specified pipeline").
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
