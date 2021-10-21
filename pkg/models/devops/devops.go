@@ -293,7 +293,11 @@ func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secre
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(d.context, secret, metav1.CreateOptions{})
+	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(d.context, secret, metav1.CreateOptions{}); err != nil {
+		return nil, err
+	} else {
+		return secretutil.MaskCredential(secret), nil
+	}
 }
 
 func (d devopsOperator) GetCredentialObj(projectName string, secretName string) (*v1.Secret, error) {
@@ -324,7 +328,11 @@ func (d devopsOperator) UpdateCredentialObj(projectName string, secret *v1.Secre
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(d.context, secret, metav1.UpdateOptions{})
+	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(d.context, secret, metav1.UpdateOptions{}); err != nil {
+		return nil, err
+	} else {
+		return secretutil.MaskCredential(secret), nil
+	}
 }
 
 func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error) {
