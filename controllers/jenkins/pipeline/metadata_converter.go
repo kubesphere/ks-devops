@@ -32,14 +32,15 @@ func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *pipeline.LatestRun 
 		return nil
 	}
 	return &pipeline.LatestRun{
-		ID:        jobLatestRun.ID,
-		Name:      jobLatestRun.Name,
-		Pipeline:  jobLatestRun.Pipeline,
-		Result:    jobLatestRun.Result,
-		State:     jobLatestRun.State,
-		StartTime: jobLatestRun.StartTime,
-		EndTime:   jobLatestRun.EndTime,
-		Causes:    convertCauses(jobLatestRun.Causes),
+		ID:               jobLatestRun.ID,
+		Name:             jobLatestRun.Name,
+		Pipeline:         jobLatestRun.Pipeline,
+		Result:           jobLatestRun.Result,
+		State:            jobLatestRun.State,
+		StartTime:        jobLatestRun.StartTime,
+		EndTime:          jobLatestRun.EndTime,
+		DurationInMillis: jobLatestRun.DurationInMillis,
+		Causes:           convertCauses(jobLatestRun.Causes),
 	}
 }
 
@@ -64,6 +65,8 @@ func convertBranches(jobBranches []job.PipelineBranch) []pipeline.Branch {
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,
 			PullRequest:  jobBranch.PullRequest,
+			Parameters:   jobBranch.Parameters,
+			Disabled:     jobBranch.Disabled,
 			LatestRun:    convertLatestRun(jobBranch.LatestRun),
 		})
 	}
