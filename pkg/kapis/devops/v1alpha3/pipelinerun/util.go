@@ -47,7 +47,7 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 	}
 	var parameters []v1alpha3.Parameter
 	for _, parameter := range payload.Parameters {
-		if parameter.Name == "" || parameter.Value == "" {
+		if parameter.Name == "" {
 			continue
 		}
 		parameters = append(parameters, v1alpha3.Parameter{
