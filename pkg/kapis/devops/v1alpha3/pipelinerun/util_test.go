@@ -160,6 +160,20 @@ func Test_convertParameters(t *testing.T) {
 		},
 		want: nil,
 	}, {
+		name: "Empty value only",
+		args: args{
+			payload: &devops.RunPayload{
+				Parameters: []devops.Parameter{{
+					Name:  "fakeName",
+					Value: "",
+				}},
+			},
+		},
+		want: []v1alpha3.Parameter{{
+			Name:  "fakeName",
+			Value: "",
+		}},
+	}, {
 		name: "Two parameters",
 		args: args{
 			payload: &devops.RunPayload{
