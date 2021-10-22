@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -241,6 +242,10 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	var branch = ""
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
+			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
+		}
+		match, _ := regexp.Match("(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?", []byte(prSpec.SCM.RefName))
+		if !match {
 			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
 		}
 		branch = prSpec.SCM.RefName

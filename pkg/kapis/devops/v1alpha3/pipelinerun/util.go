@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +24,10 @@ func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string
 	}
 	labelSelector = labelSelector.Add(*rq)
 	if branchName != "" {
+		match, _ := regexp.Match("(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?", []byte(branchName))
+		if !match {
+			return nil, fmt.Errorf("branchName is invalid as `(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?`")
+		}
 		rq, err = labels.NewRequirement(v1alpha3.SCMRefNameLabelKey, selection.Equals, []string{branchName})
 		if err != nil {
 			// should never happen
