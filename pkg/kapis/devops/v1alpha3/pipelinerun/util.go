@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,53 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
+const qnameCharFmt string = "[A-Za-z0-9]"
+const qnameExtCharFmt string = "[-A-Za-z0-9_.]"
+const qualifiedNameFmt string = "(" + qnameCharFmt + qnameExtCharFmt + "*)?" + qnameCharFmt
+const labelValueFmt string = "(" + qualifiedNameFmt + ")?"
+const labelValueErrMsg string = "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character"
+
+// LabelValueMaxLength is a label's max length
+const LabelValueMaxLength int = 63
+
+var labelValueRegexp = regexp.MustCompile("^" + labelValueFmt + "$")
+
+// MaxLenError returns a string explanation of a "string too long" validation
+// failure.
+func MaxLenError(length int) string {
+	return fmt.Sprintf("must be no more than %d characters", length)
+}
+
+// RegexError returns a string explanation of a regex validation failure.
+func RegexError(msg string, fmt string, examples ...string) string {
+	if len(examples) == 0 {
+		return msg + " (regex used for validation is '" + fmt + "')"
+	}
+	msg += " (e.g. "
+	for i := range examples {
+		if i > 0 {
+			msg += " or "
+		}
+		msg += "'" + examples[i] + "', "
+	}
+	msg += "regex used for validation is '" + fmt + "')"
+	return msg
+}
+
+// IsValidLabelValue tests whether the value passed is a valid label value.  If
+// the value is not valid, a list of error strings is returned.  Otherwise an
+// empty list (or nil) is returned.
+func IsValidLabelValue(value string) []string {
+	var errs []string
+	if len(value) > LabelValueMaxLength {
+		errs = append(errs, MaxLenError(LabelValueMaxLength))
+	}
+	if !labelValueRegexp.MatchString(value) {
+		errs = append(errs, RegexError(labelValueErrMsg, labelValueFmt, "MyValue", "my_value", "12345"))
+	}
+	return errs
+}
+
 func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string) (labels.Selector, error) {
 	labelSelector := queryParam.Selector()
 	rq, err := labels.NewRequirement(v1alpha3.PipelineNameLabelKey, selection.Equals, []string{pipelineName})
@@ -24,9 +72,8 @@ func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string
 	}
 	labelSelector = labelSelector.Add(*rq)
 	if branchName != "" {
-		match, _ := regexp.Match("(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?", []byte(branchName))
-		if !match {
-			return nil, fmt.Errorf("branchName is invalid as `(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?`")
+		if errs := IsValidLabelValue(branchName); len(errs) != 0 {
+			return nil, fmt.Errorf(strings.Join(errs, "; "))
 		}
 		rq, err = labels.NewRequirement(v1alpha3.SCMRefNameLabelKey, selection.Equals, []string{branchName})
 		if err != nil {

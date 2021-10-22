@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -35,6 +35,7 @@ import (
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
+	ksV1alpha3Pipeline "kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -244,9 +245,8 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
 			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
 		}
-		match, _ := regexp.Match("(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?", []byte(prSpec.SCM.RefName))
-		if !match {
-			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
+		if errs := ksV1alpha3Pipeline.IsValidLabelValue(prSpec.SCM.RefName); len(errs) != 0 {
+			return "", fmt.Errorf(strings.Join(errs, "; "))
 		}
 		branch = prSpec.SCM.RefName
 	}
