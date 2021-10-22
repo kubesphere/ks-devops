@@ -4,7 +4,7 @@ import "github.com/jenkins-zh/jenkins-client/pkg/job"
 
 // Metadata holds some of pipeline fields that are only things we needed instead of whole job.Pipeline.
 type Metadata struct {
-	WeatherScore                   int                       `json:"weatherScore,omitempty"`
+	WeatherScore                   int                       `json:"weatherScore"`
 	EstimatedDurationInMillis      int64                     `json:"estimatedDurationInMillis,omitempty"`
 	Parameters                     []job.ParameterDefinition `json:"parameters,omitempty"`
 	Name                           string                    `json:"name,omitempty"`
@@ -26,7 +26,7 @@ type Metadata struct {
 // Branch contains branch metadata, like branch and pull request, and latest PipelineRun.
 type Branch struct {
 	Name         string                    `json:"name,omitempty"`
-	WeatherScore int                       `json:"weatherScore,omitempty"`
+	WeatherScore int                       `json:"weatherScore"`
 	Disabled     bool                      `json:"disabled,omitempty"`
 	LatestRun    *LatestRun                `json:"latestRun,omitempty"`
 	Branch       *job.Branch               `json:"branch,omitempty"`
