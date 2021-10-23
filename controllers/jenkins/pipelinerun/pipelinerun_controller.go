@@ -30,12 +30,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	ksV1alpha3Pipeline "kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -245,7 +245,7 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
 			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
 		}
-		if errs := ksV1alpha3Pipeline.IsValidLabelValue(prSpec.SCM.RefName); len(errs) != 0 {
+		if errs := validation.IsValidLabelValue(prSpec.SCM.RefName); len(errs) != 0 {
 			return "", fmt.Errorf(strings.Join(errs, "; "))
 		}
 		branch = prSpec.SCM.RefName
