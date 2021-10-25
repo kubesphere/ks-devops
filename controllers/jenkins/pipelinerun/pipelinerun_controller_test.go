@@ -76,6 +76,20 @@ func Test_getBranch(t *testing.T) {
 			},
 		},
 		want: "main",
+	}, {
+		name: "Multi-branch Pipeline and SCM set, but the name is invalid",
+		args: args{
+			prSpec: &v1alpha3.PipelineRunSpec{
+				PipelineSpec: &v1alpha3.PipelineSpec{
+					Type: v1alpha3.MultiBranchPipelineType,
+				},
+				SCM: &v1alpha3.SCM{
+					RefName: "测试分支",
+					RefType: "branch",
+				},
+			},
+		},
+		wantErr: true,
 	},
 	}
 	for _, tt := range tests {

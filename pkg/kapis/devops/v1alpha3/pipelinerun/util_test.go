@@ -50,6 +50,14 @@ func Test_buildLabelSelector(t *testing.T) {
 			branchName:   "branchA",
 		},
 		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA,a=b", v1alpha3.PipelineNameLabelKey, v1alpha3.SCMRefNameLabelKey)),
+	}, {
+		name: "No label selector was provided",
+		args: args{
+			queryParam:   &query.Query{},
+			pipelineName: "pipelineA",
+			branchName:   "分支A",
+		},
+		wantErr: true,
 	},
 	}
 	for _, tt := range tests {
