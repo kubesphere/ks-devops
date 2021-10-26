@@ -64,6 +64,27 @@ func Test_filterBranches(t *testing.T) {
 			PullRequest: &job.PullRequest{},
 		}},
 	}, {
+		name: "With filter: origin, but name is invalid",
+		args: args{
+			branches: []pipeline.Branch{{
+				Name:        "main1",
+				PullRequest: nil,
+			}, {
+				Name:        "主分支2",
+				PullRequest: &job.PullRequest{},
+			}, {
+				Name: "PR1",
+				PullRequest: &job.PullRequest{
+					ID: "1",
+				},
+			}},
+			filter: "origin",
+		},
+		want: []pipeline.Branch{{
+			Name:        "main1",
+			PullRequest: nil,
+		}},
+	}, {
 		name: "With filter: pull-requests",
 		args: args{
 			branches: []pipeline.Branch{{
@@ -76,6 +97,34 @@ func Test_filterBranches(t *testing.T) {
 				Name: "PR1",
 				PullRequest: &job.PullRequest{
 					ID: "1",
+				},
+			}},
+			filter: "pull-requests",
+		},
+		want: []pipeline.Branch{{
+			Name: "PR1",
+			PullRequest: &job.PullRequest{
+				ID: "1",
+			},
+		}},
+	}, {
+		name: "With filter: pull-requests， but name is invalid",
+		args: args{
+			branches: []pipeline.Branch{{
+				Name:        "main1",
+				PullRequest: nil,
+			}, {
+				Name:        "main2",
+				PullRequest: &job.PullRequest{},
+			}, {
+				Name: "PR1",
+				PullRequest: &job.PullRequest{
+					ID: "1",
+				},
+			}, {
+				Name: "分支2",
+				PullRequest: &job.PullRequest{
+					ID: "2",
 				},
 			}},
 			filter: "pull-requests",
