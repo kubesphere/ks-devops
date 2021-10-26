@@ -47,7 +47,7 @@ func (h *apiHandler) getBranches(request *restful.Request, response *restful.Res
 	}
 
 	branchesJSON := pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]
-	branches := []modelpipeline.Branch{}
+	var branches []modelpipeline.Branch
 	if err := json.Unmarshal([]byte(branchesJSON), &branches); err != nil {
 		// ignore this error
 		klog.Errorf("unable to unmarshal branches JSON: %s, and err = %v", branchesJSON, err)
