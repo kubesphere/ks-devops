@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -29,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
@@ -242,6 +244,9 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
 			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
+		}
+		if errs := validation.IsValidLabelValue(prSpec.SCM.RefName); len(errs) != 0 {
+			return "", fmt.Errorf(strings.Join(errs, "; "))
 		}
 		branch = prSpec.SCM.RefName
 	}
