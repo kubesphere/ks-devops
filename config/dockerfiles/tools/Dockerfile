@@ -18,8 +18,8 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GO111MODULE=on go build -a -o jwt cmd/tools/jwt/jwt_cmd.go
 
 FROM golang:1.16 as downloader
-RUN go install github.com/linuxsuren/http-downloader@v0.0.41
-RUN http-downloader install kubesphere-sigs/ks@v0.0.52
+RUN go install github.com/linuxsuren/http-downloader@v0.0.49
+RUN http-downloader install kubesphere-sigs/ks@v0.0.55
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
