@@ -20,6 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	rt "runtime"
+	"time"
+
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
@@ -32,10 +36,7 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/kapis/oauth"
 	"kubesphere.io/devops/pkg/models/auth"
-	"net/http"
-	rt "runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -106,6 +107,8 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 	s.container = restful.NewContainer()
 	s.container.Filter(logRequestAndResponse)
 	s.container.Router(restful.CurlyRouter{})
+	// reference: https://pkg.go.dev/github.com/emicklei/go-restful#hdr-Performance_options
+	s.container.DoNotRecover(false)
 	s.container.RecoverHandler(func(panicReason interface{}, httpWriter http.ResponseWriter) {
 		logStackOnRecover(panicReason, httpWriter)
 	})
