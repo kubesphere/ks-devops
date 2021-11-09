@@ -14,7 +14,6 @@ setup:
                  --set image.controller.tag=e2e \
                  --set image.apiserver.tag=e2e \
                  --set image.tools.tag=e2e
-      retryWaitAfter: 1m
       wait:
         - namespace: kubesphere-devops-system
           resource: deployment
@@ -31,3 +30,11 @@ setup:
       - namespace: kubesphere-devops-system
         resource: deployment/devops-apiserver
         port: 9090
+
+verify:
+  retry:
+    count: 60
+    interval: 1s
+  cases:
+    - query: "kubectl get pod -n kubesphere-devops-system -o yaml | yq e '{.items[].metadata.name: .items[].status.phase}' -"
+      expected: ./expected.yaml

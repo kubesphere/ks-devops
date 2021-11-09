@@ -1,0 +1,5 @@
+{{ range $name, $phase := . }}
+  {{ if or (eq $phase "Running") (eq $phase "Succeeded") }}
+    {{ $name }}: {{ $phase }}
+  {{ end }}
+{{ end }}
