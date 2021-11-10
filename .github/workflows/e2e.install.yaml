@@ -2,9 +2,17 @@ name: E2E - Chart Install
 
 on:
   pull_request:
-    paths:
-      - "**"
-      - "!**.md"
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".devcontainer/**"
+      - "*.ya?ml" # ignore all yaml files(with suffix yaml or yml) in the root of the repository
+      - "!codecov.yml"
+      - "!.golangci.yml"
+      - "!config/**"
+      - "OWNERS"
+      - "PROJECT"
 
 jobs:
   Install:
