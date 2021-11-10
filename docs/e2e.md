@@ -8,19 +8,9 @@ Currently, we implement our E2E testing by using [SkyWalking Infra E2E](https://
 
 ```bash
 .github
-├── build-for-e2e
-│   └── action.yaml
-├── e2e
-│   └── action.yaml
-├── release-drafter.yml
 └── workflows
-    ├── backup.yaml
-    ├── build.yaml
     ├── e2e.install.yaml # E2E testing workflow
-    ├── e2e.others.yaml  # E2E testing workflow
-    ├── lint.yaml
-    ├── nightly-build.yaml
-    └── release-drafter.yml
+    └── e2e.others.yaml  # E2E testing workflow
 
 test
 └── e2e
