@@ -1,0 +1,30 @@
+name: E2E - Chart Install
+
+on:
+  pull_request:
+    paths:
+      - "**"
+      - "!**.md"
+
+jobs:
+  Install:
+    name: Chart Install
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build docker images for E2E testing
+        uses: ./.github/build-for-e2e
+
+      - name: Run E2E Test
+        uses: apache/skywalking-infra-e2e@v1.1.0
+        with:
+          e2e-file: $GITHUB_WORKSPACE/test/e2e/cases/chart-install/e2e.yaml
+
+      - name: Upload E2E Log
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }} # Only upload the artifact when E2E testing failure
+        with:
+          name: e2e-log
+          path: "${{ env.SW_INFRA_E2E_LOG_DIR }}" # The SkyWalking Infra E2E action sets SW_INFRA_E2E_LOG_DIR automatically.

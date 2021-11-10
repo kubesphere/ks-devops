@@ -1,0 +1,40 @@
+setup:
+  env: kind
+  file: ../../common/kind.yaml
+  timeout: 60m
+  steps:
+    - name: Install ks-devops via helm chart
+      command: |
+        helm repo add ks-devops https://kubesphere-sigs.github.io/ks-devops-helm-chart/
+        helm repo update
+        helm install devops ks-devops/ks-devops -n kubesphere-devops-system --create-namespace \
+                 --set jenkins.ksAuth.enabled=true \
+                 --set image.pullPolicy=Never \
+                 --set image.registry=kubespheredev \
+                 --set image.controller.tag=e2e \
+                 --set image.apiserver.tag=e2e \
+                 --set image.tools.tag=e2e
+      wait:
+        - namespace: kubesphere-devops-system
+          resource: deployment
+          for: condition=Available
+        - namespace: kubesphere-devops-system
+          resource: pod/s2ioperator-0
+          for: condition=Ready
+  kind:
+    import-images:
+      - kubespheredev/devops-controller:e2e
+      - kubespheredev/devops-apiserver:e2e
+      - kubespheredev/devops-tools:e2e
+    expose-ports:
+      - namespace: kubesphere-devops-system
+        resource: deployment/devops-apiserver
+        port: 9090
+
+verify:
+  retry:
+    count: 60
+    interval: 1s
+  cases:
+    - query: "kubectl get pod -n kubesphere-devops-system -o yaml | yq e '{.items[].metadata.name: .items[].status.phase}' -"
+      expected: ./expected.yaml
