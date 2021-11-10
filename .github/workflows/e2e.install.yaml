@@ -11,16 +11,18 @@ jobs:
     name: Chart Install
     runs-on: ubuntu-20.04
     timeout-minutes: 60
+    strategy:
+      matrix:
+        k8sVersion: ["1.19", "1.20", "1.21", "1.22"]
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build docker images for E2E testing
-        uses: ./.github/build-for-e2e
-
-      - name: Run E2E Test
-        uses: apache/skywalking-infra-e2e@v1.1.0
+      - name: Run E2E testing
+        uses: ./.github/e2e
+        env:
+          K8S_VERSION: ${{ matrix.k8sVersion }}
         with:
-          e2e-file: $GITHUB_WORKSPACE/test/e2e/cases/chart-install/e2e.yaml
+          config-file: chart-install/e2e.yaml
 
       - name: Upload E2E Log
         uses: actions/upload-artifact@v2

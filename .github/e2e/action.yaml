@@ -1,0 +1,22 @@
+name: Run E2E testing
+description: Encapsulated step for E2E testing
+
+inputs:
+  config-file:
+    description: "Relative E2E configuration file path(base path: ./test/e2e/cases/)"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build docker images for E2E testing
+      uses: ./.github/build-for-e2e
+
+    - name: Run E2E testing
+      # Due to PR https://github.com/apache/skywalking-infra-e2e/pull/67 merged but in milestone 1.2.0,
+      # we use a snapshot version here temporarily.
+      uses: apache/skywalking-infra-e2e@05488cd86e0a34d284766679b4293021386f6ba4
+      env:
+        K8S_VERSION: ${{ matrix.k8sVersion }}
+      with:
+        e2e-file: ./test/e2e/cases/${{ inputs.config-file }}
