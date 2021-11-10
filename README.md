@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/kubesphere/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/kubesphere/ks-devops)
 [![Contributors](https://img.shields.io/github/contributors/kubesphere/ks-devops.svg)](https://github.com/kubesphere/ks-devops/graphs/contributors)
 
-KubeSphere DevOps integrates popular CI/CD tools, provides CI/CD pipelines based on Jenkins, offers automation toolkits 
+KubeSphere DevOps integrates popular CI/CD tools, provides CI/CD Pipelines based on Jenkins, offers automation toolkits 
 including Binary-to-Image (B2I) and Source-to-Image (S2I), and boosts continuous delivery across Kubernetes clusters.
 
 With the container orchestration capability of Kubernetes, KubeSphere DevOps scales Jenkins Agents dynamically, improves 
