@@ -7,7 +7,7 @@ KubeSphere DevOps integrates popular CI/CD tools, provides CI/CD Pipelines based
 including Binary-to-Image (B2I) and Source-to-Image (S2I), and boosts continuous delivery across Kubernetes clusters.
 
 With the container orchestration capability of Kubernetes, KubeSphere DevOps scales Jenkins Agents dynamically, improves 
-CI/CD workflow efficiency, and helps organizations accelerate the time to market for products.
+CI/CD workflow efficiency, and helps organizations accelerate the time to market for their products.
 
 ## Features
 
@@ -16,11 +16,11 @@ CI/CD workflow efficiency, and helps organizations accelerate the time to market
 * Use Jenkins Pipelines to Implement DevOps on Top of Kubernetes
 * Manage Pipelines via [CLI](docs/cli.md)
 
-## Get started
+## Get Started
 
 ### Quick Start
 
-- Install KubeSphere via [kubekey](https://github.com/kubesphere/kubekey/) (or [other ways](docs/installation.md)).
+- Install KubeSphere via [KubeKey](https://github.com/kubesphere/kubekey/) (or [the methods described here](docs/installation.md)).
 
   ```bash
   kk create cluster --with-kubesphere
@@ -31,27 +31,28 @@ CI/CD workflow efficiency, and helps organizations accelerate the time to market
   ```bash
   kubectl patch -nkubesphere-system cc ks-installer --type=json -p='[{"op": "replace", "path": "/spec/devops/enabled", "value": true}]'
   ```
-Want to go into deep? Please check out the [documentation](docs).
+For more information, refer to the [documentation](docs).
 
-## TODO
+## Next Steps
 
-- A separate front-end project of ks-devops
-- Auth support
+- A Separate Front-End Project of KS-DevOps
+- Auth Support
   - OIDC support as a default provider
 
 
-## Available communication channels:
+## Communication Channels
 
-- [KubeSphere DevOps google group](https://groups.google.com/g/kubesphere-sig-devops/)
-- DevOps Slack channel for [English](https://kubesphere.slack.com/archives/C010TH02010) and [Chinese](https://kubesphere.slack.com/archives/C026V4FBWBW)
-- [Forum for Chinese speakers](https://kubesphere.com.cn/forum/t/DevOps)
+- [KubeSphere DevOps Google Group](https://groups.google.com/g/kubesphere-sig-devops/)
+- DevOps Slack Channels for [English Speakers](https://kubesphere.slack.com/archives/C010TH02010) and [Chinese Speakers](https://kubesphere.slack.com/archives/C026V4FBWBW)
+- [Forum for Chinese Speakers](https://kubesphere.com.cn/forum/t/DevOps)
 - [KubeSphere DevOps Special Interest Group](https://github.com/kubesphere/community/tree/master/sig-devops)
 
 ## Contribution
 
-Want to be part of us? Please feel free to go through the [Contribution Guide](CONTRIBUTING.md) before making a pull request, 
-and pick up a [good-first-issue](https://github.com/kubesphere/ks-devops/contribute).
+Looking forward to becoming a part of us?
 
-Thank you to all the people who already contributed to ks-devops!
+Feel free to go through the [Contribution Guide](CONTRIBUTING.md), pick up a [good-first-issue](https://github.com/kubesphere/ks-devops/contribute), and create a pull request.
+
+Thanks to all the people who have already contributed to KS-DevOps!
 
 <a href="https://github.com/kubesphere/ks-devops/graphs/contributors"><img src="https://opencollective.com/ks-devops/contributors.svg?width=890&button=false" /></a>
