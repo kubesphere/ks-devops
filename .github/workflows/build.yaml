@@ -12,7 +12,29 @@ on:
       - test-* # make it be easier for contributors to test
     tags:
       - 'v*.*.*'
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".devcontainer/**"
+      - "*.ya?ml" # ignore all yaml files(with suffix yaml or yml) in the root of the repository
+      - "!codecov.yml"
+      - "!.golangci.yml"
+      - "!config/**"
+      - "OWNERS"
+      - "PROJECT"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".devcontainer/**"
+      - "*.ya?ml" # ignore all yaml files(with suffix yaml or yml) in the root of the repository
+      - "!codecov.yml"
+      - "!.golangci.yml"
+      - "!config/**"
+      - "OWNERS"
+      - "PROJECT"
     branches:
       - 'master'
       - 'tekton-support'

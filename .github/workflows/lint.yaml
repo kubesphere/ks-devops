@@ -1,9 +1,31 @@
 name: Lint
 
 on:
-  - push
-  - pull_request
-  - release
+  push:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".devcontainer/**"
+      - "*.ya?ml" # ignore all yaml files(with suffix yaml or yml) in the root of the repository
+      - "!codecov.yml"
+      - "!.golangci.yml"
+      - "!config/**"
+      - "OWNERS"
+      - "PROJECT"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".devcontainer/**"
+      - "*.ya?ml" # ignore all yaml files(with suffix yaml or yml) in the root of the repository
+      - "!codecov.yml"
+      - "!.golangci.yml"
+      - "!config/**"
+      - "OWNERS"
+      - "PROJECT"
+  release:
 
 jobs:
   Lint:
