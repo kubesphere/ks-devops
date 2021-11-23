@@ -17,6 +17,8 @@ limitations under the License.
 package jenkins
 
 import (
+	"github.com/stretchr/testify/assert"
+	"kubesphere.io/devops/pkg/client/devops/jenkins/internal"
 	"reflect"
 	"testing"
 
@@ -737,3 +739,458 @@ func Test_MultiBranchPipelineMultibranchTrigger(t *testing.T) {
 	}
 
 }
+
+func TestForkPullRequestDiscoveryTrait(t *testing.T) {
+	// for gitlab cases
+	pipeline, err := parseMultiBranchPipelineConfigXml(noTrustForGitlabJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "gitlab", pipeline.SourceType)
+
+	pipeline, err = parseMultiBranchPipelineConfigXml(withTrustForGitlabJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "gitlab", pipeline.SourceType)
+	assert.Equal(t, internal.PRDiscoverTrustEveryone.Value(), pipeline.GitlabSource.DiscoverPRFromForks.Trust)
+
+	// for github cases
+	pipeline, err = parseMultiBranchPipelineConfigXml(noTrustForGitHubJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "github", pipeline.SourceType)
+
+	pipeline, err = parseMultiBranchPipelineConfigXml(withTrustForGitHubJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "github", pipeline.SourceType)
+	assert.Equal(t, internal.PRDiscoverTrustEveryone.Value(), pipeline.GitHubSource.DiscoverPRFromForks.Trust)
+
+	// for bitbucket cases
+	pipeline, err = parseMultiBranchPipelineConfigXml(noTrustForBitbucketJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "bitbucket_server", pipeline.SourceType)
+
+	pipeline, err = parseMultiBranchPipelineConfigXml(withTrustForBitbucketJobXML)
+	assert.Nil(t, err)
+	assert.Equal(t, "bitbucket_server", pipeline.SourceType)
+	assert.Equal(t, internal.BitbucketPRDiscoverTrustTeamForks.Value(), pipeline.BitbucketServerSource.DiscoverPRFromForks.Trust)
+}
+
+var noTrustForGitlabJobXML = `<?xml version='1.1' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch@2.22">
+  <actions/>
+  <description></description>
+  <properties>
+    <org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig plugin="docker-workflow@1.24">
+      <dockerLabel></dockerLabel>
+      <registry plugin="docker-commons@1.17"/>
+    </org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics>
+    <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder@6.15">
+      <nonRecursive>false</nonRecursive>
+    </com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric>
+  </healthMetrics>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.15">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>5</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <disabled>false</disabled>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api@2.6.2">
+    <data>
+      <jenkins.branch.BranchSource>
+        <source class="io.jenkins.plugins.gitlabbranchsource.GitLabSCMSource" plugin="gitlab-branch-source@1.5.4">
+          <id></id>
+          <serverName>https://gitlab.com</serverName>
+          <projectOwner>linuxsuren1</projectOwner>
+          <projectPath>LinuxSuRen1/learn-pipeline-java</projectPath>
+          <credentialsId></credentialsId>
+          <traits>
+            <io.jenkins.plugins.gitlabbranchsource.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </io.jenkins.plugins.gitlabbranchsource.BranchDiscoveryTrait>
+            <io.jenkins.plugins.gitlabbranchsource.TagDiscoveryTrait/>
+            <io.jenkins.plugins.gitlabbranchsource.OriginMergeRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </io.jenkins.plugins.gitlabbranchsource.OriginMergeRequestDiscoveryTrait>
+            <io.jenkins.plugins.gitlabbranchsource.ForkMergeRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </io.jenkins.plugins.gitlabbranchsource.ForkMergeRequestDiscoveryTrait>
+            <jenkins.scm.impl.trait.RegexSCMHeadFilterTrait plugin="scm-api@2.6.4">
+              <regex>master|v.*</regex>
+            </jenkins.scm.impl.trait.RegexSCMHeadFilterTrait>
+          </traits>
+          <sshRemote>git@gitlab.com:LinuxSuRen1/learn-pipeline-java.git</sshRemote>
+          <httpRemote>https://gitlab.com/LinuxSuRen1/learn-pipeline-java.git</httpRemote>
+          <projectId>23723790</projectId>
+        </source>
+        <strategy class="jenkins.branch.NamedExceptionsBranchPropertyStrategy">
+          <defaultProperties class="empty-list"/>
+          <namedExceptions class="empty-list"/>
+        </strategy>
+      </jenkins.branch.BranchSource>
+    </data>
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+var withTrustForGitlabJobXML = `<?xml version='1.1' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch@2.22">
+  <actions/>
+  <description></description>
+  <properties>
+    <org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig plugin="docker-workflow@1.24">
+      <dockerLabel></dockerLabel>
+      <registry plugin="docker-commons@1.17"/>
+    </org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics>
+    <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder@6.15">
+      <nonRecursive>false</nonRecursive>
+    </com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric>
+  </healthMetrics>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.15">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>5</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <disabled>false</disabled>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api@2.6.2">
+    <data>
+      <jenkins.branch.BranchSource>
+        <source class="io.jenkins.plugins.gitlabbranchsource.GitLabSCMSource" plugin="gitlab-branch-source@1.5.4">
+          <id></id>
+          <serverName>https://gitlab.com</serverName>
+          <projectOwner>linuxsuren1</projectOwner>
+          <projectPath>LinuxSuRen1/learn-pipeline-java</projectPath>
+          <credentialsId></credentialsId>
+          <traits>
+            <io.jenkins.plugins.gitlabbranchsource.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </io.jenkins.plugins.gitlabbranchsource.BranchDiscoveryTrait>
+            <io.jenkins.plugins.gitlabbranchsource.TagDiscoveryTrait/>
+            <io.jenkins.plugins.gitlabbranchsource.OriginMergeRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </io.jenkins.plugins.gitlabbranchsource.OriginMergeRequestDiscoveryTrait>
+            <io.jenkins.plugins.gitlabbranchsource.ForkMergeRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+              <trust class="io.jenkins.plugins.gitlabbranchsource.ForkMergeRequestDiscoveryTrait$TrustEveryone"/>
+            </io.jenkins.plugins.gitlabbranchsource.ForkMergeRequestDiscoveryTrait>
+            <jenkins.scm.impl.trait.RegexSCMHeadFilterTrait plugin="scm-api@2.6.4">
+              <regex>master|v.*</regex>
+            </jenkins.scm.impl.trait.RegexSCMHeadFilterTrait>
+          </traits>
+          <sshRemote>git@gitlab.com:LinuxSuRen1/learn-pipeline-java.git</sshRemote>
+          <httpRemote>https://gitlab.com/LinuxSuRen1/learn-pipeline-java.git</httpRemote>
+          <projectId>23723790</projectId>
+        </source>
+        <strategy class="jenkins.branch.NamedExceptionsBranchPropertyStrategy">
+          <defaultProperties class="empty-list"/>
+          <namedExceptions class="empty-list"/>
+        </strategy>
+      </jenkins.branch.BranchSource>
+    </data>
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+var noTrustForGitHubJobXML = `<?xml version="1.1" encoding="UTF-8"?><org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch">
+  <actions/>
+  <properties>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig plugin="pipeline-model-definition">
+      <dockerLabel/>
+      <registry plugin="docker-commons"/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics>
+    <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder">
+      <nonRecursive>false</nonRecursive>
+    </com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric>
+  </healthMetrics>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <description/>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>5</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <data>
+      <jenkins.branch.BranchSource>
+        <strategy class="jenkins.branch.NamedExceptionsBranchPropertyStrategy">
+          <defaultProperties class="empty-list"/>
+          <namedExceptions class="empty-list"/>
+        </strategy>
+        <source class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource" plugin="github-branch-source">
+          <id/>
+          <credentialsId>github</credentialsId>
+          <repoOwner>jenkins-zh</repoOwner>
+          <repository>jenkins-client-java</repository>
+          <traits>
+            <org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.TagDiscoveryTrait/>
+            <jenkins.plugins.git.traits.CloneOptionTrait>
+              <extension class="hudson.plugins.git.extensions.impl.CloneOption">
+                <shallow>false</shallow>
+                <noTags>false</noTags>
+                <honorRefspec>true</honorRefspec>
+                <reference/>
+                <timeout>20</timeout>
+                <depth>1</depth>
+              </extension>
+            </jenkins.plugins.git.traits.CloneOptionTrait>
+          </traits>
+        </source>
+      </jenkins.branch.BranchSource>
+    </data>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+var withTrustForGitHubJobXML = `<?xml version="1.1" encoding="UTF-8"?><org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch">
+  <actions/>
+  <properties>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig plugin="pipeline-model-definition">
+      <dockerLabel/>
+      <registry plugin="docker-commons"/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics>
+    <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder">
+      <nonRecursive>false</nonRecursive>
+    </com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric>
+  </healthMetrics>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <description/>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>5</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <data>
+      <jenkins.branch.BranchSource>
+        <strategy class="jenkins.branch.NamedExceptionsBranchPropertyStrategy">
+          <defaultProperties class="empty-list"/>
+          <namedExceptions class="empty-list"/>
+        </strategy>
+        <source class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource" plugin="github-branch-source">
+          <id/>
+          <credentialsId>github</credentialsId>
+          <repoOwner>jenkins-zh</repoOwner>
+          <repository>jenkins-client-java</repository>
+          <traits>
+            <org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+            </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+              <strategyId>2</strategyId>
+              <trust class="org.jenkinsci.plugins.github_branch_source.ForkPullRequestDiscoveryTrait$TrustEveryone"/>
+            </org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+            <org.jenkinsci.plugins.github__branch__source.TagDiscoveryTrait/>
+            <jenkins.plugins.git.traits.CloneOptionTrait>
+              <extension class="hudson.plugins.git.extensions.impl.CloneOption">
+                <shallow>false</shallow>
+                <noTags>false</noTags>
+                <honorRefspec>true</honorRefspec>
+                <reference/>
+                <timeout>20</timeout>
+                <depth>1</depth>
+              </extension>
+            </jenkins.plugins.git.traits.CloneOptionTrait>
+          </traits>
+        </source>
+      </jenkins.branch.BranchSource>
+    </data>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+var noTrustForBitbucketJobXML = `<?xml version='1.1' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch@2.22">
+  <actions/>
+  <description></description>
+  <properties>
+    <org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig plugin="docker-workflow@1.24">
+      <dockerLabel></dockerLabel>
+      <registry plugin="docker-commons@1.17"/>
+    </org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig>
+    <org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty plugin="kubernetes@1.27.5">
+      <permittedClouds/>
+    </org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty>
+    <org.jenkinsci.plugins.workflow.multibranch.PipelineTriggerProperty plugin="multibranch-action-triggers@1.8.5">
+      <createActionJobsToTrigger></createActionJobsToTrigger>
+      <deleteActionJobsToTrigger></deleteActionJobsToTrigger>
+      <actionJobsToTriggerOnRunDelete></actionJobsToTriggerOnRunDelete>
+      <quitePeriod>0</quitePeriod>
+      <branchIncludeFilter>*</branchIncludeFilter>
+      <branchExcludeFilter></branchExcludeFilter>
+      <additionalParameters/>
+    </org.jenkinsci.plugins.workflow.multibranch.PipelineTriggerProperty>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics/>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.15">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>-1</daysToKeep>
+    <numToKeep>-1</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <disabled>false</disabled>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api@2.6.2">
+    <data>
+      <jenkins.branch.BranchSource>
+        <source class="com.cloudbees.jenkins.plugins.bitbucket.BitbucketSCMSource" plugin="cloudbees-bitbucket-branch-source@2.9.4">
+          <id>edb85ed8-7609-40ac-9bf8-30cdcd762390</id>
+          <serverUrl>https://bitbucket.org</serverUrl>
+          <repoOwner>linuxsuren</repoOwner>
+          <repository>jenkins-cli</repository>
+          <traits>
+            <com.cloudbees.jenkins.plugins.bitbucket.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </com.cloudbees.jenkins.plugins.bitbucket.BranchDiscoveryTrait>
+            <com.cloudbees.jenkins.plugins.bitbucket.OriginPullRequestDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </com.cloudbees.jenkins.plugins.bitbucket.OriginPullRequestDiscoveryTrait>
+            <com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait>
+          </traits>
+        </source>
+        <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+          <properties class="empty-list"/>
+        </strategy>
+      </jenkins.branch.BranchSource>
+    </data>
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+var withTrustForBitbucketJobXML = `<?xml version='1.1' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject plugin="workflow-multibranch@2.22">
+  <actions/>
+  <description></description>
+  <properties>
+    <org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig plugin="docker-workflow@1.24">
+      <dockerLabel></dockerLabel>
+      <registry plugin="docker-commons@1.17"/>
+    </org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig>
+    <org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty plugin="kubernetes@1.27.5">
+      <permittedClouds/>
+    </org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty>
+    <org.jenkinsci.plugins.workflow.multibranch.PipelineTriggerProperty plugin="multibranch-action-triggers@1.8.5">
+      <createActionJobsToTrigger></createActionJobsToTrigger>
+      <deleteActionJobsToTrigger></deleteActionJobsToTrigger>
+      <actionJobsToTriggerOnRunDelete></actionJobsToTriggerOnRunDelete>
+      <quitePeriod>0</quitePeriod>
+      <branchIncludeFilter>*</branchIncludeFilter>
+      <branchExcludeFilter></branchExcludeFilter>
+      <additionalParameters/>
+    </org.jenkinsci.plugins.workflow.multibranch.PipelineTriggerProperty>
+  </properties>
+  <folderViews class="jenkins.branch.MultiBranchProjectViewHolder" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </folderViews>
+  <healthMetrics/>
+  <icon class="jenkins.branch.MetadataActionFolderIcon" plugin="branch-api@2.6.2">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </icon>
+  <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.15">
+    <pruneDeadBranches>true</pruneDeadBranches>
+    <daysToKeep>-1</daysToKeep>
+    <numToKeep>-1</numToKeep>
+  </orphanedItemStrategy>
+  <triggers/>
+  <disabled>false</disabled>
+  <sources class="jenkins.branch.MultiBranchProject$BranchSourceList" plugin="branch-api@2.6.2">
+    <data>
+      <jenkins.branch.BranchSource>
+        <source class="com.cloudbees.jenkins.plugins.bitbucket.BitbucketSCMSource" plugin="cloudbees-bitbucket-branch-source@2.9.4">
+          <id>edb85ed8-7609-40ac-9bf8-30cdcd762390</id>
+          <serverUrl>https://bitbucket.org</serverUrl>
+          <repoOwner>linuxsuren</repoOwner>
+          <repository>jenkins-cli</repository>
+          <traits>
+            <com.cloudbees.jenkins.plugins.bitbucket.BranchDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </com.cloudbees.jenkins.plugins.bitbucket.BranchDiscoveryTrait>
+            <com.cloudbees.jenkins.plugins.bitbucket.OriginPullRequestDiscoveryTrait>
+              <strategyId>1</strategyId>
+            </com.cloudbees.jenkins.plugins.bitbucket.OriginPullRequestDiscoveryTrait>
+            <com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait>
+              <strategyId>1</strategyId>
+              <trust class="com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait$TrustTeamForks"/>
+            </com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait>
+          </traits>
+        </source>
+        <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+          <properties class="empty-list"/>
+        </strategy>
+      </jenkins.branch.BranchSource>
+    </data>
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+  </sources>
+  <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+    <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    <scriptPath>Jenkinsfile</scriptPath>
+  </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
