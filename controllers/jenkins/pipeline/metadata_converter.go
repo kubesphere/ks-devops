@@ -9,7 +9,7 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
 	return &pipeline.Metadata{
 		WeatherScore:                   jobPipeline.WeatherScore,
 		EstimatedDurationInMillis:      jobPipeline.EstimatedDurationInMillis,
-		Parameters:                     jobPipeline.Parameters,
+		Parameters:                     convertParameterDefinitions(jobPipeline.Parameters),
 		Name:                           jobPipeline.Name,
 		Disabled:                       jobPipeline.Disabled,
 		NumberOfPipelines:              jobPipeline.NumberOfPipelines,
@@ -25,6 +25,28 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
 		SCMSource:                      jobPipeline.SCMSource,
 		ScriptPath:                     jobPipeline.ScriptPath,
 	}
+}
+
+// ParameterDefinitionTypeMap is for simplifying parameter definition type.
+var ParameterDefinitionTypeMap = map[string]string{
+	"StringParameterDefinition":   "string",
+	"ChoiceParameterDefinition":   "choice",
+	"TextParameterDefinition":     "text",
+	"BooleanParameterDefinition":  "boolean",
+	"FileParameterDefinition":     "file",
+	"PasswordParameterDefinition": "password",
+}
+
+func convertParameterDefinitions(paramDefs []job.ParameterDefinition) []job.ParameterDefinition {
+	newParamDefs := []job.ParameterDefinition{}
+	for _, paramDef := range paramDefs {
+		// copy the parameter definition
+		if simpleType, ok := ParameterDefinitionTypeMap[paramDef.Type]; ok {
+			paramDef.Type = simpleType
+		}
+		newParamDefs = append(newParamDefs, paramDef)
+	}
+	return newParamDefs
 }
 
 func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *pipeline.LatestRun {
