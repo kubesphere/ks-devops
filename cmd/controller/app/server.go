@@ -18,8 +18,8 @@ package app
 
 import (
 	"fmt"
-
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -28,6 +28,7 @@ import (
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/informers"
+	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,6 @@ import (
 	"k8s.io/klog/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 )
 
 func NewControllerManagerCommand() *cobra.Command {
@@ -65,9 +65,11 @@ func NewControllerManagerCommand() *cobra.Command {
 		Use:   "controller-manager",
 		Short: `KubeSphere DevOps controller manager`,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			if errs := s.Validate(); len(errs) == 0 {
-				err = Run(s, signals.SetupSignalHandler())
+			if errs := s.Validate(); len(errs) != 0 {
+				return utilerrors.NewAggregate(errs)
 			}
+
+			err = Run(s, signals.SetupSignalHandler())
 			return
 		},
 		SilenceUsage: true,
