@@ -106,15 +106,17 @@ func GetGithubSourcefromEtree(source *etree.Element) *devopsv1alpha3.GithubSourc
 	if forkPRDiscoverTrait := traits.SelectElement(
 		"org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait"); forkPRDiscoverTrait != nil {
 		strategyId, _ := strconv.Atoi(forkPRDiscoverTrait.SelectElement("strategyId").Text())
-		trustClass := forkPRDiscoverTrait.SelectElement("trust").SelectAttr("class").Value
-		trust := strings.Split(trustClass, "$")
-		if prTrust := GitHubPRDiscoverTrust(1).ParseFromString(trust[1]); prTrust.IsValid() {
-			githubSource.DiscoverPRFromForks = &devopsv1alpha3.DiscoverPRFromForks{
-				Strategy: strategyId,
-				Trust:    prTrust.Value(),
+		if trustEle := forkPRDiscoverTrait.SelectElement("trust"); trustEle != nil {
+			trustClass := trustEle.SelectAttr("class").Value
+			trust := strings.Split(trustClass, "$")
+			if prTrust := GitHubPRDiscoverTrust(1).ParseFromString(trust[1]); prTrust.IsValid() {
+				githubSource.DiscoverPRFromForks = &devopsv1alpha3.DiscoverPRFromForks{
+					Strategy: strategyId,
+					Trust:    prTrust.Value(),
+				}
+			} else {
+				klog.Warningf("invalid Gitlab discover PR trust value: %s", trust[1])
 			}
-		} else {
-			klog.Warningf("invalid Gitlab discover PR trust value: %s", trust[1])
 		}
 		if cloneTrait := traits.SelectElement(
 			"jenkins.plugins.git.traits.CloneOptionTrait"); cloneTrait != nil {
