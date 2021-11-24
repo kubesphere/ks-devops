@@ -35,6 +35,7 @@ const (
 	PROJECT_ROLE = "projectRoles"
 )
 
+// ParameterTypeMap aims for simplifying representation of parameter definition type.
 var ParameterTypeMap = map[string]string{
 	"hudson.model.StringParameterDefinition":   "string",
 	"hudson.model.ChoiceParameterDefinition":   "choice",

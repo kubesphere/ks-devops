@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/models/pipeline"
 )
 
@@ -9,7 +10,7 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
 	return &pipeline.Metadata{
 		WeatherScore:                   jobPipeline.WeatherScore,
 		EstimatedDurationInMillis:      jobPipeline.EstimatedDurationInMillis,
-		Parameters:                     jobPipeline.Parameters,
+		Parameters:                     convertParameterDefinitions(jobPipeline.Parameters),
 		Name:                           jobPipeline.Name,
 		Disabled:                       jobPipeline.Disabled,
 		NumberOfPipelines:              jobPipeline.NumberOfPipelines,
@@ -25,6 +26,18 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
 		SCMSource:                      jobPipeline.SCMSource,
 		ScriptPath:                     jobPipeline.ScriptPath,
 	}
+}
+
+func convertParameterDefinitions(paramDefs []job.ParameterDefinition) []job.ParameterDefinition {
+	newParamDefs := []job.ParameterDefinition{}
+	for _, paramDef := range paramDefs {
+		// copy the parameter definition
+		if simpleType, ok := jenkins.ParameterTypeMap["hudson.model."+paramDef.Type]; ok {
+			paramDef.Type = simpleType
+		}
+		newParamDefs = append(newParamDefs, paramDef)
+	}
+	return newParamDefs
 }
 
 func convertLatestRun(jobLatestRun *job.PipelineRunSummary) *pipeline.LatestRun {
