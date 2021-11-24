@@ -107,16 +107,18 @@ func GetBitbucketServerSourceFromEtree(source *etree.Element) *devopsv1alpha3.Bi
 	if forkPRDiscoverTrait := traits.SelectElement(
 		"com.cloudbees.jenkins.plugins.bitbucket.ForkPullRequestDiscoveryTrait"); forkPRDiscoverTrait != nil {
 		strategyId, _ := strconv.Atoi(forkPRDiscoverTrait.SelectElement("strategyId").Text())
-		trustClass := forkPRDiscoverTrait.SelectElement("trust").SelectAttr("class").Value
-		trust := strings.Split(trustClass, "$")
+		if trustEle := forkPRDiscoverTrait.SelectElement("trust"); trustEle != nil {
+			trustClass := trustEle.SelectAttr("class").Value
+			trust := strings.Split(trustClass, "$")
 
-		if prTrust := BitbucketPRDiscoverTrust(1).ParseFromString(trust[1]); prTrust.IsValid() {
-			s.DiscoverPRFromForks = &devopsv1alpha3.DiscoverPRFromForks{
-				Strategy: strategyId,
-				Trust:    prTrust.Value(),
+			if prTrust := BitbucketPRDiscoverTrust(1).ParseFromString(trust[1]); prTrust.IsValid() {
+				s.DiscoverPRFromForks = &devopsv1alpha3.DiscoverPRFromForks{
+					Strategy: strategyId,
+					Trust:    prTrust.Value(),
+				}
+			} else {
+				klog.Warningf("invalid Bitbucket discover PR trust value: %s", trust[1])
 			}
-		} else {
-			klog.Warningf("invalid Bitbucket discover PR trust value: %s", trust[1])
 		}
 
 		if cloneTrait := traits.SelectElement(
