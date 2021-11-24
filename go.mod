@@ -21,7 +21,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/jenkins-zh/jenkins-client v0.0.5
+	github.com/jenkins-zh/jenkins-client v0.0.6
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0
@@ -52,7 +52,6 @@ require (
 replace (
 	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/jenkins-zh/jenkins-client => github.com/johnniang/jenkins-client v0.0.0-20211123063711-b138fcdf035d
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6
