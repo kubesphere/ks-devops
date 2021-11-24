@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/models/pipeline"
 )
 
@@ -27,21 +28,11 @@ func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {
 	}
 }
 
-// ParameterDefinitionTypeMap is for simplifying parameter definition type.
-var ParameterDefinitionTypeMap = map[string]string{
-	"StringParameterDefinition":   "string",
-	"ChoiceParameterDefinition":   "choice",
-	"TextParameterDefinition":     "text",
-	"BooleanParameterDefinition":  "boolean",
-	"FileParameterDefinition":     "file",
-	"PasswordParameterDefinition": "password",
-}
-
 func convertParameterDefinitions(paramDefs []job.ParameterDefinition) []job.ParameterDefinition {
 	newParamDefs := []job.ParameterDefinition{}
 	for _, paramDef := range paramDefs {
 		// copy the parameter definition
-		if simpleType, ok := ParameterDefinitionTypeMap[paramDef.Type]; ok {
+		if simpleType, ok := jenkins.ParameterTypeMap["hudson.model."+paramDef.Type]; ok {
 			paramDef.Type = simpleType
 		}
 		newParamDefs = append(newParamDefs, paramDef)
