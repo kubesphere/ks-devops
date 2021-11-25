@@ -20,10 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/apiserver/request"
 	"net/http"
 	"strings"
+
+	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/apiserver/request"
 
 	"github.com/emicklei/go-restful"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -35,6 +36,7 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	clientDevOps "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
+
 	//"kubesphere.io/devops/pkg/apiserver/authorization/authorizer"
 	//"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/constants"
@@ -422,10 +424,12 @@ func (h *ProjectPipelineHandler) hasSubmitPermission(req *restful.Request) (hasP
 			}
 
 			for _, step := range node.Steps {
-				if step.ID != stepId || step.Input == nil {
+				if step.ID != stepId {
 					continue
 				}
-
+				if step.Input == nil {
+					err = fmt.Errorf("the step '%s' is not approvable", step.DisplayName)
+				}
 				hasPermit = step.Approvable
 				break
 			}
