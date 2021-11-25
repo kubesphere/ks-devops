@@ -428,7 +428,7 @@ func (h *ProjectPipelineHandler) hasSubmitPermission(req *restful.Request) (hasP
 					continue
 				}
 				if step.Input == nil {
-					err = errors.New("the step state was unapprovable")
+					err = fmt.Errorf("the step '%s' is not approvable", step.DisplayName)
 				}
 				hasPermit = step.Approvable
 				break
