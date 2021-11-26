@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"kubesphere.io/devops/pkg/apiserver/authentication/options"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -41,6 +42,9 @@ type DevOpsControllerManagerOptions struct {
 	WebhookCertDir    string
 	S3Options         *s3.Options
 	FeatureOptions    *FeatureOptions
+
+	// AuthenticationOptions is needed for issuing a temporary token while creating PipelineRun.
+	AuthenticationOptions *options.AuthenticationOptions
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
 	// There are other projects also built on sigs.k8s.io/application, when KubeSphere installed along side
