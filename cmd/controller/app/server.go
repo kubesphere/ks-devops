@@ -18,6 +18,7 @@ package app
 
 import (
 	"fmt"
+
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"kubesphere.io/devops/cmd/controller/app/options"
@@ -48,13 +49,14 @@ func NewControllerManagerCommand() *cobra.Command {
 		// make sure LeaderElection is not nil
 		// override devops controller manager options
 		s = &options.DevOpsControllerManagerOptions{
-			KubernetesOptions: conf.KubernetesOptions,
-			JenkinsOptions:    conf.JenkinsOptions,
-			S3Options:         conf.S3Options,
-			FeatureOptions:    s.FeatureOptions,
-			LeaderElection:    s.LeaderElection,
-			LeaderElect:       s.LeaderElect,
-			WebhookCertDir:    s.WebhookCertDir,
+			KubernetesOptions:     conf.KubernetesOptions,
+			JenkinsOptions:        conf.JenkinsOptions,
+			S3Options:             conf.S3Options,
+			AuthenticationOptions: conf.AuthenticationOptions,
+			FeatureOptions:        s.FeatureOptions,
+			LeaderElection:        s.LeaderElection,
+			LeaderElect:           s.LeaderElect,
+			WebhookCertDir:        s.WebhookCertDir,
 		}
 	} else {
 		klog.Fatal("Failed to load configuration from disk", err)

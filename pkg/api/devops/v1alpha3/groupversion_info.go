@@ -37,6 +37,8 @@ const (
 	PipelineNameLabelKey = GroupName + "/pipeline"
 	// SCMRefNameLabelKey is label key of SCM reference name.
 	SCMRefNameLabelKey = GroupName + "/scm-ref-name"
+	// PipelineRunCreatorAnnoKey is annotation key of PipelineRun's creator
+	PipelineRunCreatorAnnoKey = GroupName + "/creator"
 )
 
 var (
