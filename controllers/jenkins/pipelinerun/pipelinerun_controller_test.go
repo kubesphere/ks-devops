@@ -328,7 +328,7 @@ func TestReconciler_getOrCreateJenkinsCoreIfHasCreator(t *testing.T) {
 				JenkinsCore: tt.fields.JenkinsCore,
 				TokenIssuer: tt.fields.TokenIssuer,
 			}
-			got, err := r.getOrCreateJenkinsCoreIfHasCreator(tt.args.annotations)
+			got, err := r.getOrCreateJenkinsCore(tt.args.annotations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Reconciler.getOrCreateJenkinsCoreIfHasCreator() error = %v, wantErr %v", err, tt.wantErr)
 				return

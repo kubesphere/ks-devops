@@ -179,9 +179,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// get or create JenkinsCore if the PipelineRun has creator annotation
-	jenkinsCore, err := r.getOrCreateJenkinsCoreIfHasCreator(pipelineRunCopied.GetAnnotations())
+	jenkinsCore, err := r.getOrCreateJenkinsCore(pipelineRunCopied.GetAnnotations())
 	if err != nil {
-		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to create Jenkins core for triggering PipelineRun %s, and error was %s", req.NamespacedName, err)
+		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %v", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
 	// create trigger handler
@@ -190,7 +190,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	jobRun, err := triggerHandler.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
 	if err != nil {
 		log.Error(err, "unable to run pipeline", "namespace", namespaceName, "pipeline", pipeline.Name)
-		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %s", req.NamespacedName, err)
+		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %v", req.NamespacedName, err)
 		return ctrl.Result{}, err
 	}
 	// check if there is still a same PipelineRun
@@ -323,7 +323,7 @@ func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *v1alpha3.Pip
 	return r.updateStatus(ctx, &pr.Status, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name})
 }
 
-func (r *Reconciler) getOrCreateJenkinsCoreIfHasCreator(annotations map[string]string) (*core.JenkinsCore, error) {
+func (r *Reconciler) getOrCreateJenkinsCore(annotations map[string]string) (*core.JenkinsCore, error) {
 	creator, ok := annotations[v1alpha3.PipelineRunCreatorAnnoKey]
 	if !ok || creator == "" {
 		return &r.JenkinsCore, nil
@@ -331,7 +331,7 @@ func (r *Reconciler) getOrCreateJenkinsCoreIfHasCreator(annotations map[string]s
 	// create a new JenkinsCore for current creator
 	accessToken, err := r.TokenIssuer.IssueTo(&user.DefaultInfo{Name: creator}, token.AccessToken, tokenExpireIn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to issue access token for creator %s, error = %v", creator, err)
+		return nil, fmt.Errorf("failed to issue access token for creator %s, error was %v", creator, err)
 	}
 	jenkinsCore := &core.JenkinsCore{
 		URL:      r.JenkinsCore.URL,
