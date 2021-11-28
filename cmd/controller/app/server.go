@@ -49,14 +49,17 @@ func NewControllerManagerCommand() *cobra.Command {
 		// make sure LeaderElection is not nil
 		// override devops controller manager options
 		s = &options.DevOpsControllerManagerOptions{
-			KubernetesOptions:     conf.KubernetesOptions,
-			JenkinsOptions:        conf.JenkinsOptions,
-			S3Options:             conf.S3Options,
-			AuthenticationOptions: conf.AuthenticationOptions,
-			FeatureOptions:        s.FeatureOptions,
-			LeaderElection:        s.LeaderElection,
-			LeaderElect:           s.LeaderElect,
-			WebhookCertDir:        s.WebhookCertDir,
+			KubernetesOptions: conf.KubernetesOptions,
+			JenkinsOptions:    conf.JenkinsOptions,
+			S3Options:         conf.S3Options,
+			JWTOptions: &options.JWTOptions{
+				Secret:           conf.AuthenticationOptions.JwtSecret,
+				MaximumClockSkew: conf.AuthenticationOptions.MaximumClockSkew,
+			},
+			FeatureOptions: s.FeatureOptions,
+			LeaderElection: s.LeaderElection,
+			LeaderElect:    s.LeaderElect,
+			WebhookCertDir: s.WebhookCertDir,
 		}
 	} else {
 		klog.Fatal("Failed to load configuration from disk", err)

@@ -45,7 +45,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		return errors.New("devopsClient should not be nil")
 	}
 
-	tokenIssuer := token.NewTokenIssuer(s.AuthenticationOptions.JwtSecret, s.AuthenticationOptions.MaximumClockSkew)
+	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 	// add PipelineRun controller
 	if err := (&pipelinerun.Reconciler{
 		Client:       mgr.GetClient(),
