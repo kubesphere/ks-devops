@@ -3,15 +3,16 @@ package app
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes"
-	"kubesphere.io/devops/pkg/apiserver/authentication/token"
 	"kubesphere.io/devops/pkg/config"
-	"math/rand"
-	"strings"
-	"time"
+	"kubesphere.io/devops/pkg/jwt/token"
 )
 
 // NewCmd creates a root command for jwt

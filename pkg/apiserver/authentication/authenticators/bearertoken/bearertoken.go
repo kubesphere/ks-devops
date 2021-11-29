@@ -2,11 +2,12 @@ package bearertoken
 
 import (
 	"context"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"time"
 
+	"k8s.io/apiserver/pkg/authentication/user"
+
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	jwt "kubesphere.io/devops/pkg/apiserver/authentication/token"
+	jwt "kubesphere.io/devops/pkg/jwt/token"
 )
 
 // tokenAuthenticator implements an simple auth which only check the format of target JWT token

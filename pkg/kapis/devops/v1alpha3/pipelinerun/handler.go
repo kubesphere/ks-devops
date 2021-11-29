@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -12,6 +13,7 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/models/pipelinerun"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
@@ -130,8 +132,19 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 		return
 	}
 
+	// get current login user from request context
+	user, ok := apiserverrequest.UserFrom(request.Request.Context())
+	if !ok || user == nil {
+		// should never happen
+		err := fmt.Errorf("unauthenticated user entered to create PipelineRun for Pipeline '%s/%s'", nsName, pipName)
+		api.HandleUnauthorized(response, request, err)
+		return
+	}
 	// create PipelineRun
 	pr := CreatePipelineRun(&pipeline, &payload, scm)
+	if user != nil && user.GetName() != "" {
+		pr.GetAnnotations()[v1alpha3.PipelineRunCreatorAnnoKey] = user.GetName()
+	}
 	if err := h.client.Create(context.Background(), pr); err != nil {
 		api.HandleError(request, response, err)
 		return

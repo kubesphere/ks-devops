@@ -1,14 +1,19 @@
 package pipelinerun
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// nolint
@@ -257,3 +262,84 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		})
 	})
 })
+
+func TestReconciler_getOrCreateJenkinsCoreIfHasCreator(t *testing.T) {
+	defaultJenkinsCore := &core.JenkinsCore{
+		URL:      "https://devops.com",
+		UserName: "admin",
+		Token:    "fake-token",
+	}
+	tokenIssuer := token.NewTokenIssuer("test-secret", 0)
+	accessToken, err := tokenIssuer.IssueTo(&user.DefaultInfo{Name: "tester"}, token.AccessToken, tokenExpireIn)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		JenkinsCore core.JenkinsCore
+		TokenIssuer token.Issuer
+	}
+	type args struct {
+		annotations map[string]string
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		args      args
+		want      *core.JenkinsCore
+		assertion func(*core.JenkinsCore)
+		wantErr   bool
+	}{{
+		name: "Empty annotations",
+		fields: fields{
+			JenkinsCore: *defaultJenkinsCore,
+			TokenIssuer: tokenIssuer,
+		},
+		want: defaultJenkinsCore,
+	}, {
+		name: "Has creator in annotations",
+		fields: fields{
+			JenkinsCore: *defaultJenkinsCore,
+			TokenIssuer: tokenIssuer,
+		},
+		args: args{
+			annotations: map[string]string{
+				v1alpha3.PipelineRunCreatorAnnoKey: "tester",
+			},
+		},
+		want: &core.JenkinsCore{
+			URL:      defaultJenkinsCore.URL,
+			UserName: "tester",
+			Token:    accessToken,
+		},
+		assertion: func(jenkinsCore *core.JenkinsCore) {
+			assert.Equal(t, "tester", jenkinsCore.UserName)
+			assert.Equal(t, defaultJenkinsCore.URL, jenkinsCore.URL)
+			userInfo, tokenType, err := tokenIssuer.Verify(jenkinsCore.Token)
+			assert.Equal(t, &user.DefaultInfo{Name: "tester"}, userInfo)
+			assert.Equal(t, token.AccessToken, tokenType)
+			assert.Nil(t, err)
+		},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				JenkinsCore: tt.fields.JenkinsCore,
+				TokenIssuer: tt.fields.TokenIssuer,
+			}
+			got, err := r.getOrCreateJenkinsCore(tt.args.annotations)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Reconciler.getOrCreateJenkinsCoreIfHasCreator() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.assertion != nil {
+				tt.assertion(got)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Reconciler.getOrCreateJenkinsCoreIfHasCreator() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
