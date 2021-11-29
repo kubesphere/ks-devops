@@ -18,8 +18,9 @@ package token
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/server/errors"
 	"time"
+
+	"kubesphere.io/devops/pkg/server/errors"
 
 	"github.com/form3tech-oss/jwt-go"
 	"k8s.io/apiserver/pkg/authentication/user"

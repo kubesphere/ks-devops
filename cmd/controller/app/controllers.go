@@ -17,7 +17,7 @@ limitations under the License.
 package app
 
 import (
-	"kubesphere.io/devops/pkg/apiserver/authentication/token"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/server/errors"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"

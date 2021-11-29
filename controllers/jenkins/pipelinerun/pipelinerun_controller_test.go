@@ -12,8 +12,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/authentication/token"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// nolint

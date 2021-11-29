@@ -36,8 +36,8 @@ run:
     - pkg/api/types.go
     - pkg/apiserver/apiserver.go
     - pkg/apiserver/authentication/oauth/oauth_options.go
-    - pkg/apiserver/authentication/token/issuer.go
-    - pkg/apiserver/authentication/token/jwt.go
+    - pkg/jwt/token/issuer.go
+    - pkg/jwt/token/jwt.go
     - pkg/apiserver/filters/requestinfo.go
     - pkg/apiserver/query/types.go
     - pkg/apiserver/request/context.go
