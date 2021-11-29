@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/server/errors"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
@@ -44,12 +45,14 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		return errors.New("devopsClient should not be nil")
 	}
 
+	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 	// add PipelineRun controller
 	if err := (&pipelinerun.Reconciler{
 		Client:       mgr.GetClient(),
 		Scheme:       mgr.GetScheme(),
 		DevOpsClient: devopsClient,
 		JenkinsCore:  jenkinsCore,
+		TokenIssuer:  tokenIssuer,
 	}).SetupWithManager(mgr); err != nil {
 		klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
 		return err

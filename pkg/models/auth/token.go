@@ -28,8 +28,8 @@ import (
 
 	"kubesphere.io/devops/pkg/apiserver/authentication/oauth"
 	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"
-	"kubesphere.io/devops/pkg/apiserver/authentication/token"
 	"kubesphere.io/devops/pkg/client/cache"
+	"kubesphere.io/devops/pkg/jwt/token"
 )
 
 type TokenManagementInterface interface {

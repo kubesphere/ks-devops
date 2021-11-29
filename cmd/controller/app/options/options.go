@@ -41,6 +41,7 @@ type DevOpsControllerManagerOptions struct {
 	WebhookCertDir    string
 	S3Options         *s3.Options
 	FeatureOptions    *FeatureOptions
+	JWTOptions        *JWTOptions
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.
 	// There are other projects also built on sigs.k8s.io/application, when KubeSphere installed along side
