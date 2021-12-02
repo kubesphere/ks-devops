@@ -94,6 +94,7 @@ func (pbApplier pipelineBuildApplier) apply(prStatus *v1alpha3.PipelineRunStatus
 	}
 	prStatus.AddCondition(&condition)
 	prStatus.UpdateTime = &v1.Time{Time: time.Now()}
+	prStatus.StartTime = &v1.Time{Time: pbApplier.StartTime.Time}
 }
 
 func (pbApplier pipelineBuildApplier) whenPipelineRunFinished(condition *v1alpha3.Condition, prStatus *v1alpha3.PipelineRunStatus) {
