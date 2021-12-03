@@ -19,6 +19,7 @@ package cache
 import (
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"kubesphere.io/devops/pkg/server/errors"
@@ -34,11 +35,12 @@ type simpleObject struct {
 
 // SimpleCache implements cache.Interface use memory objects, it should be used only for testing
 type simpleCache struct {
-	store map[string]simpleObject
+	store  map[string]simpleObject
+	rwLock sync.RWMutex
 }
 
 func NewSimpleCache() Interface {
-	return &simpleCache{store: make(map[string]simpleObject)}
+	return &simpleCache{store: make(map[string]simpleObject), rwLock: sync.RWMutex{}}
 }
 
 func (s *simpleCache) Keys(pattern string) ([]string, error) {
@@ -51,8 +53,10 @@ func (s *simpleCache) Keys(pattern string) ([]string, error) {
 		return nil, err
 	}
 	var keys []string
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
 	for k := range s.store {
-		if re.MatchString(k) {
+		if re.MatchString(k) { // TODO need add expire check.
 			keys = append(keys, k)
 		}
 	}
@@ -70,12 +74,15 @@ func (s *simpleCache) Set(key string, value string, duration time.Duration) erro
 	if duration == NeverExpire {
 		sobject.neverExpire = true
 	}
-
+	s.rwLock.Lock()
 	s.store[key] = sobject
+	s.rwLock.Unlock()
 	return nil
 }
 
 func (s *simpleCache) Del(keys ...string) error {
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
 	for _, key := range keys {
 		delete(s.store, key)
 	}
@@ -83,22 +90,34 @@ func (s *simpleCache) Del(keys ...string) error {
 }
 
 func (s *simpleCache) Get(key string) (string, error) {
+	var bExpire bool
+	s.rwLock.RLock()
 	if sobject, ok := s.store[key]; ok {
 		if sobject.neverExpire || time.Now().Before(sobject.expiredAt) {
+			s.rwLock.RUnlock()
 			return sobject.value, nil
 		}
+		if !time.Now().Before(sobject.expiredAt) {
+			bExpire = true
+		}
 	}
-
+	s.rwLock.RUnlock()
+	if bExpire {
+		s.rwLock.Lock()
+		delete(s.store, key)
+		s.rwLock.Unlock()
+	}
 	return "", ErrNoSuchKey
 }
 
 func (s *simpleCache) Exists(keys ...string) (bool, error) {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
 	for _, key := range keys {
 		if _, ok := s.store[key]; !ok {
 			return false, nil
 		}
 	}
-
 	return true, nil
 }
 
@@ -117,7 +136,8 @@ func (s *simpleCache) Expire(key string, duration time.Duration) error {
 	if duration == NeverExpire {
 		sobject.neverExpire = true
 	}
-
+	s.rwLock.Lock()
 	s.store[key] = sobject
+	s.rwLock.Unlock()
 	return nil
 }
