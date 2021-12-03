@@ -16,6 +16,9 @@ type listHandler struct {
 // Make sure backwardListHandler implement ListHandler interface.
 var _ resourcesV1alpha3.ListHandler = listHandler{}
 
+// Comparator compares times first, which is from start time and creation time(only when start time is nil or zero).
+// If times are equal, we will compare the unique name at last to
+// ensure that the order result is stable forever.
 func (b listHandler) Comparator() resourcesV1alpha3.CompareFunc {
 	return func(left, right runtime.Object, f query.Field) bool {
 		leftPipelineRun, ok := left.(*v1alpha3.PipelineRun)
@@ -38,9 +41,6 @@ func (b listHandler) Comparator() resourcesV1alpha3.CompareFunc {
 		if !leftTime.Equal(rightTime) {
 			return leftTime.After(rightTime.Time)
 		}
-		// Why compare name at last?
-		// We have to ensure that the order is stable when left time is equal to right time.
-		// Exactly, the name is unique globally.
 		return strings.Compare(leftPipelineRun.Name, rightPipelineRun.Name) < 0
 	}
 }
