@@ -143,7 +143,6 @@ func Test_createBarePipelineRun(t *testing.T) {
 				},
 				Labels: map[string]string{
 					v1alpha3.PipelineNameLabelKey: "fake-pipeline",
-					v1alpha3.SCMRefNameLabelKey:   "main",
 				},
 			},
 			Spec: v1alpha3.PipelineRunSpec{

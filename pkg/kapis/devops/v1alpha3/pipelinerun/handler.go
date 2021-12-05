@@ -56,17 +56,22 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	}
 
 	// build label selector
-	labelSelector, err := buildLabelSelector(queryParam, pipeline.Name, branchName)
+	labelSelector, err := buildLabelSelector(queryParam, pipeline.Name)
 	if err != nil {
 		api.HandleError(request, response, err)
 		return
 	}
 
+	opts := make([]client.ListOption, 0, 3)
+	opts = append(opts, client.InNamespace(pipeline.Namespace))
+	opts = append(opts, client.MatchingLabelsSelector{Selector: labelSelector})
+	if branchName != "" {
+		opts = append(opts, client.MatchingFields{v1alpha3.PipelineRunSCMRefNameField: branchName})
+	}
+
 	var prs v1alpha3.PipelineRunList
 	// fetch PipelineRuns
-	if err := h.client.List(context.Background(), &prs,
-		client.InNamespace(pipeline.Namespace),
-		client.MatchingLabelsSelector{Selector: labelSelector}); err != nil {
+	if err := h.client.List(context.Background(), &prs, opts...); err != nil {
 		api.HandleError(request, response, err)
 		return
 	}

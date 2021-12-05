@@ -25,7 +25,6 @@ func Test_buildLabelSelector(t *testing.T) {
 	type args struct {
 		queryParam   *query.Query
 		pipelineName string
-		branchName   string
 	}
 	tests := []struct {
 		name    string
@@ -37,9 +36,8 @@ func Test_buildLabelSelector(t *testing.T) {
 		args: args{
 			queryParam:   &query.Query{},
 			pipelineName: "pipelineA",
-			branchName:   "branchA",
 		},
-		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA", v1alpha3.PipelineNameLabelKey, v1alpha3.SCMRefNameLabelKey)),
+		want: parseSelector(fmt.Sprintf("%s=pipelineA", v1alpha3.PipelineNameLabelKey)),
 	}, {
 		name: "Label selector was provided",
 		args: args{
@@ -47,22 +45,12 @@ func Test_buildLabelSelector(t *testing.T) {
 				LabelSelector: "a=b",
 			},
 			pipelineName: "pipelineA",
-			branchName:   "branchA",
 		},
-		want: parseSelector(fmt.Sprintf("%s=pipelineA,%s=branchA,a=b", v1alpha3.PipelineNameLabelKey, v1alpha3.SCMRefNameLabelKey)),
-	}, {
-		name: "No label selector was provided",
-		args: args{
-			queryParam:   &query.Query{},
-			pipelineName: "pipelineA",
-			branchName:   "分支A",
-		},
-		wantErr: true,
-	},
-	}
+		want: parseSelector(fmt.Sprintf("%s=pipelineA,a=b", v1alpha3.PipelineNameLabelKey)),
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildLabelSelector(tt.args.queryParam, tt.args.pipelineName, tt.args.branchName)
+			got, err := buildLabelSelector(tt.args.queryParam, tt.args.pipelineName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildLabelSelector() error = %v, wantErr %v", err, tt.wantErr)
 				return

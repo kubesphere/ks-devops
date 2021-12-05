@@ -3,20 +3,18 @@ package pipelinerun
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
-func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string) (labels.Selector, error) {
+func buildLabelSelector(queryParam *query.Query, pipelineName string) (labels.Selector, error) {
 	labelSelector := queryParam.Selector()
 	rq, err := labels.NewRequirement(v1alpha3.PipelineNameLabelKey, selection.Equals, []string{pipelineName})
 	if err != nil {
@@ -24,17 +22,6 @@ func buildLabelSelector(queryParam *query.Query, pipelineName, branchName string
 		return nil, err
 	}
 	labelSelector = labelSelector.Add(*rq)
-	if branchName != "" {
-		if errs := validation.IsValidLabelValue(branchName); len(errs) != 0 {
-			return nil, fmt.Errorf(strings.Join(errs, "; "))
-		}
-		rq, err = labels.NewRequirement(v1alpha3.SCMRefNameLabelKey, selection.Equals, []string{branchName})
-		if err != nil {
-			// should never happen
-			return nil, err
-		}
-		labelSelector = labelSelector.Add(*rq)
-	}
 	return labelSelector, nil
 }
 
@@ -108,9 +95,6 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 			Parameters:   convertParameters(payload),
 			SCM:          scm,
 		},
-	}
-	if scm != nil && scm.RefName != "" {
-		pipelineRun.Labels[v1alpha3.SCMRefNameLabelKey] = scm.RefName
 	}
 	return pipelineRun
 }

@@ -34,6 +34,7 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
 	"kubesphere.io/devops/pkg/apiserver/filters"
 	"kubesphere.io/devops/pkg/apiserver/request"
+	"kubesphere.io/devops/pkg/indexers"
 	"kubesphere.io/devops/pkg/kapis/oauth"
 	"kubesphere.io/devops/pkg/models/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -154,7 +155,9 @@ func (s *APIServer) installKubeSphereAPIs() {
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
-
+	if err := indexers.CreatePipelineRunSCMRefNameIndexer(s.RuntimeCache); err != nil {
+		return err
+	}
 	err = s.waitForResourceSync(stopCh)
 	if err != nil {
 		return err

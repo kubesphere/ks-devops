@@ -75,6 +75,7 @@ func convertBranches(jobBranches []job.PipelineBranch) []pipeline.Branch {
 	for _, jobBranch := range jobBranches {
 		branches = append(branches, pipeline.Branch{
 			Name:         jobBranch.Name,
+			RawName:      jobBranch.DisplayName,
 			WeatherScore: jobBranch.WeatherScore,
 			Branch:       jobBranch.Branch,
 			PullRequest:  jobBranch.PullRequest,
