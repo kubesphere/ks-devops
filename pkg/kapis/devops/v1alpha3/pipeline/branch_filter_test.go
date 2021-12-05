@@ -64,7 +64,7 @@ func Test_filterBranches(t *testing.T) {
 			PullRequest: &job.PullRequest{},
 		}},
 	}, {
-		name: "With filter: origin, but name is invalid",
+		name: "With filter: origin, but name is written in Chinese",
 		args: args{
 			branches: []pipeline.Branch{{
 				Name:        "main1",
@@ -83,6 +83,9 @@ func Test_filterBranches(t *testing.T) {
 		want: []pipeline.Branch{{
 			Name:        "main1",
 			PullRequest: nil,
+		}, {
+			Name:        "主分支2",
+			PullRequest: &job.PullRequest{},
 		}},
 	}, {
 		name: "With filter: pull-requests",
@@ -108,7 +111,7 @@ func Test_filterBranches(t *testing.T) {
 			},
 		}},
 	}, {
-		name: "With filter: pull-requests， but name is invalid",
+		name: "With filter: pull-requests, but name is written in Chinese",
 		args: args{
 			branches: []pipeline.Branch{{
 				Name:        "main1",
@@ -133,6 +136,11 @@ func Test_filterBranches(t *testing.T) {
 			Name: "PR1",
 			PullRequest: &job.PullRequest{
 				ID: "1",
+			},
+		}, {
+			Name: "分支2",
+			PullRequest: &job.PullRequest{
+				ID: "2",
 			},
 		}},
 	}, {
