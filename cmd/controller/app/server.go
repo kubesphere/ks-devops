@@ -28,6 +28,7 @@ import (
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
+	"kubesphere.io/devops/pkg/indexers"
 	"kubesphere.io/devops/pkg/informers"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
@@ -187,6 +188,10 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		s,
 		stopCh); err != nil {
 		return fmt.Errorf("unable to register controllers to the manager: %v", err)
+	}
+
+	if err := indexers.CreatePipelineRunSCMRefNameIndexer(mgr.GetCache()); err != nil {
+		return err
 	}
 
 	// Start cache data after all informer is registered

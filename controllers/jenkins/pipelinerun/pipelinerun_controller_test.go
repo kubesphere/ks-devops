@@ -82,7 +82,7 @@ func Test_getBranch(t *testing.T) {
 		},
 		want: "main",
 	}, {
-		name: "Multi-branch Pipeline and SCM set, but the name is invalid",
+		name: "Multi-branch Pipeline and SCM set, but the name is written in Chinese",
 		args: args{
 			prSpec: &v1alpha3.PipelineRunSpec{
 				PipelineSpec: &v1alpha3.PipelineSpec{
@@ -94,7 +94,7 @@ func Test_getBranch(t *testing.T) {
 				},
 			},
 		},
-		wantErr: true,
+		want: "测试分支",
 	},
 	}
 	for _, tt := range tests {
@@ -159,7 +159,6 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 					v1alpha3.JenkinsPipelineRunIDAnnoKey: "123",
 				},
 				Labels: map[string]string{
-					v1alpha3.SCMRefNameLabelKey:   "main",
 					v1alpha3.PipelineNameLabelKey: "multi-branch-pipeline",
 				},
 			},
