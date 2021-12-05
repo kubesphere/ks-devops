@@ -25,7 +25,10 @@ type Metadata struct {
 
 // Branch contains branch metadata, like branch and pull request, and latest PipelineRun.
 type Branch struct {
-	Name         string                    `json:"name,omitempty"`
+	// Name is branch name, like "feat%2FfeatureA"
+	Name string `json:"name,omitempty"`
+	// RawName is the display branch name, like "feat/featureA"
+	RawName      string                    `json:"rawName,omitempty"`
 	WeatherScore int                       `json:"weatherScore"`
 	Disabled     bool                      `json:"disabled,omitempty"`
 	LatestRun    *LatestRun                `json:"latestRun,omitempty"`

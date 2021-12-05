@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -30,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -119,9 +117,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		pipelineRunCopied.Labels = make(map[string]string)
 	}
 	pipelineRunCopied.Labels[v1alpha3.PipelineNameLabelKey] = pipelineName
-	if refName, err := getSCMRefName(&pipelineRunCopied.Spec); err == nil && refName != "" {
-		pipelineRunCopied.Labels[v1alpha3.SCMRefNameLabelKey] = refName
-	}
 
 	log = log.WithValues("namespace", namespaceName, "Pipeline", pipelineName)
 
@@ -141,7 +136,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
 			if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
 				log.Error(err, "unable to update PipelineRun status.")
-				return ctrl.Result{RequeueAfter: time.Second}, err
+				return ctrl.Result{}, err
 			}
 		}
 
@@ -169,7 +164,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// update labels and annotations
 		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
 			log.Error(err, "unable to update PipelineRun labels and annotations.")
-			return ctrl.Result{RequeueAfter: time.Second}, err
+			return ctrl.Result{}, err
 		}
 
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
@@ -231,7 +226,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
-	return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exists bool, err error) {
@@ -243,7 +238,7 @@ func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alp
 	}
 	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
 		// add SCM reference name into list options for multi-branch Pipeline
-		listOptions = append(listOptions, client.MatchingLabels{v1alpha3.SCMRefNameLabelKey: jobRun.Pipeline})
+		listOptions = append(listOptions, client.MatchingFields{v1alpha3.PipelineRunSCMRefNameField: jobRun.Pipeline})
 	}
 	if err = r.Client.List(context.Background(), pipelineRuns, listOptions...); err == nil {
 		isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
@@ -258,9 +253,6 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	if prSpec.IsMultiBranchPipeline() {
 		if prSpec.SCM == nil || prSpec.SCM.RefName == "" {
 			return "", fmt.Errorf("failed to obtain SCM reference name for multi-branch Pipeline")
-		}
-		if errs := validation.IsValidLabelValue(prSpec.SCM.RefName); len(errs) != 0 {
-			return "", fmt.Errorf(strings.Join(errs, "; "))
 		}
 		branch = prSpec.SCM.RefName
 	}

@@ -35,10 +35,10 @@ const (
 	PipelineRunOrphanLabelKey = GroupName + "/jenkins-pipelinerun-orphan"
 	// PipelineNameLabelKey is label key of Pipeline name.
 	PipelineNameLabelKey = GroupName + "/pipeline"
-	// SCMRefNameLabelKey is label key of SCM reference name.
-	SCMRefNameLabelKey = GroupName + "/scm-ref-name"
 	// PipelineRunCreatorAnnoKey is annotation key of PipelineRun's creator
 	PipelineRunCreatorAnnoKey = GroupName + "/creator"
+	// PipelineRunSCMRefNameField is the field name of SCM reference name in PipelineRun spec.
+	PipelineRunSCMRefNameField = "spec.scm.ref-name"
 )
 
 var (
