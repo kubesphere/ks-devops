@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - release-*
       - tekton-support
       - jenkins-client-refactor
       - feat/*
@@ -37,6 +38,7 @@ on:
       - "PROJECT"
     branches:
       - 'master'
+      - 'release-*'
       - 'tekton-support'
       - 'jenkins-client-refactor'
       - 'feat/*'
