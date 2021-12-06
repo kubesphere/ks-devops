@@ -91,24 +91,50 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
+      - name: Build env
+        id: build_env
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]
+          then
+              echo "::set-output name=platforms::linux/amd64"
+              echo "::set-output name=push::false"
+              echo "::set-output name=load::true"
+          else
+              echo "::set-output name=platforms::linux/amd64,linux/arm64"
+              echo "::set-output name=push::true"
+              echo "::set-output name=load::false"
+          fi
+          echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.2.0
+        if: github.event_name == 'pull_request'
+        with:
+          image-ref: 'ghcr.io/kubesphere/devops-controller:sha-${{ steps.build_env.outputs.short_sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   BuildAPIServer:
     runs-on: ubuntu-20.04
@@ -158,24 +184,50 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
+      - name: Build env
+        id: build_env
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]
+          then
+              echo "::set-output name=platforms::linux/amd64"
+              echo "::set-output name=push::false"
+              echo "::set-output name=load::true"
+          else
+              echo "::set-output name=platforms::linux/amd64,linux/arm64"
+              echo "::set-output name=push::true"
+              echo "::set-output name=load::false"
+          fi
+          echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.2.0
+        if: github.event_name == 'pull_request'
+        with:
+          image-ref: 'ghcr.io/kubesphere/devops-apiserver:sha-${{ steps.build_env.outputs.short_sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   BuildTools:
     runs-on: ubuntu-20.04
@@ -225,24 +277,50 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
+      - name: Build env
+        id: build_env
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]
+          then
+              echo "::set-output name=platforms::linux/amd64"
+              echo "::set-output name=push::false"
+              echo "::set-output name=load::true"
+          else
+              echo "::set-output name=platforms::linux/amd64,linux/arm64"
+              echo "::set-output name=push::true"
+              echo "::set-output name=load::false"
+          fi
+          echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Build and push Docker images for Contributors
         uses: docker/build-push-action@v2.4.0
         if: github.repository_owner != 'kubesphere'
         with:
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ steps.build_env.outputs.push }}
+          load: ${{ steps.build_env.outputs.load }}
           labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_env.outputs.platforms }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.2.0
+        if: github.event_name == 'pull_request'
+        with:
+          image-ref: 'ghcr.io/kubesphere/devops-tools:sha-${{ steps.build_env.outputs.short_sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   UnitTest:
     name: Test

@@ -17,6 +17,7 @@ require (
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.3
 	github.com/go-redis/redis v6.15.9+incompatible
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
