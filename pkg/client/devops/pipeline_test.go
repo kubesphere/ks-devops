@@ -12,6 +12,9 @@ func TestGetSubmitters(t *testing.T) {
 	assert.Equal(t, len(input.GetSubmitters()), 0,
 		"errors happen when try to get submitters without any submitters")
 
+	input.Submitter = ""
+	assert.Equal(t, len(input.GetSubmitters()), 0, "Should be empty submitters when submitter not set")
+
 	input.Submitter = "a , b, c,d"
 	submitters := input.GetSubmitters()
 	assert.Equal(t, len(submitters), 4, "get incorrect number of submitters")
