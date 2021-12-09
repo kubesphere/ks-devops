@@ -1,11 +1,11 @@
 package v1alpha2
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 
+	"github.com/emicklei/go-restful"
+	"github.com/stretchr/testify/assert"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
