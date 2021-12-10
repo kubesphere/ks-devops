@@ -27,7 +27,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/request"
 
 	"github.com/emicklei/go-restful"
-	"k8s.io/apiserver/pkg/authentication/user"
 	log "k8s.io/klog"
 	"k8s.io/klog/v2"
 
@@ -318,65 +317,37 @@ func (h *ProjectPipelineHandler) GetPipelineRunNodes(req *restful.Request, resp 
 	resp.WriteAsJson(res)
 }
 
-// there're two situation here:
-// 1. the particular submitters exist
-// the users who are the owner of this Pipeline or the submitter of this Pipeline, or has the auth to create a DevOps project
-// 2. no particular submitters
-// only the owner of this Pipeline can approve or reject it
+// approvableCheck requires the users who have PipelineRun management permission to
+// approve a step. If the particular submitters exist, we also restrict the users
+// who are Pipeline creator or in the particular submitters can be able to approve or reject a step.
 func (h *ProjectPipelineHandler) approvableCheck(nodes []clientDevOps.NodesDetail, pipe pipelineParam) {
-	var userInfo user.Info
-	var ok bool
-	var isAdmin bool
-	// check if current user belong to the admin group, grant it if it's true
-	if userInfo, ok = request.UserFrom(pipe.Context); ok {
-		//createAuth := authorizer.AttributesRecord{
-		//	User:            userInfo,
-		//	Verb:            authorizer.VerbDelete,
-		//	Workspace:       pipe.Workspace,
-		//	DevOps:          pipe.ProjectName,
-		//	Resource:        "devopsprojects",
-		//	ResourceRequest: true,
-		//	ResourceScope:   request.DevOpsScope,
-		//}
-		//
-		//if decision, _, err := h.authorizer.Authorize(createAuth); err == nil {
-		//	isAdmin = decision == authorizer.DecisionAllow
-		//} else {
-		//	// this is an expected case, printing the debug info for troubleshooting
-		//	klog.V(8).Infof("authorize failed with '%v', error is '%v'",
-		//		createAuth, err)
-		//}
-	} else {
+	userInfo, ok := request.UserFrom(pipe.Context)
+	if !ok {
 		klog.V(6).Infof("cannot get the current user when checking the approvable with pipeline '%s/%s'",
 			pipe.ProjectName, pipe.Name)
 		return
 	}
 
-	var createdByCurrentUser bool // indicate if the current user is the owner
-	if pipeline, err := h.devopsOperator.GetPipelineObj(pipe.ProjectName, pipe.Name); err == nil {
-		if creator, ok := pipeline.GetAnnotations()[constants.CreatorAnnotationKey]; ok {
-			createdByCurrentUser = userInfo.GetName() == creator
-		} else {
-			klog.V(6).Infof("annotation '%s' is necessary but it is missing from '%s/%s'",
-				constants.CreatorAnnotationKey, pipe.ProjectName, pipe.Name)
-		}
-	} else {
-		klog.V(6).Infof("cannot find pipeline '%s/%s', error is '%v'", pipe.ProjectName, pipe.Name, err)
-		return
-	}
-
 	// check every input steps if it's approvable
-	for i, node := range nodes {
+	for i := range nodes {
+		node := &nodes[i]
 		if node.State != clientDevOps.StatePaused {
 			continue
 		}
 
-		for j, step := range node.Steps {
+		for j := range node.Steps {
+			step := &node.Steps[j]
 			if step.State != clientDevOps.StatePaused || step.Input == nil {
 				continue
 			}
-
-			nodes[i].Steps[j].Approvable = isAdmin || createdByCurrentUser || step.Input.Approvable(userInfo.GetName())
+			if len(step.Input.GetSubmitters()) == 0 {
+				// TODO: no particular submitters, we make the PipelineRun approvable by default.
+				// Until we can obtain the permissions of the currently logged in user
+				step.Approvable = true
+			} else {
+				isCreator := h.createdBy(pipe.ProjectName, pipe.Name, userInfo.GetName())
+				step.Approvable = isCreator || step.Input.Approvable(userInfo.GetName())
+			}
 		}
 	}
 }
@@ -437,8 +408,11 @@ func (h *ProjectPipelineHandler) hasSubmitPermission(req *restful.Request) (hasP
 		}
 	} else {
 		log.V(4).Infof("cannot get nodes detail, error: %v", err)
-		err = errors.New("cannot get the submitters of current pipeline run")
+		err = errors.New("cannot get the submitters of current step")
 		return
+	}
+	if !hasPermit && err == nil {
+		err = fmt.Errorf("you have no permission to approve this step")
 	}
 	return
 }

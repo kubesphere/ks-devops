@@ -1093,9 +1093,12 @@ func (i *Input) GetSubmitters() (submitters []string) {
 	}
 
 	submitterArray := strings.Split(fmt.Sprintf("%v", i.Submitter), ",")
-	submitters = make([]string, len(submitterArray))
-	for i, submitter := range submitterArray {
-		submitters[i] = strings.TrimSpace(submitter)
+	submitters = make([]string, 0, len(submitterArray))
+	for _, submitter := range submitterArray {
+		trimmedSubmitter := strings.TrimSpace(submitter)
+		if trimmedSubmitter != "" {
+			submitters = append(submitters, trimmedSubmitter)
+		}
 	}
 	return
 }
