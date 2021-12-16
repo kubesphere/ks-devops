@@ -37,7 +37,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
@@ -50,7 +50,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -104,7 +104,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
@@ -117,7 +117,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -171,7 +171,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Docker meta for Contributors
         id: metaContributors
@@ -184,7 +184,7 @@ jobs:
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern=pattern={{version}},prefix=v
+            type=semver,pattern={{version}},prefix=v
             type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
