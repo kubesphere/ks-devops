@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.52
 	github.com/beevik/etree v1.1.0
 	github.com/davecgh/go-spew v1.1.1
+	github.com/drone/go-scm v1.16.2
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
 	github.com/fatih/structs v1.1.0

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: git-repository-webhook-controller
+  labels:
+    control-plane: git-repository-webhook-controller
+spec:
+  selector:
+    matchLabels:
+      control-plane: git-repository-webhook-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: git-repository-webhook-controller
+    spec:
+      containers:
+      - args:
+        - --enabled-controllers
+        - all=false,gitrepository=true
+        image: ghcr.io/linuxsuren/devops-controller:webhook-manager
+        name: manager
+        volumeMounts:
+        - mountPath: /etc/kubesphere/
+          name: devops-config
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: devops-config
+        name: devops-config

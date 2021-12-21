@@ -29,6 +29,14 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - gitrepositories
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - pipelineruns
   verbs:
   - create
@@ -46,3 +54,30 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - pipelines
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - pipelines/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - webhooks
+  verbs:
+  - get
+  - list
