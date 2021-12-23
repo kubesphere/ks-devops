@@ -37,6 +37,8 @@ categories:
 exclude-labels:
   - reverted
   - no-changelog
+  - release-note-none
+  - release-notes-none
   - skip-changelog
   - invalid
 change-template: '* $TITLE (#$NUMBER) @$AUTHOR'
