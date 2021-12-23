@@ -26,42 +26,60 @@ import (
 
 // FeatureOptions provide some feature options, such as specifying the controller to be enabled.
 type FeatureOptions struct {
-	EnabledControllers map[string]bool
+	Controllers map[string]bool
+}
+
+// GetControllers returns the controllers map
+// it supports a special key 'all', the default config is not working if 'all' is false
+func (o *FeatureOptions) GetControllers() map[string]bool {
+	defaultMap := map[string]bool{
+		"s2ibinary":        true,
+		"s2irun":           true,
+		"pipeline":         true,
+		"devopsprojects":   true,
+		"devopscredential": true,
+		"jenkinsconfig":    true,
+	}
+
+	// support to only enable the specific controllers
+	if val, ok := o.Controllers["all"]; ok {
+		delete(o.Controllers, "all")
+		if !val {
+			return o.Controllers
+		}
+	}
+
+	// merge the default values and input from users
+	for key, val := range o.Controllers {
+		defaultMap[key] = val
+	}
+	return defaultMap
 }
 
 // NewFeatureOptions provide default options
 func NewFeatureOptions() *FeatureOptions {
-	return &FeatureOptions{
-		EnabledControllers: map[string]bool{
-			"s2ibinary":        true,
-			"s2irun":           true,
-			"pipeline":         true,
-			"devopsprojects":   true,
-			"devopscredential": true,
-			"jenkinsconfig":    true,
-		},
-	}
+	return &FeatureOptions{}
 }
 
 // Validate checks validation of FeatureOptions.
-func (f *FeatureOptions) Validate() []error {
+func (o *FeatureOptions) Validate() []error {
 	return []error{}
 }
 
 // ApplyTo fills up FeatureOptions config with options
-func (f *FeatureOptions) ApplyTo(options *FeatureOptions) {
-	reflectutils.Override(options, f)
+func (o *FeatureOptions) ApplyTo(options *FeatureOptions) {
+	reflectutils.Override(options, o)
 }
 
 // AddFlags adds flags related to FeatureOptions for controller manager to the feature FlagSet.
-func (f *FeatureOptions) AddFlags(fs *pflag.FlagSet, c *FeatureOptions) {
-	fs.Var(cliflag.NewMapStringBool(&f.EnabledControllers), "enabled-controllers", "A set of key=value pairs that describe feature options for controllers. "+
+func (o *FeatureOptions) AddFlags(fs *pflag.FlagSet, c *FeatureOptions) {
+	fs.Var(cliflag.NewMapStringBool(&o.Controllers), "enabled-controllers", "A set of key=value pairs that describe feature options for controllers. "+
 		"Options are:\n"+strings.Join(c.knownControllers(), "\n"))
 }
 
-func (f *FeatureOptions) knownControllers() []string {
-	controllers := make([]string, 0, len(f.EnabledControllers))
-	for name := range f.EnabledControllers {
+func (o *FeatureOptions) knownControllers() []string {
+	controllers := make([]string, 0, len(o.Controllers))
+	for name := range o.Controllers {
 		controllers = append(controllers, name)
 	}
 	return controllers

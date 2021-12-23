@@ -1,0 +1,10 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: Webhook
+metadata:
+  name: webhook
+spec:
+  server: https://github.com
+  skipVerify: true
+  events:
+    - push
+    - release

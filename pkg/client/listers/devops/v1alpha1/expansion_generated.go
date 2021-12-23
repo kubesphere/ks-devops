@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// GitRepositoryListerExpansion allows custom methods to be added to
+// GitRepositoryLister.
+type GitRepositoryListerExpansion interface{}
+
+// GitRepositoryNamespaceListerExpansion allows custom methods to be added to
+// GitRepositoryNamespaceLister.
+type GitRepositoryNamespaceListerExpansion interface{}
+
 // S2iBinaryListerExpansion allows custom methods to be added to
 // S2iBinaryLister.
 type S2iBinaryListerExpansion interface{}
@@ -45,3 +53,11 @@ type S2iRunListerExpansion interface{}
 // S2iRunNamespaceListerExpansion allows custom methods to be added to
 // S2iRunNamespaceLister.
 type S2iRunNamespaceListerExpansion interface{}
+
+// WebhookListerExpansion allows custom methods to be added to
+// WebhookLister.
+type WebhookListerExpansion interface{}
+
+// WebhookNamespaceListerExpansion allows custom methods to be added to
+// WebhookNamespaceLister.
+type WebhookNamespaceListerExpansion interface{}

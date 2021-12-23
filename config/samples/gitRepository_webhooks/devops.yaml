@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  kubesphere.yaml: |-
+    authentication:
+      jwtSecret: fake
+    devops:
+      host: http://fake.com
+      username: fake
+      password: fake
+kind: ConfigMap
+metadata:
+  name: devops-config

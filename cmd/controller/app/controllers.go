@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"kubesphere.io/devops/controllers/gitrepository"
 	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/server/errors"
 
@@ -74,45 +75,16 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 	}).SetupWithManager(mgr); err != nil {
 		return err
 	}
-	controllers := map[string]func() manager.Runnable{
-		"s2ibinary": func() manager.Runnable {
-			return s2ibinary.NewController(client.Kubernetes(),
-				client.KubeSphere(),
-				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
-				s3Client,
-			)
-		},
 
-		"s2irun": func() manager.Runnable {
-			return s2irun.NewS2iRunController(client.Kubernetes(),
-				client.KubeSphere(),
-				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
-				kubesphereInformer.Devops().V1alpha1().S2iRuns())
+	reconcilers := map[string]func(mgr manager.Manager) error{
+		"gitrepository": func(mgr manager.Manager) error {
+			return (&gitrepository.Reconciler{
+				Client: mgr.GetClient(),
+				Scheme: mgr.GetScheme(),
+			}).SetupWithManager(mgr)
 		},
-
-		"pipeline": func() manager.Runnable {
-			return pipeline.NewController(client.Kubernetes(),
-				client.KubeSphere(), devopsClient,
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines())
-		},
-
-		"devopsprojects": func() manager.Runnable {
-			return devopsproject.NewController(client.Kubernetes(),
-				client.KubeSphere(), devopsClient,
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects())
-		},
-
-		"devopscredential": func() manager.Runnable {
-			return devopscredential.NewController(client.Kubernetes(),
-				devopsClient,
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets())
-		},
-
-		"jenkinsconfig": func() manager.Runnable {
-			return config.NewController(&config.ControllerOptions{
+		"jenkinsconfig": func(mgr manager.Manager) error {
+			return mgr.Add(config.NewController(&config.ControllerOptions{
 				LimitRangeClient:    client.Kubernetes().CoreV1(),
 				ResourceQuotaClient: client.Kubernetes().CoreV1(),
 				ConfigMapClient:     client.Kubernetes().CoreV1(),
@@ -123,20 +95,51 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 				ConfigOperator:  devopsClient,
 				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
-			}, s.JenkinsOptions)
+			}, s.JenkinsOptions))
+		},
+		"devopscredential": func(mgr manager.Manager) error {
+			return mgr.Add(devopscredential.NewController(client.Kubernetes(),
+				devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets()))
+		},
+		"devopsprojects": func(mgr manager.Manager) error {
+			return mgr.Add(devopsproject.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects()))
+		},
+		"s2ibinary": func(mgr manager.Manager) error {
+			return mgr.Add(s2ibinary.NewController(client.Kubernetes(),
+				client.KubeSphere(),
+				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
+				s3Client,
+			))
+		},
+		"s2irun": func(mgr manager.Manager) error {
+			return mgr.Add(s2irun.NewS2iRunController(client.Kubernetes(),
+				client.KubeSphere(),
+				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
+				kubesphereInformer.Devops().V1alpha1().S2iRuns()))
+		},
+		"pipeline": func(mgr manager.Manager) error {
+			return mgr.Add(pipeline.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
 		},
 	}
 
 	// Add all controllers into manager.
-	for name, ok := range s.FeatureOptions.EnabledControllers {
-		ctrl := controllers[name]
+	for name, ok := range s.FeatureOptions.GetControllers() {
+		ctrl := reconcilers[name]
 		if ctrl == nil || !ok {
 			klog.V(4).Infof("%s is not going to run due to dependent component disabled.", name)
 			continue
 		}
 
-		if err := mgr.Add(ctrl()); err != nil {
-			klog.Error(err, "add controller to manager failed", "name", name)
+		if err := ctrl(mgr); err != nil {
+			klog.Error(err, "add controller to manager failed ", name)
 			return err
 		}
 	}

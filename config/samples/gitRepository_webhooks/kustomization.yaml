@@ -1,0 +1,3 @@
+resources:
+- git_repository_webhook_controller.yaml
+- devops.yaml

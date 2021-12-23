@@ -1,4 +1,4 @@
-There're several ways to trigger Pipeline via [webhook](https://en.wikipedia.org/wiki/Webhook) in KubeSphere DevOps.
+There are several ways to trigger Pipeline via [webhook](https://en.wikipedia.org/wiki/Webhook) in KubeSphere DevOps.
 
 * Generic webhook
 * SCM Webhook
