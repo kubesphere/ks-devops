@@ -116,14 +116,35 @@ func (handler *jenkinsHandler) deleteJenkinsJobHistory(pipelineRun *v1alpha3.Pip
 	}
 
 	jenkinsClient := job.Client{JenkinsCore: *handler.JenkinsCore}
-	jobName := fmt.Sprintf("job/%s/job/%s", pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name)
-	if err = jenkinsClient.DeleteHistory(jobName, buildNum); err != nil {
+	jobPath := getJenkinsJobPath(pipelineRun)
+	if err = jenkinsClient.DeleteHistory(jobPath, buildNum); err != nil {
 		// TODO improve the way to check if the desired build record was deleted
 		if strings.Contains(err.Error(), "not found resources") {
 			err = nil
 		} else {
-			err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobName, buildNum, err)
+			err = fmt.Errorf("failed to delete Jenkins job: %s, build: %d, error: %v", jobPath, buildNum, err)
 		}
+	}
+	return
+}
+
+// getJenkinsJobPath returns the corresponding Jenkins job path
+// only a regular or multi-branch Pipeline supported
+func getJenkinsJobPath(run *v1alpha3.PipelineRun) (jobPath string) {
+	if run == nil || run.Spec.PipelineRef == nil {
+		return
+	}
+
+	ref := run.Spec.PipelineRef
+	if ref.Namespace == "" {
+		// only support the Pipeline and PipelineRun in the same namespace
+		// so, the namespace of ref could be empty
+		ref.Namespace = run.Namespace
+	}
+
+	jobPath = fmt.Sprintf("/job/%s/job/%s", ref.Namespace, ref.Name)
+	if run.Spec.SCM != nil && run.Spec.SCM.RefName != "" {
+		jobPath = fmt.Sprintf("%s/job/%s", jobPath, run.Spec.SCM.RefName)
 	}
 	return
 }

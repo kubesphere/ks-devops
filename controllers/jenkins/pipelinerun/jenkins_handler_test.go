@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -220,3 +221,77 @@ var _ = Describe("Test deleteJenkinsJobHistory", func() {
 		ctrl.Finish()
 	})
 })
+
+func Test_getJenkinsJobPath(t *testing.T) {
+	type args struct {
+		pipelineRun *v1alpha3.PipelineRun
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{{
+		name: "empty PipelineRun",
+		args: args{
+			pipelineRun: &v1alpha3.PipelineRun{},
+		},
+		want: "",
+	}, {
+		name: "a regular PipelineRun",
+		args: args{
+			pipelineRun: &v1alpha3.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "ns",
+					Name:      "run",
+				},
+				Spec: v1alpha3.PipelineRunSpec{
+					PipelineRef: &corev1.ObjectReference{
+						Namespace: "ns",
+						Name:      "pipeline",
+					},
+				},
+			},
+		},
+		want: "/job/ns/job/pipeline",
+	}, {
+		name: "a regular PipelineRun without ns in the ref",
+		args: args{
+			pipelineRun: &v1alpha3.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "ns",
+					Name:      "run",
+				},
+				Spec: v1alpha3.PipelineRunSpec{
+					PipelineRef: &corev1.ObjectReference{
+						Name: "pipeline",
+					},
+				},
+			},
+		},
+		want: "/job/ns/job/pipeline",
+	}, {
+		name: "a multi-branch PipelineRun",
+		args: args{
+			pipelineRun: &v1alpha3.PipelineRun{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "ns",
+					Name:      "run",
+				},
+				Spec: v1alpha3.PipelineRunSpec{
+					SCM: &v1alpha3.SCM{
+						RefName: "master",
+					},
+					PipelineRef: &corev1.ObjectReference{
+						Name: "pipeline",
+					},
+				},
+			},
+		},
+		want: "/job/ns/job/pipeline/job/master",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, getJenkinsJobPath(tt.args.pipelineRun), "getJenkinsJobPath(%v)", tt.args.pipelineRun)
+		})
+	}
+}
