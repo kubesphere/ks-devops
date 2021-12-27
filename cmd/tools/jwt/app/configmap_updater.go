@@ -37,7 +37,7 @@ func (o *jwtOption) updateJenkinsToken(jwt, ns, configMapName string) (err error
 		cfg = content
 	}
 
-	cfg = updateToken(cfg, jwt)
+	cfg = updateToken(cfg, jwt, o.overrideJenkinsToken)
 
 	configMap.Data[config.DefaultConfigurationFileName] = cfg
 	_, err = o.configMapUpdater.UpdateConfigMap(ctx, configMap)

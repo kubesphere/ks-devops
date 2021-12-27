@@ -37,8 +37,9 @@ func Test_generateJWT(t *testing.T) {
 
 func Test_updateToken(t *testing.T) {
 	type args struct {
-		content string
-		token   string
+		content  string
+		token    string
+		override bool
 	}
 	tests := []struct {
 		name string
@@ -47,13 +48,15 @@ func Test_updateToken(t *testing.T) {
 	}{{
 		name: "invalid yaml content",
 		args: args{
-			content: "fake",
+			content:  "fake",
+			override: true,
 		},
 		want: "fake",
 	}, {
 		name: "valid yaml without devops.token",
 		args: args{
-			content: "name: rick",
+			content:  "name: rick",
+			override: true,
 		},
 		want: "name: rick",
 	}, {
@@ -61,14 +64,25 @@ func Test_updateToken(t *testing.T) {
 		args: args{
 			content: `devops:
   password: fake`,
-			token: "token",
+			token:    "token",
+			override: true,
 		},
 		want: `devops:
   password: token`,
+	}, {
+		name: "do not override",
+		args: args{
+			content: `devops:
+  password: fake`,
+			token:    "token",
+			override: false,
+		},
+		want: `devops:
+  password: fake`,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := updateToken(tt.args.content, tt.args.token); got != tt.want {
+			if got := updateToken(tt.args.content, tt.args.token, tt.args.override); got != tt.want {
 				t.Errorf("updateToken() = %v, want %v", got, tt.want)
 			}
 		})
