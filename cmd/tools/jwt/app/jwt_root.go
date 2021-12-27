@@ -37,12 +37,15 @@ func NewCmd(k8sClientFactory k8sClientFactory) (cmd *cobra.Command) {
 		"The name of target ConfigMap")
 	flags.StringVarP(&opt.output, "output", "o", "",
 		"The destination of the JWT output. Print to the stdout if it's empty.")
+	flags.BoolVarP(&opt.overrideJenkinsToken, "override-jenkins-token", "", true,
+		"If you want to override the Jenkins token.")
 	return
 }
 
 type jwtOption struct {
-	secret string
-	output string
+	secret               string
+	output               string
+	overrideJenkinsToken bool
 
 	namespace string
 	name      string
@@ -129,11 +132,13 @@ func (o *jwtOption) runE(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func updateToken(content, token string) string {
+func updateToken(content, token string, override bool) string {
 	dataMap := make(map[string]map[string]string, 0)
 	if err := yaml.Unmarshal([]byte(content), dataMap); err == nil {
 		if _, ok := dataMap["devops"]; ok {
-			dataMap["devops"]["password"] = token
+			if dataMap["devops"]["password"] != "" && override {
+				dataMap["devops"]["password"] = token
+			}
 
 			if result, err := yaml.Marshal(dataMap); err == nil {
 				return strings.TrimSpace(string(result))
