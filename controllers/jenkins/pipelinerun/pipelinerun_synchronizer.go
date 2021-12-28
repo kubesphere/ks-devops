@@ -7,6 +7,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -67,13 +68,31 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var createdPipelineRuns []v1alpha3.PipelineRun
 	finder := newPipelineRunFinder(prList.Items)
 	isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
-	for _, jobRun := range jobRuns {
-		if _, ok := finder.find(&jobRun, isMultiBranch); !ok {
-			pipelineRun, err := r.createPipelineRun(pipeline, &jobRun)
+
+	// a set of PipelineRuns found in Jenkins
+	foundPipelineRuns := make(map[string]bool)
+	for i := range jobRuns {
+		jobRun := &jobRuns[i]
+		if foundPipelineRun, ok := finder.find(jobRun, isMultiBranch); !ok {
+			pipelineRun, err := r.createPipelineRun(pipeline, jobRun)
 			if err == nil {
 				createdPipelineRuns = append(createdPipelineRuns, *pipelineRun)
 			} else {
 				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jobRun)
+			}
+		} else {
+			foundPipelineRuns[foundPipelineRun.GetName()] = true
+		}
+	}
+
+	for i := range prList.Items {
+		pipelineRun := &prList.Items[i]
+		if _, found := foundPipelineRuns[pipelineRun.GetName()]; !found {
+			// delete it directly if not found in Jenkins
+			if err := r.Client.Delete(ctx, pipelineRun); err != nil && !errors.IsNotFound(err) {
+				log.Error(err, "failed to delete PipelineRun", "PipelineRun", pipelineRun)
+			} else {
+				log.V(5).Info("deleted PipelineRun which was not found in Jenkins", "PipelineRun", pipelineRun)
 			}
 		}
 	}
