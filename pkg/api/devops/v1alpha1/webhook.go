@@ -21,6 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// AnnotationKeyGitRepos are the references of target git repositories
+const AnnotationKeyGitRepos = "devops.kubesphere.io/git-repositories"
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
