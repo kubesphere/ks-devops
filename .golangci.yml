@@ -143,6 +143,7 @@ run:
 issues:
   exclude:
     - EXC0012
+    - SA1019
   exclude-use-default: false
 linters:
   enable:

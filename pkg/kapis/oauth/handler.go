@@ -65,7 +65,7 @@ func newHandler(tokenOperator auth.TokenManagementInterface) *handler {
 	return &handler{tokenOperator: tokenOperator}
 }
 
-// Implement webhook authentication interface
+// TokenReview Implement webhook authentication interface
 // https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication
 func (h *handler) TokenReview(req *restful.Request, resp *restful.Response) {
 	var tokenReview TokenReview

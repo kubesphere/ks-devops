@@ -34,21 +34,24 @@ type FakeClient struct {
 	ApiExtensionClient apiextensionsclient.Interface
 	MasterURL          string
 	KubeConfig         *rest.Config
+
+	ksClient versioned.Interface
 }
 
 func (n *FakeClient) KubeSphere() versioned.Interface {
-	panic("implement me")
+	return n.ksClient
 }
 
 func NewFakeClientSets(k8sClient kubernetes.Interface, discoveryClient *discovery.DiscoveryClient,
 	apiextensionsclient apiextensionsclient.Interface,
-	masterURL string, kubeConfig *rest.Config) Client {
+	masterURL string, kubeConfig *rest.Config, ksClient versioned.Interface) Client {
 	return &FakeClient{
 		K8sClient:          k8sClient,
 		DiscoveryClient:    discoveryClient,
 		ApiExtensionClient: apiextensionsclient,
 		MasterURL:          masterURL,
 		KubeConfig:         kubeConfig,
+		ksClient:           ksClient,
 	}
 }
 

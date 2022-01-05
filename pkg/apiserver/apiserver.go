@@ -147,11 +147,11 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.KubernetesClient,
 		jenkinsCore))
 	devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client)
-	utilruntime.Must(oauth.AddToContainer(s.container,
+	oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
-	))
+	)
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
