@@ -308,7 +308,9 @@ func (d devopsOperator) GetCredentialObj(projectName string, secretName string) 
 	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{}); err != nil {
 		return nil, err
 	} else {
-		return secretutil.MaskCredential(secret), nil
+		// TODO Mask the secret if there is no place to use plain secret.
+		// return secretutil.MaskCredential(secret), nil
+		return secret, nil
 	}
 }
 
