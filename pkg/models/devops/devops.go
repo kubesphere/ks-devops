@@ -37,6 +37,7 @@ import (
 
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/utils/secretutil"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
@@ -292,7 +293,11 @@ func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secre
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(d.context, secret, metav1.CreateOptions{})
+	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Create(d.context, secret, metav1.CreateOptions{}); err != nil {
+		return nil, err
+	} else {
+		return secretutil.MaskCredential(secret), nil
+	}
 }
 
 func (d devopsOperator) GetCredentialObj(projectName string, secretName string) (*v1.Secret, error) {
@@ -300,7 +305,13 @@ func (d devopsOperator) GetCredentialObj(projectName string, secretName string) 
 	if err != nil {
 		return nil, err
 	}
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{})
+	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{}); err != nil {
+		return nil, err
+	} else {
+		// TODO Mask the secret if there is no place to use plain secret.
+		// return secretutil.MaskCredential(secret), nil
+		return secret, nil
+	}
 }
 
 func (d devopsOperator) DeleteCredentialObj(projectName string, secret string) error {
@@ -319,7 +330,11 @@ func (d devopsOperator) UpdateCredentialObj(projectName string, secret *v1.Secre
 	secret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey] = "true"
 	secret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey] = StatusPending
 	secret.Annotations[devopsv1alpha3.CredentialSyncTimeAnnoKey] = GetSyncNowTime()
-	return d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(d.context, secret, metav1.UpdateOptions{})
+	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Update(d.context, secret, metav1.UpdateOptions{}); err != nil {
+		return nil, err
+	} else {
+		return secretutil.MaskCredential(secret), nil
+	}
 }
 
 func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error) {
@@ -335,18 +350,12 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 	}
 	var result []runtime.Object
 
-	credentialTypeList := []v1.SecretType{
-		v1alpha3.SecretTypeBasicAuth,
-		v1alpha3.SecretTypeSSHAuth,
-		v1alpha3.SecretTypeSecretText,
-		v1alpha3.SecretTypeKubeConfig,
-	}
-	for i, _ := range credentialObjList.Items {
+	credentialTypeList := v1alpha3.GetSupportedCredentialTypes()
+	for i := range credentialObjList.Items {
 		credential := credentialObjList.Items[i]
-
 		for _, credentialType := range credentialTypeList {
 			if credential.Type == credentialType {
-				result = append(result, &credential)
+				result = append(result, secretutil.MaskCredential(&credential))
 			}
 		}
 	}

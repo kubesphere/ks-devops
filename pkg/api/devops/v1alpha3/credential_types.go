@@ -74,3 +74,17 @@ const (
 	CredentialSyncTimeAnnoKey   = DevOpsCredentialPrefix + "synctime"
 	CredentialSyncMsgAnnoKey    = DevOpsCredentialPrefix + "syncmsg"
 )
+
+var supportedCredentialTypes = []v1.SecretType{
+	SecretTypeBasicAuth,
+	SecretTypeSSHAuth,
+	SecretTypeSecretText,
+	SecretTypeKubeConfig,
+}
+
+// GetSupportedCredentialTypes gets all supported credential types. The return value is unmodifiable.
+func GetSupportedCredentialTypes() []v1.SecretType {
+	copiedCredentialTypes := make([]v1.SecretType, len(supportedCredentialTypes))
+	copy(copiedCredentialTypes, supportedCredentialTypes)
+	return copiedCredentialTypes
+}
