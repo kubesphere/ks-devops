@@ -48,6 +48,7 @@ func (r *WebhookReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err
 	if err = r.Client.Get(ctx, req.NamespacedName, webhook); err != nil {
 		log.Error(err, "unable to fetch webhook")
 		err = client.IgnoreNotFound(err)
+		return
 	}
 
 	// skip those don't have the desired annotation

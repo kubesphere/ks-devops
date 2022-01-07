@@ -38,6 +38,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: GitRepositorySpec represents the desired state of a GitRepository
             properties:
               provider:
                 type: string
