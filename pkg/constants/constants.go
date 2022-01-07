@@ -129,8 +129,13 @@ const (
 	NotificationTag             = "Notification"
 	NotificationSecretNamespace = "kubesphere-monitoring-federated"
 	NotificationManagedLabel    = "notification.kubesphere.io/managed"
-	K8SToken                    = "k8s.token"
 )
+
+// K8SToken is the context key of k8s token
+var K8SToken = ContextKeyK8SToken("k8s.token")
+
+// ContextKeyK8SToken represents a type alias for the context key
+type ContextKeyK8SToken string
 
 const (
 	StatusActive     = "active"

@@ -321,7 +321,7 @@ func (h *devopsHandler) ListCredential(request *restful.Request, response *restf
 	devops := request.PathParameter("devops")
 	query := query.ParseQueryParameter(request)
 
-	if client, err := h.getDevOps(request); err == nil {
+	if client, err := h.getDevOps(request); err == nil && client != nil {
 		objs, err := client.ListCredentialObj(devops, query)
 		if err != nil {
 			klog.Error(err)
@@ -417,14 +417,14 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 
 func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.DevopsOperator, err error) {
 	ctx := request.Request.Context()
-	token := ctx.Value(constants.K8SToken).(string)
+	token := ctx.Value(constants.K8SToken).(constants.ContextKeyK8SToken)
 
 	var k8sClient k8s.Client
 	if token == "" {
 		k8sClient = h.k8sClient
 	} else {
 		klog.V(9).Infof("get DevOps client with token: %s", token)
-		k8sClient, err = k8s.NewKubernetesClientWithToken(token, h.k8sClient.Config().Host)
+		k8sClient, err = k8s.NewKubernetesClientWithToken(string(token), h.k8sClient.Config().Host)
 	}
 
 	if err == nil {
