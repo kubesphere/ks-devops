@@ -78,10 +78,15 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 	reconcilers := map[string]func(mgr manager.Manager) error{
 		"gitrepository": func(mgr manager.Manager) error {
-			return (&gitrepository.Reconciler{
+			err := (&gitrepository.Reconciler{
 				Client: mgr.GetClient(),
-				Scheme: mgr.GetScheme(),
 			}).SetupWithManager(mgr)
+			if err == nil {
+				err = (&gitrepository.WebhookReconciler{
+					Client: mgr.GetClient(),
+				}).SetupWithManager(mgr)
+			}
+			return err
 		},
 		"jenkinsconfig": func(mgr manager.Manager) error {
 			return mgr.Add(config.NewController(&config.ControllerOptions{

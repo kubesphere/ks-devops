@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,11 +41,10 @@ import (
 type Reconciler struct {
 	client.Client
 	log      logr.Logger
-	Scheme   *runtime.Scheme
 	recorder record.EventRecorder
 }
 
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=webhooks,verbs=get;list
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=webhooks,verbs=get;list;update;patch
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=secrets,verbs=get
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch
 
@@ -70,6 +68,11 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 	webhooks := repo.Spec.Webhooks
 	if len(webhooks) == 0 {
 		// do nothing if there are not any webhooks
+		return
+	}
+
+	// make links between the webhook and git repositories
+	if err = r.linkToWebhooks(repo); err != nil {
 		return
 	}
 
@@ -208,7 +211,7 @@ func (r *Reconciler) getSecret(ref *v1.SecretReference, defaultNamespace string)
 	}
 
 	if err = r.Client.Get(context.TODO(), types.NamespacedName{
-		Namespace: ns, Name: secret.Name,
+		Namespace: ns, Name: ref.Name,
 	}, secret); err != nil {
 		err = fmt.Errorf("cannot get secret %v, error is: %v", secret, err)
 	}
@@ -228,6 +231,51 @@ func getRepo(repo *v1alpha1.GitRepository) string {
 		return strings.ReplaceAll(address, "https://gitlab.com/", "")
 	}
 	return ""
+}
+
+func (r *Reconciler) linkToWebhooks(repo *v1alpha1.GitRepository) (err error) {
+	var failedLinks []string
+	for i := range repo.Spec.Webhooks {
+		webhookRef := repo.Spec.Webhooks[i]
+		if err = linkToWebhook(webhookRef, repo, r.Client); err != nil {
+			r.log.V(6).Info("failed to link to webhook: %v, error: %v", webhookRef, err)
+			failedLinks = append(failedLinks, webhookRef.Name)
+		}
+	}
+
+	if len(failedLinks) > 0 {
+		err = fmt.Errorf("failed to link to webhooks: %v", failedLinks)
+	}
+	return
+}
+
+func linkToWebhook(webhookRef v1.LocalObjectReference, repo *v1alpha1.GitRepository, client client.Client) (err error) {
+	webhook := &v1alpha1.Webhook{}
+	if err = client.Get(context.TODO(), types.NamespacedName{Namespace: repo.Namespace, Name: webhookRef.Name}, webhook); err != nil {
+		err = fmt.Errorf("cannot find webhook '%v', error： %v", webhookRef, err)
+		return
+	}
+
+	webhook.Annotations = addToArrayInAnnotations(webhook.Annotations, v1alpha1.AnnotationKeyGitRepos, repo.Name)
+	err = client.Update(context.TODO(), webhook)
+	return
+}
+
+func addToArrayInAnnotations(array map[string]string, key, value string) map[string]string {
+	if array == nil {
+		return map[string]string{key: value}
+	}
+
+	if val, ok := array[key]; ok {
+		if val == value || strings.Contains(val, ","+value) || strings.Contains(val, value+",") {
+			return array
+		}
+
+		array[key] = val + "," + value
+	} else {
+		array[key] = value
+	}
+	return array
 }
 
 // SetupWithManager sets up the controller with the Manager.

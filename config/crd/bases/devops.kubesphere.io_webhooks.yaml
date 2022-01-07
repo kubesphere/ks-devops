@@ -41,6 +41,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: WebhookSpec represents the desired state of a Webhook
             properties:
               events:
                 items:

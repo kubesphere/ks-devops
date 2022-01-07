@@ -33,6 +33,7 @@ rules:
   verbs:
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - devops.kubesphere.io
@@ -77,7 +78,16 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - webhooks
   verbs:
   - get
   - list
+  - patch
+  - update
+  - watch
