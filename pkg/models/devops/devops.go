@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"strings"
 	"sync"
@@ -53,6 +54,7 @@ const (
 type DevopsOperator interface {
 	CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
+	GetDevOpsProjectByGenerateName(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
 	DeleteDevOpsProject(workspace string, projectName string) error
 	UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error)
@@ -169,17 +171,49 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 		klog.Error(err)
 		return nil, err
 	}
+
 	// metadata override
 	if project.Labels == nil {
 		project.Labels = make(map[string]string)
 	}
 	project.Name = ""
-	//project.Labels[tenantv1alpha1.WorkspaceLabel] = workspace
+	project.Labels[constants.WorkspaceLabelKey] = workspace
+
+	// set annotations
+	if project.Annotations == nil {
+		project.Annotations = make(map[string]string)
+	}
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = StatusPending
 	project.Annotations[devopsv1alpha3.DevOpeProjectSyncTimeAnnoKey] = GetSyncNowTime()
+
+	// create it
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Create(d.context, project, metav1.CreateOptions{})
 }
 
+// GetDevOpsProjectByGenerateName finds the DevOps project by workspace and project name
+// the projectName is the generateName instead of the real resource name
+func (d devopsOperator) GetDevOpsProjectByGenerateName(workspace string, projectName string) (project *v1alpha3.DevOpsProject, err error) {
+	var list *v1alpha3.DevOpsProjectList
+
+	if list, err = d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", constants.WorkspaceLabelKey, workspace),
+	}); err == nil {
+		for i := range list.Items {
+			item := list.Items[i]
+			if item.GenerateName == projectName {
+				project = &item
+				break
+			}
+		}
+
+		if project == nil {
+			err = fmt.Errorf("not found DevOpsProject by workspace: %s and projectName: %s", workspace, projectName)
+		}
+	}
+	return
+}
+
+// GetDevOpsProject finds the DevOps project by workspace and project name
 func (d devopsOperator) GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error) {
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 }
@@ -930,7 +964,7 @@ func (d devopsOperator) isGenerateNameUnique(workspace, generateName string) (bo
 		return false, err
 	}
 	for _, p := range projects.Items {
-		if p.GenerateName == generateName {
+		if p.Labels != nil && p.Labels[constants.WorkspaceLabelKey] == workspace && p.GenerateName == generateName {
 			return false, err
 		}
 	}
