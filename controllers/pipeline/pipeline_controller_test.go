@@ -360,10 +360,6 @@ func TestCreatePipeline(t *testing.T) {
 			Name: pipelineName,
 		},
 	}
-	//createPayload := job.CreateJobPayload{
-	//	Name: pipelineName,
-	//	Mode: "org.jenkinsci.plugins.workflow.job.WorkflowJob",
-	//}
 	pipeline := newPipeline(nsName, pipelineName, spec, false, false)
 	ns := newNamespace(nsName, projectName)
 
