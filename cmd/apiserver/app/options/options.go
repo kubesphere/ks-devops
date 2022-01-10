@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"kubesphere.io/devops/pkg/client/cache"
 	"kubesphere.io/devops/pkg/client/sonarqube"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -159,6 +160,7 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 	}
 
 	sch := scheme.Scheme
+	_ = v1.SchemeBuilder.AddToScheme(sch)
 	apis.AddToScheme(sch)
 
 	// we create a manager for getting client and cache, although the manager is for creating controller. At last, we

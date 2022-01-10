@@ -19,6 +19,8 @@
 package v1alpha3
 
 import (
+	"kubesphere.io/devops/pkg/client/git"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -64,6 +66,10 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client, ws *restful.WebService) {
 	handler := newDevOpsHandler(devopsClient, k8sClient)
 	registerRoutersForCredentials(handler, ws)
+	registerRoutersForCredentials(handler, ws)
+	registerRoutersForPipelines(handler, ws)
+	registerRoutersForWorkspace(handler, ws)
+	registerRoutersForSCM(client, ws)
 }
 
 func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebService) {
@@ -109,8 +115,9 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		Doc("delete the credential of the specified devops for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1.Secret{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
+}
 
-	// pipeline
+func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService) {
 	ws.Route(ws.GET("/devops/{devops}/pipelines").
 		To(handler.ListPipeline).
 		Param(ws.PathParameter("devops", "devops name")).
@@ -153,8 +160,9 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		Doc("delete the pipeline of the specified devops for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
+}
 
-	// devops
+func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService) {
 	ws.Route(ws.GET("/workspaces/{workspace}/devops").
 		To(handler.ListDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
@@ -176,7 +184,7 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		To(handler.GetDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
 		Param(ws.PathParameter("devops", "project name")).
-		 Param(ws.QueryParameter("generateName", "use '{devops}` as a generatName if 'generateName=true', or as a regular name")).
+		Param(ws.QueryParameter("generateName", "use '{devops}` as a generatName if 'generateName=true', or as a regular name")).
 		Doc("Get the devops project of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
@@ -196,4 +204,16 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		Doc("Get the devopsproject of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
+}
+
+func registerRoutersForSCM(k8sClient client.Client, ws *restful.WebService) {
+	handler := scm.NewHandler(k8sClient)
+
+	ws.Route(ws.POST("/scms/{scm}/verify").
+		To(handler.Verify).
+		Param(ws.PathParameter("scm", "the SCM type")).
+		Param(ws.QueryParameter("secret", "the secret name")).
+		Param(ws.QueryParameter("secretNamespace", "the namespace of target secret")).
+		Doc("Verify the token of different git providers").
+		Returns(http.StatusOK, api.StatusOK, git.VerifyResponse{}))
 }

@@ -39,7 +39,6 @@ type devopsHandler struct {
 }
 
 func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) *devopsHandler {
-
 	return &devopsHandler{
 		k8sClient:    k8sClient,
 		devopsClient: devopsClient,
@@ -62,8 +61,7 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 		default:
 			project, err = client.GetDevOpsProject(workspace, devopsProject)
 		}
-
-		errorHandle(err, response, request, project)
+		errorHandle(request, response, project, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -75,7 +73,7 @@ func (h *devopsHandler) ListDevOpsProject(request *restful.Request, response *re
 
 	if client, err := h.getDevOps(request); err == nil {
 		projectList, err := client.ListDevOpsProject(workspace, limit, offset)
-		errorHandle(err, response, request, projectList)
+		errorHandle(request, response, projectList, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -125,7 +123,7 @@ func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *
 
 	if client, err := h.getDevOps(request); err == nil {
 		project, err := client.UpdateDevOpsProject(workspace, &devOpsProject)
-		errorHandle(err, response, request, project)
+		errorHandle(request, response, project, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -137,7 +135,7 @@ func (h *devopsHandler) DeleteDevOpsProject(request *restful.Request, response *
 
 	if client, err := h.getDevOps(request); err == nil {
 		err := client.DeleteDevOpsProject(workspace, devops)
-		errorHandle(err, response, request, servererr.None)
+		errorHandle(request, response, nil, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -150,7 +148,7 @@ func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.
 
 	if client, err := h.getDevOps(request); err == nil {
 		obj, err := client.GetPipelineObj(devops, pipeline)
-		errorHandle(err, response, request, obj)
+		errorHandle(request, response, obj, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -162,7 +160,7 @@ func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful
 
 	if client, err := h.getDevOps(request); err == nil {
 		objs, err := client.ListPipelineObj(devops, query)
-		errorHandle(err, response, request, objs)
+		errorHandle(request, response, objs, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -181,7 +179,7 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 
 	if client, err := h.getDevOps(request); err == nil {
 		created, err := client.CreatePipelineObj(devops, &pipeline)
-		errorHandle(err, response, request, created)
+		errorHandle(request, response, created, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -201,7 +199,7 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 
 	if client, err := h.getDevOps(request); err == nil {
 		obj, err := client.UpdatePipelineObj(devops, &pipeline)
-		errorHandle(err, response, request, obj)
+		errorHandle(request, response, obj, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -215,20 +213,20 @@ func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restf
 
 	if client, err := h.getDevOps(request); err == nil {
 		err := client.DeletePipelineObj(devops, pipeline)
-		errorHandle(err, response, request, servererr.None)
+		errorHandle(request, response, nil, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
 }
 
-//credential handler about get/list/post/put/delete
+// GetCredential handler about get/list/post/put/delete
 func (h *devopsHandler) GetCredential(request *restful.Request, response *restful.Response) {
 	devops := request.PathParameter("devops")
 	credential := request.PathParameter("credential")
 
 	if client, err := h.getDevOps(request); err == nil {
 		obj, err := client.GetCredentialObj(devops, credential)
-		errorHandle(err, response, request, obj)
+		errorHandle(request, response, obj, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -240,7 +238,7 @@ func (h *devopsHandler) ListCredential(request *restful.Request, response *restf
 
 	if client, err := h.getDevOps(request); err == nil && client != nil {
 		objs, err := client.ListCredentialObj(devops, query)
-		errorHandle(err, response, request, objs)
+		errorHandle(request, response, objs, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -259,7 +257,7 @@ func (h *devopsHandler) CreateCredential(request *restful.Request, response *res
 
 	if client, err := h.getDevOps(request); err == nil {
 		created, err := client.CreateCredentialObj(devops, &obj)
-		errorHandle(err, response, request, created)
+		errorHandle(request, response, created, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
@@ -278,25 +276,17 @@ func (h *devopsHandler) UpdateCredential(request *restful.Request, response *res
 
 	if client, err := h.getDevOps(request); err == nil {
 		updated, err := client.UpdateCredentialObj(devops, &obj)
-		errorHandle(err, response, request, updated)
+		errorHandle(request, response, updated, err)
 	} else {
 		api.HandleBadRequest(response, request, err)
 	}
 }
 
-func (h *devopsHandler) DeleteCredential(request *restful.Request, response *restful.Response) {
-	devopsProject := request.PathParameter("devops")
-	credential := request.PathParameter("credential")
-
-	if client, err := h.getDevOps(request); err == nil {
-		err := client.DeleteCredentialObj(devopsProject, credential)
-		errorHandle(err, response, request, servererr.None)
-	} else {
-		api.HandleBadRequest(response, request, err)
+func errorHandle(request *restful.Request, response *restful.Response, obj interface{}, err error) {
+	if obj == nil {
+		obj = servererr.None
 	}
-}
 
-func errorHandle(err error, response *restful.Response, request *restful.Request, obj interface{}) {
 	if err != nil {
 		klog.Error(err)
 		if errors.IsNotFound(err) {
@@ -307,6 +297,18 @@ func errorHandle(err error, response *restful.Response, request *restful.Request
 		return
 	}
 	_ = response.WriteEntity(obj)
+}
+
+func (h *devopsHandler) DeleteCredential(request *restful.Request, response *restful.Response) {
+	devopsProject := request.PathParameter("devops")
+	credential := request.PathParameter("credential")
+
+	if client, err := h.getDevOps(request); err == nil {
+		err := client.DeleteCredentialObj(devopsProject, credential)
+		errorHandle(request, response, servererr.None, err)
+	} else {
+		api.HandleBadRequest(response, request, err)
+	}
 }
 
 func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.DevopsOperator, err error) {
