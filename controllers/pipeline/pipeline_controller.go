@@ -223,7 +223,6 @@ func (c *Controller) syncHandler(key string) error {
 	//	klog.Warning(err)
 	//	return err
 	//}
-
 	pipeline, err := c.devOpsProjectLister.Pipelines(nsName).Get(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -274,7 +273,7 @@ func (c *Controller) syncHandler(key string) error {
 				klog.V(8).Info(fmt.Sprintf("nothing was changed, pipeline '%v'", copyPipeline.Spec))
 			}
 		} else {
-			_, err := c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
+			_, err = c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
 			if err != nil {
 				klog.V(8).Info(err, fmt.Sprintf("failed to create copyPipeline %s ", key))
 				return err
@@ -288,7 +287,7 @@ func (c *Controller) syncHandler(key string) error {
 		if sliceutil.HasString(copyPipeline.ObjectMeta.Finalizers, devopsv1alpha3.PipelineFinalizerName) {
 			delSuccess := false
 			if _, err := c.devopsClient.DeleteProjectPipeline(nsName, pipeline.Name); err != nil {
-				// the status code should be 404 if the job does not exists
+				// the status code should be 404 if the job does not exist
 				if srvErr, ok := err.(restful.ServiceError); ok {
 					delSuccess = srvErr.Code == http.StatusNotFound
 				} else if srvErr, ok := err.(*devopsClient.ErrorResponse); ok {

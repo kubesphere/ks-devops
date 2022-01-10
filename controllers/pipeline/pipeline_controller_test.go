@@ -23,7 +23,10 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/golang/mock/gomock"
 	fakeDevOps "kubesphere.io/devops/pkg/client/devops/fake"
+	"kubesphere.io/devops/pkg/client/devops/jclient"
+
 	"kubesphere.io/devops/pkg/constants"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,6 +42,7 @@ import (
 
 	devops "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
+	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
 	informers "kubesphere.io/devops/pkg/client/informers/externalversions"
 )
@@ -65,12 +69,19 @@ type fixture struct {
 	initDevOpsProject string
 	initPipeline      []*devops.Pipeline
 	expectPipeline    []*devops.Pipeline
+	jenkinsClient     *jclient.JenkinsClient
+	roundTripper      *mhttp.MockRoundTripper
 }
 
 func newFixture(t *testing.T) *fixture {
 	f := &fixture{}
 	f.t = t
 	f.objects = []runtime.Object{}
+
+	ctrl := gomock.NewController(t)
+	roundTripper := mhttp.NewMockRoundTripper(ctrl)
+	f.roundTripper = roundTripper
+	f.jenkinsClient = fakeDevOps.NewFakeJenkinsClient(roundTripper)
 	return f
 }
 
@@ -147,7 +158,6 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 	i := informers.NewSharedInformerFactory(f.client, noResyncPeriodFunc())
 	k8sI := kubeinformers.NewSharedInformerFactory(f.kubeclient, noResyncPeriodFunc())
 	dI := fakeDevOps.NewWithPipelines(f.initDevOpsProject, f.initPipeline...)
-
 	c := NewController(f.kubeclient, f.client, dI, k8sI.Core().V1().Namespaces(),
 		i.Devops().V1alpha3().Pipelines())
 
@@ -212,7 +222,6 @@ func (f *fixture) runController(projectName string, startInformers bool, expectE
 		if !reflect.DeepEqual(actualPipeline, pipeline) {
 			f.t.Errorf(" pipeline %+v not match %+v", pipeline, actualPipeline)
 		}
-
 	}
 }
 
@@ -345,15 +354,27 @@ func TestCreatePipeline(t *testing.T) {
 	nsName := "test-123"
 	pipelineName := "test"
 	projectName := "test_project"
-
+	spec := devops.PipelineSpec{
+		Type: devops.NoScmPipelineType,
+		Pipeline: &devops.NoScmPipeline{
+			Name: pipelineName,
+		},
+	}
+	pipeline := newPipeline(nsName, pipelineName, spec, false, false)
 	ns := newNamespace(nsName, projectName)
-	pipeline := newPipeline(nsName, pipelineName, devops.PipelineSpec{}, false, false)
-	expectPipeline := newPipeline(nsName, pipelineName, devops.PipelineSpec{}, true, true)
+
 	f.pipelineLister = append(f.pipelineLister, pipeline)
 	f.namespaceLister = append(f.namespaceLister, ns)
 	f.objects = append(f.objects, pipeline)
 	f.initDevOpsProject = nsName
+
+	expectPipeline := pipeline.DeepCopy()
+	expectPipeline.Finalizers = []string{devops.PipelineFinalizerName}
+	expectPipeline.Annotations = map[string]string{
+		devops.PipelineSyncStatusAnnoKey: constants.StatusSuccessful,
+	}
 	f.expectPipeline = []*devops.Pipeline{expectPipeline}
+
 	f.run(getKey(pipeline, t))
 }
 
