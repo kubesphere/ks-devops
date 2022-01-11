@@ -18,7 +18,7 @@ COPY pkg pkg/
 RUN CGO_ENABLED=0 GO111MODULE=on go build -a -o apiserver cmd/apiserver/apiserver.go
 
 # download Swagger UI files
-RUN git clone https://github.com/swagger-api/swagger-ui -b v2.2.10
+RUN git clone https://github.com/swagger-api/swagger-ui -b v2.2.10 --depth 1
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
