@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/kapis/doc"
 	"net/http"
 	rt "runtime"
 	"time"
@@ -127,7 +128,7 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 	return nil
 }
 
-// Install all kubesphere api groups
+// Install all KubeSphere api groups
 // Installation happens before all informers start to cache objects, so
 //   any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
@@ -137,7 +138,9 @@ func (s *APIServer) installKubeSphereAPIs() {
 		Token:    s.Config.JenkinsOptions.Password,
 	}
 
-	utilruntime.Must(devopsv1alpha2.AddToContainer(s.container,
+	var wss []*restful.WebService
+
+	v1alpha2WSS, err := devopsv1alpha2.AddToContainer(s.container,
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.DevopsClient,
 		s.SonarClient,
@@ -145,13 +148,16 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.S3Client,
 		s.Config.JenkinsOptions.Host,
 		s.KubernetesClient,
-		jenkinsCore))
-	devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client)
-	oauth.AddToContainer(s.container,
+		jenkinsCore)
+	utilruntime.Must(err)
+	wss = append(wss, v1alpha2WSS...)
+	wss = append(wss, devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client)...)
+	wss = append(wss, oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
-	)
+	))
+	doc.AddSwaggerService(wss, s.container)
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

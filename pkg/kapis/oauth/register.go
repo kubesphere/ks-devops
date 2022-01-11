@@ -27,8 +27,8 @@ import (
 	"kubesphere.io/devops/pkg/models/auth"
 )
 
-func AddToContainer(c *restful.Container, tokenOperator auth.TokenManagementInterface) {
-	ws := &restful.WebService{}
+func AddToContainer(c *restful.Container, tokenOperator auth.TokenManagementInterface) (ws *restful.WebService) {
+	ws = &restful.WebService{}
 	ws.Path("/oauth").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
@@ -45,4 +45,5 @@ func AddToContainer(c *restful.Container, tokenOperator auth.TokenManagementInte
 		Returns(http.StatusOK, api.StatusOK, TokenReview{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.AuthenticationTag}))
 	c.Add(ws)
+	return
 }

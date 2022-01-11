@@ -43,23 +43,30 @@ import (
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
 // AddToContainer adds web service into container.
-func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client) {
+func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface,
+	k8sClient k8s.Client, client client.Client) (wss []*restful.WebService) {
 	ws := runtime.NewWebService(GroupVersion)
-	registerRoutes(devopsClient, k8sClient, ws)
+	wss = append(wss, ws)
+	registerRoutes(devopsClient, k8sClient, client, ws)
 	pipelinerun.RegisterRoutes(ws, client)
 	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
 
 	ws = runtime.NewWebServiceWithoutGroup(GroupVersion)
-	registerRoutes(devopsClient, k8sClient, ws)
+	wss = append(wss, ws)
+	registerRoutes(devopsClient, k8sClient, client, ws)
 	pipelinerun.RegisterRoutes(ws, client)
 	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
+	return
 }
 
-func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, ws *restful.WebService) {
+func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client, ws *restful.WebService) {
 	handler := newDevOpsHandler(devopsClient, k8sClient)
-	// credential
+	registerRoutersForCredentials(handler, ws)
+}
+
+func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebService) {
 	ws.Route(ws.GET("/devops/{devops}/credentials").
 		To(handler.ListCredential).
 		Param(ws.PathParameter("devops", "devops name")).
