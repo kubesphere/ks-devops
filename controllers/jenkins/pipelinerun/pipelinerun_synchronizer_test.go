@@ -13,6 +13,40 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
+func createPipelineRun(name string, runID string) v1alpha3.PipelineRun {
+	return v1alpha3.PipelineRun{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: "fake-pipelinerun-namespace",
+			Annotations: map[string]string{
+				v1alpha3.JenkinsPipelineRunIDAnnoKey: runID,
+			},
+		},
+	}
+}
+
+func createMultiBranchPipelineRun(name, runID, scmRefName string) v1alpha3.PipelineRun {
+	pipelineRun := createPipelineRun(name, runID)
+	pipelineRun.Spec.SCM = &v1alpha3.SCM{
+		RefName: scmRefName,
+	}
+	return pipelineRun
+}
+
+func createJobRun(name, runID string) job.PipelineRun {
+	return job.PipelineRun{
+		BlueItemRun: job.BlueItemRun{
+			Name: name,
+			ID:   runID,
+		},
+	}
+}
+func createMultiBranchJobRun(name, runID, scmRefName string) job.PipelineRun {
+	jobRun := createJobRun(name, runID)
+	jobRun.Pipeline = scmRefName
+	return jobRun
+}
+
 func Test_requestSyncPredicate(t *testing.T) {
 	tests := []struct {
 		name string
@@ -113,10 +147,9 @@ func Test_createBarePipelineRun(t *testing.T) {
 		run      *job.PipelineRun
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *v1alpha3.PipelineRun
-		wantErr bool
+		name string
+		args args
+		want *v1alpha3.PipelineRun
 	}{{
 		name: "Multi-branch pipeline",
 		args: args{
@@ -192,13 +225,194 @@ func Test_createBarePipelineRun(t *testing.T) {
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createBarePipelineRun(tt.args.pipeline, tt.args.run)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("createBarePipelineRun() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := createBarePipelineRun(tt.args.pipeline, tt.args.run)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createBarePipelineRun() = \n%v, want \n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_collectExistingPipelineRuns(t *testing.T) {
+	type args struct {
+		pipelineRuns  []v1alpha3.PipelineRun
+		isMultiBranch bool
+		jobRuns       []job.PipelineRun
+	}
+	tests := []struct {
+		name                    string
+		args                    args
+		pipelineRunsToBeDeleted []v1alpha3.PipelineRun
+	}{{
+		name: "Should return empty PipelineRun set if no PipelineRuns and no JobRuns",
+		args: args{
+			pipelineRuns:  nil,
+			isMultiBranch: false,
+			jobRuns:       nil,
+		},
+		pipelineRunsToBeDeleted: nil,
+	}, {
+		name: "Should return empty PipelineRun set if no PipelineRuns",
+		args: args{
+			pipelineRuns:  nil,
+			isMultiBranch: false,
+			jobRuns:       []job.PipelineRun{createJobRun("fake-jobrun", "1")},
+		},
+		pipelineRunsToBeDeleted: nil,
+	}, {
+		name: "Should return empty PipelineRun set if no JobRuns",
+		args: args{
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createPipelineRun("fake-pipelinerun", "1"),
+			},
+			isMultiBranch: false,
+			jobRuns:       nil,
+		},
+		pipelineRunsToBeDeleted: []v1alpha3.PipelineRun{
+			createPipelineRun("fake-pipelinerun", "1"),
+		},
+	}, {
+		name: "Should found a PipelineRun if PipelineRuns contain all of JobRuns",
+		args: args{
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createPipelineRun("fake-pipeline-1", "1"),
+				createPipelineRun("fake-pipeline-2", "2"),
+				createPipelineRun("fake-pipeline-3", "3"),
+			},
+			jobRuns: []job.PipelineRun{
+				createJobRun("fake-jobrun-1", "1"),
+				createJobRun("fake-jobrun-2", "2"),
+			},
+		},
+		pipelineRunsToBeDeleted: []v1alpha3.PipelineRun{
+			createPipelineRun("fake-pipeline-3", "3"),
+		},
+	}, {
+		name: "Should found a PipelineRun if PipelineRuns contain one of JobRuns",
+		args: args{
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createPipelineRun("fake-pipeline-1", "1"),
+				createPipelineRun("fake-pipeline-2", "2"),
+			},
+			jobRuns: []job.PipelineRun{
+				createJobRun("fake-jobrun-1", "1"),
+				createJobRun("fake-jobrun-3", "3"),
+			},
+		},
+		pipelineRunsToBeDeleted: []v1alpha3.PipelineRun{
+			createPipelineRun("fake-pipeline-2", "2"),
+		},
+	}, {
+		name: "Should found a multi-branch PipelineRun if PipelineRuns contain one of JobRuns",
+		args: args{
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createMultiBranchPipelineRun("fake-pipeline-1", "1", "main"),
+				createMultiBranchPipelineRun("fake-pipeline-2", "1", "dev"),
+			},
+			jobRuns: []job.PipelineRun{
+				createMultiBranchJobRun("fake-jobrun-1", "1", "main"),
+			},
+			isMultiBranch: true,
+		},
+		pipelineRunsToBeDeleted: []v1alpha3.PipelineRun{
+			createMultiBranchPipelineRun("fake-pipeline-2", "1", "dev"),
+		},
+	},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := collectPipelineRunsDeletedInJenkins(newPipelineRunFinder(tt.args.pipelineRuns), tt.args.isMultiBranch, tt.args.jobRuns, tt.args.pipelineRuns); !reflect.DeepEqual(got, tt.pipelineRunsToBeDeleted) {
+				t.Errorf("collectExistingPipelineRuns() = %v, want %v", got, tt.pipelineRunsToBeDeleted)
+			}
+		})
+	}
+}
+
+func Test_createBarePipelineRunsIfNotPresent(t *testing.T) {
+	jobRun1 := createJobRun("fake-jobrun-1", "1")
+	jobRun2 := createJobRun("fake-jobrun-2", "2")
+	mainJobRun1 := createMultiBranchJobRun("fake-jobrun-main-1", "1", "main")
+	devJobRun1 := createMultiBranchJobRun("fake-jobrun-dev-1", "1", "dev")
+
+	pipeline := &v1alpha3.Pipeline{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "fake-pipeline",
+			Namespace: "fake-pipeline-namespace",
+		},
+	}
+	multiBranchPipeline := &v1alpha3.Pipeline{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "fake-pipeline",
+			Namespace: "fake-pipeline-namespace",
+		},
+		Spec: v1alpha3.PipelineSpec{
+			Type: v1alpha3.MultiBranchPipelineType,
+		},
+	}
+	type args struct {
+		pipelineRuns []v1alpha3.PipelineRun
+		pipeline     *v1alpha3.Pipeline
+		jobRuns      []job.PipelineRun
+	}
+	tests := []struct {
+		name                 string
+		args                 args
+		expectedPipelineRuns []v1alpha3.PipelineRun
+	}{{
+		name: "Should create nothing when JobRuns are empty",
+		args: args{
+			jobRuns: nil,
+		},
+		expectedPipelineRuns: nil,
+	}, {
+		name: "Should create bare PipelineRuns for all JobRuns when PipelineRuns are empty but JobRuns are not empty",
+		args: args{
+			jobRuns: []job.PipelineRun{
+				jobRun1,
+				jobRun2,
+			},
+			pipeline: pipeline,
+		},
+		expectedPipelineRuns: []v1alpha3.PipelineRun{
+			*createBarePipelineRun(pipeline, &jobRun1),
+			*createBarePipelineRun(pipeline, &jobRun2),
+		},
+	}, {
+		name: "Should create bare PipelineRun for one of JobRuns when PipelineRuns contain some of JobRuns",
+		args: args{
+			pipeline: pipeline,
+			jobRuns: []job.PipelineRun{
+				jobRun1,
+				jobRun2,
+			},
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createPipelineRun("fake-pipeline-1", "1"),
+			},
+		},
+		expectedPipelineRuns: []v1alpha3.PipelineRun{
+			*createBarePipelineRun(pipeline, &jobRun2),
+		},
+	}, {
+		name: "Should create bare PipelineRun for one of JobRuns when PipelineRuns contains some of JobRuns and Pipeline is multi-branch type",
+		args: args{
+			pipeline: multiBranchPipeline,
+			jobRuns: []job.PipelineRun{
+				mainJobRun1,
+				devJobRun1,
+			},
+			pipelineRuns: []v1alpha3.PipelineRun{
+				createMultiBranchPipelineRun("fake-pipelinerun-main-1", "1", "main"),
+				createMultiBranchPipelineRun("fake-pipelinerun-test-1", "1", "test"),
+			},
+		},
+		expectedPipelineRuns: []v1alpha3.PipelineRun{
+			*createBarePipelineRun(multiBranchPipeline, &devJobRun1),
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := createBarePipelineRunsIfNotPresent(newPipelineRunFinder(tt.args.pipelineRuns), tt.args.pipeline, tt.args.jobRuns); !reflect.DeepEqual(got, tt.expectedPipelineRuns) {
+				t.Errorf("createBarePipelineRunsIfNotPresent() = %v, want %v", got, tt.expectedPipelineRuns)
 			}
 		})
 	}
