@@ -20,7 +20,7 @@ import (
 func TestAPIsExist(t *testing.T) {
 	httpWriter := httptest.NewRecorder()
 
-	err := AddToContainer(restful.DefaultContainer, nil, fakedevops.NewFakeDevops(nil),
+	_, err := AddToContainer(restful.DefaultContainer, nil, fakedevops.NewFakeDevops(nil),
 		nil,
 		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
 			ObjectMeta: metav1.ObjectMeta{Name: "fake"},
