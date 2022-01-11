@@ -114,7 +114,7 @@ docker-build-push-tools: docker-build-tools docker-push-tools
 docker-build-push: docker-build-push-apiserver docker-build-push-controller
 
 swagger-ui:
-	git clone git@github.com:swagger-api/swagger-ui.git -b v2.2.10 bin/swagger-ui
+	git clone https://github.com/swagger-api/swagger-ui -b v2.2.10 --depth 1 bin/swagger-ui
 
 mock-gen:
 	mockgen -source=cmd/tools/jwt/app/configmap_updater.go -destination ./cmd/tools/jwt/app/mock_app/configmap_updater.go
