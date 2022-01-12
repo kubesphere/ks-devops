@@ -62,15 +62,33 @@ type testData struct {
 
 func TestUploadFunc(t *testing.T) {
 	testFileName := "/tmp/upload.tmp"
-	_, err := os.Create(testFileName)
-	if err != nil {
-		t.Errorf("Can't create tmp file, err: %v", err)
-	}
-	defer os.Remove(testFileName)
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	err = UploadFunc(testFileName, writer)
+	testWriter := multipart.NewWriter(&bytes.Buffer{})
+	// The first call should fail because the file doesn't exist 
+	err := UploadFunc(testFileName, testWriter)
+	assert.NotNil(t, err)
 	
-	assert.Nil(t, err, "uploadFunc has err: %v", err)
+	// Create tmp file
+	_, err = os.Create(testFileName)
+	assert.Nil(t, err, "create tmp file has error: %v", err)
+	defer func ()  {
+		err := os.Remove(testFileName)
+		assert.Nil(t, err, "delete tmp file has error: %v", err)
+	}()
+	
+	// The second call Bad should fail because writer is bad
+	badWriter := multipart.NewWriter(&badWriter{}) 
+	err = UploadFunc(testFileName, badWriter)
+	assert.NotNil(t, err)
+
+	// Final should succeed
+	err = UploadFunc(testFileName, testWriter)
+	assert.Nil(t, err, "UploadFunc has error: %v", err)
+}
+
+type badWriter struct {
+	err error
+}
+
+func (w badWriter) Write([]byte) (int, error) {
+	return 0, w.err
 }
