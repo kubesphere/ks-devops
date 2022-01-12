@@ -169,7 +169,7 @@ func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, w
 		To(handler.GetDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
 		Param(ws.PathParameter("devops", "project name")).
-		Param(ws.QueryParameter("generateName", "use the name as a regular one or generate name")).
+		 Param(ws.QueryParameter("generateName", "use '{devops}` as a generatName if 'generateName=true', or as a regular name")).
 		Doc("Get the devops project of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
