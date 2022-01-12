@@ -310,26 +310,10 @@ func (r *Requester) Do(ar *APIRequest, responseStruct interface{}, options ...in
 	if fileUpload {
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
-		uploadFunc := func(fileName string) error {
-			fileData, err := os.Open(fileName)
-			if err != nil {
-				Error.Println(err.Error())
-				return err
-			}
-			defer fileData.Close()
-
-			part, err := writer.CreateFormFile("file", filepath.Base(fileName))
-			if err != nil {
-				return err
-			}
-			if _, err = io.Copy(part, fileData); err != nil {
-				return err
-			}
-			return nil
-		}
 
 		for _, file := range files {
-			if err := uploadFunc(file); err != nil {
+			if err := UploadFunc(file, writer); err != nil {
+				Error.Println(err.Error())
 				return nil, err
 			}
 		}

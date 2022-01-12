@@ -1,7 +1,10 @@
 package jenkins
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,18 +22,18 @@ func TestParseJenkinsQuery(t *testing.T) {
 		},
 		{
 			param: "branch=master", expected: url.Values{
-				"branch": []string{"master"},
-			}, err: false,
+			"branch": []string{"master"},
+		}, err: false,
 		},
 		{
 			param: "&branch=master", expected: url.Values{
-				"branch": []string{"master"},
-			}, err: false,
+			"branch": []string{"master"},
+		}, err: false,
 		},
 		{
 			param: "branch=master&", expected: url.Values{
-				"branch": []string{"master"},
-			}, err: false,
+			"branch": []string{"master"},
+		}, err: false,
 		},
 		{
 			param: "branch=%gg", expected: url.Values{}, err: true,
@@ -55,4 +58,19 @@ type testData struct {
 	param    string
 	expected interface{}
 	err      bool
+}
+
+func TestUploadFunc(t *testing.T) {
+	testFileName := "/tmp/upload.tmp"
+	_, err := os.Create(testFileName)
+	if err != nil {
+		t.Errorf("Can't create tmp file, err: %v", err)
+	}
+	defer os.Remove(testFileName)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	err = UploadFunc(testFileName, writer)
+	
+	assert.Nil(t, err, "uploadFunc has err: %v", err)
 }
