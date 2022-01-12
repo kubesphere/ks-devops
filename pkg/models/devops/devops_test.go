@@ -17,6 +17,14 @@ limitations under the License.
 package devops
 
 import (
+	"context"
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/client/clientset/versioned"
+	fakeclientset "kubesphere.io/devops/pkg/client/clientset/versioned/fake"
+	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"testing"
 
@@ -126,5 +134,193 @@ func TestGetBranchNodesDetail(t *testing.T) {
 		if v.Steps[0].ID == "" {
 			t.Fatalf("Can not get any step.")
 		}
+	}
+}
+
+func Test_devopsOperator_CreateDevOpsProject(t *testing.T) {
+	type fields struct {
+		ksclient versioned.Interface
+	}
+	type args struct {
+		workspace string
+		project   *v1alpha3.DevOpsProject
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		verify  func(client versioned.Interface, args args, t *testing.T) bool
+		wantErr bool
+	}{{
+		name: "lack of the generate name",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(),
+		},
+		args: args{
+			workspace: "ws",
+			project:   &v1alpha3.DevOpsProject{},
+		},
+		wantErr: true,
+	}, {
+		name: "duplicated in the same workspace",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace: "ws",
+			project: &v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+				},
+			},
+		},
+		wantErr: true,
+	}, {
+		name: "allow the same name in the different workspaces",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Name:         "generated-name",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws1",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace: "ws",
+			project: &v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+				},
+			},
+		},
+		wantErr: false,
+	}, {
+		name: "normal case",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(),
+		},
+		args: args{
+			workspace: "ws",
+			project: &v1alpha3.DevOpsProject{
+				ObjectMeta: v1.ObjectMeta{
+					GenerateName: "devops",
+				},
+			},
+		},
+		wantErr: false,
+		verify: func(client versioned.Interface, args args, t *testing.T) bool {
+			list, err := client.DevopsV1alpha3().DevOpsProjects().List(context.TODO(), metav1.ListOptions{})
+			assert.Nil(t, err)
+			assert.Equal(t, len(list.Items) > 0, true)
+
+			for i := range list.Items {
+				item := list.Items[i]
+
+				if item.GenerateName == args.project.GenerateName {
+					assert.NotNil(t, item.Annotations)
+					assert.NotEmpty(t, item.Annotations[v1alpha3.DevOpeProjectSyncStatusAnnoKey])
+					assert.NotEmpty(t, item.Annotations[v1alpha3.DevOpeProjectSyncTimeAnnoKey])
+
+					assert.NotNil(t, item.Labels)
+					assert.Equal(t, args.workspace, item.Labels[constants.WorkspaceLabelKey])
+					return true
+				}
+			}
+			return false
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := devopsOperator{
+				ksclient: tt.fields.ksclient,
+			}
+			got, err := d.CreateDevOpsProject(tt.args.workspace, tt.args.project)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateDevOpsProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.verify != nil && !tt.verify(d.ksclient, tt.args, t) {
+				t.Errorf("CreateDevOpsProject() got = %v", got)
+			}
+		})
+	}
+}
+
+func Test_devopsOperator_GetDevOpsProject(t *testing.T) {
+	type fields struct {
+		ksclient versioned.Interface
+	}
+	type args struct {
+		workspace   string
+		projectName string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		verify func(result *v1alpha3.DevOpsProject, resultErr error, t *testing.T)
+	}{{
+		name: "normal case",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Name:         "generated-name",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace:   "ws",
+			projectName: "fake",
+		},
+		verify: func(result *v1alpha3.DevOpsProject, resultErr error, t *testing.T) {
+			assert.Nil(t, resultErr)
+			assert.NotNil(t, result)
+			assert.Equal(t, "fake", result.GenerateName)
+			assert.Equal(t, "generated-name", result.Name)
+		},
+	}, {
+		name: "cannot find by the same generateName in the different workspaces",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Name:         "generated-name",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws1",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace:   "ws",
+			projectName: "fake",
+		},
+		verify: func(result *v1alpha3.DevOpsProject, resultErr error, t *testing.T) {
+			assert.NotNil(t, resultErr)
+			assert.Nil(t, result)
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := devopsOperator{
+				ksclient: tt.fields.ksclient,
+			}
+			got, err := d.GetDevOpsProjectByGenerateName(tt.args.workspace, tt.args.projectName)
+			tt.verify(got, err, t)
+		})
 	}
 }

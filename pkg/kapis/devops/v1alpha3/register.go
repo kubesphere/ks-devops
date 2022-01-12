@@ -176,8 +176,9 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		To(handler.GetDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
 		Param(ws.PathParameter("devops", "project name")).
-		Doc("Get the devopsproject of the specified workspace for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
+		 Param(ws.QueryParameter("generateName", "use '{devops}` as a generatName if 'generateName=true', or as a regular name")).
+		Doc("Get the devops project of the specified workspace for the current user").
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.PUT("/workspaces/{workspace}/devops/{devops}").
