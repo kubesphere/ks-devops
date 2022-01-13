@@ -23,7 +23,7 @@ import (
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	restful "github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -65,7 +65,6 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 
 func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client, ws *restful.WebService) {
 	handler := newDevOpsHandler(devopsClient, k8sClient)
-	registerRoutersForCredentials(handler, ws)
 	registerRoutersForCredentials(handler, ws)
 	registerRoutersForPipelines(handler, ws)
 	registerRoutersForWorkspace(handler, ws)

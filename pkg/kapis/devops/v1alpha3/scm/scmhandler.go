@@ -32,7 +32,6 @@ func (h *Handler) Verify(request *restful.Request, response *restful.Response) {
 	var c *goscm.Client
 	var err error
 	var code int
-	var msg string
 
 	if c, err = factory.GetClient(); err == nil {
 		var resp *goscm.Response
@@ -42,9 +41,8 @@ func (h *Handler) Verify(request *restful.Request, response *restful.Response) {
 		}
 	} else {
 		code = 100
-		msg = err.Error()
 	}
 
 	response.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
-	_ = response.WriteAsJson(git.VerifyResult(msg, code, err))
+	_ = response.WriteAsJson(git.VerifyResult(err, code))
 }

@@ -6,8 +6,6 @@ type VerifyResponse struct {
 	Message string `json:"message"`
 	// Code represents a group of cases
 	Code int `json:"code"`
-	// Errors contain all related errors
-	Errors []interface{} `json:"errors"`
 }
 
 func VerifyPass() *VerifyResponse {
@@ -16,17 +14,16 @@ func VerifyPass() *VerifyResponse {
 	}
 }
 
-func VerifyFailed(message string, code int, err error) *VerifyResponse {
+func VerifyFailed(message string, code int) *VerifyResponse {
 	return &VerifyResponse{
 		Message: message,
 		Code:    code,
-		Errors:  []interface{}{err},
 	}
 }
 
-func VerifyResult(message string, code int, err error) *VerifyResponse {
+func VerifyResult(err error, code int) *VerifyResponse {
 	if err == nil {
 		return VerifyPass()
 	}
-	return VerifyFailed(message, code, err)
+	return VerifyFailed(err.Error(), code)
 }

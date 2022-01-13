@@ -37,12 +37,11 @@ func TestVerifyResult(t *testing.T) {
 		want: &VerifyResponse{
 			Message: "failed",
 			Code:    1234,
-			Errors:  []interface{}{errors.New("failed")},
 		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, VerifyResult(tt.args.message, tt.args.code, tt.args.err), "VerifyResult(%v, %v, %v)", tt.args.message, tt.args.code, tt.args.err)
+			assert.Equalf(t, tt.want, VerifyResult(tt.args.err, tt.args.code), "VerifyResult(%v, %v, %v)", tt.args.message, tt.args.code, tt.args.err)
 		})
 	}
 }
