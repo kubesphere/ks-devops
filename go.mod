@@ -24,6 +24,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/h2non/gock v1.0.9
 	github.com/jenkins-zh/jenkins-client v0.0.8
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
