@@ -7,6 +7,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	v1 "k8s.io/api/core/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -64,18 +65,17 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.recorder.Eventf(pipeline, v1.EventTypeWarning, FailedPipelineRunSync, "")
 		return ctrl.Result{}, err
 	}
-	var createdPipelineRuns []v1alpha3.PipelineRun
+
 	finder := newPipelineRunFinder(prList.Items)
-	isMultiBranch := pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType
-	for _, jobRun := range jobRuns {
-		if _, ok := finder.find(&jobRun, isMultiBranch); !ok {
-			pipelineRun, err := r.createPipelineRun(pipeline, &jobRun)
-			if err == nil {
-				createdPipelineRuns = append(createdPipelineRuns, *pipelineRun)
-			} else {
-				log.Error(err, "failed to create bare PipelineRun", "JenkinsRun", jobRun)
-			}
-		}
+
+	pipelineRunsToBeCreated := createBarePipelineRunsIfNotPresent(finder, pipeline, jobRuns)
+	if errs := r.createPipelineRuns(ctx, pipelineRunsToBeCreated); len(errs) > 0 {
+		log.V(5).Error(utilerrors.NewAggregate(errs), "failed to create all of PipelineRuns", "pipelineRunsToBeCreated", pipelineRunsToBeCreated)
+	}
+
+	pipelineRunsToBeDeleted := collectPipelineRunsDeletedInJenkins(finder, pipeline.IsMultiBranch(), jobRuns, prList.Items)
+	if errs := r.deletePipelineRuns(ctx, pipelineRunsToBeDeleted); len(errs) > 0 {
+		log.V(5).Error(utilerrors.NewAggregate(errs), "failed to delete all of PipelineRuns", "pipelineRunsToBeDeleted", pipelineRunsToBeDeleted)
 	}
 
 	if err := r.synchronizedSuccessfully(req.NamespacedName); err != nil {
@@ -85,8 +85,61 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log.Info("synchronized PipelineRun successfully")
 
 	r.recorder.Eventf(pipeline, v1.EventTypeNormal, PipelineRunSynced,
-		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(createdPipelineRuns), len(prList.Items), len(jobRuns))
+		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(pipelineRunsToBeCreated), len(prList.Items), len(jobRuns))
 	return ctrl.Result{}, nil
+}
+
+func createBarePipelineRunsIfNotPresent(finder pipelineRunFinder, pipeline *v1alpha3.Pipeline, jobRuns []job.PipelineRun) []v1alpha3.PipelineRun {
+	var pipelineRunsToBeCreated []v1alpha3.PipelineRun
+	for i := range jobRuns {
+		jobRun := &jobRuns[i]
+		if _, ok := finder.find(jobRun, pipeline.IsMultiBranch()); !ok {
+			pipelineRunsToBeCreated = append(pipelineRunsToBeCreated, *createBarePipelineRun(pipeline, jobRun))
+		}
+	}
+	return pipelineRunsToBeCreated
+}
+
+func collectPipelineRunsDeletedInJenkins(finder pipelineRunFinder, isMultiBranch bool, jobRuns []job.PipelineRun, pipelineRuns []v1alpha3.PipelineRun) []v1alpha3.PipelineRun {
+	var pipelineRunsToBeDeleted []v1alpha3.PipelineRun
+	existingPipelineRunNameSet := map[string]bool{}
+	for i := range jobRuns {
+		jobRun := &jobRuns[i]
+		if pipelineRun, found := finder.find(jobRun, isMultiBranch); found {
+			existingPipelineRunNameSet[pipelineRun.Name] = true
+		}
+	}
+	for i := range pipelineRuns {
+		pipelineRun := &pipelineRuns[i]
+		if _, exist := existingPipelineRunNameSet[pipelineRun.Name]; !exist {
+			pipelineRunsToBeDeleted = append(pipelineRunsToBeDeleted, *pipelineRun)
+		}
+	}
+	return pipelineRunsToBeDeleted
+}
+
+func (r *SyncReconciler) createPipelineRuns(ctx context.Context, pipelineRuns []v1alpha3.PipelineRun) []error {
+	var errs []error
+	for i := range pipelineRuns {
+		pipelineRun := &pipelineRuns[i]
+		if err := r.Client.Create(ctx, pipelineRun); err != nil {
+			errs = append(errs, err)
+			// continue next creation
+		}
+	}
+	return errs
+}
+
+func (r *SyncReconciler) deletePipelineRuns(ctx context.Context, pipelineRuns []v1alpha3.PipelineRun) []error {
+	var errs []error
+	for i := range pipelineRuns {
+		pipelineRun := &pipelineRuns[i]
+		if err := r.Client.Delete(ctx, pipelineRun); err != nil {
+			errs = append(errs, err)
+			// continue next deletion
+		}
+	}
+	return errs
 }
 
 func (r *SyncReconciler) synchronizedSuccessfully(key client.ObjectKey) error {
@@ -108,18 +161,7 @@ func (r *SyncReconciler) synchronizedSuccessfully(key client.ObjectKey) error {
 	})
 }
 
-func (r *SyncReconciler) createPipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
-	pipelineRun, err := createBarePipelineRun(pipeline, run)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.Client.Create(context.Background(), pipelineRun); err != nil {
-		return nil, err
-	}
-	return pipelineRun, nil
-}
-
-func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*v1alpha3.PipelineRun, error) {
+func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) *v1alpha3.PipelineRun {
 	var scm *v1alpha3.SCM
 	if pipeline.Spec.Type == v1alpha3.MultiBranchPipelineType {
 		// if the Pipeline is a multip-branch Pipeline, the run#Pipeline is the name of the branch
@@ -128,7 +170,7 @@ func createBarePipelineRun(pipeline *v1alpha3.Pipeline, run *job.PipelineRun) (*
 	}
 	pr := pipelinerun.CreatePipelineRun(pipeline, nil, scm)
 	pr.Annotations[v1alpha3.JenkinsPipelineRunIDAnnoKey] = run.ID
-	return pr, nil
+	return pr
 }
 
 // SetupWithManager sets up the controller with the Manager.
