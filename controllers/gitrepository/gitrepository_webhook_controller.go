@@ -15,16 +15,12 @@ package gitrepository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/drone/go-scm/scm"
-	"github.com/drone/go-scm/scm/driver/github"
-	"github.com/drone/go-scm/scm/driver/gitlab"
-	"github.com/drone/go-scm/scm/transport/oauth2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"net/http"
+	"kubesphere.io/devops/pkg/client/git"
 	"strings"
 	"time"
 
@@ -155,33 +151,14 @@ func exist(server string, hooks []*scm.Hook) (exist bool, id string) {
 }
 
 func (r *Reconciler) getGitClient(repo *v1alpha1.GitRepository) (client *scm.Client, err error) {
-	provider := repo.Spec.Provider
-	switch provider {
-	case "github":
-		client = github.NewDefault()
-	case "gitlab":
-		client = gitlab.NewDefault()
-	default:
-		err = errors.New("not support git provider: " + provider)
-		return
-	}
+	spec := repo.Spec.DeepCopy()
+	provider := spec.Provider
 
-	var gitToken string
-	secretRef := repo.Spec.Secret
-	if gitToken, err = r.getTokenFromSecret(secretRef, repo.Namespace); err != nil {
-		return
+	// make sure the namespace exist
+	if spec.Secret != nil && spec.Secret.Namespace == "" {
+		spec.Secret.Namespace = repo.Namespace
 	}
-
-	client.Client = &http.Client{
-		Transport: &oauth2.Transport{
-			Source: oauth2.StaticTokenSource(
-				&scm.Token{
-					Token: gitToken,
-				},
-			),
-		},
-	}
-	return
+	return git.NewClientFactory(provider, spec.Secret, r.Client).GetClient()
 }
 
 func (r *Reconciler) getTokenFromSecret(secretRef *v1.SecretReference, defaultNamespace string) (token string, err error) {

@@ -78,6 +78,7 @@ func injectToken(req *http.Request) (requestWithTokenContext *http.Request) {
 	authorization := req.Header.Get("X-Authorization")
 	token := strings.ReplaceAll(authorization, "Bearer ", "")
 	token = strings.ReplaceAll(token, "bearer ", "")
-	requestWithTokenContext = req.WithContext(context.WithValue(req.Context(), constants.K8SToken, constants.ContextKeyK8SToken(token)))
+	requestWithTokenContext = req.WithContext(context.WithValue(req.Context(), constants.K8SToken,
+		constants.ContextKeyK8SToken(token)))
 	return
 }

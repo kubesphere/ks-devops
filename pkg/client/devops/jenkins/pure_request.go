@@ -35,8 +35,8 @@ func (j *Jenkins) SendPureRequest(path string, httpParameters *devops.HttpParame
 	return resBody, err
 }
 
-// provider request header to call jenkins api.
-// transfer bearer token to basic token for inner Oauth and Jeknins
+// SendPureRequestWithHeaderResp provider request header to call jenkins api.
+// transfer bearer token to basic token for inner Oauth and Jenkins
 func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
 	apiURL, err := url.Parse(j.Server + path)
 	if err != nil {

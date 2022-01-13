@@ -68,7 +68,6 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	pipelineRun := &v1alpha3.PipelineRun{}
 	var err error
 	if err = r.Client.Get(ctx, req.NamespacedName, pipelineRun); err != nil {
-		log.Error(err, "unable to fetch PipelineRun")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 

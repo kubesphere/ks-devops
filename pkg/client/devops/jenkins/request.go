@@ -25,8 +25,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
 	//"github.com/dgrijalva/jwt-go"
@@ -207,21 +205,10 @@ func (r *Requester) DoGet(ar *APIRequest, responseStruct interface{}, options ..
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
 		for _, file := range files {
-			fileData, err := os.Open(file)
-			if err != nil {
+			if err := UploadFunc(file, writer); err != nil {
 				Error.Println(err.Error())
 				return nil, err
 			}
-
-			part, err := writer.CreateFormFile("file", filepath.Base(file))
-			if err != nil {
-				Error.Println(err.Error())
-				return nil, err
-			}
-			if _, err = io.Copy(part, fileData); err != nil {
-				return nil, err
-			}
-			defer fileData.Close()
 		}
 		var params map[string]string
 		json.NewDecoder(ar.Payload).Decode(&params)
@@ -310,22 +297,12 @@ func (r *Requester) Do(ar *APIRequest, responseStruct interface{}, options ...in
 	if fileUpload {
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)
-		for _, file := range files {
-			fileData, err := os.Open(file)
-			if err != nil {
-				Error.Println(err.Error())
-				return nil, err
-			}
 
-			part, err := writer.CreateFormFile("file", filepath.Base(file))
-			if err != nil {
+		for _, file := range files {
+			if err := UploadFunc(file, writer); err != nil {
 				Error.Println(err.Error())
 				return nil, err
 			}
-			if _, err = io.Copy(part, fileData); err != nil {
-				return nil, err
-			}
-			defer fileData.Close()
 		}
 		var params map[string]string
 		json.NewDecoder(ar.Payload).Decode(&params)
