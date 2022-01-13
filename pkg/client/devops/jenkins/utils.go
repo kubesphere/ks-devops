@@ -19,8 +19,11 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -98,6 +101,23 @@ func ParseJenkinsQuery(query string) (result url.Values, err error) {
 		}
 	}
 	return
+}
+
+func UploadFunc(fileName string, writer *multipart.Writer) error {
+	fileData, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer fileData.Close()
+
+	part, err := writer.CreateFormFile("file", filepath.Base(fileName))
+	if err != nil {
+		return err
+	}
+	if _, err = io.Copy(part, fileData); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JenkinsBlueTime time.Time
