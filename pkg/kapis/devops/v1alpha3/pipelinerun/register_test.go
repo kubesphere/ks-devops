@@ -1,14 +1,15 @@
 package pipelinerun
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestAPIsExist(t *testing.T) {
@@ -51,6 +52,12 @@ func TestAPIsExist(t *testing.T) {
 		args: args{
 			method: http.MethodGet,
 			uri:    "/namespaces/fake/pipelineruns/fake/nodedetails",
+		},
+	}, {
+		name: "receive pipeline event",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/webhook/pipeline-event",
 		},
 	}}
 	for _, tt := range tests {

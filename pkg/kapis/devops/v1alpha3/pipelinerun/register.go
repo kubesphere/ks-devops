@@ -53,4 +53,9 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
 		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
 		Returns(http.StatusOK, api.StatusOK, []pipelinerun.NodeDetail{}))
+
+	ws.Route(ws.POST("/webhook/pipeline-event").
+		To(handler.ReceivePipelineEvent).
+		Doc("Webhook for receiving pipeline event").
+		Returns(http.StatusOK, api.StatusOK, nil))
 }

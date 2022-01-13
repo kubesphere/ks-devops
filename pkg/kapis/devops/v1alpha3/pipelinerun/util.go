@@ -12,6 +12,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/event/models/workflowrun"
 )
 
 func buildLabelSelector(queryParam *query.Query, pipelineName string) (labels.Selector, error) {
@@ -50,6 +51,21 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 	return parameters
 }
 
+func convertParameters2(_parameters []workflowrun.Parameter) []v1alpha3.Parameter {
+	var parameters []v1alpha3.Parameter
+	for i := range _parameters {
+		_parameter := &_parameters[i]
+		if _parameter.Name == "" {
+			continue
+		}
+		parameters = append(parameters, v1alpha3.Parameter{
+			Name:  _parameter.Name,
+			Value: _parameter.Value,
+		})
+	}
+	return parameters
+}
+
 // CreateScm creates SCM for multi-branch Pipeline.
 func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*v1alpha3.SCM, error) {
 	var scm *v1alpha3.SCM
@@ -77,6 +93,11 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 
 // CreatePipelineRun creates a bare PipelineRun.
 func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
+	return CreateBarePipelineRun(pipeline, convertParameters(payload), scm)
+}
+
+// CreateBarePipelineRun creates a bare PipelineRun.
+func CreateBarePipelineRun(pipeline *v1alpha3.Pipeline, parameters []v1alpha3.Parameter, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	pipelineRun := &v1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -92,7 +113,7 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
 			PipelineSpec: &pipeline.Spec,
-			Parameters:   convertParameters(payload),
+			Parameters:   parameters,
 			SCM:          scm,
 		},
 	}

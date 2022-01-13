@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/emicklei/go-restful"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/event/models/common"
+	"kubesphere.io/devops/pkg/event/models/workflowrun"
 	"kubesphere.io/devops/pkg/models/pipelinerun"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -82,34 +85,6 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	}
 	apiResult := resourcesV1alpha3.ToListResult(convertPipelineRunsToObject(prs.Items), queryParam, listHandler)
 	_ = response.WriteAsJson(apiResult)
-
-	go func() {
-		err := h.requestSyncPipelineRun(client.ObjectKey{Namespace: pipeline.Namespace, Name: pipeline.Name})
-		if err != nil {
-			klog.Errorf("failed to request to synchronize PipelineRuns. Pipeline = %s", pipeline.Name)
-			return
-		}
-	}()
-}
-
-func (h *apiHandler) requestSyncPipelineRun(key client.ObjectKey) error {
-	// get latest Pipeline
-	pipelineToUpdate := &v1alpha3.Pipeline{}
-	err := h.client.Get(context.Background(), key, pipelineToUpdate)
-	if err != nil {
-		return err
-	}
-	// update pipeline annotations
-	if pipelineToUpdate.Annotations == nil {
-		pipelineToUpdate.Annotations = make(map[string]string)
-	}
-	pipelineToUpdate.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey] = "true"
-	// update the pipeline
-	if err := h.client.Update(context.Background(), pipelineToUpdate); err != nil && !apierrors.IsConflict(err) {
-		// we allow the conflict error here
-		return err
-	}
-	return nil
 }
 
 func (h *apiHandler) createPipelineRun(request *restful.Request, response *restful.Response) {
@@ -203,4 +178,100 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	}
 
 	_ = response.WriteEntity(&stages)
+}
+
+// ReceivePipelineEvent receives Pipeline event from other system and does something related with PipelineRun.
+func (h *apiHandler) ReceivePipelineEvent(request *restful.Request, response *restful.Response) {
+	workflowRunEvent := &workflowrun.Event{}
+	if err := request.ReadEntity(workflowRunEvent); err != nil {
+		errorHandle(err, response, request, nil)
+		return
+	}
+
+	if !workflowRunEvent.DataTypeMatch() {
+		// we are only interested in WorkflowRun event here
+		return
+	}
+
+	var err error
+	if workflowRunEvent.TypeEquals(common.RunInitialize) {
+		err = handleWorkflowRunInitialize(workflowRunEvent, h.client)
+	}
+
+	if err != nil {
+		errorHandle(err, response, request, nil)
+	}
+}
+
+func handleWorkflowRunInitialize(workflowRunEvent *workflowrun.Event, c client.Client) error {
+	workflowRunData := workflowRunEvent.Data
+	namespaceName := ""
+	pipelineName := ""
+	scmRefName := ""
+	buildNumber := workflowRunData.Run.ID
+
+	fullName := workflowRunData.ParentFullName
+	names := strings.Split(fullName, "/")
+	if workflowRunData.IsMultiBranch {
+		if len(names) != 2 {
+			// return if this is not a standard multi-branch Pipeline in ks-devops
+			return nil
+		}
+		namespaceName = names[0]
+		pipelineName = names[1]
+		scmRefName = workflowRunData.ProjectName
+	} else {
+		if len(names) != 1 {
+			// return if this is not a standard Pipeline in ks-devops
+			return nil
+		}
+		namespaceName = workflowRunData.ParentFullName
+		pipelineName = workflowRunData.ProjectName
+	}
+
+	// TODO Execute process below asynchronously
+
+	pipelineRunIdentifier := v1alpha3.BuildPipelineRunIdentifier(pipelineName, scmRefName, fmt.Sprint(buildNumber))
+	pipelineRunList := &v1alpha3.PipelineRunList{}
+	if err := c.List(context.Background(), pipelineRunList,
+		client.InNamespace(namespaceName),
+		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: pipelineRunIdentifier}); err != nil {
+		return err
+	}
+
+	if len(pipelineRunList.Items) == 0 {
+		// If no PipelineRun found, it indicates that a fresh PipelineRun was created from Jenkins.
+		pipeline := &v1alpha3.Pipeline{}
+		if err := c.Get(context.Background(), client.ObjectKey{Namespace: namespaceName, Name: pipelineName}, pipeline); err != nil {
+			return err
+		}
+		scm, err := CreateScm(&pipeline.Spec, scmRefName)
+		if err != nil {
+			return err
+		}
+
+		parameters := workflowRunData.Run.Actions.GetParameters()
+		pipelineRun := CreateBarePipelineRun(pipeline, convertParameters2(parameters), scm)
+
+		// Set the RunID manually
+		pipelineRun.GetAnnotations()[v1alpha3.JenkinsPipelineRunIDAnnoKey] = fmt.Sprint(buildNumber)
+		if err := c.Create(context.Background(), pipelineRun); err != nil {
+			return err
+		}
+		klog.Infof("Created a PipelineRun: %s/%s", pipelineRun.Namespace, pipelineRun.Name)
+	}
+	return nil
+}
+
+func errorHandle(err error, response *restful.Response, request *restful.Request, obj interface{}) {
+	if err != nil {
+		klog.Error(err)
+		if errors.IsNotFound(err) {
+			api.HandleNotFound(response, request, err)
+			return
+		}
+		api.HandleBadRequest(response, request, err)
+		return
+	}
+	_ = response.WriteEntity(obj)
 }
