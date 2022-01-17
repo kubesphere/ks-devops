@@ -1,0 +1,124 @@
+package webhook
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"k8s.io/klog"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/event/models/workflowrun"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type pipelineRunIdentifier struct {
+	namespaceName string
+	pipelineName  string
+	scmRefName    string
+	buildNumber   string
+}
+
+func (identifier *pipelineRunIdentifier) toIdentifier() string {
+	if identifier == nil {
+		return ""
+	}
+	return v1alpha3.BuildPipelineRunIdentifier(identifier.pipelineName, identifier.scmRefName, identifier.buildNumber)
+}
+
+func convertParameters(workflowRunParameters []workflowrun.Parameter) []v1alpha3.Parameter {
+	var parameters []v1alpha3.Parameter
+	for i := range workflowRunParameters {
+		workflowRunParameter := &workflowRunParameters[i]
+		if workflowRunParameter.Name == "" {
+			continue
+		}
+		parameters = append(parameters, v1alpha3.Parameter{
+			Name:  workflowRunParameter.Name,
+			Value: fmt.Sprint(workflowRunParameter.Value),
+		})
+	}
+	return parameters
+}
+
+func extractPipelineRunIdentifier(workflowRunData *workflowrun.Data) *pipelineRunIdentifier {
+	if workflowRunData == nil || workflowRunData.ParentFullName == "" {
+		return nil
+	}
+	identifier := &pipelineRunIdentifier{
+		buildNumber: workflowRunData.Run.ID,
+	}
+
+	fullName := workflowRunData.ParentFullName
+	names := strings.Split(fullName, "/")
+	if workflowRunData.IsMultiBranch {
+		if len(names) != 2 {
+			// return if this is not a standard multi-branch Pipeline in ks-devops
+			return nil
+		}
+		identifier.namespaceName = names[0]
+		identifier.pipelineName = names[1]
+		identifier.scmRefName = workflowRunData.ProjectName
+	} else {
+		if len(names) != 1 {
+			// return if this is not a standard Pipeline in ks-devops
+			return nil
+		}
+		identifier.namespaceName = workflowRunData.ParentFullName
+		identifier.pipelineName = workflowRunData.ProjectName
+	}
+	return identifier
+}
+
+func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun.Data) error {
+	identifier := extractPipelineRunIdentifier(workflowRunData)
+	if identifier == nil {
+		// we should skip this event if the Pipeline is not a standard Pipeline in ks-devops.
+		return nil
+	}
+
+	// TODO Execute process below asynchronously
+
+	pipelineRunIdentifier := identifier.toIdentifier()
+	pipelineRunList := &v1alpha3.PipelineRunList{}
+	if err := handler.genericClient.List(context.Background(), pipelineRunList,
+		client.InNamespace(identifier.namespaceName),
+		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: pipelineRunIdentifier}); err != nil {
+		return err
+	}
+
+	if len(pipelineRunList.Items) == 0 {
+		parameters, err := workflowRunData.Run.Actions.GetParameters()
+		if err != nil {
+			return err
+		}
+
+		pipelineRun, err := handler.createPipelineRun(identifier, convertParameters(parameters))
+		if err != nil {
+			return err
+		}
+		klog.Infof("Created a PipelineRun: %s/%s", pipelineRun.Namespace, pipelineRun.Name)
+		return nil
+	}
+	return nil
+}
+
+func (handler *Handler) createPipelineRun(identifier *pipelineRunIdentifier, parameters []v1alpha3.Parameter) (*v1alpha3.PipelineRun, error) {
+	pipeline := &v1alpha3.Pipeline{}
+	if err := handler.genericClient.Get(context.Background(), client.ObjectKey{Namespace: identifier.namespaceName, Name: identifier.pipelineName}, pipeline); err != nil {
+		return nil, err
+	}
+	scm, err := pipelinerun.CreateScm(&pipeline.Spec, identifier.scmRefName)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineRun := pipelinerun.CreateBarePipelineRun(pipeline, parameters, scm)
+
+	// Set the RunID manually
+	pipelineRun.GetAnnotations()[v1alpha3.JenkinsPipelineRunIDAnnoKey] = identifier.buildNumber
+	if err := handler.genericClient.Create(context.Background(), pipelineRun); err != nil {
+		return nil, err
+	}
+	return pipelineRun, nil
+}

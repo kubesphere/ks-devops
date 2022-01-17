@@ -1,26 +1,11 @@
 package workflowrun
 
-import "kubesphere.io/devops/pkg/event/models/common"
-
-var _ common.DataTypeMatcher = &Event{}
-
-// Event is an event with WorkflowRun detail.
-type Event struct {
-	common.Event `json:",inline"`
-	Data         *Data `json:"data"`
-}
-
 // Data contains WorkflowJob breif information and WorkflowRun detail.
 type Data struct {
 	ParentFullName string      `json:"parentFullName"`
 	ProjectName    string      `json:"projectName"`
 	IsMultiBranch  bool        `json:"multiBranch"`
 	Run            WorkflowRun `json:"run"`
-}
-
-// DataTypeMatch returns true if the DataType in event is equal to real type of event data, false otherwise.
-func (event *Event) DataTypeMatch() bool {
-	return event != nil && event.Data != nil && event.DataType == "io.jenkins.plugins.pipeline.event.data.WorkflowRunData"
 }
 
 // WorkflowRun contains WorkflowRun detail.
@@ -38,4 +23,13 @@ type WorkflowRun struct {
 	QueueID           int     `json:"queueId"`
 	Result            string  `json:"result"`
 	Timestamp         int64   `json:"timestamp"`
+}
+
+// Funcs is a collection of handlers for various event type.
+type Funcs struct {
+	HandleInitialize func(*Data) error
+	HandleStarted    func(*Data) error
+	HandleFinalized  func(*Data) error
+	HandleCompleted  func(*Data) error
+	HandleDeleted    func(*Data) error
 }

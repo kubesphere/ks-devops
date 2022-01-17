@@ -12,7 +12,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
 )
 
 func buildLabelSelector(queryParam *query.Query, pipelineName string) (labels.Selector, error) {
@@ -46,21 +45,6 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 		parameters = append(parameters, v1alpha3.Parameter{
 			Name:  parameter.Name,
 			Value: fmt.Sprint(parameter.Value),
-		})
-	}
-	return parameters
-}
-
-func ConvertParameters2(_parameters []workflowrun.Parameter) []v1alpha3.Parameter {
-	var parameters []v1alpha3.Parameter
-	for i := range _parameters {
-		_parameter := &_parameters[i]
-		if _parameter.Name == "" {
-			continue
-		}
-		parameters = append(parameters, v1alpha3.Parameter{
-			Name:  _parameter.Name,
-			Value: _parameter.Value,
 		})
 	}
 	return parameters

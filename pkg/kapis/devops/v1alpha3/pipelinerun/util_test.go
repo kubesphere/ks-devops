@@ -11,7 +11,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
 )
 
 func Test_buildLabelSelector(t *testing.T) {
@@ -196,82 +195,6 @@ func Test_convertParameters(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := convertParameters(tt.args.payload); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertParameters() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_convertParameters2(t *testing.T) {
-	type args struct {
-		parameters []workflowrun.Parameter
-	}
-	tests := []struct {
-		name string
-		args args
-		want []v1alpha3.Parameter
-	}{{
-		name: "Nil parameters",
-		args: args{
-			parameters: nil,
-		},
-		want: nil,
-	}, {
-		name: "Single parameter",
-		args: args{
-			parameters: []workflowrun.Parameter{{
-				Name:  "aname",
-				Value: "avalue",
-			}},
-		},
-		want: []v1alpha3.Parameter{{
-			Name:  "aname",
-			Value: "avalue",
-		}},
-	}, {
-		name: "Empty parameter",
-		args: args{
-			parameters: []workflowrun.Parameter{{
-				Name:  "",
-				Value: "",
-			}},
-		},
-		want: nil,
-	}, {
-		name: "Empty value only",
-		args: args{
-			parameters: []workflowrun.Parameter{{
-				Name:  "fakeName",
-				Value: "",
-			}},
-		},
-		want: []v1alpha3.Parameter{{
-			Name:  "fakeName",
-			Value: "",
-		}},
-	}, {
-		name: "Two parameters",
-		args: args{
-			parameters: []workflowrun.Parameter{{
-				Name:  "aname",
-				Value: "avalue",
-			}, {
-				Name:  "bname",
-				Value: "bvalue",
-			}},
-		},
-		want: []v1alpha3.Parameter{{
-			Name:  "aname",
-			Value: "avalue",
-		}, {
-			Name:  "bname",
-			Value: "bvalue",
-		}},
-	},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := ConvertParameters2(tt.args.parameters); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertParameters2() = %v, want %v", got, tt.want)
 			}
 		})
 	}

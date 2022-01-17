@@ -1,6 +1,8 @@
 package common
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // EventType represents the current type of event. e.g.: run.initialize, run.finished, and so on.
 type EventType string
@@ -17,13 +19,6 @@ const (
 	// RunDeleted represents Jenkins run has been deleted.
 	RunDeleted EventType = "run.deleted"
 )
-
-// DataTypeMatcher is an interface which can provide ability to check if event data type is match current data type.
-type DataTypeMatcher interface {
-
-	// DataTypeMatch returns true if the DataType in event is equal to real type of event data, false otherwise.
-	DataTypeMatch() bool
-}
 
 // Event contains common fields of event except event data.
 type Event struct {
