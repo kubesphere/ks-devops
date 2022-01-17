@@ -270,7 +270,7 @@ func Test_convertParameters2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := convertParameters2(tt.args.parameters); !reflect.DeepEqual(got, tt.want) {
+			if got := ConvertParameters2(tt.args.parameters); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertParameters2() = %v, want %v", got, tt.want)
 			}
 		})

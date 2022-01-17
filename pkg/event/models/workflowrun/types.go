@@ -25,20 +25,17 @@ func (event *Event) DataTypeMatch() bool {
 
 // WorkflowRun contains WorkflowRun detail.
 type WorkflowRun struct {
-	Actions           Actions                  `json:"actions"`
-	Artifacts         []map[string]interface{} `json:"artifacts"`
-	Building          bool                     `json:"building"`
-	Description       string                   `json:"description"`
-	DisplayName       string                   `json:"displayName"`
-	Duration          int                      `json:"duration"`
-	EstimatedDuration int                      `json:"estimatedDuration"`
-	FullDisplayName   string                   `json:"fullDisplayName"`
-	ID                string                   `json:"id"`
-	KeepLog           bool                     `json:"keepLog"`
-	Number            int                      `json:"number"`
-	QueueID           int                      `json:"queueId"`
-	Result            string                   `json:"result"`
-	Timestamp         int64                    `json:"timestamp"`
-	ChangeSets        []map[string]interface{} `json:"changeSets"`
-	Culprits          []map[string]interface{} `json:"culprits"`
+	Actions           Actions `json:"actions"`
+	Building          bool    `json:"building"`
+	Description       string  `json:"description"`
+	DisplayName       string  `json:"displayName"`
+	Duration          int     `json:"duration"`
+	EstimatedDuration int     `json:"estimatedDuration"`
+	FullDisplayName   string  `json:"fullDisplayName"`
+	ID                string  `json:"id"`
+	KeepLog           bool    `json:"keepLog"`
+	Number            int     `json:"number"`
+	QueueID           int     `json:"queueId"`
+	Result            string  `json:"result"`
+	Timestamp         int64   `json:"timestamp"`
 }

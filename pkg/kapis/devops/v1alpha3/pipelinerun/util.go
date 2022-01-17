@@ -51,7 +51,7 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 	return parameters
 }
 
-func convertParameters2(_parameters []workflowrun.Parameter) []v1alpha3.Parameter {
+func ConvertParameters2(_parameters []workflowrun.Parameter) []v1alpha3.Parameter {
 	var parameters []v1alpha3.Parameter
 	for i := range _parameters {
 		_parameter := &_parameters[i]

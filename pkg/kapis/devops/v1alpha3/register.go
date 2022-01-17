@@ -19,9 +19,11 @@
 package v1alpha3
 
 import (
+	"net/http"
+
 	"kubesphere.io/devops/pkg/client/git"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
-	"net/http"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/webhook"
 
 	restful "github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -50,25 +52,24 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 	ws := runtime.NewWebService(GroupVersion)
 	wss = append(wss, ws)
 	registerRoutes(devopsClient, k8sClient, client, ws)
-	pipelinerun.RegisterRoutes(ws, client)
-	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
 
 	ws = runtime.NewWebServiceWithoutGroup(GroupVersion)
 	wss = append(wss, ws)
 	registerRoutes(devopsClient, k8sClient, client, ws)
-	pipelinerun.RegisterRoutes(ws, client)
-	pipeline.RegisterRoutes(ws, client)
 	container.Add(ws)
 	return
 }
 
 func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, client client.Client, ws *restful.WebService) {
-	handler := newDevOpsHandler(devopsClient, k8sClient)
+	handler := newDevOpsHandler(devopsClient, k8sClient, client)
 	registerRoutersForCredentials(handler, ws)
 	registerRoutersForPipelines(handler, ws)
 	registerRoutersForWorkspace(handler, ws)
 	registerRoutersForSCM(client, ws)
+	webhook.RegisterWebhooks(client, ws)
+	pipelinerun.RegisterRoutes(ws, client)
+	pipeline.RegisterRoutes(ws, client)
 }
 
 func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebService) {
@@ -203,7 +204,6 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		Doc("Get the devopsproject of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
-
 }
 
 func registerRoutersForSCM(k8sClient client.Client, ws *restful.WebService) {

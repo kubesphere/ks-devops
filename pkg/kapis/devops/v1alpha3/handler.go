@@ -24,6 +24,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
@@ -34,14 +35,16 @@ import (
 )
 
 type devopsHandler struct {
-	k8sClient    k8s.Client
-	devopsClient devopsClient.Interface
+	k8sClient     k8s.Client
+	devopsClient  devopsClient.Interface
+	genericClient client.Client
 }
 
-func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) *devopsHandler {
+func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client, genericClient client.Client) *devopsHandler {
 	return &devopsHandler{
-		k8sClient:    k8sClient,
-		devopsClient: devopsClient,
+		k8sClient:     k8sClient,
+		devopsClient:  devopsClient,
+		genericClient: genericClient,
 	}
 }
 

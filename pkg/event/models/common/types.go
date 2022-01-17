@@ -1,5 +1,7 @@
 package common
 
+import "encoding/json"
+
 // EventType represents the current type of event. e.g.: run.initialize, run.finished, and so on.
 type EventType string
 
@@ -25,11 +27,12 @@ type DataTypeMatcher interface {
 
 // Event contains common fields of event except event data.
 type Event struct {
-	Type     string `json:"type"`
-	Source   string `json:"source"`
-	ID       string `json:"id"`
-	Time     string `json:"time"`
-	DataType string `json:"dataType"`
+	Type     string          `json:"type"`
+	Source   string          `json:"source"`
+	ID       string          `json:"id"`
+	Time     string          `json:"time"`
+	DataType string          `json:"dataType"`
+	Data     json.RawMessage `json:"data"`
 }
 
 // TypeEquals checks the given type is equal to type in event.
