@@ -82,8 +82,12 @@ type PipelineList struct {
 	Items           []Pipeline `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&Pipeline{}, &PipelineList{})
+// IsMultiBranch returns true if this is a multi-branch Pipeline, false otherwise.
+func (p *Pipeline) IsMultiBranch() bool {
+	if p == nil {
+		return false
+	}
+	return p.Spec.Type == MultiBranchPipelineType
 }
 
 const (
