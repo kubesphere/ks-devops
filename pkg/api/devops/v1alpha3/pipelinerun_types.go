@@ -171,7 +171,7 @@ func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
 // GetPipelineRunIdentifier returns an identifier string which can identify a PipelineRun,
 // even if the PipelineRun belongs to multi-branch or non multi-branch Pipeline.
 // Format of the string: [scm.ref-name]-runID
-// TODO Add unit test aginst this method
+// TODO Add unit test against this method
 func (pr *PipelineRun) GetPipelineRunIdentifier() string {
 	pipelineName := pr.GetLabels()[PipelineNameLabelKey]
 	scmRefName := ""
