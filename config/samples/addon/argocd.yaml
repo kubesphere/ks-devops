@@ -1,0 +1,8 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: Addon
+metadata:
+  name: argocd
+spec:
+  version: v2.2.3
+  strategy:
+    name: simple-operator-argocd

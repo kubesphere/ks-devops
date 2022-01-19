@@ -12,7 +12,7 @@ func newFakeRequester() *Requester {
 	new(Jenkins).initLoggers()
 
 	return &Requester{
-		Base: "localhost",
+		Base:   "localhost",
 		Client: http.DefaultClient,
 	}
 }
@@ -34,5 +34,5 @@ func TestRequesterDoGet(t *testing.T) {
 	requester := newFakeRequester()
 	fileNames := []string{"a.tmp", "b.tmp"}
 	_, err := requester.DoGet(newFakeAPIRequest(), nil, fileNames)
-	assert.NotNil(t, err)	
+	assert.NotNil(t, err)
 }
