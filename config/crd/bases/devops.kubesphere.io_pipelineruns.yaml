@@ -394,10 +394,44 @@ spec:
                     required:
                     - name
                     type: object
+                  template:
+                    description: Template contains template referent and parameters
+                      to be used to render the execution definition.
+                    properties:
+                      parameters:
+                        description: Parameters are to be used to render the execution
+                          definition, like Jenkinsfile.
+                        items:
+                          description: TemplateParameter is parameter corresponding
+                            with parameter definitions in template.
+                          properties:
+                            name:
+                              description: Name of template parameter.
+                              type: string
+                            value:
+                              description: Value of template parameter.
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      ref:
+                        description: Ref is template referent.
+                        properties:
+                          kind:
+                            description: Kind of the template referent. Default is
+                              Template
+                            type: string
+                          name:
+                            description: Name of the template referent.
+                            type: string
+                        required:
+                        - name
+                        type: object
+                    required:
+                    - ref
+                    type: object
                   type:
-                    description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of
-                      cluster Important: Run "make" to regenerate code after modifying
-                      this file'
                     type: string
                 required:
                 - type

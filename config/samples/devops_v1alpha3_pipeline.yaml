@@ -1,0 +1,29 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  name: pipeline-sample
+spec:
+  type: pipeline
+  pipeline:
+    name: pipeline-sample
+    discarder:
+      days_to_keep: "7"
+      num_to_keep: "10"
+    jenkinsfile: ""
+  template:
+    ref:
+      kind: Template # Available kind: Template(ignorable), ClusterTemplate
+      name: template-sample
+      # Default namespace is equal to the Pipeline
+    parameters:
+      - name: gitCloneURL
+        value: "https://github.com/halo-dev/halo"
+        promotable: false
+      - name: revision
+        value: release
+        promotable: false # Here can cover the promotable value to false to prevent from interrupting Pipeline run.
+      - name: buildOnly
+        value: true
+      - name: matrix
+        value: [ "7.3.3-jdk11" ]
+        # Or value: 7.3.3-jdk11
