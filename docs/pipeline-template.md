@@ -13,7 +13,7 @@ copying Pipeline, but we still can't solve the problem of Pipeline template:
 
 ### Use cases
 
-- Official per-defined template
+- Official pre-defined template
 
   Users can easily use the official pre-defined templates, such as build of Maven project, to easily build their own
   projects without having to configure and debug from scratch. Of course, we need to provide enough flexible parameters
@@ -21,7 +21,7 @@ copying Pipeline, but we still can't solve the problem of Pipeline template:
 
 - User-defined template
 
-  Each company have its own unique Pipelines, but the Pipeline configuration of projects within the company may be
+  Each company has its own unique Pipelines, but the Pipeline configuration of projects within the company may be
   similar. Users can customize their own Pipeline template to improve the efficiency of the team.
 
 ### Goals
