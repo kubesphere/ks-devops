@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The KubeSphere Authors.
+Copyright 2020 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package v1alpha3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const PipelineFinalizerName = "pipeline.finalizers.kubesphere.io"
 
@@ -41,17 +44,17 @@ const (
 
 // PipelineSpec defines the desired state of Pipeline
 type PipelineSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 	Type                string               `json:"type" description:"type of devops pipeline, in scm or no scm"`
 	Pipeline            *NoScmPipeline       `json:"pipeline,omitempty" description:"no scm pipeline structs"`
 	MultiBranchPipeline *MultiBranchPipeline `json:"multi_branch_pipeline,omitempty" description:"in scm pipeline structs"`
-
-	// Template contains template referent and parameters to be used to render the execution definition.
-	//+optional
-	Template *PipelineTemplate `json:"template,omitempty"`
 }
 
 // PipelineStatus defines the observed state of Pipeline
 type PipelineStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 }
 
 // +genclient

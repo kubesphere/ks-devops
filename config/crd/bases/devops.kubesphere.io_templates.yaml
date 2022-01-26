@@ -43,26 +43,20 @@ spec:
                     our parameter.
                   properties:
                     default:
-                      description: Default is default value of the parameter.
                       x-kubernetes-preserve-unknown-fields: true
                     description:
-                      description: Description is description of the parameter.
                       type: string
                     name:
-                      description: Name is name of the parameter.
                       type: string
                     type:
-                      description: Type is type of the parameter.
                       type: string
                     validation:
-                      description: Validation is the validation configuration of the
-                        parameter, including validation expression and message.
+                      description: ParameterValidation is definition of how can we
+                        validate our parameter.
                       properties:
                         expression:
-                          description: Expression is the expression of the validation.
                           type: string
                         message:
-                          description: Message is given when validation failure.
                           type: string
                       required:
                       - expression
