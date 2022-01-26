@@ -1,0 +1,6 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: Template
+metadata:
+  name: template-sample
+spec:
+  # TODO(user): Add fields here

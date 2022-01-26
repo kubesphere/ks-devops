@@ -10,4 +10,7 @@ resources:
 - group: devops
   kind: PipelineRun
   version: v1alpha3
+- group: devops
+  kind: Template
+  version: v1alpha1
 version: "2"
