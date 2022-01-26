@@ -17,25 +17,55 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // TemplateSpec defines the desired state of Template
 type TemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Parameters are used to configure template.
+	//+optional
+	Parameters []TemplateParameter `json:"parameters,omitempty"`
 
-	// Foo is an example field of Template. Edit template_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Template is a string with go-template style.
+	Template string `json:"template,omitempty"`
 }
 
 // TemplateStatus defines the observed state of Template
 type TemplateStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+}
+
+// TemplateParameter is definition of how can we configure our parameter.
+type TemplateParameter struct {
+	// Name is name of the parameter.
+	Name string `json:"name"`
+
+	// Description is description of the parameter.
+	//+optional
+	Description string `json:"description,omitempty"`
+
+	// Default is default value of the parameter.
+	//+optional
+	Default apiextensionv1.JSON `json:"default,omitempty"`
+
+	// Type is type of the parameter.
+	//+optional
+	Type string `json:"type,omitempty"`
+
+	// Validation is the validation configuration of the parameter, including validation expression and message.
+	//+optional
+	Validation *ParameterValidation `json:"validation,omitempty"`
+}
+
+// ParameterValidation is definition of how can we validate our parameter.
+type ParameterValidation struct {
+	// Expression is the expression of the validation.
+	Expression string `json:"expression"`
+
+	// Message is given when validation failure.
+	Message string `json:"message"`
 }
 
 //+kubebuilder:object:root=true

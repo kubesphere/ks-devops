@@ -84,6 +84,26 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - templates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - templates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - webhooks
   verbs:
   - get
