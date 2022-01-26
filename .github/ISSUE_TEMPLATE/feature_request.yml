@@ -1,0 +1,32 @@
+name: Feature Request
+description: File a feature request
+labels: [kind/feature]
+body:
+  - type: markdown
+    id: preface
+    attributes:
+      value: "Hello there! Thank you for submitting new features for KubeSphere DevOps. Please spend a little bit to fill in the following instructions in detail. Before that, we highly recommend you to read [the open source best practice](https://github.com/LinuxSuRen/open-source-best-practice/blob/75efb3e5b460716e1e4e03fb3846f1876fd3a5c0/how-to-contribute.md) (which written in Chinese)."
+  - type: input
+    id: version
+    validations:
+      required: true
+    attributes:
+      label: What is version of KubeSphere DevOps has the issue?
+  - type: input
+    id: how-to-install
+    attributes:
+      label: "How did you install the Kubernetes? Or what is the Kubernetes distribution?"
+      description: "In some cases, this is very important."
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe this feature"
+    validations:
+      required: true
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: "Additional information"
+      description: "If you have other information to note, you can fill it in here (screenshots, videos, etc.)."

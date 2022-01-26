@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Search known questions in the Chinese KubeSphere forum
+    url: https://kubesphere.com.cn/forum/
+    about: KubeSphere DevOps 中文用戶可以在论坛中搜索已知问题
