@@ -27,23 +27,22 @@ func (j *JenkinsClient) ApplyNewSource(s string) (err error) {
 var _ devops.Interface = &JenkinsClient{}
 
 // NewJenkinsClient creates a Jenkins client
-func NewJenkinsClient(options *jenkins.Options) (jenkinsClient *JenkinsClient, err error) {
+func NewJenkinsClient(options *jenkins.Options) (*JenkinsClient, error) {
 	jenkinsCore := core.JenkinsCore{
 		URL:      options.Host,
 		UserName: options.Username,
 		Token:    options.Password,
 	}
-	crumbIssuer, e := jenkinsCore.GetCrumb()
-	if e != nil {
-		return
+	crumbIssuer, err := jenkinsCore.GetCrumb()
+	if err != nil {
+		return nil, err
 	} else if crumbIssuer != nil {
 		jenkinsCore.JenkinsCrumb = *crumbIssuer
 	}
 
 	devopsClient, _ := jenkins.NewDevopsClient(options) // For refactor purpose only
-	jenkinsClient = &JenkinsClient{
+	return &JenkinsClient{
 		Core:    jenkinsCore,
 		jenkins: devopsClient, // For refactor purpose only
-	}
-	return
+	}, nil
 }
