@@ -13,8 +13,6 @@ spec:
     - name: revision
       description: Which revision do you want to clone from?
       default: "main" # Valid JSON value
-      # Indicates that if the console promotes this parameter to let operator input when preparing to run a Pipeline.
-      promotable: true
     - name: buildOnly
       description: Do we really need build stage only?
       default: false # Valid JSON value
