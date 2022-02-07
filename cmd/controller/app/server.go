@@ -18,8 +18,8 @@ package app
 
 import (
 	"fmt"
-
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/apis"
@@ -166,6 +166,7 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
 	apis.AddToScheme(mgr.GetScheme())
+	_ = apiextensions.AddToScheme(mgr.GetScheme())
 
 	// Init s3 client
 	var s3Client s3.Interface
