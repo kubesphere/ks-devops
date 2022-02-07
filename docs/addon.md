@@ -19,7 +19,12 @@ The `Addon Controller` is optional, please add the flag `--enabled-controllers a
 For instance:
 
 ```yaml
-
+spec:
+  containers:
+    - args
+      - --enabled-controllers
+      - addon=true
+      image: ghcr.io/kubesphere/devops-controller
 ```
 
 then, create the `AddonStrategy`: `simple-operator-argocd` and `ks-releaser-simple-operator`. You can find the YAML files from [here](../config/samples/addon).

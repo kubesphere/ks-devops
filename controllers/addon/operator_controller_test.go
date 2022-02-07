@@ -5,7 +5,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -95,7 +95,7 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 		name: "update the existing",
 		fields: fields{
 			Client: fake.NewFakeClientWithScheme(schema, &v1alpha1.AddonStrategy{
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "simple-operator-releasercontroller",
 				},
 				Spec: v1alpha1.AddStrategySpec{
