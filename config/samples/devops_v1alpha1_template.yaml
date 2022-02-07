@@ -1,0 +1,63 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: Template
+metadata:
+  name: template-sample
+spec:
+  parameters:
+    - name: gitCloneURL
+      description: What is your repository URL you want to clone?
+      type: string # ignorable
+      validation:
+        expression: "matches()"
+        message: "Please input a correct URL."
+    - name: revision
+      description: Which revision do you want to clone from?
+      default: "main" # Valid JSON value
+    - name: buildOnly
+      description: Do we really need build stage only?
+      default: false # Valid JSON value
+      type: bool
+    - name: matrix
+      description: Matrix versions of gradle
+      type: string-array
+      default: ["6.9.1-jdk11", "7.0.0-jdk11", "7.3.3-jdk11"]
+
+  template: | # Go template
+    pipeline {
+        agent {
+            kubernetes {
+            inheritFrom 'gradle'
+                containerTemplate {
+                    name 'gradle'
+                    image 'gradle:7.3.3-jdk11'
+                }
+            }
+        }
+        stages {
+            stage('Checkout') {
+                steps {
+                    checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CloneOption', depth: 1, noTags: true, reference: '', shallow: true], [$class: 'SubmoduleOption', depth: 1, disableSubmodules: false, parentCredentials: false, recursiveSubmodules: true, reference: '', shallow: true, trackingSubmodules: false]], userRemoteConfigs: [[url: '{{ .params.gitCloneURL }}']]]
+                }
+            }
+            {{if not .buildOnly}}
+            stage('Gradle Check') {
+                steps {
+                    container('gradle') {
+                        sh 'gradle check'
+                    }
+                }
+            }
+            stage('Gradle Build') {
+                steps {
+                    container('gradle') {
+                        sh 'gradle build -x test'
+                    }
+                }
+            }
+            stage('Archive Assets') {
+                steps {
+                    archiveArtifacts '**/build/libs/*.jar'
+                }
+            }
+        }
+    }

@@ -22,18 +22,18 @@ func TestParseJenkinsQuery(t *testing.T) {
 		},
 		{
 			param: "branch=master", expected: url.Values{
-			"branch": []string{"master"},
-		}, err: false,
+				"branch": []string{"master"},
+			}, err: false,
 		},
 		{
 			param: "&branch=master", expected: url.Values{
-			"branch": []string{"master"},
-		}, err: false,
+				"branch": []string{"master"},
+			}, err: false,
 		},
 		{
 			param: "branch=master&", expected: url.Values{
-			"branch": []string{"master"},
-		}, err: false,
+				"branch": []string{"master"},
+			}, err: false,
 		},
 		{
 			param: "branch=%gg", expected: url.Values{}, err: true,
@@ -63,20 +63,20 @@ type testData struct {
 func TestUploadFunc(t *testing.T) {
 	testFileName := "/tmp/upload.tmp"
 	testWriter := multipart.NewWriter(&bytes.Buffer{})
-	// The first call should fail because the file doesn't exist 
+	// The first call should fail because the file doesn't exist
 	err := UploadFunc(testFileName, testWriter)
 	assert.NotNil(t, err)
-	
+
 	// Create tmp file
 	_, err = os.Create(testFileName)
 	assert.Nil(t, err, "create tmp file has error: %v", err)
-	defer func ()  {
+	defer func() {
 		err := os.Remove(testFileName)
 		assert.Nil(t, err, "delete tmp file has error: %v", err)
 	}()
-	
+
 	// The second call Bad should fail because writer is bad
-	badWriter := multipart.NewWriter(&badWriter{}) 
+	badWriter := multipart.NewWriter(&badWriter{})
 	err = UploadFunc(testFileName, badWriter)
 	assert.NotNil(t, err)
 
