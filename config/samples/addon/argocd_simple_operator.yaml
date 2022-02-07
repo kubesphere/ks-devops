@@ -1,0 +1,14 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: AddonStrategy
+metadata:
+  name: simple-operator-argocd
+spec:
+  type: simple-operator
+  simpleOperator:
+    apiVersion: argoproj.io/v1alpha1
+    kind: ArgoCD
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ArgoCD
+    spec:
+      version: {{.Spec.Version}}

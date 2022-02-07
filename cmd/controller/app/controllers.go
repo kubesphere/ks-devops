@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"kubesphere.io/devops/controllers/addon"
 	"kubesphere.io/devops/controllers/gitrepository"
 	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/server/errors"
@@ -83,6 +84,17 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			}).SetupWithManager(mgr)
 			if err == nil {
 				err = (&gitrepository.WebhookReconciler{
+					Client: mgr.GetClient(),
+				}).SetupWithManager(mgr)
+			}
+			return err
+		},
+		"addon": func(mgr manager.Manager) error {
+			err := (&addon.OperatorCRDReconciler{
+				Client: mgr.GetClient(),
+			}).SetupWithManager(mgr)
+			if err == nil {
+				err = (&addon.Reconciler{
 					Client: mgr.GetClient(),
 				}).SetupWithManager(mgr)
 			}

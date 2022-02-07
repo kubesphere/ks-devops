@@ -1,0 +1,18 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: AddonStrategy
+metadata:
+  name: ks-releaser-simple-operator
+spec:
+  type: simple-operator
+  simpleOperator:
+    apiVersion: devops.kubesphere.io/v1alpha1
+    kind: ReleaserController
+  parameters:
+    image: "ghcr.io/kubesphere-sigs/ks-releaser"
+  template: |
+    apiVersion: devops.kubesphere.io/v1alpha1
+    kind: ReleaserController
+    spec:
+      image: {{.Spec.Parameters.image}}
+      version: {{.Spec.Version}}
+      webhook: false

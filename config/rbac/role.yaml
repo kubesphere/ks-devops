@@ -7,24 +7,30 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - devops.kubesphere.io
+  - apiextensions.k8s.io
   resources:
-  - fakes
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - argocds
   verbs:
   - create
   - delete
   - get
-  - list
-  - patch
   - update
-  - watch
 - apiGroups:
   - devops.kubesphere.io
   resources:
-  - fakes/status
+  - addonStrategies
   verbs:
+  - create
+  - delete
   - get
-  - patch
   - update
 - apiGroups:
   - devops.kubesphere.io
@@ -74,6 +80,15 @@ rules:
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - releasercontrollers
+  verbs:
+  - create
+  - delete
+  - get
   - update
 - apiGroups:
   - devops.kubesphere.io
