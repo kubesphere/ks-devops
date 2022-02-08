@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"kubesphere.io/devops/pkg/utils"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 
 	"github.com/emicklei/go-restful"
@@ -52,10 +51,7 @@ import (
 	"kubesphere.io/devops/pkg/constants"
 )
 
-/**
-  DevOps project controller is used to maintain the state of the DevOps project.
-*/
-
+// Controller is the controller of the Pipeline
 type Controller struct {
 	client           clientset.Interface
 	kubesphereClient kubesphereclient.Interface
@@ -75,6 +71,7 @@ type Controller struct {
 	devopsClient     devopsClient.Interface
 }
 
+// NewController creates the controller instance
 func NewController(client clientset.Interface,
 	kubesphereClient kubesphereclient.Interface,
 	devopsClient devopsClient.Interface,
@@ -176,10 +173,12 @@ func (c *Controller) worker() {
 	}
 }
 
+// Start starts the controller
 func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return c.Run(1, stopCh)
 }
 
+// Run runs the controller
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer c.workqueue.ShutDown()
@@ -244,14 +243,13 @@ func (c *Controller) syncHandler(key string) error {
 		//If the sync is successful, return handle
 		if state, ok := copyPipeline.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey]; ok && state == constants.StatusSuccessful {
 			specHash := utils.ComputeHash(copyPipeline.Spec)
-			oldHash, _ := copyPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] // don't need to check if it's nil, only compare if they're different
+			oldHash := copyPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] // don't need to check if it's nil, only compare if they're different
 			if specHash == oldHash {
 				klog.V(9).Info(fmt.Sprintf("%s/%s has no changes in spec", copyPipeline.Namespace, copyPipeline.Name))
 				// it was synced successfully, and there's any change with the Pipeline spec, skip this round
 				return nil
-			} else {
-				copyPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] = specHash
 			}
+			copyPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] = specHash
 		}
 
 		// https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#finalizers
@@ -321,11 +319,4 @@ func (c *Controller) syncHandler(key string) error {
 		}
 	}
 	return nil
-}
-
-func isDevOpsProjectAdminNamespace(namespace *v1.Namespace) bool {
-	_, ok := namespace.Labels[constants.DevOpsProjectLabelKey]
-
-	return ok && k8sutil.IsControlledBy(namespace.OwnerReferences,
-		devopsv1alpha3.ResourceKindDevOpsProject, "")
 }
