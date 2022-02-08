@@ -17,7 +17,7 @@
 header:
   license:
     spdx-id: Apache-2.0
-    copyright-owner: KubeSphere
+    copyright-owner: KubeSphere Authors
 
   paths-ignore:
     - 'charts'
@@ -25,21 +25,26 @@ header:
     - 'hack'
     - 'test'
     - 'vendor'
-    - 'cmd/tools/jwt/app/mock_app'
-    - 'pkg/api/devops/violation_exceptions.list'
-    - 'pkg/kapis/devops/v1alpha3/testdata'
-    - '**/*.md'
     - 'LICENSE'
     - 'OWNERS'
     - 'PROJECT'
     - 'Makefile'
     - 'codecov.yml'
-    - 'go.*'
+    - '**/testdata/**'
+    - '**/*.md'
+    - '**/go.mod'
+    - '**/go.sum'
     - '.devcontainer'
     - '.github'
     - '.gitignore'
     - '.gitpod*'
     - '.golangci.yml'
     - '.licenserc.yaml'
+    - 'cmd/tools/jwt/app/mock_app'
+    - 'pkg/api/devops/violation_exceptions.list'
+    - 'pkg/client/devops/jenkins/jenkins.go'
+    - 'pkg/client/devops/jenkins/job.go'
+    - 'pkg/client/devops/jenkins/request.go'
+    - 'pkg/client/devops/jenkins/utils.go'
 
   comment: on-failure
