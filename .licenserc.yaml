@@ -42,6 +42,8 @@ header:
     - '.licenserc.yaml'
     - 'cmd/tools/jwt/app/mock_app'
     - 'pkg/api/devops/violation_exceptions.list'
+    - 'pkg/client/devops/jenkins/build.go'
+    - 'pkg/client/devops/jenkins/folder.go'
     - 'pkg/client/devops/jenkins/jenkins.go'
     - 'pkg/client/devops/jenkins/job.go'
     - 'pkg/client/devops/jenkins/request.go'
