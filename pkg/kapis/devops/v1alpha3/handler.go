@@ -24,8 +24,8 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
+	"kubesphere.io/devops/pkg/kapis"
 
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/models/devops"
@@ -63,7 +63,7 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 		}
 		errorHandle(request, response, project, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -75,7 +75,7 @@ func (h *devopsHandler) ListDevOpsProject(request *restful.Request, response *re
 		projectList, err := client.ListDevOpsProject(workspace, limit, offset)
 		errorHandle(request, response, projectList, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -86,7 +86,7 @@ func (h *devopsHandler) CreateDevOpsProject(request *restful.Request, response *
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -95,18 +95,18 @@ func (h *devopsHandler) CreateDevOpsProject(request *restful.Request, response *
 		if err != nil {
 			klog.Error(err)
 			if errors.IsNotFound(err) {
-				api.HandleNotFound(response, request, err)
+				kapis.HandleNotFound(response, request, err)
 				return
 			} else if errors.IsConflict(err) {
-				api.HandleConflict(response, request, err)
+				kapis.HandleConflict(response, request, err)
 				return
 			}
-			api.HandleBadRequest(response, request, err)
+			kapis.HandleBadRequest(response, request, err)
 			return
 		}
 		_ = response.WriteEntity(created)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -117,7 +117,7 @@ func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *
 		project, err := client.UpdateDevOpsProject(workspace, &devOpsProject)
 		errorHandle(request, response, project, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -137,7 +137,7 @@ func (h *devopsHandler) DeleteDevOpsProject(request *restful.Request, response *
 		err := client.DeleteDevOpsProject(workspace, devops)
 		errorHandle(request, response, nil, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -150,7 +150,7 @@ func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.
 		obj, err := client.GetPipelineObj(devops, pipeline)
 		errorHandle(request, response, obj, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -162,7 +162,7 @@ func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful
 		objs, err := client.ListPipelineObj(devops, query)
 		errorHandle(request, response, objs, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -173,7 +173,7 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 		created, err := client.CreatePipelineObj(devops, &pipeline)
 		errorHandle(request, response, created, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -193,7 +193,7 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -201,7 +201,7 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 		obj, err := client.UpdatePipelineObj(devops, &pipeline)
 		errorHandle(request, response, obj, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -215,7 +215,7 @@ func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restf
 		err := client.DeletePipelineObj(devops, pipeline)
 		errorHandle(request, response, nil, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -228,7 +228,7 @@ func (h *devopsHandler) GetCredential(request *restful.Request, response *restfu
 		obj, err := client.GetCredentialObj(devops, credential)
 		errorHandle(request, response, obj, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -240,7 +240,7 @@ func (h *devopsHandler) ListCredential(request *restful.Request, response *restf
 		objs, err := client.ListCredentialObj(devops, query)
 		errorHandle(request, response, objs, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -251,7 +251,7 @@ func (h *devopsHandler) CreateCredential(request *restful.Request, response *res
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -259,7 +259,7 @@ func (h *devopsHandler) CreateCredential(request *restful.Request, response *res
 		created, err := client.CreateCredentialObj(devops, &obj)
 		errorHandle(request, response, created, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -270,7 +270,7 @@ func (h *devopsHandler) UpdateCredential(request *restful.Request, response *res
 
 	if err != nil {
 		klog.Error(err)
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -278,7 +278,7 @@ func (h *devopsHandler) UpdateCredential(request *restful.Request, response *res
 		updated, err := client.UpdateCredentialObj(devops, &obj)
 		errorHandle(request, response, updated, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
@@ -290,10 +290,10 @@ func errorHandle(request *restful.Request, response *restful.Response, obj inter
 	if err != nil {
 		klog.Error(err)
 		if errors.IsNotFound(err) {
-			api.HandleNotFound(response, request, err)
+			kapis.HandleNotFound(response, request, err)
 			return
 		}
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 	_ = response.WriteEntity(obj)
@@ -307,7 +307,7 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 		err := client.DeleteCredentialObj(devopsProject, credential)
 		errorHandle(request, response, servererr.None, err)
 	} else {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 	}
 }
 

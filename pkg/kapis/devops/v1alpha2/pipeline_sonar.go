@@ -19,8 +19,7 @@ package v1alpha2
 import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/klog"
-
-	"kubesphere.io/devops/pkg/api"
+	"kubesphere.io/devops/pkg/kapis"
 )
 
 func (h PipelineSonarHandler) GetPipelineSonarStatusHandler(request *restful.Request, resp *restful.Response) {
@@ -29,7 +28,7 @@ func (h PipelineSonarHandler) GetPipelineSonarStatusHandler(request *restful.Req
 	sonarStatus, err := h.pipelineSonarGetter.GetPipelineSonar(projectId, pipelineId)
 	if err != nil {
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	resp.WriteAsJson(sonarStatus)
@@ -42,7 +41,7 @@ func (h PipelineSonarHandler) GetMultiBranchesPipelineSonarStatusHandler(request
 	sonarStatus, err := h.pipelineSonarGetter.GetMultiBranchPipelineSonar(projectId, pipelineId, branchId)
 	if err != nil {
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	resp.WriteAsJson(sonarStatus)

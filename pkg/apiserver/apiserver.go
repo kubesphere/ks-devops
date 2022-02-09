@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
 	"kubesphere.io/devops/pkg/kapis/doc"
 	"net/http"
 	rt "runtime"
@@ -157,6 +159,9 @@ func (s *APIServer) installKubeSphereAPIs() {
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
 	))
+	wss = append(wss, kapisv1alpha1.AddToContainer(s.container, &common.Options{
+		GenericClient: s.Client,
+	})...)
 	doc.AddSwaggerService(wss, s.container)
 }
 

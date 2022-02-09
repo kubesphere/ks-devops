@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package api
+package kapis
 
 import (
+	"io"
 	"net/http"
 	"runtime"
 	"strings"
@@ -29,35 +30,42 @@ import (
 // Avoid emitting errors that look like valid HTML. Quotes are okay.
 var sanitizer = strings.NewReplacer(`&`, "&amp;", `<`, "&lt;", `>`, "&gt;")
 
+// HandleInternalError writes http.StatusInternalServerError and log error.
 func HandleInternalError(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusInternalServerError, req, response, err)
 }
 
-// HandleBadRequest writes http.StatusBadRequest and log error
+// HandleBadRequest writes http.StatusBadRequest and log error.
 func HandleBadRequest(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusBadRequest, req, response, err)
 }
 
+// HandleNotFound writes http.StatusNotFound and log error.
 func HandleNotFound(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusNotFound, req, response, err)
 }
 
+// HandleForbidden writes http.StatusForbidden and log error.
 func HandleForbidden(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusForbidden, req, response, err)
 }
 
+// HandleUnauthorized writes http.StatusUnauthorized and log error.
 func HandleUnauthorized(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusUnauthorized, req, response, err)
 }
 
+// HandleTooManyRequests writes http.StatusTooManyRequests and log error.
 func HandleTooManyRequests(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusTooManyRequests, req, response, err)
 }
 
+// HandleConflict writes http.StatusConflict and log error.
 func HandleConflict(response *restful.Response, req *restful.Request, err error) {
 	handle(http.StatusConflict, req, response, err)
 }
 
+// HandleError detects proper status code, then write it and log error.
 func HandleError(request *restful.Request, response *restful.Response, err error) {
 	var statusCode int
 	switch t := err.(type) {
@@ -69,6 +77,15 @@ func HandleError(request *restful.Request, response *restful.Response, err error
 		statusCode = http.StatusInternalServerError
 	}
 	handle(statusCode, request, response, err)
+}
+
+// IgnoreEOF returns nil on io.EOF error.
+// All other values that are not io.EOF errors or nil are returned unmodified.
+func IgnoreEOF(err error) error {
+	if err == io.EOF {
+		return nil
+	}
+	return err
 }
 
 func handle(statusCode int, req *restful.Request, response *restful.Response, err error) {

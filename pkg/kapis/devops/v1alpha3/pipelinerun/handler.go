@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kubesphere.io/devops/pkg/kapis"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
@@ -51,14 +51,14 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	pipeline := &v1alpha3.Pipeline{}
 	err = h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: pipName}, pipeline)
 	if err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
 	// build label selector
 	labelSelector, err := buildLabelSelector(queryParam, pipeline.Name)
 	if err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	var prs v1alpha3.PipelineRunList
 	// fetch PipelineRuns
 	if err := h.client.List(context.Background(), &prs, opts...); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -118,13 +118,13 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 	branch := request.QueryParameter("branch")
 	payload := devops.RunPayload{}
 	if err := request.ReadEntity(&payload); err != nil && err != io.EOF {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 	// validate the Pipeline
 	var pipeline v1alpha3.Pipeline
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: pipName}, &pipeline); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 		err error
 	)
 	if scm, err = CreateScm(&pipeline.Spec, branch); err != nil {
-		api.HandleBadRequest(response, request, err)
+		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 	if !ok || user == nil {
 		// should never happen
 		err := fmt.Errorf("unauthenticated user entered to create PipelineRun for Pipeline '%s/%s'", nsName, pipName)
-		api.HandleUnauthorized(response, request, err)
+		kapis.HandleUnauthorized(response, request, err)
 		return
 	}
 	// create PipelineRun
@@ -151,7 +151,7 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 		pr.GetAnnotations()[v1alpha3.PipelineRunCreatorAnnoKey] = user.GetName()
 	}
 	if err := h.client.Create(context.Background(), pr); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -165,7 +165,7 @@ func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.
 	// get pipelinerun
 	var pr v1alpha3.PipelineRun
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: nsName, Name: prName}, &pr); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 	_ = response.WriteEntity(&pr)
@@ -178,7 +178,7 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	// get pipelinerun
 	pr := &v1alpha3.PipelineRun{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespaceName, Name: pipelineRunName}, pr); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	}
 	stages := []pipelinerun.NodeDetail{}
 	if err := json.Unmarshal([]byte(stagesJSON), &stages); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 

@@ -19,31 +19,30 @@ package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"kubesphere.io/devops/pkg/api/devops"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 const (
-	// GroupName is the group name use in this package
-	GroupName = "devops.kubesphere.io"
 	// JenkinsPipelineRunIDAnnoKey is annotation key of Jenkins PipelineRun ID.
-	JenkinsPipelineRunIDAnnoKey = GroupName + "/jenkins-pipelinerun-id"
+	JenkinsPipelineRunIDAnnoKey = devops.GroupName + "/jenkins-pipelinerun-id"
 	// JenkinsPipelineRunStatusAnnoKey is annotation key of status of Jenkins PipelineRun.
-	JenkinsPipelineRunStatusAnnoKey = GroupName + "/jenkins-pipelinerun-status"
+	JenkinsPipelineRunStatusAnnoKey = devops.GroupName + "/jenkins-pipelinerun-status"
 	// JenkinsPipelineRunStagesStatusAnnoKey is annotation key of Jenkins stages' status of Jenkins PipelineRun.
-	JenkinsPipelineRunStagesStatusAnnoKey = GroupName + "/jenkins-pipelinerun-stages-status"
+	JenkinsPipelineRunStagesStatusAnnoKey = devops.GroupName + "/jenkins-pipelinerun-stages-status"
 	// PipelineRunOrphanLabelKey is label key of orphan Jenkins PipelineRun which type of value is bool.
-	PipelineRunOrphanLabelKey = GroupName + "/jenkins-pipelinerun-orphan"
+	PipelineRunOrphanLabelKey = devops.GroupName + "/jenkins-pipelinerun-orphan"
 	// PipelineNameLabelKey is label key of Pipeline name.
-	PipelineNameLabelKey = GroupName + "/pipeline"
+	PipelineNameLabelKey = devops.GroupName + "/pipeline"
 	// PipelineRunCreatorAnnoKey is annotation key of PipelineRun's creator
-	PipelineRunCreatorAnnoKey = GroupName + "/creator"
+	PipelineRunCreatorAnnoKey = devops.GroupName + "/creator"
 	// PipelineRunSCMRefNameField is the field name of SCM reference name in PipelineRun spec.
 	PipelineRunSCMRefNameField = "spec.scm.ref-name"
 )
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
+	GroupVersion = schema.GroupVersion{Group: devops.GroupName, Version: "v1alpha3"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

@@ -18,10 +18,10 @@ package oauth
 
 import (
 	"fmt"
+	"kubesphere.io/devops/pkg/kapis"
 
 	"github.com/emicklei/go-restful"
 
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/models/auth"
 )
 
@@ -72,18 +72,18 @@ func (h *handler) TokenReview(req *restful.Request, resp *restful.Response) {
 
 	err := req.ReadEntity(&tokenReview)
 	if err != nil {
-		api.HandleBadRequest(resp, req, err)
+		kapis.HandleBadRequest(resp, req, err)
 		return
 	}
 
 	if err = tokenReview.Validate(); err != nil {
-		api.HandleBadRequest(resp, req, err)
+		kapis.HandleBadRequest(resp, req, err)
 		return
 	}
 
 	authenticated, err := h.tokenOperator.Verify(tokenReview.Spec.Token)
 	if err != nil {
-		api.HandleInternalError(resp, req, err)
+		kapis.HandleInternalError(resp, req, err)
 		return
 	}
 

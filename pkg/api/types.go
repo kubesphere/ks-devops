@@ -85,8 +85,7 @@ const (
 	ClientS2i         ClientType = "S2i"
 	ClientApplication ClientType = "Application"
 
-	StatusOK = "ok"
-
+	StatusOK  = "ok"
 	GroupName = "devops.kubesphere.io"
 )
 
@@ -149,43 +148,3 @@ var SupportedGroupVersionResources = map[ClientType][]schema.GroupVersionResourc
 		{Group: "app.k8s.io", Version: "v1beta1", Resource: "applications"},
 	},
 }
-
-// List of all resource kinds supported by the UI.
-const (
-	ResourceKindConfigMap                = "configmaps"
-	ResourceKindDaemonSet                = "daemonsets"
-	ResourceKindDeployment               = "deployments"
-	ResourceKindEvent                    = "events"
-	ResourceKindHorizontalPodAutoscaler  = "horizontalpodautoscalers"
-	ResourceKindIngress                  = "ingresses"
-	ResourceKindJob                      = "jobs"
-	ResourceKindCronJob                  = "cronjobs"
-	ResourceKindLimitRange               = "limitranges"
-	ResourceKindNamespace                = "namespaces"
-	ResourceKindNode                     = "nodes"
-	ResourceKindPersistentVolumeClaim    = "persistentvolumeclaims"
-	ResourceKindPersistentVolume         = "persistentvolumes"
-	ResourceKindCustomResourceDefinition = "customresourcedefinitions"
-	ResourceKindPod                      = "pods"
-	ResourceKindReplicaSet               = "replicasets"
-	ResourceKindResourceQuota            = "resourcequota"
-	ResourceKindSecret                   = "secrets"
-	ResourceKindService                  = "services"
-	ResourceKindStatefulSet              = "statefulsets"
-	ResourceKindStorageClass             = "storageclasses"
-	ResourceKindClusterRole              = "clusterroles"
-	ResourceKindClusterRoleBinding       = "clusterrolebindings"
-	ResourceKindRole                     = "roles"
-	ResourceKindRoleBinding              = "rolebindings"
-	ResourceKindWorkspace                = "workspaces"
-	ResourceKindS2iBinary                = "s2ibinaries"
-	ResourceKindStrategy                 = "strategy"
-	ResourceKindServicePolicy            = "servicepolicies"
-	ResourceKindS2iBuilderTemplate       = "s2ibuildertemplates"
-	ResourceKindeS2iRun                  = "s2iruns"
-	ResourceKindS2iBuilder               = "s2ibuilders"
-	ResourceKindApplication              = "applications"
-
-	WorkspaceNone = ""
-	ClusterNone   = ""
-)
