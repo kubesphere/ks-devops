@@ -19,18 +19,17 @@ package app
 import (
 	"kubesphere.io/devops/controllers/addon"
 	"kubesphere.io/devops/controllers/gitrepository"
+	"kubesphere.io/devops/controllers/jenkins/devopscredential"
+	"kubesphere.io/devops/controllers/jenkins/devopsproject"
 	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/server/errors"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/klog"
 	"kubesphere.io/devops/cmd/controller/app/options"
-	"kubesphere.io/devops/controllers/devopscredential"
-	"kubesphere.io/devops/controllers/devopsproject"
 	"kubesphere.io/devops/controllers/jenkins/config"
 	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
-	"kubesphere.io/devops/controllers/pipeline"
 	"kubesphere.io/devops/controllers/s2ibinary"
 	"kubesphere.io/devops/controllers/s2irun"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -114,17 +113,24 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 			}, s.JenkinsOptions))
 		},
-		"devopscredential": func(mgr manager.Manager) error {
-			return mgr.Add(devopscredential.NewController(client.Kubernetes(),
+		"jenkins": func(mgr manager.Manager) error {
+			err := mgr.Add(devopscredential.NewController(client.Kubernetes(),
 				devopsClient,
 				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 				informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets()))
-		},
-		"devopsprojects": func(mgr manager.Manager) error {
-			return mgr.Add(devopsproject.NewController(client.Kubernetes(),
-				client.KubeSphere(), devopsClient,
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects()))
+			if err == nil {
+				err = mgr.Add(devopsproject.NewController(client.Kubernetes(),
+					client.KubeSphere(), devopsClient,
+					informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects()))
+			}
+			if err == nil {
+				err = mgr.Add(jenkinspipeline.NewController(client.Kubernetes(),
+					client.KubeSphere(), devopsClient,
+					informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
+			}
+			return err
 		},
 		"s2ibinary": func(mgr manager.Manager) error {
 			return mgr.Add(s2ibinary.NewController(client.Kubernetes(),
@@ -138,12 +144,6 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				client.KubeSphere(),
 				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
 				kubesphereInformer.Devops().V1alpha1().S2iRuns()))
-		},
-		"pipeline": func(mgr manager.Manager) error {
-			return mgr.Add(pipeline.NewController(client.Kubernetes(),
-				client.KubeSphere(), devopsClient,
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
 		},
 	}
 

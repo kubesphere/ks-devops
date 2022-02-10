@@ -53,10 +53,7 @@ import (
 	devopslisters "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
 )
 
-/**
-  DevOps project controller is used to maintain the state of the DevOps project.
-*/
-
+// Controller is the controller of the DevOpsProject
 type Controller struct {
 	client           clientset.Interface
 	kubesphereClient kubesphereclient.Interface
@@ -70,8 +67,6 @@ type Controller struct {
 	namespaceLister corev1lister.NamespaceLister
 	namespaceSynced cache.InformerSynced
 
-	workspaceSynced cache.InformerSynced
-
 	workqueue workqueue.RateLimitingInterface
 
 	workerLoopPeriod time.Duration
@@ -79,6 +74,7 @@ type Controller struct {
 	devopsClient devopsClient.Interface
 }
 
+// NewController creates the instance of controller
 func NewController(client clientset.Interface,
 	kubesphereClient kubesphereclient.Interface,
 	devopsClinet devopsClient.Interface,
@@ -174,10 +170,12 @@ func (c *Controller) worker() {
 	}
 }
 
+// Start starts the controller
 func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return c.Run(1, stopCh)
 }
 
+// Run runs the controller
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer c.workqueue.ShutDown()
@@ -227,7 +225,7 @@ func (c *Controller) syncHandler(key string) error {
 		if project.Status.AdminNamespace != "" {
 			ns, err := c.namespaceLister.Get(project.Status.AdminNamespace)
 			if err != nil && !errors.IsNotFound(err) {
-				klog.V(8).Info(err, fmt.Sprintf("faild to get namespace"))
+				klog.V(8).Info(err, "failed to get namespace")
 				return err
 			} else if errors.IsNotFound(err) {
 				// if admin ns is not found, clean project status, rerun reconcile
@@ -330,7 +328,7 @@ func (c *Controller) syncHandler(key string) error {
 		}
 		copyProject.Annotations[devopsv1alpha3.DevOpeProjectSyncStatusAnnoKey] = constants.StatusSuccessful
 		if !reflect.DeepEqual(copyProject, project) {
-			copyProject, err = c.kubesphereClient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), copyProject, metav1.UpdateOptions{})
+			_, err = c.kubesphereClient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), copyProject, metav1.UpdateOptions{})
 			if err != nil {
 				klog.V(8).Info(err, fmt.Sprintf("failed to update ns %s ", key))
 				return err
@@ -434,6 +432,6 @@ func (c *Controller) generateNewNamespace(project *devopsv1alpha3.DevOpsProject)
 		ns.Annotations = map[string]string{constants.CreatorAnnotationKey: creator}
 	}
 
-	controllerutil.SetControllerReference(project, ns, scheme.Scheme)
+	_ = controllerutil.SetControllerReference(project, ns, scheme.Scheme)
 	return ns
 }

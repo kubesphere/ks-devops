@@ -42,7 +42,6 @@ import (
 
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
-	kubesphereclient "kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/constants"
 	"kubesphere.io/devops/pkg/utils"
@@ -54,10 +53,9 @@ import (
   DevOps project controller is used to maintain the state of the DevOps project.
 */
 
+// Controller is the controller for DevOpsProject
 type Controller struct {
 	client           clientset.Interface
-	kubesphereClient kubesphereclient.Interface
-
 	eventBroadcaster record.EventBroadcaster
 	eventRecorder    record.EventRecorder
 
@@ -74,6 +72,7 @@ type Controller struct {
 	devopsClient devopsClient.Interface
 }
 
+// NewController creates an instance of the DevOpsProject controller
 func NewController(client clientset.Interface,
 	devopsClient devopsClient.Interface,
 	namespaceInformer corev1informer.NamespaceInformer,
@@ -181,10 +180,12 @@ func (c *Controller) worker() {
 	}
 }
 
+// Start starts the controller
 func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return c.Run(1, stopCh)
 }
 
+// Run runs the controller
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer c.workqueue.ShutDown()
@@ -249,13 +250,12 @@ func (c *Controller) syncHandler(key string) error {
 		//If the sync is successful, return handle
 		if state, ok := copySecret.Annotations[devopsv1alpha3.CredentialSyncStatusAnnoKey]; ok && state == constants.StatusSuccessful {
 			specHash := utils.ComputeHash(copySecret.Data)
-			oldHash, _ := copySecret.Annotations[devopsv1alpha3.DevOpsCredentialDataHash] // don't need to check if it's nil, only compare if they're different
+			oldHash := copySecret.Annotations[devopsv1alpha3.DevOpsCredentialDataHash] // don't need to check if it's nil, only compare if they're different
 			if specHash == oldHash {
 				// it was synced successfully, and there's any change with the Pipeline spec, skip this round
 				return nil
-			} else {
-				copySecret.Annotations[devopsv1alpha3.DevOpsCredentialDataHash] = specHash
 			}
+			copySecret.Annotations[devopsv1alpha3.DevOpsCredentialDataHash] = specHash
 		}
 
 		// https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#finalizers
