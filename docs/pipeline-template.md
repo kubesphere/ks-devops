@@ -47,10 +47,10 @@ is `devops.kubesphere.io/v1alpha1`. The following is an example of the correspon
 
 ```yaml
 apiVersion: devops.kubesphere.io/v1alpha1
-kind: Template
+kind: Template # Or ClusterTemplate
 metadata:
   name: my-template
-  namespace: my-devops-project
+  namespace: my-devops-project # ignored if kind is ClusterTemplate
   annotations:
     devops.kubesphere.io/categories: Gradle Project deploy
     devops.kubesphere.io/tags: backend, gradle, java, docker
