@@ -27,6 +27,6 @@ func AddSwaggerService(wss []*restful.WebService, c *restful.Container) {
 		WebServices:     wss,
 		ApiPath:         "/apidocs.json",
 		SwaggerPath:     "/apidocs/",
-		SwaggerFilePath: "bin/swagger-ui"}
+		SwaggerFilePath: "bin/swagger-ui/dist"}
 	swagger.RegisterSwaggerService(config, c)
 }
