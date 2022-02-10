@@ -104,7 +104,6 @@ run:
     - pkg/utils/reflectutils/deep.go
     - pkg/models/auth/token.go
     - pkg/utils/hash.go
-    - pkg/utils/sliceutil/sliceutils.go
     - pkg/apiserver/authentication/options/authenticate_options.go
     - pkg/client/cache/redis.go
     - pkg/models/devops/s2ibinary_handler.go

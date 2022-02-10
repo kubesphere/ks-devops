@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"reflect"
 	"time"
 
@@ -36,7 +37,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/jwt/token"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -82,9 +82,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
 				pipelineRunCopied.Namespace, pipelineRunCopied.Name, err)
 		} else {
-			pipelineRunCopied.ObjectMeta.Finalizers = sliceutil.RemoveString(pipelineRunCopied.ObjectMeta.Finalizers, func(item string) bool {
-				return item == v1alpha3.PipelineRunFinalizerName
-			})
+			k8sutil.RemoveFinalizer(&pipelineRunCopied.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
 			err = r.Update(context.TODO(), pipelineRunCopied)
 		}
 		return ctrl.Result{}, err
@@ -272,9 +270,7 @@ func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *v1alpha
 	prToUpdate.Labels = pr.Labels
 	prToUpdate.Annotations = pr.Annotations
 	// make sure all PipelineRuns have the finalizer
-	if !sliceutil.HasString(prToUpdate.ObjectMeta.Finalizers, v1alpha3.PipelineRunFinalizerName) {
-		prToUpdate.ObjectMeta.Finalizers = append(prToUpdate.ObjectMeta.Finalizers, v1alpha3.PipelineRunFinalizerName)
-	}
+	k8sutil.AddFinalizer(&prToUpdate.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
 	return r.Update(ctx, &prToUpdate)
 }
 
