@@ -35,6 +35,26 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - clustertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - gitrepositories
   verbs:
   - get
