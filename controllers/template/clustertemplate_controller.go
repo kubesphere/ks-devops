@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package template
 
 import (
 	"context"
@@ -26,28 +26,28 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// TemplateReconciler reconciles a Template object
-type TemplateReconciler struct {
+// ClusterTemplateReconciler reconciles a ClusterTemplate object
+type ClusterTemplateReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=templates,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=templates/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=clustertemplates,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=clustertemplates/status,verbs=get;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Template object against the actual cluster state, and then
+// the ClusterTemplate object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.6.4/pkg/reconcile
-func (r *TemplateReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterTemplateReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("template", req.NamespacedName)
+	_ = r.Log.WithValues("clustertemplate", req.NamespacedName)
 
 	// TODO(user): your logic here
 
@@ -55,8 +55,8 @@ func (r *TemplateReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *TemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ClusterTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&devopsv1alpha1.Template{}).
+		For(&devopsv1alpha1.ClusterTemplate{}).
 		Complete(r)
 }

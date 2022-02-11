@@ -1,0 +1,92 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.6.2
+  creationTimestamp: null
+  name: clustertemplates.devops.kubesphere.io
+spec:
+  group: devops.kubesphere.io
+  names:
+    kind: ClusterTemplate
+    listKind: ClusterTemplateList
+    plural: clustertemplates
+    singular: clustertemplate
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ClusterTemplate is the Schema for the clustertemplates API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TemplateSpec defines the desired state of Template
+            properties:
+              parameters:
+                description: Parameters are used to configure template.
+                items:
+                  description: TemplateParameter is definition of how can we configure
+                    our parameter.
+                  properties:
+                    default:
+                      description: Default is default value of the parameter.
+                      x-kubernetes-preserve-unknown-fields: true
+                    description:
+                      description: Description is description of the parameter.
+                      type: string
+                    name:
+                      description: Name is name of the parameter.
+                      type: string
+                    type:
+                      description: Type is type of the parameter.
+                      type: string
+                    validation:
+                      description: Validation is the validation configuration of the
+                        parameter, including validation expression and message.
+                      properties:
+                        expression:
+                          description: Expression is the expression of the validation.
+                          type: string
+                        message:
+                          description: Message is given when validation failure.
+                          type: string
+                      required:
+                      - expression
+                      - message
+                      type: object
+                  required:
+                  - name
+                  type: object
+                type: array
+              template:
+                description: Template is a string with go-template style.
+                type: string
+            type: object
+          status:
+            description: TemplateStatus defines the observed state of Template
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

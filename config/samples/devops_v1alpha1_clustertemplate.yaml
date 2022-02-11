@@ -1,0 +1,6 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: ClusterTemplate
+metadata:
+  name: clustertemplate-sample
+spec:
+  # TODO(user): Add fields here
