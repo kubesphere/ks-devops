@@ -86,7 +86,7 @@ func (r *Reconciler) reconcileArgoProject(project *v1alpha3.DevOpsProject) (err 
 		var newProject *unstructured.Unstructured
 		if newProject, err = createUnstructuredObject(project); err == nil {
 			argoAppProject.Object["spec"] = newProject.Object["spec"]
-			setOwnerRef(argoAppProject, project)
+			k8sutil.AddOwnerReference(argoAppProject, project.TypeMeta, project.ObjectMeta)
 			err = r.Client.Update(ctx, argoAppProject)
 		}
 	}
@@ -128,19 +128,10 @@ func createUnstructuredObject(project *v1alpha3.DevOpsProject) (result *unstruct
 		if result, err = GetObjectFromYaml(buffer.String()); err == nil {
 			result.SetName(project.GetName())
 			result.SetNamespace(project.GetName())
-			setOwnerRef(result, project)
+			k8sutil.AddOwnerReference(result, project.TypeMeta, project.ObjectMeta)
 		}
 	}
 	return
-}
-
-func setOwnerRef(object metav1.Object, project *v1alpha3.DevOpsProject) {
-	k8sutil.SetOwnerReference(object, metav1.OwnerReference{
-		Kind:       project.Kind,
-		Name:       project.Name,
-		APIVersion: project.APIVersion,
-		UID:        project.UID,
-	})
 }
 
 const argoProjectTemplate = `apiVersion: argoproj.io/v1alpha1
@@ -177,7 +168,7 @@ func (r *Reconciler) GetName() string {
 
 // GetGroupName returns the group name
 func (r *Reconciler) GetGroupName() string {
-	return "argocd"
+	return controllerGroupName
 }
 
 // SetupWithManager setups the reconciler with a manager
