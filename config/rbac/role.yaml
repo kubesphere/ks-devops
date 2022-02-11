@@ -17,6 +17,15 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
+  - appprojects
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - argoproj.io
+  resources:
   - argocds
   verbs:
   - create
@@ -51,6 +60,14 @@ rules:
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - devopsprojects
+  verbs:
+  - get
+  - list
   - update
 - apiGroups:
   - devops.kubesphere.io

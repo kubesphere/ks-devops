@@ -34,6 +34,9 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=devopsprojects,verbs=get;list;update
+//+kubebuilder:rbac:groups=argoproj.io,resources=appprojects,verbs=get;list;create;update
+
 // Reconciler is the reconciler of the DevOpsProject with Argo AppProject
 type Reconciler struct {
 	client.Client
