@@ -18,6 +18,7 @@ package app
 
 import (
 	"kubesphere.io/devops/controllers/addon"
+	"kubesphere.io/devops/controllers/argocd"
 	"kubesphere.io/devops/controllers/gitrepository"
 	"kubesphere.io/devops/controllers/jenkins/devopscredential"
 	"kubesphere.io/devops/controllers/jenkins/devopsproject"
@@ -39,9 +40,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory, devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface, s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
-	kubesphereInformer := informerFactory.KubeSphereSharedInformerFactory()
-
+func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
+	devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface,
+	s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
 	if devopsClient == nil {
 		return errors.New("devopsClient should not be nil")
 	}
@@ -75,8 +76,34 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 	}).SetupWithManager(mgr); err != nil {
 		return err
 	}
+	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, jenkinsCore, s3Client, s)
 
-	reconcilers := map[string]func(mgr manager.Manager) error{
+	// Add all controllers into manager.
+	for name, ok := range s.FeatureOptions.GetControllers() {
+		ctrl := reconcilers[name]
+		if ctrl == nil || !ok {
+			klog.V(4).Infof("%s is not going to run due to dependent component disabled.", name)
+			continue
+		}
+
+		if err := ctrl(mgr); err != nil {
+			klog.Error(err, "add controller to manager failed ", name)
+			return err
+		}
+	}
+	return nil
+}
+
+func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
+	devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface,
+	s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
+	kubesphereInformer := informerFactory.KubeSphereSharedInformerFactory()
+
+	argocdReconciler := &argocd.Reconciler{
+		Client: mgr.GetClient(),
+	}
+
+	return map[string]func(mgr manager.Manager) error{
 		"gitrepository": func(mgr manager.Manager) error {
 			err := (&gitrepository.Reconciler{
 				Client: mgr.GetClient(),
@@ -145,20 +172,8 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
 				kubesphereInformer.Devops().V1alpha1().S2iRuns()))
 		},
+		argocdReconciler.GetGroupName(): func(mgr manager.Manager) error {
+			return argocdReconciler.SetupWithManager(mgr)
+		},
 	}
-
-	// Add all controllers into manager.
-	for name, ok := range s.FeatureOptions.GetControllers() {
-		ctrl := reconcilers[name]
-		if ctrl == nil || !ok {
-			klog.V(4).Infof("%s is not going to run due to dependent component disabled.", name)
-			continue
-		}
-
-		if err := ctrl(mgr); err != nil {
-			klog.Error(err, "add controller to manager failed ", name)
-			return err
-		}
-	}
-	return nil
 }

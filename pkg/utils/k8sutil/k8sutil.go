@@ -29,3 +29,21 @@ func IsControlledBy(ownerReferences []metav1.OwnerReference, kind string, name s
 	}
 	return false
 }
+
+// SetOwnerReference adds or updates an owner reference to an object
+func SetOwnerReference(object metav1.Object, ownerRef metav1.OwnerReference) {
+	allRefs := object.GetOwnerReferences()
+	if len(allRefs) == 0 {
+		object.SetOwnerReferences([]metav1.OwnerReference{ownerRef})
+	} else {
+		for i, ref := range allRefs {
+			if ref.Name == ownerRef.Name && ref.Kind == ownerRef.Kind &&
+				ref.APIVersion == ownerRef.APIVersion {
+				allRefs[i] = ownerRef
+				return
+			}
+		}
+
+		object.SetOwnerReferences(append(object.GetOwnerReferences(), ownerRef))
+	}
+}

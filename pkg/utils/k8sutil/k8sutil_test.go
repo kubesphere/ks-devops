@@ -19,6 +19,7 @@ package k8sutil
 import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 )
 
@@ -58,6 +59,63 @@ func TestIsControlledBy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, IsControlledBy(tt.args.ownerReferences, tt.args.kind, tt.args.name), "IsControlledBy(%v, %v, %v)", tt.args.ownerReferences, tt.args.kind, tt.args.name)
+		})
+	}
+}
+
+func TestSetOwnerReference(t *testing.T) {
+	obj := &unstructured.Unstructured{}
+	obj.SetOwnerReferences([]metav1.OwnerReference{{
+		Kind: "fake",
+	}})
+
+	type args struct {
+		object   metav1.Object
+		ownerRef metav1.OwnerReference
+	}
+	tests := []struct {
+		name   string
+		args   args
+		verify func(t *testing.T, object metav1.Object)
+	}{{
+		name: "without owner references",
+		args: args{
+			object: &unstructured.Unstructured{},
+			ownerRef: metav1.OwnerReference{
+				Kind: "kind",
+			},
+		},
+		verify: func(t *testing.T, object metav1.Object) {
+			assert.Equal(t, 1, len(object.GetOwnerReferences()))
+			assert.Equal(t, "kind", object.GetOwnerReferences()[0].Kind)
+		},
+	}, {
+		name: "no matched owner reference",
+		args: args{
+			object: obj.DeepCopy(),
+			ownerRef: metav1.OwnerReference{
+				Kind: "kind",
+			},
+		},
+		verify: func(t *testing.T, object metav1.Object) {
+			assert.Equal(t, 2, len(object.GetOwnerReferences()))
+		},
+	}, {
+		name: "have matched owner reference",
+		args: args{
+			object: obj.DeepCopy(),
+			ownerRef: metav1.OwnerReference{
+				Kind: "fake",
+			},
+		},
+		verify: func(t *testing.T, object metav1.Object) {
+			assert.Equal(t, 1, len(object.GetOwnerReferences()))
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetOwnerReference(tt.args.object, tt.args.ownerRef)
+			tt.verify(t, tt.args.object)
 		})
 	}
 }
