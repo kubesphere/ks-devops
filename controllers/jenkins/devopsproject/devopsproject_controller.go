@@ -53,6 +53,9 @@ import (
 	devopslisters "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
 )
 
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=devopsprojects,verbs=get;list;update
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;update;create
+
 // Controller is the controller of the DevOpsProject
 type Controller struct {
 	client           clientset.Interface
