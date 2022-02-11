@@ -125,7 +125,6 @@ run:
     - pkg/models/resources/v1alpha3/devops/devops.go
     - pkg/models/resources/v1alpha3/interface.go
     - pkg/apiserver/query/field.go
-    - pkg/api/utils.go
     - pkg/utils/readerutils/MD5Reader.go
     - cmd/controller/app/options/options.go
     - cmd/tools/jwt/app/kubernetes.go
