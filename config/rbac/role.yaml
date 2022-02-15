@@ -26,6 +26,15 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
+  - applications
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - argoproj.io
+  resources:
   - appprojects
   verbs:
   - create
@@ -49,6 +58,14 @@ rules:
   - create
   - delete
   - get
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
   - update
 - apiGroups:
   - devops.kubesphere.io
