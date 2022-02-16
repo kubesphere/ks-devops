@@ -15,9 +15,17 @@
 
 package common
 
-import "sigs.k8s.io/controller-runtime/pkg/client"
+import (
+	"github.com/emicklei/go-restful"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
 
 // Options contain options needed by creating handlers.
 type Options struct {
 	GenericClient client.Client
 }
+
+var (
+	// DevopsPathParameter is a path parameter definition for devops.
+	DevopsPathParameter = restful.PathParameter("devops", "DevOps project name")
+)

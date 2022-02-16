@@ -28,8 +28,6 @@ import (
 )
 
 var (
-	// DevopsPathParameter is a path parameter definition for devops.
-	DevopsPathParameter = restful.PathParameter("devops", "DevOps project name")
 	// TemplatePathParameter is a path parameter definition for template.
 	TemplatePathParameter = restful.PathParameter("template", "Template name")
 )
@@ -39,14 +37,14 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 	handler := newHandler(options)
 	service.Route(service.GET("/devops/{devops}/templates").
 		To(handler.handleQuery).
-		Param(DevopsPathParameter).
+		Param(kapisv1alpha1.DevopsPathParameter).
 		Doc("Query templates for a DevOps Project.").
 		Returns(http.StatusOK, api.StatusOK, api.ListResult{Items: []interface{}{}}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.GET("/devops/{devops}/templates/{template}").
 		To(handler.handleGet).
-		Param(DevopsPathParameter).
+		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc("Get template").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Template{}).
@@ -54,7 +52,7 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 
 	service.Route(service.POST("/devops/{devops}/templates/{template}/render").
 		To(handler.handleRender).
-		Param(DevopsPathParameter).
+		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Template{}).

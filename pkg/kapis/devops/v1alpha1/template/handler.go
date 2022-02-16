@@ -48,7 +48,7 @@ func (h *handler) handleQuery(request *restful.Request, response *restful.Respon
 }
 
 func (h *handler) queryTemplate(request *restful.Request) (*api.ListResult, error) {
-	devopsName := request.PathParameter(DevopsPathParameter.Data().Name)
+	devopsName := request.PathParameter(kapisv1alpha1.DevopsPathParameter.Data().Name)
 	queryParam := query.ParseQueryParameter(request)
 	templateList := &v1alpha1.TemplateList{}
 	if err := h.genericClient.List(context.Background(), templateList, client.InNamespace(devopsName)); err != nil {
@@ -66,7 +66,7 @@ func (h *handler) handleGet(request *restful.Request, response *restful.Response
 }
 
 func (h *handler) getTemplate(request *restful.Request) (*v1alpha1.Template, error) {
-	devopsName := request.PathParameter(DevopsPathParameter.Data().Name)
+	devopsName := request.PathParameter(kapisv1alpha1.DevopsPathParameter.Data().Name)
 	templateName := request.PathParameter(TemplatePathParameter.Data().Name)
 	template := &v1alpha1.Template{}
 	if err := h.genericClient.Get(context.Background(), client.ObjectKey{Namespace: devopsName, Name: templateName}, template); err != nil {
