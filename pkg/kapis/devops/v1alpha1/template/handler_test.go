@@ -127,7 +127,7 @@ func Test_handler_handleQuery(t *testing.T) {
 	createRequest := func(uri, devopsName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[DevopsPathParameter.Data().Name] = devopsName
+		request.PathParameters()[kapisv1alpha1.DevopsPathParameter.Data().Name] = devopsName
 		return request
 	}
 	type args struct {
@@ -213,7 +213,7 @@ func Test_handler_handleGet(t *testing.T) {
 	createRequest := func(uri, devopsName, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[DevopsPathParameter.Data().Name] = devopsName
+		request.PathParameters()[kapisv1alpha1.DevopsPathParameter.Data().Name] = devopsName
 		request.PathParameters()[TemplatePathParameter.Data().Name] = templateName
 		return request
 	}
@@ -285,7 +285,7 @@ func Test_handler_handleRender(t *testing.T) {
 	createRequest := func(uri, devopsName, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[DevopsPathParameter.Data().Name] = devopsName
+		request.PathParameters()[kapisv1alpha1.DevopsPathParameter.Data().Name] = devopsName
 		request.PathParameters()[TemplatePathParameter.Data().Name] = templateName
 		return request
 	}

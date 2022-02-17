@@ -47,3 +47,13 @@ func SetOwnerReference(object metav1.Object, ownerRef metav1.OwnerReference) {
 		object.SetOwnerReferences(append(object.GetOwnerReferences(), ownerRef))
 	}
 }
+
+// AddOwnerReference add an ownerReference
+func AddOwnerReference(object metav1.Object, typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta) {
+	SetOwnerReference(object, metav1.OwnerReference{
+		Kind:       typeMeta.Kind,
+		APIVersion: typeMeta.APIVersion,
+		Name:       objectMeta.Name,
+		UID:        objectMeta.UID,
+	})
+}

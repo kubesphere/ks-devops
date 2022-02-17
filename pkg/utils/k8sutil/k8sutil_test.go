@@ -119,3 +119,50 @@ func TestSetOwnerReference(t *testing.T) {
 		})
 	}
 }
+
+func TestAddOwnerReference(t *testing.T) {
+	type fake struct {
+		metav1.TypeMeta
+		metav1.ObjectMeta
+	}
+
+	type args struct {
+		object     metav1.Object
+		typeMeta   metav1.TypeMeta
+		objectMeta metav1.ObjectMeta
+	}
+	tests := []struct {
+		name   string
+		args   args
+		verify func(t *testing.T, object metav1.Object)
+	}{{
+		name: "normal case",
+		args: args{
+			object: &fake{},
+			typeMeta: metav1.TypeMeta{
+				Kind:       "kind",
+				APIVersion: "version",
+			},
+			objectMeta: metav1.ObjectMeta{
+				Name: "name",
+				UID:  "uid",
+			},
+		},
+		verify: func(t *testing.T, object metav1.Object) {
+			refs := object.GetOwnerReferences()
+			assert.Equal(t, 1, len(refs))
+
+			ref := refs[0]
+			assert.Equal(t, "kind", ref.Kind)
+			assert.Equal(t, "version", ref.APIVersion)
+			assert.Equal(t, "name", ref.Name)
+			assert.Equal(t, "uid", string(ref.UID))
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			AddOwnerReference(tt.args.object, tt.args.typeMeta, tt.args.objectMeta)
+			tt.verify(t, tt.args.object)
+		})
+	}
+}
