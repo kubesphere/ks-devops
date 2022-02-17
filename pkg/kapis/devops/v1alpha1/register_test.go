@@ -54,6 +54,18 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/devops/fake-devops/templates/fake-template/render",
 		},
+	}, {
+		name: "List cluster templates",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/clustertemplates",
+		},
+	}, {
+		name: "Render a cluster template",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/clustertemplates/fake-template/render",
+		},
 	}}
 	for _, tt := range tests {
 		container := restful.NewContainer()

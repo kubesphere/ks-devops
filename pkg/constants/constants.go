@@ -21,15 +21,16 @@ const (
 	CreatorAnnotationKey = "kubesphere.io/creator"
 	WorkspaceLabelKey    = "kubesphere.io/workspace"
 
-	DevOpsProjectLabelKey = "kubesphere.io/devopsproject"
-	DevOpsCredentialTag   = "DevOps Credential"
-	DevOpsPipelineTag     = "DevOps Pipeline"
-	DevOpsWebhookTag      = "DevOps Webhook"
-	DevOpsJenkinsfileTag  = "DevOps Jenkinsfile"
-	DevOpsScmTag          = "DevOps Scm"
-	DevOpsJenkinsTag      = "Jenkins"
-	DevOpsProjectTag      = "DevOps Project"
-	DevOpsTemplateTag     = "DevOps Template"
+	DevOpsProjectLabelKey    = "kubesphere.io/devopsproject"
+	DevOpsCredentialTag      = "DevOps Credential"
+	DevOpsPipelineTag        = "DevOps Pipeline"
+	DevOpsWebhookTag         = "DevOps Webhook"
+	DevOpsJenkinsfileTag     = "DevOps Jenkinsfile"
+	DevOpsScmTag             = "DevOps Scm"
+	DevOpsJenkinsTag         = "Jenkins"
+	DevOpsProjectTag         = "DevOps Project"
+	DevOpsTemplateTag        = "DevOps Template"
+	DevOpsClusterTemplateTag = "DevOps Cluster Template"
 )
 
 // K8SToken is the context key of k8s token

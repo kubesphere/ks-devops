@@ -32,6 +32,12 @@ var (
 	TemplatePathParameter = restful.PathParameter("template", "Template name")
 )
 
+// PageResult is the model of Template page result.
+type PageResult struct {
+	Items []v1alpha1.Template `json:"items"`
+	Total int                 `json:"total"`
+}
+
 // RegisterRoutes is for registering template routes into WebService.
 func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options) {
 	handler := newHandler(options)
@@ -39,7 +45,7 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		To(handler.handleQuery).
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Doc("Query templates for a DevOps Project.").
-		Returns(http.StatusOK, api.StatusOK, api.ListResult{Items: []interface{}{}}).
+		Returns(http.StatusOK, api.StatusOK, PageResult{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.GET("/devops/{devops}/templates/{template}").

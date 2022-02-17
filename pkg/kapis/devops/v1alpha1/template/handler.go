@@ -51,7 +51,12 @@ func (h *handler) queryTemplate(request *restful.Request) (*api.ListResult, erro
 	devopsName := request.PathParameter(kapisv1alpha1.DevopsPathParameter.Data().Name)
 	queryParam := query.ParseQueryParameter(request)
 	templateList := &v1alpha1.TemplateList{}
-	if err := h.genericClient.List(context.Background(), templateList, client.InNamespace(devopsName)); err != nil {
+	if err := h.genericClient.List(context.Background(),
+		templateList,
+		client.InNamespace(devopsName),
+		client.MatchingLabelsSelector{
+			Selector: queryParam.Selector(),
+		}); err != nil {
 		return nil, err
 	}
 	return v1alpha3.ToListResult(toObjects(templateList.Items), queryParam, nil), nil
