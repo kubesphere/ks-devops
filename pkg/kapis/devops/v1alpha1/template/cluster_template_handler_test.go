@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package clustertemplate
+package template
 
 import (
 	"encoding/json"
@@ -27,7 +27,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -35,51 +34,57 @@ import (
 	"testing"
 )
 
-func Test_newHandler(t *testing.T) {
-	fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
+func Test_clusterTemplatesToObjects(t *testing.T) {
+	createTemplate := func(name string) *v1alpha1.ClusterTemplate {
+		return &v1alpha1.ClusterTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		}
+	}
 	type args struct {
-		options *common.Options
+		templates []v1alpha1.ClusterTemplate
 	}
 	tests := []struct {
 		name string
 		args args
-		want *handler
+		want []runtime.Object
 	}{{
-		name: "Should return an empty handler if options argument is nil",
+		name: "Should convert correctly",
 		args: args{
-			options: nil,
-		},
-		want: &handler{},
-	}, {
-		name: "Should return an empty handler if client is nil",
-		args: args{
-			options: &common.Options{
-				GenericClient: nil,
+			templates: []v1alpha1.ClusterTemplate{
+				*createTemplate("template1"),
+				*createTemplate("template2"),
 			},
 		},
-		want: &handler{},
+		want: []runtime.Object{
+			createTemplate("template1"),
+			createTemplate("template2"),
+		},
 	}, {
-		name: "Should return a new handler if client is not nil",
+		name: "Should return nil if templates argument is nil",
 		args: args{
-			options: &common.Options{
-				GenericClient: fakeClient,
-			},
+			templates: nil,
 		},
-		want: &handler{
-			genericClient: fakeClient,
+		want: nil,
+	}, {
+		name: "Should return nil if templates argument is an empty slice",
+		args: args{
+			templates: []v1alpha1.ClusterTemplate{},
 		},
+		want: nil,
 	},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newHandler(tt.args.options); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newHandler() = %v, want %v", got, tt.want)
+			if got := clusterTemplatesToObjects(tt.args.templates); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("clusterTemplatesToObjects() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_handler_handleQuery(t *testing.T) {
+func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	createTemplate := func(name string) *v1alpha1.ClusterTemplate {
 		return &v1alpha1.ClusterTemplate{
 			ObjectMeta: metav1.ObjectMeta{
@@ -155,7 +160,7 @@ func Test_handler_handleQuery(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			response := restful.NewResponse(recorder)
 			response.SetRequestAccepts(restful.MIME_JSON)
-			h.handleQuery(request, response)
+			h.handleQueryClusterTemplates(request, response)
 
 			assert.Equal(t, 200, recorder.Code)
 			wantResponseBytes, err := json.Marshal(tt.wantResponse)
@@ -165,7 +170,7 @@ func Test_handler_handleQuery(t *testing.T) {
 	}
 }
 
-func Test_handler_handleRender(t *testing.T) {
+func Test_handler_handleRenderClusterTemplate(t *testing.T) {
 	fakeTemplate := &v1alpha1.ClusterTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake-template",
@@ -177,7 +182,7 @@ func Test_handler_handleRender(t *testing.T) {
 	createRequest := func(uri, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[PathParam.Data().Name] = templateName
+		request.PathParameters()[ClusterTemplatePathParameter.Data().Name] = templateName
 		return request
 	}
 	type args struct {
@@ -226,61 +231,11 @@ func Test_handler_handleRender(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			response := restful.NewResponse(recorder)
 			response.SetRequestAccepts(restful.MIME_JSON)
-			h.handleRender(tt.args.request, response)
+			h.handleRenderClusterTemplate(tt.args.request, response)
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
 			if tt.assertion != nil {
 				tt.assertion(t, recorder)
-			}
-		})
-	}
-}
-
-func Test_toObjects(t *testing.T) {
-	createTemplate := func(name string) *v1alpha1.ClusterTemplate {
-		return &v1alpha1.ClusterTemplate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-			},
-		}
-	}
-	type args struct {
-		templates []v1alpha1.ClusterTemplate
-	}
-	tests := []struct {
-		name string
-		args args
-		want []runtime.Object
-	}{{
-		name: "Should convert correctly",
-		args: args{
-			templates: []v1alpha1.ClusterTemplate{
-				*createTemplate("template1"),
-				*createTemplate("template2"),
-			},
-		},
-		want: []runtime.Object{
-			createTemplate("template1"),
-			createTemplate("template2"),
-		},
-	}, {
-		name: "Should return nil if templates argument is nil",
-		args: args{
-			templates: nil,
-		},
-		want: nil,
-	}, {
-		name: "Should return nil if templates argument is an empty slice",
-		args: args{
-			templates: []v1alpha1.ClusterTemplate{},
-		},
-		want: nil,
-	},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := toObjects(tt.args.templates); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toObjects() = %v, want %v", got, tt.want)
 			}
 		})
 	}

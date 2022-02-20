@@ -24,6 +24,8 @@ import (
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
+var _ TemplateObject = &ClusterTemplate{}
+
 // ClusterTemplate is the Schema for the clustertemplates API
 type ClusterTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -31,6 +33,11 @@ type ClusterTemplate struct {
 
 	Spec   TemplateSpec   `json:"spec,omitempty"`
 	Status TemplateStatus `json:"status,omitempty"`
+}
+
+// TemplateSpec returns Spec field of ClusterTemplate.
+func (template *ClusterTemplate) TemplateSpec() TemplateSpec {
+	return template.Spec
 }
 
 //+kubebuilder:object:root=true

@@ -88,6 +88,20 @@ func IgnoreEOF(err error) error {
 	return err
 }
 
+// ResponseWriter is a handler for response.
+type ResponseWriter struct {
+	*restful.Response
+}
+
+// WriteEntityOrError writes entity to the response if no error and writes error message to response if error occurred.
+func (handler ResponseWriter) WriteEntityOrError(entity interface{}, err error) {
+	if err != nil {
+		HandleError(nil, handler.Response, err)
+		return
+	}
+	_ = handler.WriteEntity(entity)
+}
+
 func handle(statusCode int, req *restful.Request, response *restful.Response, err error) {
 	_, fn, line, _ := runtime.Caller(2)
 	klog.Errorf("%s:%d %v", fn, line, err)
