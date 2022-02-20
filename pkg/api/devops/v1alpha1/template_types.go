@@ -82,6 +82,7 @@ type Template struct {
 	Status TemplateStatus `json:"status,omitempty"`
 }
 
+// TemplateSpec returns specification of Template.
 func (template *Template) TemplateSpec() TemplateSpec {
 	return template.Spec
 }

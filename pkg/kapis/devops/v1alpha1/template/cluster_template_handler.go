@@ -57,14 +57,12 @@ func (h *handler) getClusterTemplate(templateName string) (*v1alpha1.ClusterTemp
 	return template, nil
 }
 
-func (h *handler) renderClusterTemplate(templateName string) (*v1alpha1.ClusterTemplate, error) {
+func (h *handler) renderClusterTemplate(templateName string) (v1alpha1.TemplateObject, error) {
 	template, err := h.getClusterTemplate(templateName)
 	if err != nil {
 		return nil, err
 	}
-	templateCopy := template.DeepCopy()
-	render(templateCopy)
-	return templateCopy, nil
+	return render(template), nil
 }
 
 func clusterTemplatesToObjects(templates []v1alpha1.ClusterTemplate) []runtime.Object {

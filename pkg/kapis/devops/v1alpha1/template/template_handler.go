@@ -20,7 +20,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/kapis"
@@ -71,22 +70,12 @@ func (h *handler) handleRenderTemplate(request *restful.Request, response *restf
 	kapis.ResponseWriter{Response: response}.WriteEntityOrError(h.renderTemplate(devopsName, templateName))
 }
 
-func (h *handler) renderTemplate(devopsName, templateName string) (*v1alpha1.Template, error) {
+func (h *handler) renderTemplate(devopsName, templateName string) (v1alpha1.TemplateObject, error) {
 	tmpl, err := h.getTemplate(devopsName, templateName)
 	if err != nil {
 		return nil, err
 	}
-
-	tmplCopy := tmpl.DeepCopy()
-	if tmplCopy.GetAnnotations() == nil {
-		tmplCopy.SetAnnotations(map[string]string{})
-	}
-
-	// TODO render template using parameters
-	tmplCopy.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey] = tmplCopy.Spec.Template
-
-	// get parameter
-	return tmplCopy, nil
+	return render(tmpl), nil
 }
 
 func templatesToObjects(templates []v1alpha1.Template) []runtime.Object {
