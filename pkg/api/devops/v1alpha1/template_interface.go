@@ -13,19 +13,17 @@
 // limitations under the License.
 //
 
-package template
+package v1alpha1
 
 import (
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type handler struct {
-	genericClient client.Client
-}
-
-func newHandler(options *kapisv1alpha1.Options) *handler {
-	return &handler{
-		genericClient: options.GenericClient,
-	}
+// TemplateObject is implemented by Template and ClusterTemplate.
+type TemplateObject interface {
+	v1.Object
+	runtime.Object
+	// TemplateSpec returns TemplateSpec.
+	TemplateSpec() TemplateSpec
 }

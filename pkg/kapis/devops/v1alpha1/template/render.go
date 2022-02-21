@@ -16,16 +16,19 @@
 package template
 
 import (
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"kubesphere.io/devops/pkg/api/devops"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 )
 
-type handler struct {
-	genericClient client.Client
-}
+func render(templateObjectCopy v1alpha1.TemplateObject) v1alpha1.TemplateObject {
+	templateObjectCopy = templateObjectCopy.DeepCopyObject().(v1alpha1.TemplateObject)
+	// TODO Render template using parameters
+	template := templateObjectCopy.TemplateSpec().Template
 
-func newHandler(options *kapisv1alpha1.Options) *handler {
-	return &handler{
-		genericClient: options.GenericClient,
+	// set template into annotations
+	if templateObjectCopy.GetAnnotations() == nil {
+		templateObjectCopy.SetAnnotations(map[string]string{})
 	}
+	templateObjectCopy.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey] = template
+	return templateObjectCopy
 }

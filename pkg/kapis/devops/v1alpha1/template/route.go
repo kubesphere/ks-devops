@@ -28,22 +28,31 @@ import (
 )
 
 var (
-	// TemplatePathParameter is a path parameter definition for template.
+	// TemplatePathParameter is path parameter definition of template.
 	TemplatePathParameter = restful.PathParameter("template", "Template name")
+	// ClusterTemplatePathParameter is path parameter definition of ClusterTemplate.
+	ClusterTemplatePathParameter = restful.PathParameter("clustertemplate", "Name of ClusterTemplate.")
 )
+
+// PageResult is the model of Template page result.
+type PageResult struct {
+	Items []v1alpha1.Template `json:"items"`
+	Total int                 `json:"total"`
+}
 
 // RegisterRoutes is for registering template routes into WebService.
 func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options) {
 	handler := newHandler(options)
+	// Template
 	service.Route(service.GET("/devops/{devops}/templates").
 		To(handler.handleQuery).
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Doc("Query templates for a DevOps Project.").
-		Returns(http.StatusOK, api.StatusOK, api.ListResult{Items: []interface{}{}}).
+		Returns(http.StatusOK, api.StatusOK, PageResult{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.GET("/devops/{devops}/templates/{template}").
-		To(handler.handleGet).
+		To(handler.handleGetTemplate).
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc("Get template").
@@ -51,10 +60,24 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.POST("/devops/{devops}/templates/{template}/render").
-		To(handler.handleRender).
+		To(handler.handleRenderTemplate).
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Template{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
+
+	// ClusterTemplate
+	service.Route(service.GET("/clustertemplates").
+		To(handler.handleQueryClusterTemplates).
+		Doc("Query cluster templates.").
+		Returns(http.StatusOK, api.StatusOK, PageResult{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))
+
+	service.Route(service.POST("/clustertemplates/{clustertemplate}/render").
+		To(handler.handleRenderClusterTemplate).
+		Param(ClusterTemplatePathParameter).
+		Doc("Render cluster template.").
+		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterTemplate{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))
 }

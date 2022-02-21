@@ -473,7 +473,7 @@ func schema_k8sio_api_core_v1_AzureDiskVolumeSource(ref common.ReferenceCallback
 					},
 					"cachingMode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Host Caching mode: None, Read Only, Read Write.",
+							Description: "Host Caching mode: None, Read Only, Read WriteEntityOrError.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

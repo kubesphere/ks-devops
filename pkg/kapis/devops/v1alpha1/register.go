@@ -26,9 +26,10 @@ import (
 
 // AddToContainer adds web services into web service container.
 func AddToContainer(container *restful.Container, options *common.Options) []*restful.WebService {
-	var services []*restful.WebService
-	services = append(services, runtime.NewWebService(v1alpha1.GroupVersion))
-	services = append(services, runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion))
+	services := []*restful.WebService{
+		runtime.NewWebService(v1alpha1.GroupVersion),
+		runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion),
+	}
 	for _, service := range services {
 		template.RegisterRoutes(service, options)
 		argocd.RegisterRoutes(service, options)

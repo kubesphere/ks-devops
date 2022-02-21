@@ -21,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ TemplateObject = &Template{}
+
 // TemplateSpec defines the desired state of Template
 type TemplateSpec struct {
 	// Parameters are used to configure template.
@@ -78,6 +80,11 @@ type Template struct {
 
 	Spec   TemplateSpec   `json:"spec,omitempty"`
 	Status TemplateStatus `json:"status,omitempty"`
+}
+
+// TemplateSpec returns specification of Template.
+func (template *Template) TemplateSpec() TemplateSpec {
+	return template.Spec
 }
 
 //+kubebuilder:object:root=true
