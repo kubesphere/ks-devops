@@ -7,9 +7,70 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - argoproj.io
+  resources:
+  - appprojects
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - argoproj.io
+  resources:
+  - argocds
+  verbs:
+  - create
+  - delete
+  - get
+  - update
+- apiGroups:
   - devops.kubesphere.io
   resources:
-  - fakes
+  - addonStrategies
+  verbs:
+  - create
+  - delete
+  - get
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - clustertemplates
   verbs:
   - create
   - delete
@@ -21,10 +82,18 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
-  - fakes/status
+  - clustertemplates/status
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - devopsprojects
+  verbs:
+  - get
+  - list
   - update
 - apiGroups:
   - devops.kubesphere.io
@@ -78,9 +147,38 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - releasercontrollers
+  verbs:
+  - create
+  - delete
+  - get
+  - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - secrets
   verbs:
   - get
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - templates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - templates/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - devops.kubesphere.io
   resources:

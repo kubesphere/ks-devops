@@ -1,0 +1,8 @@
+apiVersion: devops.kubesphere.io/v1alpha1
+kind: Addon
+metadata:
+  name: ks-releaser
+spec:
+  version: v0.0.14
+  strategy:
+    name: simple-operator-releasercontroller

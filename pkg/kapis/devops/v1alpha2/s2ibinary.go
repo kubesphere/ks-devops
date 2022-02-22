@@ -18,13 +18,13 @@ package v1alpha2
 
 import (
 	"fmt"
+	"kubesphere.io/devops/pkg/kapis"
 	"net/http"
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/emicklei/go-restful"
 	"k8s.io/klog"
 
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/models/devops"
 	"kubesphere.io/devops/pkg/utils/hashutil"
 )
@@ -40,38 +40,38 @@ func (h S2iBinaryHandler) UploadS2iBinaryHandler(req *restful.Request, resp *res
 	err := req.Request.ParseMultipartForm(bytefmt.MEGABYTE * 20)
 	if err != nil {
 		klog.Errorf("%+v", err)
-		api.HandleBadRequest(resp, nil, err)
+		kapis.HandleBadRequest(resp, nil, err)
 		return
 	}
 	if len(req.Request.MultipartForm.File) == 0 {
 		err := restful.NewError(http.StatusBadRequest, "could not get file from form")
 		klog.Errorf("%+v", err)
-		api.HandleBadRequest(resp, nil, err)
+		kapis.HandleBadRequest(resp, nil, err)
 		return
 	}
 	if len(req.Request.MultipartForm.File["s2ibinary"]) == 0 {
 		err := restful.NewError(http.StatusBadRequest, "could not get file from form")
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	if len(req.Request.MultipartForm.File["s2ibinary"]) > 1 {
 		err := restful.NewError(http.StatusBadRequest, "s2ibinary should only have one file")
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	defer req.Request.MultipartForm.RemoveAll()
 	file, err := req.Request.MultipartForm.File["s2ibinary"][0].Open()
 	if err != nil {
 		klog.Error(err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	filemd5, err := hashutil.GetMD5(file)
 	if err != nil {
 		klog.Error(err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	md5, ok := req.Request.MultipartForm.Value["md5"]
@@ -79,7 +79,7 @@ func (h S2iBinaryHandler) UploadS2iBinaryHandler(req *restful.Request, resp *res
 		if md5[0] != filemd5 {
 			err := restful.NewError(http.StatusBadRequest, fmt.Sprintf("md5 not match, origin: %+v, calculate: %+v", md5[0], filemd5))
 			klog.Error(err)
-			api.HandleInternalError(resp, nil, err)
+			kapis.HandleInternalError(resp, nil, err)
 			return
 		}
 	}
@@ -87,7 +87,7 @@ func (h S2iBinaryHandler) UploadS2iBinaryHandler(req *restful.Request, resp *res
 	s2ibin, err := h.s2iUploader.UploadS2iBinary(ns, name, filemd5, req.Request.MultipartForm.File["s2ibinary"][0])
 	if err != nil {
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	resp.WriteAsJson(s2ibin)
@@ -101,7 +101,7 @@ func (h S2iBinaryHandler) DownloadS2iBinaryHandler(req *restful.Request, resp *r
 	url, err := h.s2iUploader.DownloadS2iBinary(ns, name, fileName)
 	if err != nil {
 		klog.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	http.Redirect(resp.ResponseWriter, req.Request, url, http.StatusFound)

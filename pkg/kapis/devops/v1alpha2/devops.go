@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"kubesphere.io/devops/pkg/kapis"
 	"net/http"
 	"strings"
 
@@ -889,7 +890,7 @@ func (h *ProjectPipelineHandler) GetProjectCredentialUsage(req *restful.Request,
 	response, err := h.projectCredentialGetter.GetProjectCredentialUsage(projectId, credentialId)
 	if err != nil {
 		log.Errorf("%+v", err)
-		api.HandleInternalError(resp, nil, err)
+		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
 	resp.WriteAsJson(response)

@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The KubeSphere Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package options
 
 import (
@@ -19,12 +35,10 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			Controllers: map[string]bool{},
 		},
 		want: map[string]bool{
-			"s2ibinary":        true,
-			"s2irun":           true,
-			"pipeline":         true,
-			"devopsprojects":   true,
-			"devopscredential": true,
-			"jenkinsconfig":    true,
+			"s2ibinary":     true,
+			"s2irun":        true,
+			"jenkins":       true,
+			"jenkinsconfig": true,
 		},
 	}, {
 		name: "no input (be nil) from users",
@@ -32,12 +46,10 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			Controllers: nil,
 		},
 		want: map[string]bool{
-			"s2ibinary":        true,
-			"s2irun":           true,
-			"pipeline":         true,
-			"devopsprojects":   true,
-			"devopscredential": true,
-			"jenkinsconfig":    true,
+			"s2ibinary":     true,
+			"s2irun":        true,
+			"jenkins":       true,
+			"jenkinsconfig": true,
 		},
 	}, {
 		name: "merge with the input from users",
@@ -48,13 +60,11 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			},
 		},
 		want: map[string]bool{
-			"s2ibinary":        true,
-			"s2irun":           false,
-			"pipeline":         true,
-			"devopsprojects":   true,
-			"devopscredential": true,
-			"jenkinsconfig":    true,
-			"fake":             true,
+			"s2ibinary":     true,
+			"s2irun":        false,
+			"jenkins":       true,
+			"jenkinsconfig": true,
+			"fake":          true,
 		},
 	}, {
 		name: "only enable the specific controllers",

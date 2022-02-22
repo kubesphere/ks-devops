@@ -16,6 +16,7 @@ limitations under the License.
 
 package sliceutil
 
+// RemoveString removes an item from a slice with a custom function
 func RemoveString(slice []string, remove func(item string) bool) []string {
 	for i := 0; i < len(slice); i++ {
 		if remove(slice[i]) {
@@ -26,6 +27,14 @@ func RemoveString(slice []string, remove func(item string) bool) []string {
 	return slice
 }
 
+// SameItem returns a function to check if the item is same to
+func SameItem(target string) func(item string) bool {
+	return func(item string) bool {
+		return target == item
+	}
+}
+
+// HasString checks if there is a same string existing in a slice
 func HasString(slice []string, str string) bool {
 	for _, s := range slice {
 		if s == str {
@@ -33,4 +42,12 @@ func HasString(slice []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// AddToSlice adds an item to a slice without duplicated
+func AddToSlice(item string, array []string) []string {
+	if !HasString(array, item) {
+		array = append(array, item)
+	}
+	return array
 }
