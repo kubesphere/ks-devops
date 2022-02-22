@@ -18,9 +18,9 @@ package webhook
 
 import (
 	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/event/models/common"
 	"kubesphere.io/devops/pkg/event/models/workflowrun"
+	"kubesphere.io/devops/pkg/kapis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -41,7 +41,7 @@ func (handler *Handler) ReceiveEventsFromJenkins(request *restful.Request, respo
 	// concrete event body
 	event := &common.Event{}
 	if err := request.ReadEntity(event); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 		return
 	}
 
@@ -54,7 +54,7 @@ func (handler *Handler) ReceiveEventsFromJenkins(request *restful.Request, respo
 		HandleCompleted: nil,
 		HandleDeleted:   nil,
 	}); err != nil {
-		api.HandleError(request, response, err)
+		kapis.HandleError(request, response, err)
 	}
 
 	// TODO Register other event handlers here
