@@ -65,4 +65,9 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		Reads(v1alpha1.Application{}).
 		Doc("Update a particular application").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
+
+	service.Route(service.GET("/clusters").
+		To(handler.getClusters).
+		Doc("Get the clusters list").
+		Returns(http.StatusOK, api.StatusOK, []v1alpha1.ApplicationDestination{}))
 }
