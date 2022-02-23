@@ -105,6 +105,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	argocdAppReconciler := &argocd.ApplicationReconciler{
 		Client: mgr.GetClient(),
 	}
+	argocdClusterReconciler := &argocd.MultiClusterReconciler{
+		Client: mgr.GetClient(),
+	}
 
 	return map[string]func(mgr manager.Manager) error{
 		"gitrepository": func(mgr manager.Manager) error {
@@ -175,9 +178,12 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
 				kubesphereInformer.Devops().V1alpha1().S2iRuns()))
 		},
-		argocdReconciler.GetGroupName(): func(mgr manager.Manager) error {
-			if err := argocdReconciler.SetupWithManager(mgr); err != nil {
-				return err
+		argocdReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
+			if err = argocdReconciler.SetupWithManager(mgr); err != nil {
+				return
+			}
+			if err = argocdClusterReconciler.SetupWithManager(mgr); err != nil {
+				return
 			}
 			return argocdAppReconciler.SetupWithManager(mgr)
 		},
