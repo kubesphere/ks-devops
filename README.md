@@ -1,5 +1,6 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/kubesphere/ks-devops)
 [![](https://goreportcard.com/badge/kubesphere/ks-devops)](https://goreportcard.com/report/kubesphere/ks-devops)
+<a href="https://github.com/search?q=user%3Akubesphere-sigs+label%3A%22good+first+issue%22+state%3Aopen+repo%3Akubesphere%2Fks-devops+repo%3Akubesphere-sigs%2Fks-devops-helm-chart&type=Issues&ref=advsearch&l=&l="><img src="https://img.shields.io/github/issues/badges/shields/good%20first%20issue" alt="good first"></a>
 [![codecov](https://codecov.io/gh/kubesphere/ks-devops/branch/master/graph/badge.svg?token=XS8g2CjdNL)](https://codecov.io/gh/kubesphere/ks-devops)
 [![Contributors](https://img.shields.io/github/contributors/kubesphere/ks-devops.svg)](https://github.com/kubesphere/ks-devops/graphs/contributors)
 
