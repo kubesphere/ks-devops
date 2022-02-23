@@ -44,7 +44,7 @@ Please check the following list before waiting reviewers:
 
 - [ ] Already committed the CRD files to [the Helm Chart](https://github.com/kubesphere-sigs/ks-devops-helm-chart/) if you created some new CRDs
 - [ ] Already [added the permission](https://github.com/kubesphere/ks-installer/blob/9e063b085a0e43fdb3d0d9e3e7f4149146f14b9c/roles/ks-core/prepare/files/ks-init/role-templates.yaml) for the new API
-- [ ] Already added the RBAC annotations for the new controllers
+- [ ] Already added the RBAC markers for the new controllers
 
 ### Does this PR introduce a user-facing change??
 <!--
