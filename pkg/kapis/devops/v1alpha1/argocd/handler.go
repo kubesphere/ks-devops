@@ -18,6 +18,7 @@ package argocd
 import (
 	"context"
 	"github.com/emicklei/go-restful"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/kapis"
@@ -29,7 +30,7 @@ func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
 	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
 
 	applicationList := &v1alpha1.ApplicationList{}
-	err := h.genericClient.List(context.Background(), applicationList, client.InNamespace(namespace))
+	err := h.List(context.Background(), applicationList, client.InNamespace(namespace))
 	response(req, res, applicationList, err)
 }
 
@@ -38,7 +39,7 @@ func (h *handler) getApplication(req *restful.Request, res *restful.Response) {
 	name := getPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
-	err := h.genericClient.Get(context.Background(), types.NamespacedName{
+	err := h.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}, application)
@@ -50,12 +51,12 @@ func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
 	name := getPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
-	err := h.genericClient.Get(context.Background(), types.NamespacedName{
+	err := h.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}, application)
 	if err == nil {
-		err = h.genericClient.Delete(context.Background(), application)
+		err = h.Delete(context.Background(), application)
 	}
 	response(req, res, application, err)
 }
@@ -67,7 +68,7 @@ func (h *handler) createApplication(req *restful.Request, res *restful.Response)
 	application := &v1alpha1.Application{}
 	if err = req.ReadEntity(application); err == nil {
 		application.Namespace = namespace
-		err = h.genericClient.Create(context.Background(), application)
+		err = h.Create(context.Background(), application)
 	}
 
 	response(req, res, application, err)
@@ -78,16 +79,43 @@ func (h *handler) updateApplication(req *restful.Request, res *restful.Response)
 	name := getPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
-	err := h.genericClient.Get(context.Background(), types.NamespacedName{
+	err := h.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}, application)
 	if err == nil {
 		if err = req.ReadEntity(application); err == nil {
-			err = h.genericClient.Update(context.Background(), application)
+			err = h.Update(context.Background(), application)
 		}
 	}
 	response(req, res, application, err)
+}
+
+func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
+	ctx := context.Background()
+
+	secrets := &v1.SecretList{}
+	err := h.List(ctx, secrets, client.MatchingLabels{
+		"argocd.argoproj.io/secret-type": "cluster",
+	})
+
+	argoClusters := make([]v1alpha1.ApplicationDestination, 0)
+	if err == nil && secrets != nil && len(secrets.Items) > 0 {
+		for i := range secrets.Items {
+			secret := secrets.Items[i]
+
+			name := string(secret.Data["name"])
+			server := string(secret.Data["server"])
+
+			if name != "" && server != "" {
+				argoClusters = append(argoClusters, v1alpha1.ApplicationDestination{
+					Server: server,
+					Name:   name,
+				})
+			}
+		}
+	}
+	response(req, res, argoClusters, err)
 }
 
 func getPathParameter(req *restful.Request, param *restful.Parameter) string {
@@ -103,11 +131,11 @@ func response(req *restful.Request, res *restful.Response, object interface{}, e
 }
 
 type handler struct {
-	genericClient client.Client
+	client.Client
 }
 
 func newHandler(options *kapisv1alpha1.Options) *handler {
 	return &handler{
-		genericClient: options.GenericClient,
+		Client: options.GenericClient,
 	}
 }
