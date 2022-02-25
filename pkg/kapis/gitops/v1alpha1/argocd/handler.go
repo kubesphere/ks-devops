@@ -20,35 +20,34 @@ import (
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	"kubesphere.io/devops/pkg/kapis/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
-	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 
 	applicationList := &v1alpha1.ApplicationList{}
 	err := h.List(context.Background(), applicationList, client.InNamespace(namespace))
-	response(req, res, applicationList, err)
+	common.Response(req, res, applicationList, err)
 }
 
 func (h *handler) getApplication(req *restful.Request, res *restful.Response) {
-	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
-	name := getPathParameter(req, pathParameterApplication)
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
+	name := common.GetPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
 	err := h.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}, application)
-	response(req, res, application, err)
+	common.Response(req, res, application, err)
 }
 
 func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
-	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
-	name := getPathParameter(req, pathParameterApplication)
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
+	name := common.GetPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
 	err := h.Get(context.Background(), types.NamespacedName{
@@ -58,12 +57,12 @@ func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
 	if err == nil {
 		err = h.Delete(context.Background(), application)
 	}
-	response(req, res, application, err)
+	common.Response(req, res, application, err)
 }
 
 func (h *handler) createApplication(req *restful.Request, res *restful.Response) {
 	var err error
-	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 
 	application := &v1alpha1.Application{}
 	if err = req.ReadEntity(application); err == nil {
@@ -71,12 +70,12 @@ func (h *handler) createApplication(req *restful.Request, res *restful.Response)
 		err = h.Create(context.Background(), application)
 	}
 
-	response(req, res, application, err)
+	common.Response(req, res, application, err)
 }
 
 func (h *handler) updateApplication(req *restful.Request, res *restful.Response) {
-	namespace := getPathParameter(req, kapisv1alpha1.DevopsPathParameter)
-	name := getPathParameter(req, pathParameterApplication)
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
+	name := common.GetPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
 	err := h.Get(context.Background(), types.NamespacedName{
@@ -88,7 +87,7 @@ func (h *handler) updateApplication(req *restful.Request, res *restful.Response)
 			err = h.Update(context.Background(), application)
 		}
 	}
-	response(req, res, application, err)
+	common.Response(req, res, application, err)
 }
 
 func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
@@ -115,26 +114,14 @@ func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 			}
 		}
 	}
-	response(req, res, argoClusters, err)
-}
-
-func getPathParameter(req *restful.Request, param *restful.Parameter) string {
-	return req.PathParameter(param.Data().Name)
-}
-
-func response(req *restful.Request, res *restful.Response, object interface{}, err error) {
-	if err != nil {
-		kapis.HandleError(req, res, err)
-	} else {
-		_ = res.WriteEntity(object)
-	}
+	common.Response(req, res, argoClusters, err)
 }
 
 type handler struct {
 	client.Client
 }
 
-func newHandler(options *kapisv1alpha1.Options) *handler {
+func newHandler(options *common.Options) *handler {
 	return &handler{
 		Client: options.GenericClient,
 	}

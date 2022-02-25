@@ -16,7 +16,9 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // ApplicationSpec is the specification of the Application
 type ApplicationSpec struct {

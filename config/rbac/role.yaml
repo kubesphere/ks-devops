@@ -79,14 +79,6 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
-  - applications
-  verbs:
-  - get
-  - list
-  - update
-- apiGroups:
-  - devops.kubesphere.io
-  resources:
   - clustertemplates
   verbs:
   - create
@@ -206,3 +198,11 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - gitops.kubesphere.io
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - update
