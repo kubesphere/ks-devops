@@ -21,7 +21,8 @@ type VerifyResponse struct {
 	// Message is the detail of the result
 	Message string `json:"message"`
 	// Code represents a group of cases
-	Code int `json:"code"`
+	Code         int    `json:"code"`
+	CredentialID string `json:"credentialId,omitempty" description:"the id of credential"`
 }
 
 func VerifyPass() *VerifyResponse {
