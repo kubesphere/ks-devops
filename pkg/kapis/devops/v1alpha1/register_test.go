@@ -21,7 +21,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"

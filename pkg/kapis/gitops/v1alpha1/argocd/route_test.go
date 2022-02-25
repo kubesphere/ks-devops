@@ -24,10 +24,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,12 +36,12 @@ import (
 )
 
 func TestRegisterRoutes(t *testing.T) {
-	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
 	type args struct {
 		service *restful.WebService
-		options *kapisv1alpha1.Options
+		options *common.Options
 	}
 	tests := []struct {
 		name   string
@@ -52,7 +51,7 @@ func TestRegisterRoutes(t *testing.T) {
 		name: "normal case",
 		args: args{
 			service: runtime.NewWebService(v1alpha1.GroupVersion),
-			options: &kapisv1alpha1.Options{GenericClient: fake.NewFakeClientWithScheme(schema)},
+			options: &common.Options{GenericClient: fake.NewFakeClientWithScheme(schema)},
 		},
 		verify: func(t *testing.T, service *restful.WebService) {
 			assert.Equal(t, 6, len(service.Routes()))
@@ -126,7 +125,7 @@ func TestAPIs(t *testing.T) {
 		name: "get an empty list of the applications",
 		request: request{
 			method: http.MethodGet,
-			uri:    "/devops/fake/applications",
+			uri:    "/namespaces/fake/applications",
 		},
 		k8sclient:    fake.NewFakeClientWithScheme(schema),
 		responseCode: http.StatusOK,
@@ -143,7 +142,7 @@ func TestAPIs(t *testing.T) {
 		name: "get a normal list of the applications",
 		request: request{
 			method: http.MethodGet,
-			uri:    "/devops/ns/applications",
+			uri:    "/namespaces/ns/applications",
 		},
 		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		responseCode: http.StatusOK,
@@ -160,7 +159,7 @@ func TestAPIs(t *testing.T) {
 		name: "get a normal application",
 		request: request{
 			method: http.MethodGet,
-			uri:    "/devops/ns/applications/app",
+			uri:    "/namespaces/ns/applications/app",
 		},
 		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		responseCode: http.StatusOK,
@@ -177,7 +176,7 @@ func TestAPIs(t *testing.T) {
 		name: "delete an application",
 		request: request{
 			method: http.MethodDelete,
-			uri:    "/devops/ns/applications/app",
+			uri:    "/namespaces/ns/applications/app",
 		},
 		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		responseCode: http.StatusOK,
@@ -194,7 +193,7 @@ func TestAPIs(t *testing.T) {
 		name: "create an application",
 		request: request{
 			method: http.MethodPost,
-			uri:    "/devops/ns/applications",
+			uri:    "/namespaces/ns/applications",
 			body: func() io.Reader {
 				return bytes.NewBuffer([]byte(`{
   "apiVersion": "devops.kubesphere.io/v1alpha1",
@@ -225,7 +224,7 @@ func TestAPIs(t *testing.T) {
 		name: "create an application, invalid payload",
 		request: request{
 			method: http.MethodPost,
-			uri:    "/devops/ns/applications",
+			uri:    "/namespaces/ns/applications",
 			body: func() io.Reader {
 				return bytes.NewBuffer([]byte(`fake`))
 			},
@@ -236,7 +235,7 @@ func TestAPIs(t *testing.T) {
 		name: "update an application",
 		request: request{
 			method: http.MethodPut,
-			uri:    "/devops/ns/applications/app",
+			uri:    "/namespaces/ns/applications/app",
 			body: func() io.Reader {
 				return bytes.NewBuffer([]byte(`{
   "apiVersion": "devops.kubesphere.io/v1alpha1",
@@ -306,12 +305,12 @@ func TestAPIs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wsWithGroup := runtime.NewWebService(v1alpha1.GroupVersion)
-			RegisterRoutes(wsWithGroup, &kapisv1alpha1.Options{GenericClient: tt.k8sclient})
+			RegisterRoutes(wsWithGroup, &common.Options{GenericClient: tt.k8sclient})
 
 			container := restful.NewContainer()
 			container.Add(wsWithGroup)
 
-			api := fmt.Sprintf("http://fake.com/kapis/devops.kubesphere.io/%s%s", v1alpha1.GroupVersion.Version, tt.request.uri)
+			api := fmt.Sprintf("http://fake.com/kapis/gitops.kubesphere.io/%s%s", v1alpha1.GroupVersion.Version, tt.request.uri)
 			var body io.Reader
 			if tt.request.body != nil {
 				body = tt.request.body()
