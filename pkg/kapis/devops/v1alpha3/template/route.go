@@ -23,7 +23,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/constants"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
 )
 
@@ -41,19 +41,19 @@ type PageResult struct {
 }
 
 // RegisterRoutes is for registering template routes into WebService.
-func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options) {
+func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	handler := newHandler(options)
 	// Template
 	service.Route(service.GET("/devops/{devops}/templates").
 		To(handler.handleQuery).
-		Param(kapisv1alpha1.DevopsPathParameter).
+		Param(common.DevopsPathParameter).
 		Doc("Query templates for a DevOps Project.").
 		Returns(http.StatusOK, api.StatusOK, PageResult{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.GET("/devops/{devops}/templates/{template}").
 		To(handler.handleGetTemplate).
-		Param(kapisv1alpha1.DevopsPathParameter).
+		Param(common.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc("Get template").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
@@ -61,7 +61,7 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 
 	service.Route(service.POST("/devops/{devops}/templates/{template}/render").
 		To(handler.handleRenderTemplate).
-		Param(kapisv1alpha1.DevopsPathParameter).
+		Param(common.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).

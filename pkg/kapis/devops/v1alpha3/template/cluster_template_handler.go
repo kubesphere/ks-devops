@@ -39,7 +39,7 @@ func (h *handler) handleRenderClusterTemplate(request *restful.Request, response
 
 func (h *handler) queryClusterTemplates(commonQuery *query.Query) (*api.ListResult, error) {
 	templateList := &v1alpha3.ClusterTemplateList{}
-	if err := h.genericClient.List(context.Background(),
+	if err := h.List(context.Background(),
 		templateList,
 		client.MatchingLabelsSelector{
 			Selector: commonQuery.Selector(),
@@ -51,7 +51,7 @@ func (h *handler) queryClusterTemplates(commonQuery *query.Query) (*api.ListResu
 
 func (h *handler) getClusterTemplate(templateName string) (*v1alpha3.ClusterTemplate, error) {
 	template := &v1alpha3.ClusterTemplate{}
-	if err := h.genericClient.Get(context.Background(), client.ObjectKey{Name: templateName}, template); err != nil {
+	if err := h.Get(context.Background(), client.ObjectKey{Name: templateName}, template); err != nil {
 		return nil, err
 	}
 	return template, nil

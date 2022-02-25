@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -34,16 +34,17 @@ import (
 	"testing"
 )
 
-func Test_clusterTemplatesToObjects(t *testing.T) {
-	createTemplate := func(name string) *v1alpha3.ClusterTemplate {
-		return &v1alpha3.ClusterTemplate{
+func Test_templatesToObjects(t *testing.T) {
+	createTemplate := func(name string) *v1alpha3.Template {
+		return &v1alpha3.Template{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
+				Name:      name,
+				Namespace: "fake-namespace",
 			},
 		}
 	}
 	type args struct {
-		templates []v1alpha3.ClusterTemplate
+		templates []v1alpha3.Template
 	}
 	tests := []struct {
 		name string
@@ -52,7 +53,7 @@ func Test_clusterTemplatesToObjects(t *testing.T) {
 	}{{
 		name: "Should convert correctly",
 		args: args{
-			templates: []v1alpha3.ClusterTemplate{
+			templates: []v1alpha3.Template{
 				*createTemplate("template1"),
 				*createTemplate("template2"),
 			},
@@ -70,31 +71,32 @@ func Test_clusterTemplatesToObjects(t *testing.T) {
 	}, {
 		name: "Should return nil if templates argument is an empty slice",
 		args: args{
-			templates: []v1alpha3.ClusterTemplate{},
+			templates: []v1alpha3.Template{},
 		},
 		want: nil,
 	},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := clusterTemplatesToObjects(tt.args.templates); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("clusterTemplatesToObjects() = %v, want %v", got, tt.want)
+			if got := templatesToObjects(tt.args.templates); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("templatesToObjects() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
-
-func Test_handler_handleQueryClusterTemplates(t *testing.T) {
-	createTemplate := func(name string) *v1alpha3.ClusterTemplate {
-		return &v1alpha3.ClusterTemplate{
+func Test_handler_handleQueryTemplates(t *testing.T) {
+	createTemplate := func(name string) *v1alpha3.Template {
+		return &v1alpha3.Template{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
+				Name:      name,
+				Namespace: "fake-devops",
 			},
 		}
 	}
-	createRequest := func(uri string) *restful.Request {
+	createRequest := func(uri, devopsName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
+		request.PathParameters()[common.DevopsPathParameter.Data().Name] = devopsName
 		return request
 	}
 	type args struct {
@@ -108,7 +110,7 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	}{{
 		name: "Should return empty list if no templates found",
 		args: args{
-			request: createRequest("/v1alpha1/clustertemplates"),
+			request: createRequest("/v1alpha1/devops/fake-devops/templates", "fake-devops"),
 		},
 		wantResponse: api.ListResult{
 			Items: []interface{}{},
@@ -116,7 +118,7 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	}, {
 		name: "Should return non-empty list if templates found",
 		args: args{
-			request: createRequest("/v1alpha1/clustertemplates?sortBy=name&ascending=true"),
+			request: createRequest("/v1alpha1/devops/fake-devops/templates?sortBy=name&ascending=true", "fake-devops"),
 			initObjects: []runtime.Object{
 				createTemplate("template1"),
 				createTemplate("template2"),
@@ -134,7 +136,7 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	}, {
 		name: "Should return empty list if out of page",
 		args: args{
-			request: createRequest("/v1alpha1/clustertemplates?sortBy=name&ascending=true&page=10"),
+			request: createRequest("/v1alpha1/devops/fake-devops/templates?sortBy=name&ascending=true&page=10", "fake-devops"),
 			initObjects: []runtime.Object{
 				createTemplate("template1"),
 				createTemplate("template2"),
@@ -148,19 +150,18 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	},
 	}
 	for _, tt := range tests {
-		utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
 		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
 
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
-				genericClient: fakeClient,
+				Client: fakeClient,
 			}
 			request := tt.args.request
 			recorder := httptest.NewRecorder()
 			response := restful.NewResponse(recorder)
 			response.SetRequestAccepts(restful.MIME_JSON)
-			h.handleQueryClusterTemplates(request, response)
+			h.handleQuery(request, response)
 
 			assert.Equal(t, 200, recorder.Code)
 			wantResponseBytes, err := json.Marshal(tt.wantResponse)
@@ -170,19 +171,89 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	}
 }
 
-func Test_handler_handleRenderClusterTemplate(t *testing.T) {
-	fakeTemplate := &v1alpha3.ClusterTemplate{
+func Test_handler_handleGetTemplate(t *testing.T) {
+	fakeTemplate := &v1alpha3.Template{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "fake-template",
+			Name:      "fake-template",
+			Namespace: "fake-devops",
+		},
+	}
+	createRequest := func(uri, devopsName, templateName string) *restful.Request {
+		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
+		request := restful.NewRequest(fakeRequest)
+		request.PathParameters()[common.DevopsPathParameter.Data().Name] = devopsName
+		request.PathParameters()[TemplatePathParameter.Data().Name] = templateName
+		return request
+	}
+	type args struct {
+		initObjects []runtime.Object
+		request     *restful.Request
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCode  int
+		assertion func(*testing.T, *httptest.ResponseRecorder)
+	}{{
+		name: "Should return not found if template does not exist",
+		args: args{
+			request: createRequest("/v1alpha1/devops/fake-devops/templates/fake-template", "fake-devops", "fake-template"),
+		},
+		wantCode: 404,
+		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			assert.Equal(t, "templates.devops.kubesphere.io \"fake-template\" not found\n", recorder.Body.String())
+		},
+	}, {
+		name: "Should return template if template exists ",
+		args: args{
+			request:     createRequest("/v1alpha1/devops/fake-devops/templates/fake-template", "fake-devops", "fake-template"),
+			initObjects: []runtime.Object{fakeTemplate},
+		},
+		wantCode: 200,
+		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			gotTemplate := &v1alpha3.Template{}
+			_ = json.Unmarshal(recorder.Body.Bytes(), gotTemplate)
+			assert.Equal(t, fakeTemplate.ObjectMeta, gotTemplate.ObjectMeta)
+			assert.Equal(t, fakeTemplate.Spec, gotTemplate.Spec)
+			assert.Equal(t, fakeTemplate.Status, gotTemplate.Status)
+		},
+	}}
+	for _, tt := range tests {
+		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
+		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
+
+		t.Run(tt.name, func(t *testing.T) {
+			h := &handler{
+				Client: fakeClient,
+			}
+			recorder := httptest.NewRecorder()
+			response := restful.NewResponse(recorder)
+			response.SetRequestAccepts(restful.MIME_JSON)
+			h.handleGetTemplate(tt.args.request, response)
+
+			assert.Equal(t, tt.wantCode, recorder.Code)
+			if tt.assertion != nil {
+				tt.assertion(t, recorder)
+			}
+		})
+	}
+}
+
+func Test_handler_handleRenderTemplate(t *testing.T) {
+	fakeTemplate := &v1alpha3.Template{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-template",
+			Namespace: "fake-devops",
 		},
 		Spec: v1alpha3.TemplateSpec{
 			Template: "fake template content",
 		},
 	}
-	createRequest := func(uri, templateName string) *restful.Request {
+	createRequest := func(uri, devopsName, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
 		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[ClusterTemplatePathParameter.Data().Name] = templateName
+		request.PathParameters()[common.DevopsPathParameter.Data().Name] = devopsName
+		request.PathParameters()[TemplatePathParameter.Data().Name] = templateName
 		return request
 	}
 	type args struct {
@@ -197,16 +268,16 @@ func Test_handler_handleRenderClusterTemplate(t *testing.T) {
 	}{{
 		name: "Should return not found if template not found",
 		args: args{
-			request: createRequest("/v1alpha1/clustertemplates/fake-template/render", "fake-template"),
+			request: createRequest("/v1alpha1/devops/fake-devops/templates/fake-template/render", "fake-devops", "fake-template"),
 		},
 		wantCode: 404,
 		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-			assert.Equal(t, "clustertemplates.devops.kubesphere.io \"fake-template\" not found\n", recorder.Body.String())
+			assert.Equal(t, "templates.devops.kubesphere.io \"fake-template\" not found\n", recorder.Body.String())
 		},
 	}, {
 		name: "Should set render result into annotations properly if no parameters needed",
 		args: args{
-			request: createRequest("/v1alpha1/clustertemplates/fake-template/render", "fake-template"),
+			request: createRequest("/v1alpha1/devops/fake-devops/templates/fake-template/render", "fake-devops", "fake-template"),
 			initObjects: []runtime.Object{
 				fakeTemplate,
 			},
@@ -220,18 +291,17 @@ func Test_handler_handleRenderClusterTemplate(t *testing.T) {
 		},
 	}}
 	for _, tt := range tests {
-		utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
 		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
-				genericClient: fakeClient,
+				Client: fakeClient,
 			}
 
 			recorder := httptest.NewRecorder()
 			response := restful.NewResponse(recorder)
 			response.SetRequestAccepts(restful.MIME_JSON)
-			h.handleRenderClusterTemplate(tt.args.request, response)
+			h.handleRenderTemplate(tt.args.request, response)
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
 			if tt.assertion != nil {

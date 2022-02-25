@@ -1,0 +1,80 @@
+package template
+
+import (
+	"fmt"
+	"github.com/emicklei/go-restful"
+	"github.com/stretchr/testify/assert"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
+	"net/http"
+	"net/http/httptest"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"testing"
+)
+
+func TestRegisterRoutes(t *testing.T) {
+	type args struct {
+		method string
+		uri    string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{{
+		name: "List templates",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/fake-devops/templates",
+		},
+	}, {
+		name: "Get a template",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/fake-devops/templates/fake-template",
+		},
+	}, {
+		name: "Render a template",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/devops/fake-devops/templates/fake-template/render",
+		},
+	}, {
+		name: "List cluster templates",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/clustertemplates",
+		},
+	}, {
+		name: "Render a cluster template",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/clustertemplates/fake-template/render",
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			container := restful.NewContainer()
+			utilruntime.Must(v1alpha3.SchemeBuilder.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
+			service := runtime.NewWebService(v1alpha3.GroupVersion)
+			RegisterRoutes(service, &common.Options{
+				GenericClient: fakeClient,
+			})
+			container.Add(service)
+
+			uri := fmt.Sprintf("/kapis/%s/%s%s",
+				v1alpha3.GroupVersion.Group, v1alpha3.GroupVersion.Version, tt.args.uri)
+			recorder := httptest.NewRecorder()
+			request, _ := http.NewRequest(tt.args.method, uri, nil)
+			container.ServeHTTP(recorder, request)
+			if recorder.Code == 404 {
+				assert.NotContains(t, recorder.Body.String(), "Page Not Found")
+			} else {
+				assert.Equal(t, 200, recorder.Code)
+			}
+		})
+	}
+}

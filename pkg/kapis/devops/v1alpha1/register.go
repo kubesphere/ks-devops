@@ -21,7 +21,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/argocd"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/template"
 )
 
 // AddToContainer adds web services into web service container.
@@ -31,7 +30,6 @@ func AddToContainer(container *restful.Container, options *common.Options) []*re
 		runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion),
 	}
 	for _, service := range services {
-		template.RegisterRoutes(service, options)
 		argocd.RegisterRoutes(service, options)
 		container.Add(service)
 	}
