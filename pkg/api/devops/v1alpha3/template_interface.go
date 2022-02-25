@@ -13,12 +13,14 @@
 // limitations under the License.
 //
 
-package v1alpha1
+package v1alpha3
 
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// +kubebuilder:object:generate=false
 
 // TemplateObject is implemented by Template and ClusterTemplate.
 type TemplateObject interface {

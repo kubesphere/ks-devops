@@ -36,8 +36,8 @@ import (
 )
 
 func Test_templatesToObjects(t *testing.T) {
-	createTemplate := func(name string) *v1alpha1.Template {
-		return &v1alpha1.Template{
+	createTemplate := func(name string) *v1alpha3.Template {
+		return &v1alpha3.Template{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: "fake-namespace",
@@ -45,7 +45,7 @@ func Test_templatesToObjects(t *testing.T) {
 		}
 	}
 	type args struct {
-		templates []v1alpha1.Template
+		templates []v1alpha3.Template
 	}
 	tests := []struct {
 		name string
@@ -54,7 +54,7 @@ func Test_templatesToObjects(t *testing.T) {
 	}{{
 		name: "Should convert correctly",
 		args: args{
-			templates: []v1alpha1.Template{
+			templates: []v1alpha3.Template{
 				*createTemplate("template1"),
 				*createTemplate("template2"),
 			},
@@ -72,7 +72,7 @@ func Test_templatesToObjects(t *testing.T) {
 	}, {
 		name: "Should return nil if templates argument is an empty slice",
 		args: args{
-			templates: []v1alpha1.Template{},
+			templates: []v1alpha3.Template{},
 		},
 		want: nil,
 	},
@@ -86,8 +86,8 @@ func Test_templatesToObjects(t *testing.T) {
 	}
 }
 func Test_handler_handleQueryTemplates(t *testing.T) {
-	createTemplate := func(name string) *v1alpha1.Template {
-		return &v1alpha1.Template{
+	createTemplate := func(name string) *v1alpha3.Template {
+		return &v1alpha3.Template{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: "fake-devops",
@@ -174,7 +174,7 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 }
 
 func Test_handler_handleGetTemplate(t *testing.T) {
-	fakeTemplate := &v1alpha1.Template{
+	fakeTemplate := &v1alpha3.Template{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-template",
 			Namespace: "fake-devops",
@@ -213,7 +213,7 @@ func Test_handler_handleGetTemplate(t *testing.T) {
 		},
 		wantCode: 200,
 		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-			gotTemplate := &v1alpha1.Template{}
+			gotTemplate := &v1alpha3.Template{}
 			_ = json.Unmarshal(recorder.Body.Bytes(), gotTemplate)
 			assert.Equal(t, fakeTemplate.ObjectMeta, gotTemplate.ObjectMeta)
 			assert.Equal(t, fakeTemplate.Spec, gotTemplate.Spec)
@@ -243,12 +243,12 @@ func Test_handler_handleGetTemplate(t *testing.T) {
 }
 
 func Test_handler_handleRenderTemplate(t *testing.T) {
-	fakeTemplate := &v1alpha1.Template{
+	fakeTemplate := &v1alpha3.Template{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-template",
 			Namespace: "fake-devops",
 		},
-		Spec: v1alpha1.TemplateSpec{
+		Spec: v1alpha3.TemplateSpec{
 			Template: "fake template content",
 		},
 	}
@@ -287,7 +287,7 @@ func Test_handler_handleRenderTemplate(t *testing.T) {
 		},
 		wantCode: 200,
 		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-			gotTemplate := &v1alpha1.Template{}
+			gotTemplate := &v1alpha3.Template{}
 			_ = json.Unmarshal(recorder.Body.Bytes(), gotTemplate)
 			renderResult := gotTemplate.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey]
 			assert.Equal(t, fakeTemplate.Spec.Template, renderResult)

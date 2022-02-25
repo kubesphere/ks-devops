@@ -17,11 +17,11 @@ package template
 
 import (
 	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
-func render(templateObjectCopy v1alpha1.TemplateObject) v1alpha1.TemplateObject {
-	templateObjectCopy = templateObjectCopy.DeepCopyObject().(v1alpha1.TemplateObject)
+func render(templateObjectCopy v1alpha3.TemplateObject) v1alpha3.TemplateObject {
+	templateObjectCopy = templateObjectCopy.DeepCopyObject().(v1alpha3.TemplateObject)
 	// TODO Render template using parameters
 	template := templateObjectCopy.TemplateSpec().Template
 

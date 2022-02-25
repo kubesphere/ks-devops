@@ -18,7 +18,7 @@ package template
 
 import (
 	"context"
-	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,6 +57,6 @@ func (r *ClusterTemplateReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&devopsv1alpha1.ClusterTemplate{}).
+		For(&v1alpha3.ClusterTemplate{}).
 		Complete(r)
 }

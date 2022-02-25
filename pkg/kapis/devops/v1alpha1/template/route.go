@@ -21,7 +21,7 @@ import (
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/constants"
 	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
 	"net/http"
@@ -36,7 +36,7 @@ var (
 
 // PageResult is the model of Template page result.
 type PageResult struct {
-	Items []v1alpha1.Template `json:"items"`
+	Items []v1alpha3.Template `json:"items"`
 	Total int                 `json:"total"`
 }
 
@@ -56,7 +56,7 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc("Get template").
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.Template{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	service.Route(service.POST("/devops/{devops}/templates/{template}/render").
@@ -64,7 +64,7 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		Param(kapisv1alpha1.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.Template{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
 
 	// ClusterTemplate
@@ -78,6 +78,6 @@ func RegisterRoutes(service *restful.WebService, options *kapisv1alpha1.Options)
 		To(handler.handleRenderClusterTemplate).
 		Param(ClusterTemplatePathParameter).
 		Doc("Render cluster template.").
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterTemplate{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.ClusterTemplate{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))
 }
