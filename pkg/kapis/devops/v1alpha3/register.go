@@ -19,7 +19,6 @@
 package v1alpha3
 
 import (
-	"kubesphere.io/devops/pkg/client/git"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
 	"net/http"
 
@@ -68,7 +67,7 @@ func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, c
 	registerRoutersForCredentials(handler, ws)
 	registerRoutersForPipelines(handler, ws)
 	registerRoutersForWorkspace(handler, ws)
-	registerRoutersForSCM(client, ws)
+	scm.RegisterRoutersForSCM(client, ws)
 }
 
 func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebService) {
@@ -203,16 +202,4 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		Doc("Get the devopsproject of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
-}
-
-func registerRoutersForSCM(k8sClient client.Client, ws *restful.WebService) {
-	handler := scm.NewHandler(k8sClient)
-
-	ws.Route(ws.POST("/scms/{scm}/verify").
-		To(handler.Verify).
-		Param(ws.PathParameter("scm", "the SCM type")).
-		Param(ws.QueryParameter("secret", "the secret name")).
-		Param(ws.QueryParameter("secretNamespace", "the namespace of target secret")).
-		Doc("Verify the token of different git providers").
-		Returns(http.StatusOK, api.StatusOK, git.VerifyResponse{}))
 }

@@ -183,6 +183,7 @@ func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
 	}()
 
 	klog.V(0).Infof("Start listening on %s", s.Server.Addr)
+	klog.V(0).Infof("Open the swagger-ui from http://localhost%s/apidocs/?url=http://localhost:9090/apidocs.json", s.Server.Addr)
 	if s.Server.TLSConfig != nil {
 		err = s.Server.ListenAndServeTLS("", "")
 	} else {
