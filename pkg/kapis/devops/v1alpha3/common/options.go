@@ -13,19 +13,19 @@
 // limitations under the License.
 //
 
-package template
+package common
 
 import (
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/common"
+	"github.com/emicklei/go-restful"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type handler struct {
-	genericClient client.Client
+// Options contain options needed by creating handlers.
+type Options struct {
+	GenericClient client.Client
 }
 
-func newHandler(options *kapisv1alpha1.Options) *handler {
-	return &handler{
-		genericClient: options.GenericClient,
-	}
-}
+var (
+	// DevopsPathParameter is a path parameter definition for devops.
+	DevopsPathParameter = restful.PathParameter("devops", "DevOps project name")
+)

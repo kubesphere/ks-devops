@@ -16,7 +16,7 @@ package template
 
 import (
 	"k8s.io/client-go/kubernetes/scheme"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
@@ -25,7 +25,7 @@ import (
 func Test_newHandler(t *testing.T) {
 	fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
 	type args struct {
-		options *kapisv1alpha1.Options
+		options *common.Options
 	}
 	tests := []struct {
 		name string
@@ -34,12 +34,12 @@ func Test_newHandler(t *testing.T) {
 	}{{
 		name: "Should set handler correctly",
 		args: args{
-			options: &kapisv1alpha1.Options{
+			options: &common.Options{
 				GenericClient: fakeClient,
 			},
 		},
 		want: &handler{
-			genericClient: fakeClient,
+			Client: fakeClient,
 		},
 	},
 	}

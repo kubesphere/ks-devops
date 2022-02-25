@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package v1alpha1
+
+package template
 
 import (
 	"fmt"
@@ -20,15 +21,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
 
-func TestAPIsExist(t *testing.T) {
+func TestRegisterRoutes(t *testing.T) {
 	type args struct {
 		method string
 		uri    string
@@ -68,24 +70,25 @@ func TestAPIsExist(t *testing.T) {
 		},
 	}}
 	for _, tt := range tests {
-		container := restful.NewContainer()
-		utilruntime.Must(v1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme))
-		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
-		AddToContainer(container, &common.Options{
-			GenericClient: fakeClient,
-		})
 		t.Run(tt.name, func(t *testing.T) {
-			uriWithGroupVersion := fmt.Sprintf("/kapis/%s/%s%s",
-				v1alpha1.GroupVersion.Group, v1alpha1.GroupVersion.Version, tt.args.uri)
-			uriWithVersion := fmt.Sprintf("/%s%s",
-				v1alpha1.GroupVersion.Version, tt.args.uri)
-			for _, uri := range []string{uriWithVersion, uriWithGroupVersion} {
-				recorder := httptest.NewRecorder()
-				request, _ := http.NewRequest(tt.args.method, uri, nil)
-				container.ServeHTTP(recorder, request)
-				if recorder.Code == 404 {
-					assert.NotEqual(t, "404 page not found\n", recorder.Body.String())
-				}
+			container := restful.NewContainer()
+			utilruntime.Must(v1alpha3.SchemeBuilder.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
+			service := runtime.NewWebService(v1alpha3.GroupVersion)
+			RegisterRoutes(service, &common.Options{
+				GenericClient: fakeClient,
+			})
+			container.Add(service)
+
+			uri := fmt.Sprintf("/kapis/%s/%s%s",
+				v1alpha3.GroupVersion.Group, v1alpha3.GroupVersion.Version, tt.args.uri)
+			recorder := httptest.NewRecorder()
+			request, _ := http.NewRequest(tt.args.method, uri, nil)
+			container.ServeHTTP(recorder, request)
+			if recorder.Code == 404 {
+				assert.NotContains(t, recorder.Body.String(), "Page Not Found")
+			} else {
+				assert.Equal(t, 200, recorder.Code)
 			}
 		})
 	}

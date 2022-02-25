@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"net/http"
 	"net/http/httptest"
@@ -35,15 +34,15 @@ import (
 )
 
 func Test_clusterTemplatesToObjects(t *testing.T) {
-	createTemplate := func(name string) *v1alpha1.ClusterTemplate {
-		return &v1alpha1.ClusterTemplate{
+	createTemplate := func(name string) *v1alpha3.ClusterTemplate {
+		return &v1alpha3.ClusterTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		}
 	}
 	type args struct {
-		templates []v1alpha1.ClusterTemplate
+		templates []v1alpha3.ClusterTemplate
 	}
 	tests := []struct {
 		name string
@@ -52,7 +51,7 @@ func Test_clusterTemplatesToObjects(t *testing.T) {
 	}{{
 		name: "Should convert correctly",
 		args: args{
-			templates: []v1alpha1.ClusterTemplate{
+			templates: []v1alpha3.ClusterTemplate{
 				*createTemplate("template1"),
 				*createTemplate("template2"),
 			},
@@ -70,7 +69,7 @@ func Test_clusterTemplatesToObjects(t *testing.T) {
 	}, {
 		name: "Should return nil if templates argument is an empty slice",
 		args: args{
-			templates: []v1alpha1.ClusterTemplate{},
+			templates: []v1alpha3.ClusterTemplate{},
 		},
 		want: nil,
 	},
@@ -85,8 +84,8 @@ func Test_clusterTemplatesToObjects(t *testing.T) {
 }
 
 func Test_handler_handleQueryClusterTemplates(t *testing.T) {
-	createTemplate := func(name string) *v1alpha1.ClusterTemplate {
-		return &v1alpha1.ClusterTemplate{
+	createTemplate := func(name string) *v1alpha3.ClusterTemplate {
+		return &v1alpha3.ClusterTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -148,13 +147,12 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	},
 	}
 	for _, tt := range tests {
-		utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
 		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
 
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
-				genericClient: fakeClient,
+				Client: fakeClient,
 			}
 			request := tt.args.request
 			recorder := httptest.NewRecorder()
@@ -171,11 +169,11 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 }
 
 func Test_handler_handleRenderClusterTemplate(t *testing.T) {
-	fakeTemplate := &v1alpha1.ClusterTemplate{
+	fakeTemplate := &v1alpha3.ClusterTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake-template",
 		},
-		Spec: v1alpha1.TemplateSpec{
+		Spec: v1alpha3.TemplateSpec{
 			Template: "fake template content",
 		},
 	}
@@ -213,19 +211,18 @@ func Test_handler_handleRenderClusterTemplate(t *testing.T) {
 		},
 		wantCode: 200,
 		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-			gotTemplate := &v1alpha1.Template{}
+			gotTemplate := &v1alpha3.Template{}
 			_ = json.Unmarshal(recorder.Body.Bytes(), gotTemplate)
 			renderResult := gotTemplate.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey]
 			assert.Equal(t, fakeTemplate.Spec.Template, renderResult)
 		},
 	}}
 	for _, tt := range tests {
-		utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
 		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
-				genericClient: fakeClient,
+				Client: fakeClient,
 			}
 
 			recorder := httptest.NewRecorder()
