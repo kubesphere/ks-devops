@@ -23,7 +23,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/constants"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 )
 

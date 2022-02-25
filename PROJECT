@@ -13,4 +13,7 @@ resources:
 - group: devops
   kind: ClusterTemplate
   version: v1alpha1
+- group: gitops
+  kind: Application
+  version: v1alpha1
 version: "2"

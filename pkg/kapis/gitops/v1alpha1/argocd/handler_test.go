@@ -18,6 +18,7 @@ package argocd
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
+	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 	"testing"
 )
@@ -56,7 +57,7 @@ func Test_getPathParameter(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, getPathParameter(tt.args.req(), tt.args.param), "getPathParameter(%v, %v)", tt.args.req, tt.args.param)
+			assert.Equalf(t, tt.want, common.GetPathParameter(tt.args.req(), tt.args.param), "getPathParameter(%v, %v)", tt.args.req, tt.args.param)
 		})
 	}
 }

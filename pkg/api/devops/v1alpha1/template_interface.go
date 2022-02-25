@@ -20,6 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// +kubebuilder:object:generate=false
+
 // TemplateObject is implemented by Template and ClusterTemplate.
 type TemplateObject interface {
 	v1.Object

@@ -20,11 +20,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var _ TemplateObject = &ClusterTemplate{}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
-
-var _ TemplateObject = &ClusterTemplate{}
 
 // ClusterTemplate is the Schema for the clustertemplates API
 type ClusterTemplate struct {

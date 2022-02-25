@@ -17,6 +17,7 @@ package common
 
 import (
 	"github.com/emicklei/go-restful"
+	"kubesphere.io/devops/pkg/kapis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -28,4 +29,20 @@ type Options struct {
 var (
 	// DevopsPathParameter is a path parameter definition for devops.
 	DevopsPathParameter = restful.PathParameter("devops", "DevOps project name")
+	// NamespacePathParameter is a path parameter definition for namespace
+	NamespacePathParameter = restful.PathParameter("namespace", "The namespace name")
 )
+
+// GetPathParameter returns the parameter value from a request
+func GetPathParameter(req *restful.Request, param *restful.Parameter) string {
+	return req.PathParameter(param.Data().Name)
+}
+
+// Response is a common response method
+func Response(req *restful.Request, res *restful.Response, object interface{}, err error) {
+	if err != nil {
+		kapis.HandleError(req, res, err)
+	} else {
+		_ = res.WriteEntity(object)
+	}
+}
