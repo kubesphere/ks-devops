@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: applications.devops.kubesphere.io
+  name: applications.gitops.kubesphere.io
 spec:
-  group: devops.kubesphere.io
+  group: gitops.kubesphere.io
   names:
     kind: Application
     listKind: ApplicationList

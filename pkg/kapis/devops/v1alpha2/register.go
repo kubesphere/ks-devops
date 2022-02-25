@@ -533,6 +533,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 		// match "/blue/rest/organizations/jenkins/scm/{scm}/organizations/?credentialId=github"
 		webservice.Route(webservice.GET("/scms/{scm}/organizations").
 			To(projectPipelineHandler.GetSCMOrg).
+			Deprecate().
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsScmTag}).
 			Doc("List all organizations of the specified source configuration management (SCM) such as Github.").
 			Param(webservice.PathParameter("scm", "the ID of the source configuration management (SCM).")).
@@ -543,6 +544,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 		// match "/blue/rest/organizations/jenkins/scm/{scm}/organizations/{organization}/repositories/?credentialId=&pageNumber&pageSize="
 		webservice.Route(webservice.GET("/scms/{scm}/organizations/{organization}/repositories").
 			To(projectPipelineHandler.GetOrgRepo).
+			Deprecate().
 			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsScmTag}).
 			Doc("List all repositories in the specified organization.").
 			Param(webservice.PathParameter("scm", "The ID of the source configuration management (SCM).")).

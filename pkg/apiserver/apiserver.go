@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/kapis/doc"
+	gitops "kubesphere.io/devops/pkg/kapis/gitops/v1alpha1"
 	"net/http"
 	rt "runtime"
 	"time"
@@ -159,7 +159,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
 	))
-	wss = append(wss, kapisv1alpha1.AddToContainer(s.container, &common.Options{
+	wss = append(wss, gitops.AddToContainer(s.container, &common.Options{
 		GenericClient: s.Client,
 	})...)
 	doc.AddSwaggerService(wss, s.container)
@@ -187,6 +187,7 @@ func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
 	}()
 
 	klog.V(0).Infof("Start listening on %s", s.Server.Addr)
+	klog.V(0).Infof("Open the swagger-ui from http://localhost%s/apidocs/?url=http://localhost:9090/apidocs.json", s.Server.Addr)
 	if s.Server.TLSConfig != nil {
 		err = s.Server.ListenAndServeTLS("", "")
 	} else {

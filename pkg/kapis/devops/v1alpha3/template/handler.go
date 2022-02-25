@@ -16,16 +16,16 @@
 package template
 
 import (
-	kapisv1alpha1 "kubesphere.io/devops/pkg/kapis/devops/v1alpha1/common"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type handler struct {
-	genericClient client.Client
+	client.Client
 }
 
-func newHandler(options *kapisv1alpha1.Options) *handler {
+func newHandler(options *common.Options) *handler {
 	return &handler{
-		genericClient: options.GenericClient,
+		Client: options.GenericClient,
 	}
 }

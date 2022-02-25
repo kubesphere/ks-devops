@@ -26,13 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=applications,verbs=get;list;update
+//+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
 //+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;create;update
 
 // ApplicationReconciler is the reconciler of the Application

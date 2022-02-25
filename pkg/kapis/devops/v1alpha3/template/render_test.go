@@ -19,31 +19,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"testing"
 )
 
 func Test_render(t *testing.T) {
 	type args struct {
-		templateObject v1alpha1.TemplateObject
+		templateObject v1alpha3.TemplateObject
 	}
 	tests := []struct {
 		name   string
 		args   args
-		verify func(t *testing.T, object v1alpha1.TemplateObject)
+		verify func(t *testing.T, object v1alpha3.TemplateObject)
 	}{{
 		name: "Should render template into annotations",
 		args: args{
-			templateObject: &v1alpha1.Template{
+			templateObject: &v1alpha3.Template{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fake-template",
 				},
-				Spec: v1alpha1.TemplateSpec{
+				Spec: v1alpha3.TemplateSpec{
 					Template: "fake-template-content",
 				},
 			},
 		},
-		verify: func(t *testing.T, object v1alpha1.TemplateObject) {
+		verify: func(t *testing.T, object v1alpha3.TemplateObject) {
 			gotRenderResult := object.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey]
 			wantRenderResult := object.TemplateSpec().Template
 			assert.Equal(t, wantRenderResult, gotRenderResult)

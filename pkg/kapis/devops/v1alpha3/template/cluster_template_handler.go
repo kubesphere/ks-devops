@@ -20,10 +20,10 @@ import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/kapis"
-	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	resourcev1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -38,26 +38,26 @@ func (h *handler) handleRenderClusterTemplate(request *restful.Request, response
 }
 
 func (h *handler) queryClusterTemplates(commonQuery *query.Query) (*api.ListResult, error) {
-	templateList := &v1alpha1.ClusterTemplateList{}
-	if err := h.genericClient.List(context.Background(),
+	templateList := &v1alpha3.ClusterTemplateList{}
+	if err := h.List(context.Background(),
 		templateList,
 		client.MatchingLabelsSelector{
 			Selector: commonQuery.Selector(),
 		}); err != nil {
 		return nil, err
 	}
-	return v1alpha3.ToListResult(clusterTemplatesToObjects(templateList.Items), commonQuery, nil), nil
+	return resourcev1alpha3.ToListResult(clusterTemplatesToObjects(templateList.Items), commonQuery, nil), nil
 }
 
-func (h *handler) getClusterTemplate(templateName string) (*v1alpha1.ClusterTemplate, error) {
-	template := &v1alpha1.ClusterTemplate{}
-	if err := h.genericClient.Get(context.Background(), client.ObjectKey{Name: templateName}, template); err != nil {
+func (h *handler) getClusterTemplate(templateName string) (*v1alpha3.ClusterTemplate, error) {
+	template := &v1alpha3.ClusterTemplate{}
+	if err := h.Get(context.Background(), client.ObjectKey{Name: templateName}, template); err != nil {
 		return nil, err
 	}
 	return template, nil
 }
 
-func (h *handler) renderClusterTemplate(templateName string) (v1alpha1.TemplateObject, error) {
+func (h *handler) renderClusterTemplate(templateName string) (v1alpha3.TemplateObject, error) {
 	template, err := h.getClusterTemplate(templateName)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (h *handler) renderClusterTemplate(templateName string) (v1alpha1.TemplateO
 	return render(template), nil
 }
 
-func clusterTemplatesToObjects(templates []v1alpha1.ClusterTemplate) []runtime.Object {
+func clusterTemplatesToObjects(templates []v1alpha3.ClusterTemplate) []runtime.Object {
 	var objects []runtime.Object
 	for i := range templates {
 		objects = append(objects, &templates[i])
