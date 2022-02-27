@@ -654,16 +654,6 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Returns(http.StatusOK, api.StatusOK, map[string]interface{}{}).
 			Writes(map[string]interface{}{}))
 
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/runs/{run}").
-			To(projectPipelineHandler.GetPipelineRun).
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
-			Doc("Get details in the specified pipeline activity.").
-			Param(webservice.PathParameter("devops", "the name of devops project")).
-			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
-			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Returns(http.StatusOK, api.StatusOK, devops.PipelineRun{}).
-			Writes(devops.PipelineRun{}))
-
 		// download PipelineRun artifact
 		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/artifact/runs/{run}").
 			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
