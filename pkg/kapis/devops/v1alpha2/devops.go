@@ -956,3 +956,33 @@ func parseErr(err error, resp *restful.Response) {
 	}
 	return
 }
+
+// downloadArtifact API to download artifacts from Jenkins
+func (h *ProjectPipelineHandler) downloadArtifact(request *restful.Request, response *restful.Response) {
+	projectName := request.PathParameter("devops")
+	pipelineName := request.PathParameter("pipeline")
+	runId := request.PathParameter("run")
+	fileName := request.QueryParameter("filename")
+
+	artifactUrl := fmt.Sprintf("/job/%s/job/%s/%s/artifact/%s", projectName, pipelineName, runId, fileName)
+	statusCode, body, err := h.jenkinsClient.Request(http.MethodGet, artifactUrl, nil, nil)
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	if statusCode != http.StatusOK {
+		err := fmt.Errorf("failed to get artifact. The HTTP status code is %d", statusCode)
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	// add download header
+	response.AddHeader("Content-Type", "application/octet-stream")
+	response.AddHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	_, err = response.Write(body)
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+}
