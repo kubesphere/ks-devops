@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/client/clientset/versioned"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/informers/externalversions"
@@ -30,6 +31,7 @@ type ProjectPipelineHandler struct {
 	k8sClient               k8s.Client
 	devopsOperator          devops.DevopsOperator
 	projectCredentialGetter devops.ProjectCredentialGetter
+	jenkinsClient           core.JenkinsCore
 }
 
 type PipelineSonarHandler struct {
@@ -37,11 +39,12 @@ type PipelineSonarHandler struct {
 	pipelineSonarGetter devops.PipelineSonarGetter
 }
 
-func NewProjectPipelineHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) ProjectPipelineHandler {
+func NewProjectPipelineHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client, jenkinsClient core.JenkinsCore) ProjectPipelineHandler {
 	return ProjectPipelineHandler{
 		devopsOperator:          devops.NewDevopsOperator(devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere()),
 		projectCredentialGetter: devops.NewProjectCredentialOperator(devopsClient),
 		k8sClient:               k8sClient,
+		jenkinsClient:           jenkinsClient,
 	}
 }
 

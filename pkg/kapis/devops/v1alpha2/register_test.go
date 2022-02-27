@@ -209,6 +209,12 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/tojenkinsfile",
 		},
+	}, {
+		name: "artifact download",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/fake/pipelines/fake/artifact/runs/fake",
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

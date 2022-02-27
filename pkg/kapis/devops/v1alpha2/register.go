@@ -70,7 +70,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 func addToContainerWithWebService(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
 	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore, ws *restful.WebService) error {
-	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
+	err := AddPipelineToWebService(ws, devopsClient, k8sClient, jenkinsClient)
 	if err != nil {
 		return err
 	}
@@ -94,11 +94,11 @@ func addToContainerWithWebService(container *restful.Container, ksInformers exte
 	return nil
 }
 
-func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, k8sClient k8s.Client) error {
+func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, k8sClient k8s.Client, jenkinsClient core.JenkinsCore) error {
 	projectPipelineEnable := devopsClient != nil
 
 	if projectPipelineEnable {
-		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient)
+		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient, jenkinsClient)
 
 		webservice.Route(webservice.GET("/devops/{devops}/credentials/{credential}/usage").
 			To(projectPipelineHandler.GetProjectCredentialUsage).
@@ -653,6 +653,26 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 			Reads(devops.ReqJenkinsfile{}).
 			Returns(http.StatusOK, api.StatusOK, map[string]interface{}{}).
 			Writes(map[string]interface{}{}))
+
+		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/runs/{run}").
+			To(projectPipelineHandler.GetPipelineRun).
+			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}).
+			Doc("Get details in the specified pipeline activity.").
+			Param(webservice.PathParameter("devops", "the name of devops project")).
+			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
+			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
+			Returns(http.StatusOK, api.StatusOK, devops.PipelineRun{}).
+			Writes(devops.PipelineRun{}))
+
+		// download PipelineRun artifact
+		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/artifact/runs/{run}").
+			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
+			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
+			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
+			Param(webservice.QueryParameter("filename", "artifact filename. e.g. artifact:v1.0.1")).
+			To(projectPipelineHandler.downloadArtifact).
+			Returns(http.StatusOK, api.StatusOK, nil).
+			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 	}
 	return nil
 }
@@ -725,6 +745,7 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
+
 	return nil
 }
 
