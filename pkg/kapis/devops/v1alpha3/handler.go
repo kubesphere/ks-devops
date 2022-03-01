@@ -22,29 +22,25 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/query"
+	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
 	"kubesphere.io/devops/pkg/kapis"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"kubesphere.io/devops/pkg/apiserver/query"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/models/devops"
 	servererr "kubesphere.io/devops/pkg/server/errors"
 	"kubesphere.io/devops/pkg/server/params"
 )
 
 type devopsHandler struct {
-	k8sClient     k8s.Client
-	devopsClient  devopsClient.Interface
-	genericClient client.Client
+	k8sClient    k8s.Client
+	devopsClient devopsClient.Interface
 }
 
-func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client, genericClient client.Client) *devopsHandler {
+func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) *devopsHandler {
 	return &devopsHandler{
-		k8sClient:     k8sClient,
-		devopsClient:  devopsClient,
-		genericClient: genericClient,
+		k8sClient:    k8sClient,
+		devopsClient: devopsClient,
 	}
 }
 

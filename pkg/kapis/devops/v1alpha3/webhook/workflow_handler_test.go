@@ -138,9 +138,7 @@ func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiB
 		ParentFullName: parentFullName,
 		ProjectName:    projectName,
 		IsMultiBranch:  isMultiBranch,
-		Run: workflowrun.WorkflowRun{
-			ID: buildNumber,
-		},
+		ID:             buildNumber,
 	}
 }
 func Test_extractPipelineRunIdentifier(t *testing.T) {
@@ -266,7 +264,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			handler := &Handler{
-				genericClient: fakeClient,
+				Client: fakeClient,
 			}
 			if err := handler.handleWorkflowRunInitialize(tt.args.workflowRunData); (err != nil) != tt.wantErr {
 				t.Errorf("Handler.handleWorkflowRunInitialize() error = %v, wantErr %v", err, tt.wantErr)

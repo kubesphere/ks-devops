@@ -22,12 +22,12 @@ import (
 	"kubesphere.io/devops/pkg/event/models/workflowrun"
 )
 
-// WorkflowRunDataType is a full qualified class name in Java.
-const WorkflowRunDataType = "io.jenkins.plugins.pipeline.event.data.WorkflowRunData"
+// WorkflowRunType is a full qualified class name in Java.
+const WorkflowRunType = "org.jenkinsci.plugins.workflow.job.WorkflowRun"
 
 // HandleWorkflowRun handles WorkflowRun event.
 func (event *Event) HandleWorkflowRun(funcs workflowrun.Funcs) error {
-	if event == nil || len(event.Data) == 0 || event.DataType != WorkflowRunDataType {
+	if event == nil || len(event.Data) == 0 || event.DataType != WorkflowRunType {
 		return nil
 	}
 	// unmarshal data to WorkflowRunData

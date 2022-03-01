@@ -184,7 +184,7 @@ func (pr *PipelineRun) GetPipelineRunIdentifier() string {
 
 // BuildPipelineRunIdentifier builds PipelineRun identifier with Pipeline name, SCM reference name and run ID.
 func BuildPipelineRunIdentifier(pipelineName, scmRefName, runID string) string {
-	identifierItem := []string{}
+	var identifierItem []string
 	if pipelineName != "" {
 		identifierItem = append(identifierItem, pipelineName)
 	}

@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"github.com/emicklei/go-restful"
+	"k8s.io/apimachinery/pkg/util/errors"
 	"kubesphere.io/devops/pkg/event/models/common"
 	"kubesphere.io/devops/pkg/event/models/workflowrun"
 	"kubesphere.io/devops/pkg/kapis"
@@ -26,13 +27,13 @@ import (
 
 // Handler handles requests from webhooks.
 type Handler struct {
-	genericClient client.Client
+	client.Client
 }
 
 // NewHandler creates a new handler for handling webhooks.
 func NewHandler(genericClient client.Client) *Handler {
 	return &Handler{
-		genericClient: genericClient,
+		Client: genericClient,
 	}
 }
 
@@ -45,7 +46,10 @@ func (handler *Handler) ReceiveEventsFromJenkins(request *restful.Request, respo
 		return
 	}
 
-	// handle event
+	// TODO Make all handlers execute asynchronously
+
+	// register WorkflowRun event handler
+	var errs []error
 	if err := event.HandleWorkflowRun(workflowrun.Funcs{
 		HandleInitialize: handler.handleWorkflowRunInitialize,
 		// TODO Handler others
@@ -54,9 +58,13 @@ func (handler *Handler) ReceiveEventsFromJenkins(request *restful.Request, respo
 		HandleCompleted: nil,
 		HandleDeleted:   nil,
 	}); err != nil {
-		kapis.HandleError(request, response, err)
+		// collect errors
+		errs = append(errs, err)
 	}
 
 	// TODO Register other event handlers here
-	// event.HandleWorkflowJob(workflowjob.Funcs{ HandleCreated: handler.handleWorkflowJobCreated })
+
+	if len(errs) > 0 {
+		kapis.HandleError(request, response, errors.NewAggregate(errs))
+	}
 }

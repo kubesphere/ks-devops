@@ -16,16 +16,8 @@ limitations under the License.
 
 package workflowrun
 
-// Data contains WorkflowJob breif information and WorkflowRun detail.
+// Data contains WorkflowJob brief information and WorkflowRun detail.
 type Data struct {
-	ParentFullName string      `json:"parentFullName"`
-	ProjectName    string      `json:"projectName"`
-	IsMultiBranch  bool        `json:"multiBranch"`
-	Run            WorkflowRun `json:"run"`
-}
-
-// WorkflowRun contains WorkflowRun detail.
-type WorkflowRun struct {
 	Actions           Actions `json:"actions"`
 	Building          bool    `json:"building"`
 	Description       string  `json:"description"`
@@ -39,6 +31,9 @@ type WorkflowRun struct {
 	QueueID           int     `json:"queueId"`
 	Result            string  `json:"result"`
 	Timestamp         int64   `json:"timestamp"`
+	ParentFullName    string  `json:"_parentFullName"`
+	ProjectName       string  `json:"_projectName"`
+	IsMultiBranch     bool    `json:"_multiBranch"`
 }
 
 // Funcs is a collection of handlers for various event type.

@@ -62,7 +62,7 @@ func extractPipelineRunIdentifier(workflowRunData *workflowrun.Data) *pipelineRu
 		return nil
 	}
 	identifier := &pipelineRunIdentifier{
-		buildNumber: workflowRunData.Run.ID,
+		buildNumber: workflowRunData.ID,
 	}
 
 	fullName := workflowRunData.ParentFullName
@@ -97,14 +97,14 @@ func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun
 
 	pipelineRunIdentifier := identifier.toIdentifier()
 	pipelineRunList := &v1alpha3.PipelineRunList{}
-	if err := handler.genericClient.List(context.Background(), pipelineRunList,
+	if err := handler.List(context.Background(), pipelineRunList,
 		client.InNamespace(identifier.namespaceName),
 		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: pipelineRunIdentifier}); err != nil {
 		return err
 	}
 
 	if len(pipelineRunList.Items) == 0 {
-		parameters, err := workflowRunData.Run.Actions.GetParameters()
+		parameters, err := workflowRunData.Actions.GetParameters()
 		if err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun
 
 func (handler *Handler) createPipelineRun(identifier *pipelineRunIdentifier, parameters []v1alpha3.Parameter) (*v1alpha3.PipelineRun, error) {
 	pipeline := &v1alpha3.Pipeline{}
-	if err := handler.genericClient.Get(context.Background(), client.ObjectKey{Namespace: identifier.namespaceName, Name: identifier.pipelineName}, pipeline); err != nil {
+	if err := handler.Get(context.Background(), client.ObjectKey{Namespace: identifier.namespaceName, Name: identifier.pipelineName}, pipeline); err != nil {
 		return nil, err
 	}
 	scm, err := pipelinerun.CreateScm(&pipeline.Spec, identifier.scmRefName)
@@ -133,7 +133,7 @@ func (handler *Handler) createPipelineRun(identifier *pipelineRunIdentifier, par
 
 	// Set the RunID manually
 	pipelineRun.GetAnnotations()[v1alpha3.JenkinsPipelineRunIDAnnoKey] = identifier.buildNumber
-	if err := handler.genericClient.Create(context.Background(), pipelineRun); err != nil {
+	if err := handler.Create(context.Background(), pipelineRun); err != nil {
 		return nil, err
 	}
 	return pipelineRun, nil

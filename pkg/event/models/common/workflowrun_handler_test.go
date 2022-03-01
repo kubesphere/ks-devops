@@ -73,7 +73,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: nil,
 	}, {
 		name:  "Should invoke initialize handler",
-		event: createEvent(string(RunInitialize), WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent(string(RunInitialize), WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleInitialize: initializeHandler,
@@ -82,7 +82,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: errInitialize,
 	}, {
 		name:  "Should invoke started handler",
-		event: createEvent(string(RunStarted), WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent(string(RunStarted), WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleStarted: startedHandler,
@@ -91,7 +91,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: errStarted,
 	}, {
 		name:  "Should invoke finalized handler",
-		event: createEvent(string(RunFinalized), WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent(string(RunFinalized), WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleFinalized: finalizedHandler,
@@ -100,7 +100,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: errFinalized,
 	}, {
 		name:  "Should invoke completed handler",
-		event: createEvent(string(RunCompleted), WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent(string(RunCompleted), WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleCompleted: completedHandler,
@@ -109,7 +109,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: errCompleted,
 	}, {
 		name:  "Should invoke deleted handler",
-		event: createEvent(string(RunDeleted), WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent(string(RunDeleted), WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleDeleted: deletedHandler,
@@ -118,7 +118,7 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: errDeleted,
 	}, {
 		name:  "Should return nil if event type is out of range",
-		event: createEvent("fake.event", WorkflowRunDataType, &workflowrun.Data{}),
+		event: createEvent("fake.event", WorkflowRunType, &workflowrun.Data{}),
 		args: args{
 			funcs: workflowrun.Funcs{
 				HandleInitialize: initializeHandler,

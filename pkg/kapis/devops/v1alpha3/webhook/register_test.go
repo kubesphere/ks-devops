@@ -19,6 +19,8 @@ package webhook
 import (
 	"context"
 	"io"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -34,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestAPIsExist(t *testing.T) {
+func TestJenkinsWebhook(t *testing.T) {
 
 	type args struct {
 		method     string
@@ -47,7 +49,7 @@ func TestAPIsExist(t *testing.T) {
 		args      args
 		assertion func(t *testing.T, c client.Client)
 	}{{
-		name: "receive pipeline event",
+		name: "Should create PipelineRun when workflow run initialized",
 		args: args{
 			method: http.MethodPost,
 			uri:    "/webhooks/jenkins",
@@ -61,84 +63,100 @@ func TestAPIsExist(t *testing.T) {
 			},
 			bodyJSON: `
 				{
-					"data":     {
-						"multiBranch": false,
-						"parentFullName": "my-devops-project",
-						"run":         {
-							"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
-							"actions":             [
-												{
-									"_class": "hudson.model.ParametersAction",
-									"parameters": [                    {
-										"_class": "hudson.model.BooleanParameterValue",
-										"name": "skip",
-										"value": false
-									}]
-								},
-								{"_class": "org.jenkinsci.plugins.displayurlapi.actions.RunDisplayAction"},
-								{"_class": "org.jenkinsci.plugins.pipeline.modeldefinition.actions.RestartDeclarativePipelineAction"},
-								{},
-								{"_class": "org.jenkinsci.plugins.workflow.job.views.FlowGraphAction"},
-								{},
-								{},
-								{}
-							],
-							"artifacts": [],
-							"building": true,
-							"description": null,
-							"displayName": "#1",
-							"duration": 0,
-							"estimatedDuration": -1,
-							"executor": {"_class": "hudson.model.OneOffExecutor"},
-							"fullDisplayName": "my-devops-project » example-pipeline #1",
-							"id": "1",
-							"keepLog": false,
-							"number": 1,
-							"queueId": 1,
-							"result": null,
-							"timestamp": 1642399916330,
-							"changeSets": [],
-							"culprits": [],
-							"nextBuild": null,
-							"previousBuild": null
-						},
-						"projectName": "example-pipeline"
-					},
-					"dataType": "io.jenkins.plugins.pipeline.event.data.WorkflowRunData",
-					"id": "948bce89-5844-454d-aa6d-75acb886381a",
-					"source": "job/my-devops-project/job/example-pipeline/",
-					"time": "2022-01-17T14:11:56.359+0800",
-					"type": "run.initialize"
+				  "data":     {
+					"_class": "io.jenkins.plugins.generic.event.data.WorkflowRunData",
+					"actions":         [
+					  {
+						"_class": "hudson.model.ParametersAction",
+						"parameters": [                {
+						  "_class": "hudson.model.BooleanParameterValue",
+						  "name": "skip",
+						  "value": false
+						}]
+					  },
+					  {"_class": "org.jenkinsci.plugins.displayurlapi.actions.RunDisplayAction"},
+					  {"_class": "org.jenkinsci.plugins.pipeline.modeldefinition.actions.RestartDeclarativePipelineAction"},
+					  {},
+					  {"_class": "org.jenkinsci.plugins.workflow.job.views.FlowGraphAction"},
+					  {},
+					  {},
+					  {}
+					],
+					"artifacts": [],
+					"building": true,
+					"description": null,
+					"displayName": "#1",
+					"duration": 0,
+					"estimatedDuration": -1,
+					"executor": {"_class": "hudson.model.OneOffExecutor"},
+					"fullDisplayName": "my-devops-project » example-pipeline #1",
+					"id": "1",
+					"keepLog": false,
+					"number": 1,
+					"queueId": 1,
+					"result": null,
+					"timestamp": 1644126495293,
+					"changeSets": [],
+				"culprits": [],
+				"nextBuild": null,
+				"previousBuild": null,
+				"_multiBranch": false,
+				"_parentFullName": "my-devops-project",
+				"_projectName": "example-pipeline"
+			  },
+			  "dataType": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+			  "id": "50c33b0e-d7f1-4a34-b57e-bb82cd453894",
+			  "source": "job/my-devops-project/job/example-pipeline/",
+			  "time": "2022-02-06T13:48:15.307+0800",
+			  "type": "run.initialize"
+			}`,
+		},
+		assertion: func(t *testing.T, c client.Client) {
+			pipelineruns := &v1alpha3.PipelineRunList{}
+			assert.Nil(t, c.List(context.Background(), pipelineruns))
+			assert.Equal(t, 1, len(pipelineruns.Items))
+		},
+	}, {
+		name: "Should not create any PipelineRuns when type doesn't start with run",
+		args: args{
+			method:     http.MethodPost,
+			uri:        "/webhooks/jenkins",
+			initObject: []runtime.Object{},
+			bodyJSON: `
+				{
+				  "dataType": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				  "id": "50c33b0e-d7f1-4a34-b57e-bb82cd453894",
+				  "source": "job/my-devops-project/job/example-pipeline/",
+				  "time": "2022-02-06T13:48:15.307+0800",
+				  "type": "job.created"
 				}`,
 		},
 		assertion: func(t *testing.T, c client.Client) {
-			pipelineruns := &v1alpha3.PipelineList{}
-			err := c.List(context.Background(), pipelineruns)
-			assert.Nil(t, err)
-			assert.Equal(t, 1, len(pipelineruns.Items))
+			pipelineruns := &v1alpha3.PipelineRunList{}
+			assert.Nil(t, c.List(context.Background(), pipelineruns))
+			assert.Equal(t, 0, len(pipelineruns.Items))
 		},
 	}}
 	for _, tt := range tests {
-		httpWriter := httptest.NewRecorder()
-		wsWithGroup := apiserverruntime.NewWebService(v1alpha3.GroupVersion)
-
-		scheme := runtime.NewScheme()
-		err := v1alpha3.AddToScheme(scheme)
-		assert.Nil(t, err)
-
-		fakeClient := fake.NewFakeClientWithScheme(scheme, tt.args.initObject...)
-		RegisterWebhooks(fakeClient, wsWithGroup)
-		restful.DefaultContainer.Add(wsWithGroup)
-
 		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObject...)
+
+			container := restful.NewContainer()
+			wsWithGroup := apiserverruntime.NewWebService(v1alpha3.GroupVersion)
+			RegisterWebhooks(fakeClient, wsWithGroup)
+			container.Add(wsWithGroup)
+
 			var bodyReader io.Reader
 			if tt.args.bodyJSON != "" {
 				bodyReader = strings.NewReader(tt.args.bodyJSON)
 			}
+
 			httpRequest, _ := http.NewRequest(tt.args.method,
 				"http://fake.com/kapis/devops.kubesphere.io/v1alpha3"+tt.args.uri, bodyReader)
 			httpRequest.Header.Set("Content-Type", "application/json")
-			restful.DefaultContainer.Dispatch(httpWriter, httpRequest)
+			httpWriter := httptest.NewRecorder()
+			container.Dispatch(httpWriter, httpRequest)
 			assert.Equal(t, 200, httpWriter.Code)
 			if tt.assertion != nil {
 				tt.assertion(t, fakeClient)
