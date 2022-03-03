@@ -16,19 +16,47 @@
 package template
 
 import (
+	"bytes"
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	tmpl "text/template"
 )
 
-func render(templateObjectCopy v1alpha3.TemplateObject) v1alpha3.TemplateObject {
-	templateObjectCopy = templateObjectCopy.DeepCopyObject().(v1alpha3.TemplateObject)
-	// TODO Render template using parameters
-	template := templateObjectCopy.TemplateSpec().Template
+const parametersKey = "params"
 
-	// set template into annotations
-	if templateObjectCopy.GetAnnotations() == nil {
-		templateObjectCopy.SetAnnotations(map[string]string{})
+// Parameter is a pair of name and value.
+type Parameter struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
+}
+
+func render(templateObject v1alpha3.TemplateObject, parameters []Parameter) (v1alpha3.TemplateObject, error) {
+	templateObject = templateObject.DeepCopyObject().(v1alpha3.TemplateObject)
+	rawTemplate := templateObject.TemplateSpec().Template
+	template := tmpl.New("pipeline-template")
+	if _, err := template.Parse(rawTemplate); err != nil {
+		return nil, err
 	}
-	templateObjectCopy.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey] = template
-	return templateObjectCopy
+
+	// TODO Verify required parameters and default parameters
+	// check the required parameters
+	parameterMap := map[string]interface{}{}
+	for _, parameter := range parameters {
+		parameterMap[parameter.Name] = parameter.Value
+	}
+
+	parametersData := map[string]map[string]interface{}{}
+	parametersData[parametersKey] = parameterMap
+
+	buffer := &bytes.Buffer{}
+	if err := template.Execute(buffer, parametersData); err != nil {
+		return nil, err
+	}
+	renderResult := buffer.String()
+
+	if templateObject.GetAnnotations() == nil {
+		templateObject.SetAnnotations(map[string]string{})
+	}
+	templateObject.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey] = renderResult
+	return templateObject, nil
 }
