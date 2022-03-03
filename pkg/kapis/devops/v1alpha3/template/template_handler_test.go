@@ -84,6 +84,7 @@ func Test_templatesToObjects(t *testing.T) {
 		})
 	}
 }
+
 func Test_handler_handleQueryTemplates(t *testing.T) {
 	createTemplate := func(name string) *v1alpha3.Template {
 		return &v1alpha3.Template{
@@ -251,6 +252,7 @@ func Test_handler_handleRenderTemplate(t *testing.T) {
 	}
 	createRequest := func(uri, devopsName, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
+		fakeRequest.Header.Add(restful.HEADER_ContentType, restful.MIME_JSON)
 		request := restful.NewRequest(fakeRequest)
 		request.PathParameters()[common.DevopsPathParameter.Data().Name] = devopsName
 		request.PathParameters()[TemplatePathParameter.Data().Name] = templateName

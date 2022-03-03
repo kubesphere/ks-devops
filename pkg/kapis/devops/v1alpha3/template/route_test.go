@@ -83,7 +83,9 @@ func TestRegisterRoutes(t *testing.T) {
 			uri := fmt.Sprintf("/kapis/%s/%s%s",
 				v1alpha3.GroupVersion.Group, v1alpha3.GroupVersion.Version, tt.args.uri)
 			recorder := httptest.NewRecorder()
-			request, _ := http.NewRequest(tt.args.method, uri, nil)
+			request := httptest.NewRequest(tt.args.method, uri, nil)
+			request.Header.Add(restful.HEADER_ContentType, restful.MIME_JSON)
+
 			container.ServeHTTP(recorder, request)
 			if recorder.Code == 404 {
 				assert.NotContains(t, recorder.Body.String(), "Page Not Found")
