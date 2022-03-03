@@ -121,8 +121,13 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 	if s.JenkinsOptions != nil && len(s.JenkinsOptions.Host) != 0 {
 		// Make sure that Jenkins host is not empty
 		devopsClient, err = jclient.NewJenkinsClient(s.JenkinsOptions)
-		if err != nil {
-			return fmt.Errorf("failed to connect jenkins, please check jenkins status, error: %v", err)
+		if !s.JenkinsOptions.SkipVerify && err != nil {
+			errMsg := fmt.Sprintf("failed to connect jenkins, please check jenkins status, error: %v", err)
+			if s.JenkinsOptions.SkipVerify {
+				fmt.Println(errMsg)
+			} else {
+				return fmt.Errorf(errMsg)
+			}
 		}
 	}
 
