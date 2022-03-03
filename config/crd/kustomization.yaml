@@ -3,7 +3,6 @@
 # It should be run by config/default
 resources:
 - bases/devops.kubesphere.io_pipelines.yaml
-- bases/devops.kubesphere.io_fakes.yaml
 - bases/devops.kubesphere.io_devopsprojects.yaml
 - bases/devops.kubesphere.io_s2ibinaries.yaml
 - bases/devops.kubesphere.io_s2ibuilders.yaml
