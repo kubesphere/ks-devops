@@ -31,8 +31,9 @@ type JenkinsClient struct {
 
 // ApplyNewSource apply a new source
 func (j *JenkinsClient) ApplyNewSource(s string) (err error) {
-	client := casc.Manager{
-		JenkinsCore: j.Core,
+	client := casc.Manager{}
+	if j != nil {
+		client.JenkinsCore = j.Core
 	}
 	if err = client.CheckNewSource(s); err == nil {
 		err = client.Replace(s)

@@ -32,6 +32,7 @@ type Options struct {
 	Namespace       string        `json:"namespace,omitempty" yaml:"namespace"`
 	WorkerNamespace string        `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
 	ReloadCasCDelay time.Duration `json:"reloadCasCDelay,omitempty" yaml:"reloadCasCDelay"`
+	SkipVerify      bool
 }
 
 // NewJenkinsOptions returns a `zero` instance
@@ -90,6 +91,8 @@ func (s *Options) AddFlags(fs *pflag.FlagSet, c *Options) {
 
 	fs.IntVar(&s.MaxConnections, "jenkins-max-connections", c.MaxConnections, ""+
 		"Maximum allowed connections to Jenkins. ")
+	fs.BoolVar(&s.SkipVerify, "jenkins-skip-verify", false,
+		"Indicate if you want to skip the Jenkins connection verify")
 
 	fs.StringVar(&s.Namespace, "namespace", c.Namespace, "Namespace where devops system is in.")
 	fs.StringVar(&s.WorkerNamespace, "worker-namespace", c.WorkerNamespace, "Namespace where Jenkins agent workers are in.")
