@@ -19,11 +19,11 @@ package webhook
 import (
 	"context"
 	"fmt"
+	workflowrun2 "kubesphere.io/devops/pkg/event/workflowrun"
 	"strings"
 
 	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -35,14 +35,15 @@ type pipelineRunIdentifier struct {
 	buildNumber   string
 }
 
-func (identifier *pipelineRunIdentifier) toIdentifier() string {
+// String populates the identifier of the PipelineRun.
+func (identifier *pipelineRunIdentifier) String() string {
 	if identifier == nil {
 		return ""
 	}
 	return v1alpha3.BuildPipelineRunIdentifier(identifier.pipelineName, identifier.scmRefName, identifier.buildNumber)
 }
 
-func convertParameters(workflowRunParameters []workflowrun.Parameter) []v1alpha3.Parameter {
+func convertParameters(workflowRunParameters []workflowrun2.Parameter) []v1alpha3.Parameter {
 	var parameters []v1alpha3.Parameter
 	for i := range workflowRunParameters {
 		workflowRunParameter := &workflowRunParameters[i]
@@ -57,7 +58,7 @@ func convertParameters(workflowRunParameters []workflowrun.Parameter) []v1alpha3
 	return parameters
 }
 
-func extractPipelineRunIdentifier(workflowRunData *workflowrun.Data) *pipelineRunIdentifier {
+func extractPipelineRunIdentifier(workflowRunData *workflowrun2.Data) *pipelineRunIdentifier {
 	if workflowRunData == nil || workflowRunData.ParentFullName == "" {
 		return nil
 	}
@@ -86,7 +87,7 @@ func extractPipelineRunIdentifier(workflowRunData *workflowrun.Data) *pipelineRu
 	return identifier
 }
 
-func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun.Data) error {
+func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun2.Data) error {
 	identifier := extractPipelineRunIdentifier(workflowRunData)
 	if identifier == nil {
 		// we should skip this event if the Pipeline is not a standard Pipeline in ks-devops.
@@ -95,11 +96,10 @@ func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun
 
 	// TODO Execute process below asynchronously
 
-	pipelineRunIdentifier := identifier.toIdentifier()
 	pipelineRunList := &v1alpha3.PipelineRunList{}
 	if err := handler.List(context.Background(), pipelineRunList,
 		client.InNamespace(identifier.namespaceName),
-		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: pipelineRunIdentifier}); err != nil {
+		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: identifier.String()}); err != nil {
 		return err
 	}
 

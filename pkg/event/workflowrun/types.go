@@ -35,12 +35,3 @@ type Data struct {
 	ProjectName       string  `json:"_projectName"`
 	IsMultiBranch     bool    `json:"_multiBranch"`
 }
-
-// Funcs is a collection of handlers for various event type.
-type Funcs struct {
-	HandleInitialize func(*Data) error
-	HandleStarted    func(*Data) error
-	HandleFinalized  func(*Data) error
-	HandleCompleted  func(*Data) error
-	HandleDeleted    func(*Data) error
-}

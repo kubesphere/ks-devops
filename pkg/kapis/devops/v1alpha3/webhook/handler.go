@@ -19,8 +19,8 @@ package webhook
 import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/util/errors"
-	"kubesphere.io/devops/pkg/event/models/common"
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
+	"kubesphere.io/devops/pkg/event/common"
+	"kubesphere.io/devops/pkg/event/workflowrun"
 	"kubesphere.io/devops/pkg/kapis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -50,15 +50,15 @@ func (handler *Handler) ReceiveEventsFromJenkins(request *restful.Request, respo
 
 	// register WorkflowRun event handler
 	var errs []error
-	if err := event.HandleWorkflowRun(workflowrun.Funcs{
+	workflowRunHandlers := workflowrun.Handlers{
 		HandleInitialize: handler.handleWorkflowRunInitialize,
 		// TODO Handler others
 		HandleStarted:   nil,
 		HandleFinalized: nil,
 		HandleCompleted: nil,
 		HandleDeleted:   nil,
-	}); err != nil {
-		// collect errors
+	}
+	if err := workflowRunHandlers.Handle(event); err != nil {
 		errs = append(errs, err)
 	}
 

@@ -14,20 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package common
+package workflowrun
 
 import (
 	"encoding/json"
 	"errors"
+	"kubesphere.io/devops/pkg/event/common"
 	"testing"
-
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
 )
 
 func TestEvent_HandleWorkflowRun(t *testing.T) {
-	createEvent := func(eventType, dataType string, data *workflowrun.Data) *Event {
+	createEvent := func(eventType, dataType string, data *Data) *common.Event {
 		dataBytes, _ := json.Marshal(data)
-		return &Event{
+		return &common.Event{
 			ID:       "fake.id",
 			Type:     eventType,
 			Time:     "fake-time",
@@ -36,31 +35,31 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		}
 	}
 	type args struct {
-		funcs workflowrun.Funcs
+		handlers Handlers
 	}
-	errInitialize := errors.New("Initialized")
-	errStarted := errors.New("Started")
-	errCompleted := errors.New("Completed")
-	errFinalized := errors.New("Finalized")
-	errDeleted := errors.New("Deleted")
-	initializeHandler := func(*workflowrun.Data) error {
+	errInitialize := errors.New("initialized")
+	errStarted := errors.New("started")
+	errCompleted := errors.New("completed")
+	errFinalized := errors.New("finalized")
+	errDeleted := errors.New("deleted")
+	initializeHandler := func(*Data) error {
 		return errInitialize
 	}
-	startedHandler := func(*workflowrun.Data) error {
+	startedHandler := func(*Data) error {
 		return errStarted
 	}
-	completedHandler := func(*workflowrun.Data) error {
+	completedHandler := func(*Data) error {
 		return errCompleted
 	}
-	finalizedHandler := func(*workflowrun.Data) error {
+	finalizedHandler := func(*Data) error {
 		return errFinalized
 	}
-	deletedHandler := func(*workflowrun.Data) error {
+	deletedHandler := func(*Data) error {
 		return errDeleted
 	}
 	tests := []struct {
 		name    string
-		event   *Event
+		event   *common.Event
 		args    args
 		wantErr error
 	}{{
@@ -73,54 +72,54 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: nil,
 	}, {
 		name:  "Should invoke initialize handler",
-		event: createEvent(string(RunInitialize), WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent(string(common.RunInitialize), Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleInitialize: initializeHandler,
 			},
 		},
 		wantErr: errInitialize,
 	}, {
 		name:  "Should invoke started handler",
-		event: createEvent(string(RunStarted), WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent(string(common.RunStarted), Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleStarted: startedHandler,
 			},
 		},
 		wantErr: errStarted,
 	}, {
 		name:  "Should invoke finalized handler",
-		event: createEvent(string(RunFinalized), WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent(string(common.RunFinalized), Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleFinalized: finalizedHandler,
 			},
 		},
 		wantErr: errFinalized,
 	}, {
 		name:  "Should invoke completed handler",
-		event: createEvent(string(RunCompleted), WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent(string(common.RunCompleted), Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleCompleted: completedHandler,
 			},
 		},
 		wantErr: errCompleted,
 	}, {
 		name:  "Should invoke deleted handler",
-		event: createEvent(string(RunDeleted), WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent(string(common.RunDeleted), Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleDeleted: deletedHandler,
 			},
 		},
 		wantErr: errDeleted,
 	}, {
 		name:  "Should return nil if event type is out of range",
-		event: createEvent("fake.event", WorkflowRunType, &workflowrun.Data{}),
+		event: createEvent("fake.event", Type, &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleInitialize: initializeHandler,
 				HandleStarted:    startedHandler,
 				HandleFinalized:  finalizedHandler,
@@ -131,9 +130,9 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 		wantErr: nil,
 	}, {
 		name:  "Should return nil if data type is invalid",
-		event: createEvent(string(RunInitialize), "fake.data.type", &workflowrun.Data{}),
+		event: createEvent(string(common.RunInitialize), "fake.data.type", &Data{}),
 		args: args{
-			funcs: workflowrun.Funcs{
+			handlers: Handlers{
 				HandleInitialize: initializeHandler,
 				HandleStarted:    startedHandler,
 				HandleFinalized:  finalizedHandler,
@@ -146,8 +145,8 @@ func TestEvent_HandleWorkflowRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.event.HandleWorkflowRun(tt.args.funcs); err != tt.wantErr {
-				t.Errorf("Event.HandleWorkflowRun() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.args.handlers.Handle(tt.event); err != tt.wantErr {
+				t.Errorf("Event.Handle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	workflowrun2 "kubesphere.io/devops/pkg/event/workflowrun"
 	"reflect"
 	"testing"
 
@@ -25,7 +26,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/event/models/workflowrun"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -51,7 +51,7 @@ func Test_pipelineRunIdentifier_String(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.identifier.toIdentifier(); got != tt.want {
+			if got := tt.identifier.String(); got != tt.want {
 				t.Errorf("pipelineRunIdentifier.String() = %v, want %v", got, tt.want)
 			}
 		})
@@ -60,7 +60,7 @@ func Test_pipelineRunIdentifier_String(t *testing.T) {
 
 func Test_convertParameters(t *testing.T) {
 	type args struct {
-		parameters []workflowrun.Parameter
+		parameters []workflowrun2.Parameter
 	}
 	tests := []struct {
 		name string
@@ -75,7 +75,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Single parameter",
 		args: args{
-			parameters: []workflowrun.Parameter{{
+			parameters: []workflowrun2.Parameter{{
 				Name:  "aname",
 				Value: "avalue",
 			}},
@@ -87,7 +87,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Empty parameter",
 		args: args{
-			parameters: []workflowrun.Parameter{{
+			parameters: []workflowrun2.Parameter{{
 				Name:  "",
 				Value: "",
 			}},
@@ -96,7 +96,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Empty value only",
 		args: args{
-			parameters: []workflowrun.Parameter{{
+			parameters: []workflowrun2.Parameter{{
 				Name:  "fakeName",
 				Value: "",
 			}},
@@ -108,7 +108,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Two parameters",
 		args: args{
-			parameters: []workflowrun.Parameter{{
+			parameters: []workflowrun2.Parameter{{
 				Name:  "aname",
 				Value: "avalue",
 			}, {
@@ -133,8 +133,8 @@ func Test_convertParameters(t *testing.T) {
 		})
 	}
 }
-func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiBranch bool) *workflowrun.Data {
-	return &workflowrun.Data{
+func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiBranch bool) *workflowrun2.Data {
+	return &workflowrun2.Data{
 		ParentFullName: parentFullName,
 		ProjectName:    projectName,
 		IsMultiBranch:  isMultiBranch,
@@ -144,7 +144,7 @@ func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiB
 func Test_extractPipelineRunIdentifier(t *testing.T) {
 
 	type args struct {
-		workflowRunData *workflowrun.Data
+		workflowRunData *workflowrun2.Data
 	}
 	tests := []struct {
 		name string
@@ -217,7 +217,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 		}
 	}
 	type args struct {
-		workflowRunData *workflowrun.Data
+		workflowRunData *workflowrun2.Data
 		initObjs        []runtime.Object
 	}
 	tests := []struct {

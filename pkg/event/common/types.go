@@ -20,20 +20,17 @@ import (
 	"encoding/json"
 )
 
-// EventType represents the current type of event. e.g.: run.initialize, run.finished, and so on.
-type EventType string
-
 const (
 	// RunInitialize represents Jenkins run is initializing.
-	RunInitialize EventType = "run.initialize"
+	RunInitialize string = "run.initialize"
 	// RunStarted represents Jenkins run has started.
-	RunStarted EventType = "run.started"
+	RunStarted string = "run.started"
 	// RunFinalized represents Jenkins run has finalized.
-	RunFinalized EventType = "run.finalized"
+	RunFinalized string = "run.finalized"
 	// RunCompleted represents Jenkins run has completed.
-	RunCompleted EventType = "run.completed"
+	RunCompleted string = "run.completed"
 	// RunDeleted represents Jenkins run has been deleted.
-	RunDeleted EventType = "run.deleted"
+	RunDeleted string = "run.deleted"
 )
 
 // Event contains common fields of event except event data.
@@ -44,10 +41,4 @@ type Event struct {
 	Time     string          `json:"time"`
 	DataType string          `json:"dataType"`
 	Data     json.RawMessage `json:"data"`
-}
-
-// TypeEquals checks the given type is equal to type in event.
-// Return true if event is not nil and types are equal, false otherwise.
-func (event *Event) TypeEquals(eventType EventType) bool {
-	return event != nil && event.Type == string(eventType)
 }
