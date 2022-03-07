@@ -213,7 +213,7 @@ func TestAPIsExist(t *testing.T) {
 		name: "artifact download",
 		args: args{
 			method: http.MethodGet,
-			uri:    "/devops/fake/pipelines/fake/runs/fake/artifacts",
+			uri:    "/devops/fake/pipelines/fake/runs/fake/artifacts/download",
 		},
 	}}
 	for _, tt := range tests {
