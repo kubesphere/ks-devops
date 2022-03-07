@@ -18,6 +18,7 @@ package template
 import (
 	"context"
 	"github.com/emicklei/go-restful"
+	"io"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -66,16 +67,21 @@ func (h *handler) getTemplate(devopsName, templateName string) (*v1alpha3.Templa
 func (h *handler) handleRenderTemplate(request *restful.Request, response *restful.Response) {
 	devopsName := request.PathParameter(common.DevopsPathParameter.Data().Name)
 	templateName := request.PathParameter(TemplatePathParameter.Data().Name)
+	var renderBody RenderBody
+	if err := request.ReadEntity(&renderBody); err != nil && err != io.EOF {
+		kapis.HandleError(request, response, err)
+		return
+	}
 
-	kapis.ResponseWriter{Response: response}.WriteEntityOrError(h.renderTemplate(devopsName, templateName))
+	kapis.ResponseWriter{Response: response}.WriteEntityOrError(h.renderTemplate(devopsName, templateName, renderBody.Parameters))
 }
 
-func (h *handler) renderTemplate(devopsName, templateName string) (v1alpha3.TemplateObject, error) {
+func (h *handler) renderTemplate(devopsName, templateName string, parameters []Parameter) (v1alpha3.TemplateObject, error) {
 	tmpl, err := h.getTemplate(devopsName, templateName)
 	if err != nil {
 		return nil, err
 	}
-	return render(tmpl), nil
+	return render(tmpl, parameters)
 }
 
 func templatesToObjects(templates []v1alpha3.Template) []runtime.Object {

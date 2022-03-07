@@ -1,4 +1,4 @@
-apiVersion: devops.kubesphere.io/v1alpha1
+apiVersion: devops.kubesphere.io/v1alpha3
 kind: ClusterTemplate
 metadata:
   name: clustertemplate-sample
@@ -36,10 +36,9 @@ spec:
         stages {
             stage('Checkout') {
                 steps {
-                    checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CloneOption', depth: 1, noTags: true, reference: '', shallow: true], [$class: 'SubmoduleOption', depth: 1, disableSubmodules: false, parentCredentials: false, recursiveSubmodules: true, reference: '', shallow: true, trackingSubmodules: false]], userRemoteConfigs: [[url: '{{ .params.gitCloneURL }}']]]
+                    git branch: '{{.params.revision}}', url: '{{.params.cloneURL}}'
                 }
             }
-            {{if not .buildOnly}}
             stage('Gradle Check') {
                 steps {
                     container('gradle') {
@@ -54,10 +53,12 @@ spec:
                     }
                 }
             }
+            {{if ne .params.buildOnly "true"}}
             stage('Archive Assets') {
                 steps {
                     archiveArtifacts '**/build/libs/*.jar'
                 }
             }
+            {{end}}
         }
     }
