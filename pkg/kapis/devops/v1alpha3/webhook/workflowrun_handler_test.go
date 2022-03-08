@@ -18,7 +18,7 @@ package webhook
 
 import (
 	"context"
-	workflowrun2 "kubesphere.io/devops/pkg/event/workflowrun"
+	"kubesphere.io/devops/pkg/event/workflowrun"
 	"reflect"
 	"testing"
 
@@ -60,7 +60,7 @@ func Test_pipelineRunIdentifier_String(t *testing.T) {
 
 func Test_convertParameters(t *testing.T) {
 	type args struct {
-		parameters []workflowrun2.Parameter
+		parameters []workflowrun.Parameter
 	}
 	tests := []struct {
 		name string
@@ -75,7 +75,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Single parameter",
 		args: args{
-			parameters: []workflowrun2.Parameter{{
+			parameters: []workflowrun.Parameter{{
 				Name:  "aname",
 				Value: "avalue",
 			}},
@@ -87,7 +87,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Empty parameter",
 		args: args{
-			parameters: []workflowrun2.Parameter{{
+			parameters: []workflowrun.Parameter{{
 				Name:  "",
 				Value: "",
 			}},
@@ -96,7 +96,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Empty value only",
 		args: args{
-			parameters: []workflowrun2.Parameter{{
+			parameters: []workflowrun.Parameter{{
 				Name:  "fakeName",
 				Value: "",
 			}},
@@ -108,7 +108,7 @@ func Test_convertParameters(t *testing.T) {
 	}, {
 		name: "Two parameters",
 		args: args{
-			parameters: []workflowrun2.Parameter{{
+			parameters: []workflowrun.Parameter{{
 				Name:  "aname",
 				Value: "avalue",
 			}, {
@@ -133,8 +133,8 @@ func Test_convertParameters(t *testing.T) {
 		})
 	}
 }
-func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiBranch bool) *workflowrun2.Data {
-	return &workflowrun2.Data{
+func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiBranch bool) *workflowrun.Data {
+	return &workflowrun.Data{
 		ParentFullName: parentFullName,
 		ProjectName:    projectName,
 		IsMultiBranch:  isMultiBranch,
@@ -144,7 +144,7 @@ func createWorkflowRun(parentFullName, projectName, buildNumber string, isMultiB
 func Test_extractPipelineRunIdentifier(t *testing.T) {
 
 	type args struct {
-		workflowRunData *workflowrun2.Data
+		workflowRunData *workflowrun.Data
 	}
 	tests := []struct {
 		name string
@@ -217,7 +217,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 		}
 	}
 	type args struct {
-		workflowRunData *workflowrun2.Data
+		workflowRunData *workflowrun.Data
 		initObjs        []runtime.Object
 	}
 	tests := []struct {

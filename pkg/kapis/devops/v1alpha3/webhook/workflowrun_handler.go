@@ -19,7 +19,7 @@ package webhook
 import (
 	"context"
 	"fmt"
-	workflowrun2 "kubesphere.io/devops/pkg/event/workflowrun"
+	"kubesphere.io/devops/pkg/event/workflowrun"
 	"strings"
 
 	"k8s.io/klog"
@@ -43,7 +43,7 @@ func (identifier *pipelineRunIdentifier) String() string {
 	return v1alpha3.BuildPipelineRunIdentifier(identifier.pipelineName, identifier.scmRefName, identifier.buildNumber)
 }
 
-func convertParameters(workflowRunParameters []workflowrun2.Parameter) []v1alpha3.Parameter {
+func convertParameters(workflowRunParameters []workflowrun.Parameter) []v1alpha3.Parameter {
 	var parameters []v1alpha3.Parameter
 	for i := range workflowRunParameters {
 		workflowRunParameter := &workflowRunParameters[i]
@@ -58,7 +58,7 @@ func convertParameters(workflowRunParameters []workflowrun2.Parameter) []v1alpha
 	return parameters
 }
 
-func extractPipelineRunIdentifier(workflowRunData *workflowrun2.Data) *pipelineRunIdentifier {
+func extractPipelineRunIdentifier(workflowRunData *workflowrun.Data) *pipelineRunIdentifier {
 	if workflowRunData == nil || workflowRunData.ParentFullName == "" {
 		return nil
 	}
@@ -87,7 +87,7 @@ func extractPipelineRunIdentifier(workflowRunData *workflowrun2.Data) *pipelineR
 	return identifier
 }
 
-func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun2.Data) error {
+func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun.Data) error {
 	identifier := extractPipelineRunIdentifier(workflowRunData)
 	if identifier == nil {
 		// we should skip this event if the Pipeline is not a standard Pipeline in ks-devops.
