@@ -421,7 +421,9 @@ func parseMultiBranchPipelineConfigXml(config string) (*devopsv1alpha3.MultiBran
 			pipeline.MultiBranchJobTrigger = getMultiBranchJobTriggerfromEtree(properties)
 		}
 	}
-	pipeline.Description = project.SelectElement("description").Text()
+	if project.SelectElement("description") != nil {
+		pipeline.Description = project.SelectElement("description").Text()
+	}
 
 	if discarder := project.SelectElement("orphanedItemStrategy"); discarder != nil {
 		pipeline.Discarder = &devopsv1alpha3.DiscarderProperty{
