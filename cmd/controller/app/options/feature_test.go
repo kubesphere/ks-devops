@@ -35,8 +35,6 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			Controllers: map[string]bool{},
 		},
 		want: map[string]bool{
-			"s2ibinary":     true,
-			"s2irun":        true,
 			"jenkins":       true,
 			"jenkinsconfig": true,
 		},
@@ -46,8 +44,6 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			Controllers: nil,
 		},
 		want: map[string]bool{
-			"s2ibinary":     true,
-			"s2irun":        true,
 			"jenkins":       true,
 			"jenkinsconfig": true,
 		},
@@ -55,13 +51,10 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 		name: "merge with the input from users",
 		fields: fields{
 			Controllers: map[string]bool{
-				"s2irun": false,
-				"fake":   true,
+				"fake": true,
 			},
 		},
 		want: map[string]bool{
-			"s2ibinary":     true,
-			"s2irun":        false,
 			"jenkins":       true,
 			"jenkinsconfig": true,
 			"fake":          true,
