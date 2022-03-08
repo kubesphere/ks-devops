@@ -48,6 +48,10 @@ type TemplateParameter struct {
 	//+optional
 	Description string `json:"description,omitempty"`
 
+	// Required indicates if this parameter is mandatory.
+	//+optional
+	Required bool `json:"required"`
+
 	// Default is default value of the parameter.
 	//+optional
 	Default apiextensionv1.JSON `json:"default,omitempty"`
