@@ -17,6 +17,9 @@ package template
 
 import (
 	"bytes"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	tmpl "text/template"
@@ -33,9 +36,14 @@ type Parameter struct {
 func render(templateObject v1alpha3.TemplateObject, parameters []Parameter) (v1alpha3.TemplateObject, error) {
 	templateObject = templateObject.DeepCopyObject().(v1alpha3.TemplateObject)
 	rawTemplate := templateObject.TemplateSpec().Template
-	template := tmpl.New("pipeline-template")
+	templateName := types.NamespacedName{
+		Name:      templateObject.GetName(),
+		Namespace: templateObject.GetNamespace(),
+	}.String()
+	template := tmpl.New(templateName)
 	if _, err := template.Parse(rawTemplate); err != nil {
-		return nil, err
+		klog.Errorf("failed to parse template: %s, and err = %v", templateName, err)
+		return nil, errors.NewBadRequest("Failed to render template, please check the pipeline template for syntax error.")
 	}
 
 	// TODO Verify required parameters and default parameters
@@ -50,7 +58,8 @@ func render(templateObject v1alpha3.TemplateObject, parameters []Parameter) (v1a
 
 	buffer := &bytes.Buffer{}
 	if err := template.Execute(buffer, parametersData); err != nil {
-		return nil, err
+		klog.Errorf("failed to apply a parsed template(%s) to the specified data object(%v), and err = %v ", templateName, parametersData, err)
+		return nil, errors.NewBadRequest("Failed to render template, please check the parameters you provided.")
 	}
 	renderResult := buffer.String()
 
