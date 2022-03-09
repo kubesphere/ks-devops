@@ -51,6 +51,9 @@ spec:
                     name:
                       description: Name is name of the parameter.
                       type: string
+                    required:
+                      description: Required indicates if this parameter is mandatory.
+                      type: boolean
                     type:
                       description: Type is type of the parameter.
                       type: string
