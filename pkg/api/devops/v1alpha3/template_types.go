@@ -50,7 +50,7 @@ type TemplateParameter struct {
 
 	// Required indicates if this parameter is mandatory.
 	//+optional
-	Required bool `json:"required"`
+	Required bool `json:"required,omitempty"`
 
 	// Default is default value of the parameter.
 	//+optional
