@@ -51,7 +51,7 @@ func (j *JenkinsClient) CreateProjectPipeline(projectID string, pipeline *v1alph
 		}
 		return pipeline.Name, nil
 	case devopsv1alpha3.MultiBranchPipelineType:
-		createPayload, err := getCreateMultiBranchPipelinePayload(pipeline.Spec.Pipeline)
+		createPayload, err := getCreateMultiBranchPipelinePayload(pipeline.Spec.MultiBranchPipeline)
 		if err != nil {
 			return "", restful.NewError(http.StatusInternalServerError, err.Error())
 		}
@@ -101,7 +101,7 @@ func getCreatePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *job.C
 	return
 }
 
-func getCreateMultiBranchPipelinePayload(pipeline *devopsv1alpha3.NoScmPipeline) (jobPayload *job.CreateJobPayload, err error) {
+func getCreateMultiBranchPipelinePayload(pipeline *devopsv1alpha3.MultiBranchPipeline) (jobPayload *job.CreateJobPayload, err error) {
 	// NoScmPipeline do not have copy mode to create a pipeline
 	jobPayload = &job.CreateJobPayload{
 		Mode: "org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject",
