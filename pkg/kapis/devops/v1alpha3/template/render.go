@@ -41,6 +41,8 @@ func render(templateObject v1alpha3.TemplateObject, parameters []Parameter) (v1a
 		Namespace: templateObject.GetNamespace(),
 	}.String()
 	template := tmpl.New(templateName)
+	//TODO Make delimiters configurable
+	template.Delims("$(", ")")
 	if _, err := template.Parse(rawTemplate); err != nil {
 		klog.Errorf("failed to parse template: %s, and err = %v", templateName, err)
 		return nil, errors.NewBadRequest("Failed to render template, please check the pipeline template for syntax error.")
