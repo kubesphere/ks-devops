@@ -24,7 +24,7 @@ import (
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 
@@ -68,17 +68,17 @@ func (r *OperatorCRDReconciler) operatorsHandle(name string, version string) (er
 		return
 	}
 
-	strategyName := getStrategyName(name, string(v1alpha1.AddonInstallStrategySimpleOperator))
+	strategyName := getStrategyName(name, string(v1alpha3.AddonInstallStrategySimpleOperator))
 
-	strategy := &v1alpha1.AddonStrategy{}
+	strategy := &v1alpha3.AddonStrategy{}
 	if err = r.Client.Get(ctx, types.NamespacedName{
 		Name: strategyName,
 	}, strategy); err != nil {
 		if apierrors.IsNotFound(err) {
 			// create addonStrategy
 			strategy.Name = strategyName
-			strategy.Spec = v1alpha1.AddStrategySpec{
-				Type: v1alpha1.AddonInstallStrategySimpleOperator,
+			strategy.Spec = v1alpha3.AddStrategySpec{
+				Type: v1alpha3.AddonInstallStrategySimpleOperator,
 				SimpleOperator: v1.ObjectReference{
 					APIVersion: version,
 					Kind:       name,

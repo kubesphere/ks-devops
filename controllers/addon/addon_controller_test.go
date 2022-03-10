@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
@@ -34,7 +34,7 @@ import (
 
 func TestReconciler_supportedStrategy(t *testing.T) {
 	type args struct {
-		strategy *v1alpha1.AddonStrategy
+		strategy *v1alpha3.AddonStrategy
 	}
 	tests := []struct {
 		name string
@@ -45,18 +45,18 @@ func TestReconciler_supportedStrategy(t *testing.T) {
 		want: false,
 	}, {
 		name: "empty object",
-		args: args{strategy: &v1alpha1.AddonStrategy{}},
+		args: args{strategy: &v1alpha3.AddonStrategy{}},
 		want: false,
 	}, {
 		name: "fake type",
-		args: args{strategy: &v1alpha1.AddonStrategy{
-			Spec: v1alpha1.AddStrategySpec{Type: "fake"},
+		args: args{strategy: &v1alpha3.AddonStrategy{
+			Spec: v1alpha3.AddStrategySpec{Type: "fake"},
 		}},
 		want: false,
 	}, {
 		name: "simple-operator",
-		args: args{strategy: &v1alpha1.AddonStrategy{
-			Spec: v1alpha1.AddStrategySpec{Type: "simple-operator"},
+		args: args{strategy: &v1alpha3.AddonStrategy{
+			Spec: v1alpha3.AddStrategySpec{Type: "simple-operator"},
 		}},
 		want: true,
 	}}
@@ -71,7 +71,7 @@ func TestReconciler_supportedStrategy(t *testing.T) {
 func Test_getTemplate(t *testing.T) {
 	type args struct {
 		tpl   string
-		addon *v1alpha1.Addon
+		addon *v1alpha3.Addon
 	}
 	tests := []struct {
 		name       string
@@ -91,9 +91,9 @@ func Test_getTemplate(t *testing.T) {
 		name: "addon with version",
 		args: args{
 			tpl:   "{{.spec.version}}",
-			addon: &v1alpha1.Addon{Spec: v1alpha1.AddonSpec{Version: "v1alpha1"}},
+			addon: &v1alpha3.Addon{Spec: v1alpha3.AddonSpec{Version: "v1alpha3"}},
 		},
-		wantResult: "v1alpha1",
+		wantResult: "v1alpha3",
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			return false
 		},
@@ -110,16 +110,16 @@ func Test_getTemplate(t *testing.T) {
 }
 
 func TestReconciler_addonHandle(t *testing.T) {
-	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	strategy := &v1alpha1.AddonStrategy{
+	strategy := &v1alpha3.AddonStrategy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "simple-operator",
 		},
-		Spec: v1alpha1.AddStrategySpec{
+		Spec: v1alpha3.AddStrategySpec{
 			Available:      true,
-			Type:           v1alpha1.AddonInstallStrategySimpleOperator,
+			Type:           v1alpha3.AddonInstallStrategySimpleOperator,
 			SimpleOperator: v1.ObjectReference{},
 			Template: `apiVersion: devops.kubesphere.io/v1alpha1
 kind: ReleaserController
@@ -129,9 +129,9 @@ spec:
   webhook: false`,
 		},
 	}
-	addon := &v1alpha1.Addon{
+	addon := &v1alpha3.Addon{
 		ObjectMeta: metav1.ObjectMeta{Name: "ks-releaser", Namespace: "default"},
-		Spec: v1alpha1.AddonSpec{
+		Spec: v1alpha3.AddonSpec{
 			Version: "v0.0.1",
 			Strategy: v1.LocalObjectReference{
 				Name: "simple-operator",
@@ -144,7 +144,7 @@ spec:
 	}
 	type args struct {
 		ctx   context.Context
-		addon *v1alpha1.Addon
+		addon *v1alpha3.Addon
 	}
 	tests := []struct {
 		name    string
@@ -166,10 +166,10 @@ spec:
 		},
 		verify: func(t *testing.T, c client.Client) {
 			var err error
-			addon := &v1alpha1.Addon{}
+			addon := &v1alpha3.Addon{}
 			err = c.Get(context.Background(), types.NamespacedName{Name: "ks-releaser", Namespace: "default"}, addon)
 			assert.Nil(t, err)
-			assert.ElementsMatch(t, []string{v1alpha1.AddonFinalizerName}, addon.Finalizers)
+			assert.ElementsMatch(t, []string{v1alpha3.AddonFinalizerName}, addon.Finalizers)
 
 			obj := &unstructured.Unstructured{}
 			obj.SetKind("ReleaserController")
@@ -203,9 +203,9 @@ spec:
 		},
 		args: args{
 			ctx: context.TODO(),
-			addon: &v1alpha1.Addon{
+			addon: &v1alpha3.Addon{
 				ObjectMeta: metav1.ObjectMeta{Name: "ks-releaser"},
-				Spec: v1alpha1.AddonSpec{
+				Spec: v1alpha3.AddonSpec{
 					Version: "v0.0.1",
 					Strategy: v1.LocalObjectReference{
 						Name: "simple-operator",
@@ -254,7 +254,7 @@ func Test_beingDeleting(t *testing.T) {
 	nowTime := metav1.Now()
 
 	type args struct {
-		addon *v1alpha1.Addon
+		addon *v1alpha3.Addon
 	}
 	tests := []struct {
 		name string
@@ -263,13 +263,13 @@ func Test_beingDeleting(t *testing.T) {
 	}{{
 		name: "empty struct",
 		args: args{
-			addon: &v1alpha1.Addon{},
+			addon: &v1alpha3.Addon{},
 		},
 		want: false,
 	}, {
 		name: "has deletionTimestamp",
 		args: args{
-			addon: &v1alpha1.Addon{
+			addon: &v1alpha3.Addon{
 				ObjectMeta: metav1.ObjectMeta{
 					DeletionTimestamp: &nowTime,
 				},

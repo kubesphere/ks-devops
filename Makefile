@@ -92,6 +92,8 @@ docker-push-controller:
 # Build and push the docker image
 docker-build-push-controller: docker-build-controller docker-push-controller
 
+run-apiserver:
+	go run cmd/apiserver/apiserver.go
 # Build the docker image of apiserver
 docker-build-apiserver:
 	docker build --build-arg GOPROXY=https://goproxy.io . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}

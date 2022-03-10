@@ -23,12 +23,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	v1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 // WebhookLister helps list Webhooks.
 type WebhookLister interface {
 	// List lists all Webhooks in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.Webhook, err error)
+	List(selector labels.Selector) (ret []*v1alpha3.Webhook, err error)
 	// Webhooks returns an object that can list and get Webhooks.
 	Webhooks(namespace string) WebhookNamespaceLister
 	WebhookListerExpansion
@@ -45,9 +46,9 @@ func NewWebhookLister(indexer cache.Indexer) WebhookLister {
 }
 
 // List lists all Webhooks in the indexer.
-func (s *webhookLister) List(selector labels.Selector) (ret []*v1alpha1.Webhook, err error) {
+func (s *webhookLister) List(selector labels.Selector) (ret []*v1alpha3.Webhook, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Webhook))
+		ret = append(ret, m.(*v1alpha3.Webhook))
 	})
 	return ret, err
 }
@@ -60,9 +61,9 @@ func (s *webhookLister) Webhooks(namespace string) WebhookNamespaceLister {
 // WebhookNamespaceLister helps list and get Webhooks.
 type WebhookNamespaceLister interface {
 	// List lists all Webhooks in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.Webhook, err error)
+	List(selector labels.Selector) (ret []*v1alpha3.Webhook, err error)
 	// Get retrieves the Webhook from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.Webhook, error)
+	Get(name string) (*v1alpha3.Webhook, error)
 	WebhookNamespaceListerExpansion
 }
 
@@ -74,15 +75,15 @@ type webhookNamespaceLister struct {
 }
 
 // List lists all Webhooks in the indexer for a given namespace.
-func (s webhookNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Webhook, err error) {
+func (s webhookNamespaceLister) List(selector labels.Selector) (ret []*v1alpha3.Webhook, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Webhook))
+		ret = append(ret, m.(*v1alpha3.Webhook))
 	})
 	return ret, err
 }
 
 // Get retrieves the Webhook from the indexer for a given namespace and name.
-func (s webhookNamespaceLister) Get(name string) (*v1alpha1.Webhook, error) {
+func (s webhookNamespaceLister) Get(name string) (*v1alpha3.Webhook, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -90,5 +91,5 @@ func (s webhookNamespaceLister) Get(name string) (*v1alpha1.Webhook, error) {
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("webhook"), name)
 	}
-	return obj.(*v1alpha1.Webhook), nil
+	return obj.(*v1alpha3.Webhook), nil
 }

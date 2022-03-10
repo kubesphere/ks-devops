@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
@@ -82,7 +83,7 @@ func TestGetClient(t *testing.T) {
 		k8sClient client.Client
 	}
 	type args struct {
-		repo *v1alpha1.GitRepository
+		repo *v1alpha3.GitRepository
 	}
 	tests := []struct {
 		name       string
@@ -93,8 +94,8 @@ func TestGetClient(t *testing.T) {
 	}{{
 		name: "not support git provider",
 		args: args{
-			repo: &v1alpha1.GitRepository{
-				Spec: v1alpha1.GitRepositorySpec{
+			repo: &v1alpha3.GitRepository{
+				Spec: v1alpha3.GitRepositorySpec{
 					Provider: "not-support",
 				},
 			},
