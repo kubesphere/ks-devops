@@ -58,7 +58,7 @@ func Test_render(t *testing.T) {
 	}, {
 		name: "Should render template with parameters",
 		args: args{
-			template: createTemplate("fake-name", "The number should be {{ .params.number }}"),
+			template: createTemplate("fake-name", "The number should be $(.params.number)"),
 			parameters: []Parameter{{
 				Name:  "number",
 				Value: "233",
@@ -72,7 +72,7 @@ func Test_render(t *testing.T) {
 	}, {
 		name: "Should render incorrectly without corresponding parameter",
 		args: args{
-			template: createTemplate("fake-name", "The number should be: {{ .params.number }}"),
+			template: createTemplate("fake-name", "The number should be: $(.params.number)"),
 			parameters: []Parameter{{
 				Name:  "name",
 				Value: "fake-name",
@@ -86,7 +86,7 @@ func Test_render(t *testing.T) {
 	}, {
 		name: "Should return error if the template is invalid",
 		args: args{
-			template: createTemplate("fake-name", "{{}}"),
+			template: createTemplate("fake-name", "$()"),
 			parameters: []Parameter{{
 				Name:  "name",
 				Value: "fake-name",
@@ -96,6 +96,33 @@ func Test_render(t *testing.T) {
 			assert.Nil(t, template)
 		},
 		wantErr: assert.Error,
+	}, {
+		name: "Should escape delim",
+		args: args{
+			template: createTemplate("fake-name", "$(`$(pwd)`)"),
+		},
+		verify: func(t *testing.T, template v1alpha3.TemplateObject) {
+			got := template.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey]
+			assert.Equal(t, "$(pwd)", got)
+		},
+		wantErr: assert.NoError,
+	}, {
+		name: "Should render conditionally",
+		args: args{
+			// ${}
+			template: createTemplate("fake-name", "$(if .params.valid)Valid$(else)Invalid$(end)"),
+			parameters: []Parameter{
+				{
+					Name:  "valid",
+					Value: true,
+				},
+			},
+		},
+		verify: func(t *testing.T, template v1alpha3.TemplateObject) {
+			got := template.GetAnnotations()[devops.GroupName+devops.RenderResultAnnoKey]
+			assert.Equal(t, "Valid", got)
+		},
+		wantErr: assert.NoError,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

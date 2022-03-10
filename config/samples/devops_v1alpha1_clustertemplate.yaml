@@ -4,7 +4,7 @@ metadata:
   name: clustertemplate-sample
 spec:
   parameters:
-    - name: gitCloneURL
+    - name: cloneURL
       description: What is your repository URL you want to clone?
       type: string # ignorable
       validation:
@@ -17,11 +17,6 @@ spec:
       description: Do we really need build stage only?
       default: false # Valid JSON value
       type: bool
-    - name: matrix
-      description: Matrix versions of gradle
-      type: string-array
-      default: ["6.9.1-jdk11", "7.0.0-jdk11", "7.3.3-jdk11"]
-
   template: | # Go template
     pipeline {
         agent {
@@ -36,7 +31,7 @@ spec:
         stages {
             stage('Checkout') {
                 steps {
-                    git branch: '{{.params.revision}}', url: '{{.params.cloneURL}}'
+                    git branch: '$(.params.revision)', url: '$(.params.cloneURL)'
                 }
             }
             stage('Gradle Check') {
@@ -53,12 +48,12 @@ spec:
                     }
                 }
             }
-            {{if ne .params.buildOnly "true"}}
+            $(if ne .params.buildOnly "true")
             stage('Archive Assets') {
                 steps {
                     archiveArtifacts '**/build/libs/*.jar'
                 }
             }
-            {{end}}
+            $(end)
         }
     }
