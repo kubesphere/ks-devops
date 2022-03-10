@@ -19,7 +19,7 @@ import (
 	"github.com/drone/go-scm/scm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/git"
 	"strings"
 	"time"
@@ -50,7 +50,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 	ctx := context.Background()
 	log := r.log.WithValues("GitRepository", req.NamespacedName)
 
-	repo := &v1alpha1.GitRepository{}
+	repo := &v1alpha3.GitRepository{}
 	if err = r.Client.Get(ctx, req.NamespacedName, repo); err != nil {
 		log.Error(err, "unable to fetch GitRepository")
 		result = ctrl.Result{}
@@ -82,7 +82,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 	return
 }
 
-func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha1.GitRepository) (err error) {
+func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha3.GitRepository) (err error) {
 	var gitClient *scm.Client
 	if gitClient, err = r.getGitClient(repo); err != nil {
 		return
@@ -105,7 +105,7 @@ func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha1.GitRepository) (err er
 
 	for index := range repo.Spec.Webhooks {
 		webhookRef := repo.Spec.Webhooks[index]
-		webhook := &v1alpha1.Webhook{}
+		webhook := &v1alpha3.Webhook{}
 		if err = r.Client.Get(context.TODO(), types.NamespacedName{
 			Namespace: repo.Namespace,
 			Name:      webhookRef.Name,
@@ -150,7 +150,7 @@ func exist(server string, hooks []*scm.Hook) (exist bool, id string) {
 	return
 }
 
-func (r *Reconciler) getGitClient(repo *v1alpha1.GitRepository) (client *scm.Client, err error) {
+func (r *Reconciler) getGitClient(repo *v1alpha3.GitRepository) (client *scm.Client, err error) {
 	spec := repo.Spec.DeepCopy()
 	provider := spec.Provider
 
@@ -192,7 +192,7 @@ func (r *Reconciler) getSecret(ref *v1.SecretReference, defaultNamespace string)
 	return
 }
 
-func getRepo(repo *v1alpha1.GitRepository) string {
+func getRepo(repo *v1alpha3.GitRepository) string {
 	if repo == nil || repo.Spec.Provider == "" {
 		return ""
 	}
@@ -207,7 +207,7 @@ func getRepo(repo *v1alpha1.GitRepository) string {
 	return ""
 }
 
-func (r *Reconciler) linkToWebhooks(repo *v1alpha1.GitRepository) (err error) {
+func (r *Reconciler) linkToWebhooks(repo *v1alpha3.GitRepository) (err error) {
 	var failedLinks []string
 	for i := range repo.Spec.Webhooks {
 		webhookRef := repo.Spec.Webhooks[i]
@@ -223,14 +223,14 @@ func (r *Reconciler) linkToWebhooks(repo *v1alpha1.GitRepository) (err error) {
 	return
 }
 
-func linkToWebhook(webhookRef v1.LocalObjectReference, repo *v1alpha1.GitRepository, client client.Client) (err error) {
-	webhook := &v1alpha1.Webhook{}
+func linkToWebhook(webhookRef v1.LocalObjectReference, repo *v1alpha3.GitRepository, client client.Client) (err error) {
+	webhook := &v1alpha3.Webhook{}
 	if err = client.Get(context.TODO(), types.NamespacedName{Namespace: repo.Namespace, Name: webhookRef.Name}, webhook); err != nil {
 		err = fmt.Errorf("cannot find webhook '%v', error： %v", webhookRef, err)
 		return
 	}
 
-	webhook.Annotations = addToArrayInAnnotations(webhook.Annotations, v1alpha1.AnnotationKeyGitRepos, repo.Name)
+	webhook.Annotations = addToArrayInAnnotations(webhook.Annotations, v1alpha3.AnnotationKeyGitRepos, repo.Name)
 	err = client.Update(context.TODO(), webhook)
 	return
 }
@@ -258,6 +258,6 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("gitrepository-controller")
 	r.log = ctrl.Log.WithName("gitrepository-controller")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GitRepository{}).
+		For(&v1alpha3.GitRepository{}).
 		Complete(r)
 }

@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,7 +48,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 	ctx := context.Background()
 	r.log.Info(fmt.Sprintf("start to reconcile addon: %s", req.String()))
 
-	addon := &v1alpha1.Addon{}
+	addon := &v1alpha3.Addon{}
 	if err = r.Client.Get(ctx, req.NamespacedName, addon); err != nil {
 		err = client.IgnoreNotFound(err)
 		return
@@ -62,18 +62,18 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 	return
 }
 
-func beingDeleting(addon *v1alpha1.Addon) bool {
+func beingDeleting(addon *v1alpha3.Addon) bool {
 	return addon != nil && !addon.DeletionTimestamp.IsZero()
 }
 
-func (r *Reconciler) cleanup(addon *v1alpha1.Addon) (result ctrl.Result, err error) {
+func (r *Reconciler) cleanup(addon *v1alpha3.Addon) (result ctrl.Result, err error) {
 	var obj *unstructured.Unstructured
 	if obj, _, err = r.findTemplateInstance(context.Background(), addon); err != nil && !apierrors.IsNotFound(err) {
 		return
 	}
 
 	if err = r.Client.Delete(context.Background(), obj); err == nil {
-		k8sutil.RemoveFinalizer(&addon.ObjectMeta, v1alpha1.AddonFinalizerName)
+		k8sutil.RemoveFinalizer(&addon.ObjectMeta, v1alpha3.AddonFinalizerName)
 		err = r.Client.Update(context.Background(), addon)
 	}
 	return
@@ -84,7 +84,7 @@ const (
 	EventReasonMissing = "Missing"
 )
 
-func (r *Reconciler) addonHandle(ctx context.Context, addon *v1alpha1.Addon) (err error) {
+func (r *Reconciler) addonHandle(ctx context.Context, addon *v1alpha3.Addon) (err error) {
 	var tpl string
 	var obj *unstructured.Unstructured
 	if obj, tpl, err = r.findTemplateInstance(ctx, addon); err != nil {
@@ -106,16 +106,16 @@ func (r *Reconciler) addonHandle(ctx context.Context, addon *v1alpha1.Addon) (er
 
 	// add finalizer
 	if err == nil {
-		k8sutil.AddFinalizer(&addon.ObjectMeta, v1alpha1.AddonFinalizerName)
+		k8sutil.AddFinalizer(&addon.ObjectMeta, v1alpha3.AddonFinalizerName)
 		err = r.Update(ctx, addon)
 	}
 	return
 }
 
-func (r *Reconciler) findTemplateInstance(ctx context.Context, addon *v1alpha1.Addon) (instance *unstructured.Unstructured, tpl string, err error) {
+func (r *Reconciler) findTemplateInstance(ctx context.Context, addon *v1alpha3.Addon) (instance *unstructured.Unstructured, tpl string, err error) {
 	strategy := addon.Spec.Strategy
 
-	addonStrategy := &v1alpha1.AddonStrategy{}
+	addonStrategy := &v1alpha3.AddonStrategy{}
 	if err = r.Client.Get(ctx, types.NamespacedName{Name: strategy.Name}, addonStrategy); err != nil {
 		r.recorder.Eventf(addon, corev1.EventTypeWarning, EventReasonMissing, "failed to get AddonStrategy with: %s", strategy.Name)
 		return
@@ -149,7 +149,7 @@ func (r *Reconciler) findTemplateInstance(ctx context.Context, addon *v1alpha1.A
 	return
 }
 
-func getTemplate(tpl string, addon *v1alpha1.Addon) (result string, err error) {
+func getTemplate(tpl string, addon *v1alpha3.Addon) (result string, err error) {
 	var addonTpl *template.Template
 	if addonTpl, err = template.New("addon").Parse(tpl); err == nil {
 		buf := bytes.NewBuffer([]byte{})
@@ -160,10 +160,10 @@ func getTemplate(tpl string, addon *v1alpha1.Addon) (result string, err error) {
 	return
 }
 
-func (r *Reconciler) supportedStrategy(strategy *v1alpha1.AddonStrategy) bool {
+func (r *Reconciler) supportedStrategy(strategy *v1alpha3.AddonStrategy) bool {
 	// TODO support more types in the future
 	if strategy != nil {
-		return strategy.Spec.Type == v1alpha1.AddonInstallStrategySimpleOperator
+		return strategy.Spec.Type == v1alpha3.AddonInstallStrategySimpleOperator
 	}
 	return false
 }
@@ -173,6 +173,6 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName("AddonReconciler")
 	r.recorder = mgr.GetEventRecorderFor("addon-controller")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Addon{}).
+		For(&v1alpha3.Addon{}).
 		Complete(r)
 }

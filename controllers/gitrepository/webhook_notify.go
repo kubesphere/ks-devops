@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -44,7 +44,7 @@ func (r *WebhookReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err
 	ctx := context.Background()
 	log := r.log.WithValues("webhook", req.NamespacedName)
 
-	webhook := &v1alpha1.Webhook{}
+	webhook := &v1alpha3.Webhook{}
 	if err = r.Client.Get(ctx, req.NamespacedName, webhook); err != nil {
 		log.Error(err, "unable to fetch webhook")
 		err = client.IgnoreNotFound(err)
@@ -52,7 +52,7 @@ func (r *WebhookReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err
 	}
 
 	// skip those don't have the desired annotation
-	repos, ok := webhook.Annotations[v1alpha1.AnnotationKeyGitRepos]
+	repos, ok := webhook.Annotations[v1alpha3.AnnotationKeyGitRepos]
 	if !ok {
 		return
 	}
@@ -81,7 +81,7 @@ func (r *WebhookReconciler) notifyGitRepos(ns, repos string) (err error) {
 }
 
 func (r *WebhookReconciler) notifyGitRepo(ns, name string) (err error) {
-	gitRepo := &v1alpha1.GitRepository{}
+	gitRepo := &v1alpha3.GitRepository{}
 
 	if err = r.Client.Get(context.TODO(), types.NamespacedName{
 		Namespace: ns,
@@ -93,7 +93,7 @@ func (r *WebhookReconciler) notifyGitRepo(ns, name string) (err error) {
 	if gitRepo.Annotations == nil {
 		gitRepo.Annotations = map[string]string{}
 	}
-	gitRepo.Annotations[v1alpha1.AnnotationKeyWebhookUpdates] = names.SimpleNameGenerator.GenerateName("")
+	gitRepo.Annotations[v1alpha3.AnnotationKeyWebhookUpdates] = names.SimpleNameGenerator.GenerateName("")
 	err = r.Client.Update(context.TODO(), gitRepo)
 	return
 }
@@ -102,6 +102,6 @@ func (r *WebhookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("webhook-notify")
 	r.log = ctrl.Log.WithName("webhook-notify")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Webhook{}).
+		For(&v1alpha3.Webhook{}).
 		Complete(r)
 }

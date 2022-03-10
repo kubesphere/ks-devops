@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
@@ -56,7 +56,7 @@ func Test_getStrategyName(t *testing.T) {
 }
 
 func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
-	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
 	type fields struct {
@@ -97,25 +97,25 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 		},
 		wantErr: false,
 		verify: func(t *testing.T, c client.Client) {
-			result := &v1alpha1.AddonStrategy{}
+			result := &v1alpha3.AddonStrategy{}
 			err := c.Get(context.TODO(), types.NamespacedName{
 				Name: "simple-operator-releasercontroller",
 			}, result)
 			assert.Nil(t, err)
 			assert.NotNil(t, result)
-			assert.Equal(t, v1alpha1.AddonInstallStrategy("simple-operator"), result.Spec.Type)
+			assert.Equal(t, v1alpha3.AddonInstallStrategy("simple-operator"), result.Spec.Type)
 			assert.Equal(t, "ReleaserController", result.Spec.SimpleOperator.Kind)
 			assert.Equal(t, "devops.kubesphere.io/v1alpha1", result.Spec.SimpleOperator.APIVersion)
 		},
 	}, {
 		name: "update the existing",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, &v1alpha1.AddonStrategy{
+			Client: fake.NewFakeClientWithScheme(schema, &v1alpha3.AddonStrategy{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "simple-operator-releasercontroller",
 				},
-				Spec: v1alpha1.AddStrategySpec{
-					Type: v1alpha1.AddonInstallStrategySimpleOperator,
+				Spec: v1alpha3.AddStrategySpec{
+					Type: v1alpha3.AddonInstallStrategySimpleOperator,
 					SimpleOperator: v1.ObjectReference{
 						Kind:       "ReleaserController",
 						APIVersion: "devops.kubesphere.io/v1",
@@ -130,14 +130,14 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 		},
 		wantErr: false,
 		verify: func(t *testing.T, c client.Client) {
-			result := &v1alpha1.AddonStrategy{}
+			result := &v1alpha3.AddonStrategy{}
 			err := c.Get(context.TODO(), types.NamespacedName{
 				Name: "simple-operator-releasercontroller",
 			}, result)
 			assert.Nil(t, err)
 			assert.NotNil(t, result)
 			assert.True(t, result.Spec.Available)
-			assert.Equal(t, v1alpha1.AddonInstallStrategy("simple-operator"), result.Spec.Type)
+			assert.Equal(t, v1alpha3.AddonInstallStrategy("simple-operator"), result.Spec.Type)
 			assert.Equal(t, "ReleaserController", result.Spec.SimpleOperator.Kind)
 			assert.Equal(t, "devops.kubesphere.io/v1alpha1", result.Spec.SimpleOperator.APIVersion)
 		},

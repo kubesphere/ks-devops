@@ -29,11 +29,15 @@ import (
 // handler holds all the API handlers of SCM
 type handler struct {
 	k8sClient client.Client
+	client.Client
 }
 
 // NewHandler creates the instance of the SCM handler
 func newHandler(k8sClient client.Client) *handler {
-	return &handler{k8sClient: k8sClient}
+	return &handler{
+		k8sClient: k8sClient,
+		Client:    k8sClient,
+	}
 }
 
 // verify checks a SCM auth

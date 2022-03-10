@@ -20,7 +20,7 @@ spec:
     - jsonPath: .spec.server
       name: Server
       type: string
-    name: v1alpha1
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: GitRepository is the Schema for the webhook API
