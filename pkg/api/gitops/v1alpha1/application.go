@@ -298,6 +298,7 @@ type SyncStrategyHook struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +k8s:openapi-gen=true
 
 // Application represents an application the DevOps system
@@ -305,7 +306,13 @@ type Application struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ApplicationSpec `json:"spec,omitempty"`
+	Spec   ApplicationSpec   `json:"spec,omitempty"`
+	Status ApplicationStatus `json:"status,omitempty"`
+}
+
+// ApplicationStatus represents the status of the Application
+type ApplicationStatus struct {
+	ArgoApp string `json:"argoApp,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

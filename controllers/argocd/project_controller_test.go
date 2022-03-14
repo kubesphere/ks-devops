@@ -87,14 +87,6 @@ func TestCreateUnstructuredObject(t *testing.T) {
 		map[string]interface{}{"group": "group2", "kind": "kind2"}}, p2ClusterResourceWhitelist)
 }
 
-func TestBasicInterface(t *testing.T) {
-	nameGetter := &Reconciler{}
-	assert.NotEmpty(t, nameGetter.GetName())
-
-	groupNameGetter := &Reconciler{}
-	assert.NotEmpty(t, groupNameGetter.GetGroupName())
-}
-
 func TestReconcileArgoProject(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)

@@ -206,3 +206,10 @@ rules:
   - get
   - list
   - update
+- apiGroups:
+  - gitops.kubesphere.io
+  resources:
+  - applications/status
+  verbs:
+  - get
+  - update
