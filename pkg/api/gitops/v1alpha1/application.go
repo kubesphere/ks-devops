@@ -298,6 +298,7 @@ type SyncStrategyHook struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +k8s:openapi-gen=true
 
 // Application represents an application the DevOps system

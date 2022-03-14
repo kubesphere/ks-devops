@@ -29,6 +29,7 @@ import (
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;update
+//+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications/status,verbs=get;update
 //+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list
 
 // ApplicationStatusReconciler represents a controller to sync cluster to ArgoCD cluster
@@ -58,7 +59,7 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 		var statusData []byte
 		if statusData, err = json.Marshal(status); err == nil {
 			app.Status.ArgoApp = string(statusData)
-			err = r.Update(ctx, app.DeepCopy())
+			err = r.Status().Update(ctx, app.DeepCopy())
 		}
 	}
 	return
