@@ -26,7 +26,7 @@ import (
 // JenkinsClient represents a client of Jenkins
 type JenkinsClient struct {
 	Core    core.JenkinsCore
-	jenkins devops.Interface // For refactor purpose only
+	jenkins *jenkins.Jenkins // For refactor purpose only
 }
 
 // ApplyNewSource apply a new source
