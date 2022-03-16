@@ -344,11 +344,11 @@ func Test_parameterConverter_convert(t *testing.T) {
 		fields fields
 		want   []job.Parameter
 	}{{
-		name: "Nil parameters",
+		name: "Should return empty parameters when 'parameters' is nil",
 		fields: fields{
 			parameters: nil,
 		},
-		want: nil,
+		want: []job.Parameter{},
 	}, {
 		name: "Single parameter",
 		fields: fields{
