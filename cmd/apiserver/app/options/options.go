@@ -110,7 +110,7 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 		}
 	}
 
-	if s.JenkinsOptions.Host != "" {
+	if !s.JenkinsOptions.SkipVerify && s.JenkinsOptions.Host != "" {
 		devopsClient, err := jclient.NewJenkinsClient(s.JenkinsOptions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to jenkins, please check jenkins status, error: %v", err)
