@@ -17,17 +17,13 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jenkins-zh/jenkins-client/pkg/artifact"
-	"io"
-	"kubesphere.io/devops/pkg/kapis"
 	"net/http"
-	"net/url"
-	"strconv"
 	"strings"
+
+	"kubesphere.io/devops/pkg/kapis"
 
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/apiserver/request"
@@ -258,50 +254,6 @@ func (h *ProjectPipelineHandler) GetArtifacts(req *restful.Request, resp *restfu
 	}
 	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	resp.WriteAsJson(res)
-}
-
-// downloadArtifact API to download artifacts from Jenkins
-func (h *ProjectPipelineHandler) downloadArtifact(request *restful.Request, response *restful.Response) {
-	projectName := request.PathParameter("devops")
-	pipelineName := request.PathParameter("pipeline")
-	runId := request.PathParameter("run")
-	fileName := request.QueryParameter("filename")
-	runID, err := strconv.Atoi(runId)
-	if err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-
-	fileName, err = url.QueryUnescape(fileName)
-	if err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-
-	// request the Jenkins API to download artifact
-	c := artifact.Client{JenkinsCore: h.jenkinsClient}
-	body, err := c.GetArtifact(projectName, pipelineName, runID, fileName)
-	if err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-	defer body.Close()
-
-	buf := &bytes.Buffer{}
-	_, err = io.Copy(buf, body)
-	if err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-
-	// add download header
-	response.AddHeader("Content-Type", "application/octet-stream")
-	response.AddHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
-	_, err = response.Write(buf.Bytes())
-	if err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
 }
 
 func (h *ProjectPipelineHandler) GetRunLog(req *restful.Request, resp *restful.Response) {

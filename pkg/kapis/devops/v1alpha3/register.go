@@ -19,10 +19,11 @@
 package v1alpha3
 
 import (
+	"net/http"
+
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/template"
-	"net/http"
 
 	restful "github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -56,7 +57,7 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 
 	for _, service := range services {
 		registerRoutes(devopsClient, k8sClient, client, service)
-		pipelinerun.RegisterRoutes(service, client)
+		pipelinerun.RegisterRoutes(service, devopsClient, client)
 		pipeline.RegisterRoutes(service, client)
 		template.RegisterRoutes(service, &common.Options{
 			GenericClient: client,

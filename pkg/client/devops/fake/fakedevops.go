@@ -18,6 +18,7 @@ package fake
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -189,6 +190,10 @@ func (d *Devops) RunPipeline(projectName, pipelineName string, httpParameters *d
 func (d *Devops) GetArtifacts(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]devops.Artifacts, error) {
 	return nil, nil
 }
+func (d *Devops) DownloadArtifact(projectName, pipelineName, runId, filename string) (io.ReadCloser, error) {
+	return nil, nil
+}
+
 func (d *Devops) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, error) {
 	return nil, nil
 }

@@ -17,12 +17,15 @@ limitations under the License.
 package pipelinerun
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"kubesphere.io/devops/pkg/kapis"
+	"net/url"
 	"strconv"
+
+	"kubesphere.io/devops/pkg/kapis"
 
 	"github.com/emicklei/go-restful"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +34,7 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/client/devops"
+	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/models/pipelinerun"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +42,8 @@ import (
 
 // apiHandlerOption holds some useful tools for API handler.
 type apiHandlerOption struct {
-	client client.Client
+	devopsClient devopsClient.Interface
+	client       client.Client
 }
 
 // apiHandler contains functions to handle coming request and give a response.
@@ -219,4 +224,57 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	}
 
 	_ = response.WriteEntity(&stages)
+}
+
+// downloadArtifact API to download artifacts from Jenkins
+func (h *apiHandler) downloadArtifact(request *restful.Request, response *restful.Response) {
+	namespaceName := request.PathParameter("namespace")
+	pipelineRunName := request.PathParameter("pipelinerun")
+	filename := request.QueryParameter("filename")
+
+	// get pipelinerun
+	pr := &v1alpha3.PipelineRun{}
+	err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespaceName, Name: pipelineRunName}, pr)
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	filename, err = url.QueryUnescape(filename)
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	buildID, exists := pr.GetPipelineRunID()
+	if !exists {
+		kapis.HandleError(request, response, fmt.Errorf("unable to get PipelineRun nodes due to not found run ID"))
+		return
+	}
+	pipelineName := pr.Labels[v1alpha3.PipelineNameLabelKey]
+
+	// request the Jenkins API to download artifact
+	body, err := h.devopsClient.DownloadArtifact(namespaceName, pipelineName, buildID, filename)
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	defer func() {
+		_ = body.Close()
+	}()
+
+	buf := &bytes.Buffer{}
+	if _, err = io.Copy(buf, body); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	// add download header
+	response.AddHeader("Content-Type", "application/octet-stream")
+	response.AddHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	_, err = response.Write(buf.Bytes())
+	if err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
 }

@@ -17,7 +17,12 @@ limitations under the License.
 package jclient
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/jenkins-zh/jenkins-client/pkg/artifact"
 
 	"kubesphere.io/devops/pkg/client/devops"
 )
@@ -60,6 +65,16 @@ func (j *JenkinsClient) RunPipeline(projectName, pipelineName string, httpParame
 // GetArtifacts returns the artifacts of a pipeline run
 func (j *JenkinsClient) GetArtifacts(projectName, pipelineName, runID string, httpParameters *devops.HttpParameters) ([]devops.Artifacts, error) {
 	return j.jenkins.GetArtifacts(projectName, pipelineName, runID, httpParameters)
+}
+
+// DownloadArtifact download an artifact
+func (j *JenkinsClient) DownloadArtifact(projectName, pipelineName, runID, filename string) (io.ReadCloser, error) {
+	jobRunID, err := strconv.Atoi(runID)
+	if err != nil {
+		return nil, fmt.Errorf("runId error, not a number: %v", err)
+	}
+	c := artifact.Client{JenkinsCore: j.Core}
+	return c.GetArtifact(projectName, pipelineName, jobRunID, filename)
 }
 
 // GetRunLog returns the log output of a pipeline run

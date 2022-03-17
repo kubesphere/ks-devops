@@ -19,11 +19,12 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/client/k8s"
-	"net/url"
-	"strings"
 
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -225,16 +226,6 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 				DataFormat("limit=%d")).
 			Returns(http.StatusOK, "The filed of \"Url\" in response can download artifacts", []devops.Artifacts{}).
 			Writes([]devops.Artifacts{}))
-
-		// download PipelineRun artifact
-		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/runs/{run}/artifacts/download").
-			Param(webservice.PathParameter("devops", "DevOps project's ID, e.g. project-RRRRAzLBlLEm")).
-			Param(webservice.PathParameter("pipeline", "the name of the CI/CD pipeline")).
-			Param(webservice.PathParameter("run", "pipeline run ID, the unique ID for a pipeline once build.")).
-			Param(webservice.QueryParameter("filename", "artifact filename. e.g. artifact:v1.0.1")).
-			To(projectPipelineHandler.downloadArtifact).
-			Returns(http.StatusOK, api.StatusOK, nil).
-			Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 
 		// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/{run}/log/?start=0
 		webservice.Route(webservice.GET("/devops/{devops}/pipelines/{pipeline}/runs/{run}/log").
