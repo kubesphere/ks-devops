@@ -151,7 +151,7 @@ type parameterConverter struct {
 }
 
 func (converter parameterConverter) convert() []job.Parameter {
-	var params []job.Parameter
+	params := make([]job.Parameter, 0, len(converter.parameters))
 	for _, param := range converter.parameters {
 		params = append(params, job.Parameter{
 			Name:  param.Name,
