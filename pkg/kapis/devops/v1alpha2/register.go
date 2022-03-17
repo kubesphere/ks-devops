@@ -71,7 +71,7 @@ func AddToContainer(container *restful.Container, ksInformers externalversions.S
 func addToContainerWithWebService(container *restful.Container, ksInformers externalversions.SharedInformerFactory,
 	devopsClient devops.Interface, sonarqubeClient sonarqube.SonarInterface, ksClient versioned.Interface,
 	s3Client s3.Interface, endpoint string, k8sClient k8s.Client, jenkinsClient core.JenkinsCore, ws *restful.WebService) error {
-	err := AddPipelineToWebService(ws, devopsClient, k8sClient, jenkinsClient)
+	err := AddPipelineToWebService(ws, devopsClient, k8sClient)
 	if err != nil {
 		return err
 	}
@@ -95,11 +95,11 @@ func addToContainerWithWebService(container *restful.Container, ksInformers exte
 	return nil
 }
 
-func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, k8sClient k8s.Client, jenkinsClient core.JenkinsCore) error {
+func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops.Interface, k8sClient k8s.Client) error {
 	projectPipelineEnable := devopsClient != nil
 
 	if projectPipelineEnable {
-		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient, jenkinsClient)
+		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient)
 
 		webservice.Route(webservice.GET("/devops/{devops}/credentials/{credential}/usage").
 			To(projectPipelineHandler.GetProjectCredentialUsage).
