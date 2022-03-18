@@ -25,9 +25,65 @@ type ApplicationSpec struct {
 	ArgoApp *ArgoApplication `json:"argoApp,omitempty"`
 }
 
-// ArgoApplication represents an ArgoCD Application
-// The fields simply are copied from the argo-cd project
+// ArgoApplication is a definition of Argo Application resource.
 type ArgoApplication struct {
+	Spec      ArgoApplicationSpec `json:"spec,omitempty"`
+	Operation *Operation          `json:"operation,omitempty" protobuf:"bytes,4,opt,name=operation"`
+}
+
+// OperationInitiator contains information about the initiator of an operation
+type OperationInitiator struct {
+	// Username contains the name of a user who started operation
+	Username string `json:"username,omitempty" protobuf:"bytes,1,opt,name=username"`
+	// Automated is set to true if operation was initiated automatically by the application controller.
+	Automated bool `json:"automated,omitempty" protobuf:"bytes,2,opt,name=automated"`
+}
+
+// SyncOperationResource contains resources to sync.
+type SyncOperationResource struct {
+	Group     string `json:"group,omitempty" protobuf:"bytes,1,opt,name=group"`
+	Kind      string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
+	Name      string `json:"name" protobuf:"bytes,3,opt,name=name"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
+}
+
+// SyncOperation contains details about a sync operation.
+type SyncOperation struct {
+	// Revision is the revision (Git) or chart version (Helm) which to sync the application to
+	// If omitted, will use the revision specified in app spec.
+	Revision string `json:"revision,omitempty" protobuf:"bytes,1,opt,name=revision"`
+	// Prune specifies to delete resources from the cluster that are no longer tracked in git
+	Prune bool `json:"prune,omitempty" protobuf:"bytes,2,opt,name=prune"`
+	// DryRun specifies to perform a `kubectl apply --dry-run` without actually performing the sync
+	DryRun bool `json:"dryRun,omitempty" protobuf:"bytes,3,opt,name=dryRun"`
+	// SyncStrategy describes how to perform the sync
+	SyncStrategy *SyncStrategy `json:"syncStrategy,omitempty" protobuf:"bytes,4,opt,name=syncStrategy"`
+	// Resources describes which resources shall be part of the sync
+	Resources []SyncOperationResource `json:"resources,omitempty" protobuf:"bytes,6,opt,name=resources"`
+	// Source overrides the source definition set in the application.
+	// This is typically set in a Rollback operation and is nil during a Sync operation
+	Source *ApplicationSource `json:"source,omitempty" protobuf:"bytes,7,opt,name=source"`
+	// Manifests is an optional field that overrides sync source with a local directory for development
+	Manifests []string `json:"manifests,omitempty" protobuf:"bytes,8,opt,name=manifests"`
+	// SyncOptions provide per-sync sync-options, e.g. Validate=false
+	SyncOptions SyncOptions `json:"syncOptions,omitempty" protobuf:"bytes,9,opt,name=syncOptions"`
+}
+
+// Operation contains information about a requested or running operation
+type Operation struct {
+	// Sync contains parameters for the operation
+	Sync *SyncOperation `json:"sync,omitempty" protobuf:"bytes,1,opt,name=sync"`
+	// InitiatedBy contains information about who initiated the operations
+	InitiatedBy OperationInitiator `json:"initiatedBy,omitempty" protobuf:"bytes,2,opt,name=initiatedBy"`
+	// Info is a list of informational items for this operation
+	Info []*Info `json:"info,omitempty" protobuf:"bytes,3,name=info"`
+	// Retry controls the strategy to apply if a sync fails
+	Retry RetryStrategy `json:"retry,omitempty" protobuf:"bytes,4,opt,name=retry"`
+}
+
+// ArgoApplicationSpec represents an ArgoCD Application
+// The fields simply are copied from the argo-cd project
+type ArgoApplicationSpec struct {
 	// Source is a reference to the location of the application's manifests or chart
 	Source ApplicationSource `json:"source"`
 	// Destination is a reference to the target Kubernetes server and namespace

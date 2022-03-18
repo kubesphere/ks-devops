@@ -104,12 +104,12 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	}
 
 	// TODO set some default values
-	if argoApp.Project == "" {
-		argoApp.Project = "default"
+	if argoApp.Spec.Project == "" {
+		argoApp.Spec.Project = "default"
 	}
 
 	buffer := new(bytes.Buffer)
-	if err = tpl.Execute(buffer, argoApp); err == nil {
+	if err = tpl.Execute(buffer, argoApp.Spec); err == nil {
 		if result, err = GetObjectFromYaml(buffer.String()); err == nil {
 			result.SetName(app.GetName())
 			result.SetNamespace(app.GetNamespace())

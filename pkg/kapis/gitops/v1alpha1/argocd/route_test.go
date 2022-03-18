@@ -203,7 +203,9 @@ func TestAPIs(t *testing.T) {
   },
   "spec": {
     "argoApp": {
-      "project": "default"
+      "spec": {
+        "project": "default"
+      }
     }
   }
 }`))
@@ -246,7 +248,9 @@ func TestAPIs(t *testing.T) {
   },
   "spec": {
     "argoApp": {
-      "project": "good"
+      "spec": {
+        "project": "good"
+      }
     }
   }
 }`))
@@ -259,7 +263,7 @@ func TestAPIs(t *testing.T) {
 			err := yaml.Unmarshal(body, list)
 			assert.Nil(t, err)
 
-			project, _, err := unstructured.NestedString(list.Object, "spec", "argoApp", "project")
+			project, _, err := unstructured.NestedString(list.Object, "spec", "argoApp", "spec", "project")
 			assert.Equal(t, "good", project)
 			assert.Nil(t, err)
 		},
