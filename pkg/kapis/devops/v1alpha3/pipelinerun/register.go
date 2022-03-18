@@ -19,19 +19,24 @@ package pipelinerun
 import (
 	"net/http"
 
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"kubesphere.io/devops/pkg/constants"
+
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/models/pipelinerun"
 
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/client/devops"
+	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // RegisterRoutes register routes into web service.
-func RegisterRoutes(ws *restful.WebService, c client.Client) {
+func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface, c client.Client) {
 	handler := newAPIHandler(apiHandlerOption{
-		client: c,
+		devopsClient: devopsClient,
+		client:       c,
 	})
 
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
@@ -69,4 +74,13 @@ func RegisterRoutes(ws *restful.WebService, c client.Client) {
 		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
 		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
 		Returns(http.StatusOK, api.StatusOK, []pipelinerun.NodeDetail{}))
+
+	// download PipelineRun artifact
+	ws.Route(ws.GET("/namespaces/{namespace}/pipelineruns/{pipelinerun}/artifacts/download").
+		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
+		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
+		Param(ws.QueryParameter("filename", "artifact filename. e.g. artifact:v1.0.1")).
+		To(handler.downloadArtifact).
+		Returns(http.StatusOK, api.StatusOK, nil).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 }

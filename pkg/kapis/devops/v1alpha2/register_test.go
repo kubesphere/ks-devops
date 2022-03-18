@@ -18,6 +18,10 @@ package v1alpha2
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/emicklei/go-restful"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/stretchr/testify/assert"
@@ -28,9 +32,6 @@ import (
 	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestAPIsExist(t *testing.T) {

@@ -20,9 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"kubesphere.io/devops/pkg/kapis"
 	"net/http"
 	"strings"
+
+	"kubesphere.io/devops/pkg/kapis"
 
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/apiserver/request"
