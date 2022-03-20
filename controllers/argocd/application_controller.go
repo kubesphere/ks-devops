@@ -140,7 +140,6 @@ func (r *ApplicationReconciler) GetGroupName() string {
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
-	mgr.GetScheme()
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Application{}).
 		Complete(r)
