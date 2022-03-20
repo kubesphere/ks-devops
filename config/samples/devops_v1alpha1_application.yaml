@@ -1,4 +1,4 @@
-apiVersion: devops.kubesphere.io/v1alpha1
+apiVersion: gitops.kubesphere.io/v1alpha1
 kind: Application
 metadata:
   name: app
@@ -6,14 +6,14 @@ spec:
   argoApp:
     project: default
     source:
-      repoURL: https://github.com/kubesphere-sigs/ks-versions
+      repoURL: https://gitlab.com/LinuxSuRen1/argocd
       targetRevision: HEAD
-      path: .
+      path: test
       directory:
         recurse: true
     destination:
       server: https://kubernetes.default.svc
-      namespace: ks-version
+      namespace: default
     syncPolicy:
       automated:
         prune: true

@@ -82,10 +82,12 @@ func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token
 	}
 
 	switch gitSecret.Type {
-	case v1.SecretTypeBasicAuth:
+	case v1.SecretTypeBasicAuth, "credential.devops.kubesphere.io/basic-auth":
 		token = string(gitSecret.Data[v1.BasicAuthPasswordKey])
 	case v1.SecretTypeOpaque:
 		token = string(gitSecret.Data[v1.ServiceAccountTokenKey])
+	case "credential.devops.kubesphere.io/secret-text":
+		token = string(gitSecret.Data["secret"])
 	}
 	return
 }

@@ -19,11 +19,12 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/client/k8s"
-	"net/url"
-	"strings"
 
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
@@ -725,6 +726,7 @@ func addJenkinsToContainer(webservice *restful.WebService, devopsClient devops.I
 		To(jenkinsProxy.proxyWithDevOps).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsJenkinsTag}))
+
 	return nil
 }
 

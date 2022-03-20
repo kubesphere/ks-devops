@@ -179,6 +179,7 @@ func Test_handler_handleRenderClusterTemplate(t *testing.T) {
 	}
 	createRequest := func(uri, templateName string) *restful.Request {
 		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
+		fakeRequest.Header.Add(restful.HEADER_ContentType, restful.MIME_JSON)
 		request := restful.NewRequest(fakeRequest)
 		request.PathParameters()[ClusterTemplatePathParameter.Data().Name] = templateName
 		return request

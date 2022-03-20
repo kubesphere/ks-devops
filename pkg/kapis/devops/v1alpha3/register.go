@@ -19,20 +19,20 @@
 package v1alpha3
 
 import (
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/template"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/webhook"
 	"net/http"
 
-	restful "github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipeline"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/template"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/devops/pkg/api"
@@ -57,7 +57,7 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 
 	for _, service := range services {
 		registerRoutes(devopsClient, k8sClient, client, service)
-		pipelinerun.RegisterRoutes(service, client)
+		pipelinerun.RegisterRoutes(service, devopsClient, client)
 		pipeline.RegisterRoutes(service, client)
 		template.RegisterRoutes(service, &common.Options{
 			GenericClient: client,

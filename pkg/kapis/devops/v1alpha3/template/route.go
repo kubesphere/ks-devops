@@ -40,6 +40,11 @@ type PageResult struct {
 	Total int                 `json:"total"`
 }
 
+// RenderBody is the model of request body of render API.
+type RenderBody struct {
+	Parameters []Parameter `json:"parameters"`
+}
+
 // RegisterRoutes is for registering template routes into WebService.
 func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	handler := newHandler(options)
@@ -63,6 +68,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 		To(handler.handleRenderTemplate).
 		Param(common.DevopsPathParameter).
 		Param(TemplatePathParameter).
+		Reads(RenderBody{}).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
@@ -77,6 +83,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	service.Route(service.POST("/clustertemplates/{clustertemplate}/render").
 		To(handler.handleRenderClusterTemplate).
 		Param(ClusterTemplatePathParameter).
+		Reads(RenderBody{}).
 		Doc("Render cluster template.").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.ClusterTemplate{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))

@@ -26,13 +26,14 @@ import (
 // JenkinsClient represents a client of Jenkins
 type JenkinsClient struct {
 	Core    core.JenkinsCore
-	jenkins devops.Interface // For refactor purpose only
+	jenkins *jenkins.Jenkins // For refactor purpose only
 }
 
 // ApplyNewSource apply a new source
 func (j *JenkinsClient) ApplyNewSource(s string) (err error) {
-	client := casc.Manager{
-		JenkinsCore: j.Core,
+	client := casc.Manager{}
+	if j != nil {
+		client.JenkinsCore = j.Core
 	}
 	if err = client.CheckNewSource(s); err == nil {
 		err = client.Replace(s)

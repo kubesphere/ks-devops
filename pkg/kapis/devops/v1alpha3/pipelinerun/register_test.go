@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
+	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -35,7 +36,7 @@ func TestAPIsExist(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	RegisterRoutes(wsWithGroup, fake.NewFakeClientWithScheme(schema))
+	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewFakeClientWithScheme(schema))
 	restful.DefaultContainer.Add(wsWithGroup)
 
 	type args struct {
@@ -74,6 +75,12 @@ func TestAPIsExist(t *testing.T) {
 		args: args{
 			method: http.MethodPost,
 			uri:    "/webhook/pipeline-event",
+		},
+	}, {
+		name: "download artifact",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/namespaces/fake/pipelineruns/fake/artifacts/download",
 		},
 	}}
 	for _, tt := range tests {

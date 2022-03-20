@@ -14,11 +14,10 @@ limitations under the License.
 package jenkins
 
 import (
-	"kubesphere.io/devops/pkg/client/devops"
 	"net/http"
 )
 
-func NewDevopsClient(options *Options) (devops.Interface, error) {
+func NewDevopsClient(options *Options) (*Jenkins, error) {
 	// we have to create http client with no redirection
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

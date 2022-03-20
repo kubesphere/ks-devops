@@ -130,31 +130,6 @@ users:
 	}
 }
 
-func TestInterfaceImplement(t *testing.T) {
-	tests := []struct {
-		name   string
-		verify func(t *testing.T)
-	}{{
-		name: "NamedReconciler",
-		verify: func(t *testing.T) {
-			reconciler := &MultiClusterReconciler{}
-			assert.NotEmpty(t, reconciler.GetName())
-		},
-	}, {
-		name: "GroupedReconciler",
-		verify: func(t *testing.T) {
-			reconciler := &MultiClusterReconciler{}
-			assert.NotEmpty(t, reconciler.GetGroupName())
-		},
-	}}
-	for i := range tests {
-		tt := tests[i]
-		t.Run(tt.name, func(t *testing.T) {
-			tt.verify(t)
-		})
-	}
-}
-
 func Test_getCluster(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)

@@ -23,7 +23,7 @@ spec:
     - jsonPath: .spec.skipVerify
       name: SkipVerify
       type: boolean
-    name: v1alpha1
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: Webhook is the Schema for the webhook API

@@ -97,14 +97,6 @@ func Test_createUnstructuredApplication(t *testing.T) {
 	}
 }
 
-func TestApplicationReconcilerBasicInterface(t *testing.T) {
-	nameGetter := &ApplicationReconciler{}
-	assert.NotEmpty(t, nameGetter.GetName())
-
-	groupNameGetter := &ApplicationReconciler{}
-	assert.NotEmpty(t, groupNameGetter.GetGroupName())
-}
-
 func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)

@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
@@ -56,13 +57,33 @@ func TestGetClient(t *testing.T) {
 			v1.ServiceAccountTokenKey: []byte("token"),
 		},
 	}
+	textSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "opaqueSecret",
+			Namespace: "ns",
+		},
+		Type: "credential.devops.kubesphere.io/secret-text",
+		Data: map[string][]byte{
+			v1.ServiceAccountTokenKey: []byte("token"),
+		},
+	}
+	ksBasicAuthSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "opaqueSecret",
+			Namespace: "ns",
+		},
+		Type: "credential.devops.kubesphere.io/basic-auth",
+		Data: map[string][]byte{
+			v1.BasicAuthPasswordKey: []byte("token"),
+		},
+	}
 	type fields struct {
 		provider  string
 		secretRef *v1.SecretReference
 		k8sClient client.Client
 	}
 	type args struct {
-		repo *v1alpha1.GitRepository
+		repo *v1alpha3.GitRepository
 	}
 	tests := []struct {
 		name       string
@@ -73,8 +94,8 @@ func TestGetClient(t *testing.T) {
 	}{{
 		name: "not support git provider",
 		args: args{
-			repo: &v1alpha1.GitRepository{
-				Spec: v1alpha1.GitRepositorySpec{
+			repo: &v1alpha3.GitRepository{
+				Spec: v1alpha3.GitRepositorySpec{
 					Provider: "not-support",
 				},
 			},
@@ -111,6 +132,28 @@ func TestGetClient(t *testing.T) {
 		name: "gitlab provider",
 		fields: fields{
 			k8sClient: fake.NewFakeClientWithScheme(schema, opaqueSecret.DeepCopy()),
+			provider:  "gitlab",
+			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err, i)
+			return false
+		},
+	}, {
+		name: "gitlab provider - text secret",
+		fields: fields{
+			k8sClient: fake.NewFakeClientWithScheme(schema, textSecret.DeepCopy()),
+			provider:  "gitlab",
+			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err, i)
+			return false
+		},
+	}, {
+		name: "gitlab provider - ks basic auth secret",
+		fields: fields{
+			k8sClient: fake.NewFakeClientWithScheme(schema, ksBasicAuthSecret.DeepCopy()),
 			provider:  "gitlab",
 			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
 		},

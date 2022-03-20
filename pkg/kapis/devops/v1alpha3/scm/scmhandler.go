@@ -28,12 +28,14 @@ import (
 
 // handler holds all the API handlers of SCM
 type handler struct {
-	k8sClient client.Client
+	client.Client
 }
 
 // NewHandler creates the instance of the SCM handler
 func newHandler(k8sClient client.Client) *handler {
-	return &handler{k8sClient: k8sClient}
+	return &handler{
+		Client: k8sClient,
+	}
 }
 
 // verify checks a SCM auth
@@ -53,7 +55,7 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 func (h *handler) getOrganizations(scm, secret, namespace string, size int) (orgs []*goscm.Organization, code int, err error) {
 	factory := git.NewClientFactory(scm, &v1.SecretReference{
 		Namespace: namespace, Name: secret,
-	}, h.k8sClient)
+	}, h.Client)
 
 	var c *goscm.Client
 	if c, err = factory.GetClient(); err == nil {
@@ -73,7 +75,7 @@ func (h *handler) getOrganizations(scm, secret, namespace string, size int) (org
 func (h *handler) getRepositories(scm, org, secret, namespace string, size int) (repos []*goscm.Repository, code int, err error) {
 	factory := git.NewClientFactory(scm, &v1.SecretReference{
 		Namespace: namespace, Name: secret,
-	}, h.k8sClient)
+	}, h.Client)
 
 	var c *goscm.Client
 	if c, err = factory.GetClient(); err == nil {

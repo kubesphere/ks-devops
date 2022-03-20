@@ -18,6 +18,7 @@ package template
 import (
 	"context"
 	"github.com/emicklei/go-restful"
+	"io"
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -34,7 +35,15 @@ func (h *handler) handleQueryClusterTemplates(request *restful.Request, response
 
 func (h *handler) handleRenderClusterTemplate(request *restful.Request, response *restful.Response) {
 	templateName := request.PathParameter(ClusterTemplatePathParameter.Data().Name)
-	kapis.ResponseWriter{Response: response}.WriteEntityOrError(h.renderClusterTemplate(templateName))
+
+	//var parameters []Parameter
+	var renderBody RenderBody
+	if err := request.ReadEntity(&renderBody); err != nil && err != io.EOF {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	kapis.ResponseWriter{Response: response}.WriteEntityOrError(h.renderClusterTemplate(templateName, renderBody.Parameters))
 }
 
 func (h *handler) queryClusterTemplates(commonQuery *query.Query) (*api.ListResult, error) {
@@ -57,12 +66,13 @@ func (h *handler) getClusterTemplate(templateName string) (*v1alpha3.ClusterTemp
 	return template, nil
 }
 
-func (h *handler) renderClusterTemplate(templateName string) (v1alpha3.TemplateObject, error) {
+func (h *handler) renderClusterTemplate(templateName string, parameters []Parameter) (v1alpha3.TemplateObject, error) {
 	template, err := h.getClusterTemplate(templateName)
 	if err != nil {
 		return nil, err
 	}
-	return render(template), nil
+
+	return render(template, parameters)
 }
 
 func clusterTemplatesToObjects(templates []v1alpha3.ClusterTemplate) []runtime.Object {

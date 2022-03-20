@@ -23,12 +23,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	v1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 // GitRepositoryLister helps list GitRepositories.
 type GitRepositoryLister interface {
 	// List lists all GitRepositories in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.GitRepository, err error)
+	List(selector labels.Selector) (ret []*v1alpha3.GitRepository, err error)
 	// GitRepositories returns an object that can list and get GitRepositories.
 	GitRepositories(namespace string) GitRepositoryNamespaceLister
 	GitRepositoryListerExpansion
@@ -45,9 +46,9 @@ func NewGitRepositoryLister(indexer cache.Indexer) GitRepositoryLister {
 }
 
 // List lists all GitRepositories in the indexer.
-func (s *gitRepositoryLister) List(selector labels.Selector) (ret []*v1alpha1.GitRepository, err error) {
+func (s *gitRepositoryLister) List(selector labels.Selector) (ret []*v1alpha3.GitRepository, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.GitRepository))
+		ret = append(ret, m.(*v1alpha3.GitRepository))
 	})
 	return ret, err
 }
@@ -60,9 +61,9 @@ func (s *gitRepositoryLister) GitRepositories(namespace string) GitRepositoryNam
 // GitRepositoryNamespaceLister helps list and get GitRepositories.
 type GitRepositoryNamespaceLister interface {
 	// List lists all GitRepositories in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.GitRepository, err error)
+	List(selector labels.Selector) (ret []*v1alpha3.GitRepository, err error)
 	// Get retrieves the GitRepository from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.GitRepository, error)
+	Get(name string) (*v1alpha3.GitRepository, error)
 	GitRepositoryNamespaceListerExpansion
 }
 
@@ -74,15 +75,15 @@ type gitRepositoryNamespaceLister struct {
 }
 
 // List lists all GitRepositories in the indexer for a given namespace.
-func (s gitRepositoryNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.GitRepository, err error) {
+func (s gitRepositoryNamespaceLister) List(selector labels.Selector) (ret []*v1alpha3.GitRepository, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.GitRepository))
+		ret = append(ret, m.(*v1alpha3.GitRepository))
 	})
 	return ret, err
 }
 
 // Get retrieves the GitRepository from the indexer for a given namespace and name.
-func (s gitRepositoryNamespaceLister) Get(name string) (*v1alpha1.GitRepository, error) {
+func (s gitRepositoryNamespaceLister) Get(name string) (*v1alpha3.GitRepository, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -90,5 +91,5 @@ func (s gitRepositoryNamespaceLister) Get(name string) (*v1alpha1.GitRepository,
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("gitrepository"), name)
 	}
-	return obj.(*v1alpha1.GitRepository), nil
+	return obj.(*v1alpha3.GitRepository), nil
 }

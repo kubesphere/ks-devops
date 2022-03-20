@@ -21,7 +21,7 @@ spec:
       jsonPath: .spec.version
       name: Version
       type: string
-    name: v1alpha1
+    name: v1alpha3
     schema:
       openAPIV3Schema:
         description: Addon represents a plugin (addon) of ks-devops

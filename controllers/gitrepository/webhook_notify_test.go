@@ -24,17 +24,17 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
 
 func TestWebhookReconciler_notifyGitRepo(t *testing.T) {
-	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	gitRepo := &v1alpha1.GitRepository{
+	gitRepo := &v1alpha3.GitRepository{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "repo",
@@ -70,14 +70,14 @@ func TestWebhookReconciler_notifyGitRepo(t *testing.T) {
 			return false
 		},
 		verify: func(t assert.TestingT, c client.Client) {
-			repo := &v1alpha1.GitRepository{}
+			repo := &v1alpha3.GitRepository{}
 			err := c.Get(context.TODO(), types.NamespacedName{
 				Namespace: "ns",
 				Name:      "repo",
 			}, repo)
 			assert.Nil(t, err)
 
-			assert.NotEmpty(t, repo.Annotations[v1alpha1.AnnotationKeyWebhookUpdates])
+			assert.NotEmpty(t, repo.Annotations[v1alpha3.AnnotationKeyWebhookUpdates])
 		},
 	}}
 	for _, tt := range tests {
@@ -94,16 +94,16 @@ func TestWebhookReconciler_notifyGitRepo(t *testing.T) {
 }
 
 func TestWebhookReconciler_notifyGitRepos(t *testing.T) {
-	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	gitRepo := &v1alpha1.GitRepository{
+	gitRepo := &v1alpha3.GitRepository{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "repo",
 		},
 	}
-	gitRepoA := &v1alpha1.GitRepository{
+	gitRepoA := &v1alpha3.GitRepository{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "repo-a",
@@ -140,21 +140,21 @@ func TestWebhookReconciler_notifyGitRepos(t *testing.T) {
 			return false
 		},
 		verify: func(t assert.TestingT, c client.Client) {
-			repo1 := &v1alpha1.GitRepository{}
+			repo1 := &v1alpha3.GitRepository{}
 			err := c.Get(context.TODO(), types.NamespacedName{
 				Namespace: "ns",
 				Name:      "repo",
 			}, repo1)
 			assert.Nil(t, err)
-			assert.NotEmpty(t, repo1.Annotations[v1alpha1.AnnotationKeyWebhookUpdates])
+			assert.NotEmpty(t, repo1.Annotations[v1alpha3.AnnotationKeyWebhookUpdates])
 
-			repo2 := &v1alpha1.GitRepository{}
+			repo2 := &v1alpha3.GitRepository{}
 			err = c.Get(context.TODO(), types.NamespacedName{
 				Namespace: "ns",
 				Name:      "repo-a",
 			}, repo2)
 			assert.Nil(t, err)
-			assert.NotEmpty(t, repo2.Annotations[v1alpha1.AnnotationKeyWebhookUpdates])
+			assert.NotEmpty(t, repo2.Annotations[v1alpha3.AnnotationKeyWebhookUpdates])
 		},
 	}, {
 		name: "has errors",
@@ -171,21 +171,21 @@ func TestWebhookReconciler_notifyGitRepos(t *testing.T) {
 			return true
 		},
 		verify: func(t assert.TestingT, c client.Client) {
-			repo1 := &v1alpha1.GitRepository{}
+			repo1 := &v1alpha3.GitRepository{}
 			err := c.Get(context.TODO(), types.NamespacedName{
 				Namespace: "ns",
 				Name:      "repo",
 			}, repo1)
 			assert.Nil(t, err)
-			assert.NotEmpty(t, repo1.Annotations[v1alpha1.AnnotationKeyWebhookUpdates])
+			assert.NotEmpty(t, repo1.Annotations[v1alpha3.AnnotationKeyWebhookUpdates])
 
-			repo2 := &v1alpha1.GitRepository{}
+			repo2 := &v1alpha3.GitRepository{}
 			err = c.Get(context.TODO(), types.NamespacedName{
 				Namespace: "ns",
 				Name:      "repo-a",
 			}, repo2)
 			assert.Nil(t, err)
-			assert.NotEmpty(t, repo2.Annotations[v1alpha1.AnnotationKeyWebhookUpdates])
+			assert.NotEmpty(t, repo2.Annotations[v1alpha3.AnnotationKeyWebhookUpdates])
 		},
 	}}
 	for _, tt := range tests {
