@@ -169,6 +169,10 @@ func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
 	if err := indexers.CreatePipelineRunSCMRefNameIndexer(s.RuntimeCache); err != nil {
 		return err
 	}
+	if err := indexers.CreatePipelineRunIdentityIndexer(s.RuntimeCache); err != nil {
+		return err
+	}
+
 	err = s.waitForResourceSync(stopCh)
 	if err != nil {
 		return err

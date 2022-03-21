@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"sort"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -165,6 +166,35 @@ func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
 	pipelineRunID, exist = pr.Annotations[JenkinsPipelineRunIDAnnoKey]
 	return
+}
+
+// GetPipelineRunIdentifier returns an identifier string which can identify a PipelineRun,
+// even if the PipelineRun belongs to multi-branch or non multi-branch Pipeline.
+// Format of the string: [scm.ref-name]-runID
+// TODO Add unit test against this method
+func (pr *PipelineRun) GetPipelineRunIdentifier() string {
+	pipelineName := pr.GetLabels()[PipelineNameLabelKey]
+	scmRefName := ""
+	if pr.Spec.IsMultiBranchPipeline() && pr.Spec.SCM != nil {
+		scmRefName = pr.Spec.SCM.RefName
+	}
+	runID := pr.Annotations[JenkinsPipelineRunIDAnnoKey]
+	return BuildPipelineRunIdentifier(pipelineName, scmRefName, runID)
+}
+
+// BuildPipelineRunIdentifier builds PipelineRun identifier with Pipeline name, SCM reference name and run ID.
+func BuildPipelineRunIdentifier(pipelineName, scmRefName, runID string) string {
+	var identifierItem []string
+	if pipelineName != "" {
+		identifierItem = append(identifierItem, pipelineName)
+	}
+	if scmRefName != "" {
+		identifierItem = append(identifierItem, scmRefName)
+	}
+	if runID != "" {
+		identifierItem = append(identifierItem, runID)
+	}
+	return strings.Join(identifierItem, "-")
 }
 
 // Parameter is an option that can be passed with the endpoint to influence the Pipeline Run

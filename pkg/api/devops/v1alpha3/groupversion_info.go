@@ -38,6 +38,8 @@ const (
 	PipelineRunCreatorAnnoKey = devops.GroupName + "/creator"
 	// PipelineRunSCMRefNameField is the field name of SCM reference name in PipelineRun spec.
 	PipelineRunSCMRefNameField = "spec.scm.ref-name"
+	// PipelineRunIdentifierIndexerName is an indexer name of PipelineRun identifier.
+	PipelineRunIdentifierIndexerName = "pipelinerun.identifier"
 )
 
 var (

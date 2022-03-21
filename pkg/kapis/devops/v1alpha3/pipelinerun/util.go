@@ -93,6 +93,11 @@ func getPipelineRef(pipeline *v1alpha3.Pipeline) *corev1.ObjectReference {
 
 // CreatePipelineRun creates a bare PipelineRun.
 func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
+	return CreateBarePipelineRun(pipeline, convertParameters(payload), scm)
+}
+
+// CreateBarePipelineRun creates a bare PipelineRun.
+func CreateBarePipelineRun(pipeline *v1alpha3.Pipeline, parameters []v1alpha3.Parameter, scm *v1alpha3.SCM) *v1alpha3.PipelineRun {
 	controllerRef := metav1.NewControllerRef(pipeline, pipeline.GroupVersionKind())
 	pipelineRun := &v1alpha3.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,7 +113,7 @@ func CreatePipelineRun(pipeline *v1alpha3.Pipeline, payload *devops.RunPayload, 
 		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
 			PipelineSpec: &pipeline.Spec,
-			Parameters:   convertParameters(payload),
+			Parameters:   parameters,
 			SCM:          scm,
 		},
 	}

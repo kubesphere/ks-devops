@@ -28,8 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/kapis"
 
 	"github.com/emicklei/go-restful"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
@@ -103,34 +101,6 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 	}
 	apiResult := resourcesV1alpha3.ToListResult(convertPipelineRunsToObject(prs.Items), queryParam, listHandler)
 	_ = response.WriteAsJson(apiResult)
-
-	go func() {
-		err := h.requestSyncPipelineRun(client.ObjectKey{Namespace: pipeline.Namespace, Name: pipeline.Name})
-		if err != nil {
-			klog.Errorf("failed to request to synchronize PipelineRuns. Pipeline = %s", pipeline.Name)
-			return
-		}
-	}()
-}
-
-func (h *apiHandler) requestSyncPipelineRun(key client.ObjectKey) error {
-	// get latest Pipeline
-	pipelineToUpdate := &v1alpha3.Pipeline{}
-	err := h.client.Get(context.Background(), key, pipelineToUpdate)
-	if err != nil {
-		return err
-	}
-	// update pipeline annotations
-	if pipelineToUpdate.Annotations == nil {
-		pipelineToUpdate.Annotations = make(map[string]string)
-	}
-	pipelineToUpdate.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey] = "true"
-	// update the pipeline
-	if err := h.client.Update(context.Background(), pipelineToUpdate); err != nil && !apierrors.IsConflict(err) {
-		// we allow the conflict error here
-		return err
-	}
-	return nil
 }
 
 func (h *apiHandler) createPipelineRun(request *restful.Request, response *restful.Response) {

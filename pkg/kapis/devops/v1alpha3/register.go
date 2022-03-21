@@ -21,18 +21,18 @@ package v1alpha3
 import (
 	"net/http"
 
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/template"
-
-	restful "github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/k8s"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipeline"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/scm"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/template"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubesphere.io/devops/pkg/api"
@@ -62,6 +62,7 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 		template.RegisterRoutes(service, &common.Options{
 			GenericClient: client,
 		})
+		webhook.RegisterWebhooks(client, service)
 		container.Add(service)
 	}
 	return services

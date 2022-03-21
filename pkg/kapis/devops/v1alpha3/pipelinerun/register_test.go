@@ -71,6 +71,12 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/namespaces/fake/pipelineruns/fake/nodedetails",
 		},
 	}, {
+		name: "receive pipeline event",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/webhook/pipeline-event",
+		},
+	}, {
 		name: "download artifact",
 		args: args{
 			method: http.MethodGet,

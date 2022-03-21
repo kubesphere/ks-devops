@@ -76,6 +76,9 @@ func HandleError(request *restful.Request, response *restful.Response, err error
 	default:
 		statusCode = http.StatusInternalServerError
 	}
+	if errors.IsNotFound(err) {
+		statusCode = http.StatusNotFound
+	}
 	handle(statusCode, request, response, err)
 }
 
