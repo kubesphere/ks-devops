@@ -9,12 +9,28 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - namespaces
   verbs:
   - create
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -24,6 +40,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -41,6 +58,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - argoproj.io
   resources:
@@ -58,6 +76,7 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
 - apiGroups:
   - cluster.kubesphere.io
@@ -76,6 +95,28 @@ rules:
   - delete
   - get
   - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - addons
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - addonstrategies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - devops.kubesphere.io
   resources:
@@ -104,6 +145,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - devops.kubesphere.io
   resources:
@@ -161,7 +203,48 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - s2ibinaries
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - s2ibuilders
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - s2ibuildertemplates
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - s2iruns
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - devops.kubesphere.io
   resources:
@@ -203,9 +286,12 @@ rules:
   resources:
   - applications
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - gitops.kubesphere.io
   resources:

@@ -49,9 +49,7 @@ import (
 	"kubesphere.io/devops/pkg/utils/sliceutil"
 )
 
-/**
-  DevOps project controller is used to maintain the state of the DevOps project.
-*/
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;update;watch
 
 // Controller is the controller for DevOpsProject
 type Controller struct {

@@ -38,6 +38,8 @@ import (
 	"time"
 )
 
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;update;watch
+
 // ControllerOptions is the option of Jenkins configuration controller
 type ControllerOptions struct {
 	LimitRangeClient    v1core.LimitRangesGetter
