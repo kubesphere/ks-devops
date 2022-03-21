@@ -31,8 +31,6 @@ import (
 	"kubesphere.io/devops/controllers/jenkins/config"
 	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
-	"kubesphere.io/devops/controllers/s2ibinary"
-	"kubesphere.io/devops/controllers/s2irun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/client/s3"
@@ -97,7 +95,6 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
 	devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface,
 	s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
-	kubesphereInformer := informerFactory.KubeSphereSharedInformerFactory()
 
 	argocdReconciler := &argocd.Reconciler{
 		Client: mgr.GetClient(),
@@ -167,19 +164,6 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
 			}
 			return err
-		},
-		"s2ibinary": func(mgr manager.Manager) error {
-			return mgr.Add(s2ibinary.NewController(client.Kubernetes(),
-				client.KubeSphere(),
-				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
-				s3Client,
-			))
-		},
-		"s2irun": func(mgr manager.Manager) error {
-			return mgr.Add(s2irun.NewS2iRunController(client.Kubernetes(),
-				client.KubeSphere(),
-				kubesphereInformer.Devops().V1alpha1().S2iBinaries(),
-				kubesphereInformer.Devops().V1alpha1().S2iRuns()))
 		},
 		argocdReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
 			if err = argocdReconciler.SetupWithManager(mgr); err != nil {

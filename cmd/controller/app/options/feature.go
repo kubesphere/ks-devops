@@ -33,8 +33,6 @@ type FeatureOptions struct {
 // it supports a special key 'all', the default config is not working if 'all' is false
 func (o *FeatureOptions) GetControllers() map[string]bool {
 	defaultMap := map[string]bool{
-		"s2ibinary":     true,
-		"s2irun":        true,
 		"jenkins":       true,
 		"jenkinsconfig": true,
 	}
