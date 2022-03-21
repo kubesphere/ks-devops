@@ -21,7 +21,7 @@ For instance:
 ```yaml
 spec:
   containers:
-    - args
+    - args:
       - --enabled-controllers
       - addon=true
       image: ghcr.io/kubesphere/devops-controller
@@ -38,7 +38,7 @@ kubectl apply -f https://github.com/kubesphere-sigs/ks-releaser-operator/release
 finally, you can install `ks-releaser` by adding the following resource:
 
 ```yaml
-apiVersion: devops.kubesphere.io/v1alpha1
+apiVersion: devops.kubesphere.io/v1alpha3
 kind: Addon
 metadata:
   name: ks-releaser
