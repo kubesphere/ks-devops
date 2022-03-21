@@ -20,9 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// StructToMap converts struct value to map value, which key type is string and value type is interface{}.
+// InterfaceToMap converts value to map, which type of key is string and type of value is interface{} (Actually it is
+// map[string]interface{}).
 // The type of value must be struct. Any other types will lead an error.
-func StructToMap(value interface{}) (map[string]interface{}, error) {
+func InterfaceToMap(value interface{}) (map[string]interface{}, error) {
 	valueBytes, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func StructToMap(value interface{}) (map[string]interface{}, error) {
 // types will lead to an error.
 func SetNestedField(obj map[string]interface{}, value interface{}, fields ...string) error {
 	// convert value to unstructured
-	mapValue, err := StructToMap(value)
+	mapValue, err := InterfaceToMap(value)
 	if err != nil {
 		return err
 	}

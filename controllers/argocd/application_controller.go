@@ -90,11 +90,11 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 }
 
 func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructured.Unstructured, err error) {
-	argoApp := app.Spec.ArgoApp.DeepCopy()
-	if argoApp == nil {
+	if app.Spec.ArgoApp == nil {
 		err = fmt.Errorf("no argo found from the spec")
 		return
 	}
+	argoApp := app.Spec.ArgoApp.DeepCopy()
 	// TODO set some default values
 	if argoApp.Spec.Project == "" {
 		argoApp.Spec.Project = "default"
