@@ -70,9 +70,11 @@ func Test_createUnstructuredApplication(t *testing.T) {
 			app: &v1alpha1.Application{
 				Spec: v1alpha1.ApplicationSpec{
 					ArgoApp: &v1alpha1.ArgoApplication{
-						Destination: v1alpha1.ApplicationDestination{
-							Server:    "server",
-							Namespace: "namespace",
+						Spec: v1alpha1.ArgoApplicationSpec{
+							Destination: v1alpha1.ApplicationDestination{
+								Server:    "server",
+								Namespace: "namespace",
+							},
 						},
 					},
 				},
@@ -108,10 +110,12 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			ArgoApp: &v1alpha1.ArgoApplication{
-				Project: "project",
-				SyncPolicy: &v1alpha1.SyncPolicy{
-					Automated: &v1alpha1.SyncPolicyAutomated{
-						Prune: true,
+				Spec: v1alpha1.ArgoApplicationSpec{
+					Project: "project",
+					SyncPolicy: &v1alpha1.SyncPolicy{
+						Automated: &v1alpha1.SyncPolicyAutomated{
+							Prune: true,
+						},
 					},
 				},
 			},

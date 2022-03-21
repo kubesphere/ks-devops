@@ -17,13 +17,12 @@ limitations under the License.
 package argocd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
-	"html/template"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
@@ -66,7 +65,7 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 	argoApp.SetKind("Application")
 	argoApp.SetAPIVersion("argoproj.io/v1alpha1")
 
-	if err = r.Client.Get(ctx, types.NamespacedName{
+	if err = r.Get(ctx, types.NamespacedName{
 		Namespace: app.GetNamespace(),
 		Name:      app.GetName(),
 	}, argoApp); err != nil {
@@ -78,70 +77,53 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			return
 		}
 
-		err = r.Client.Create(ctx, argoApp)
+		err = r.Create(ctx, argoApp)
 	} else {
 		var newArgoApp *unstructured.Unstructured
 		if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 			argoApp.Object["spec"] = newArgoApp.Object["spec"]
 			k8sutil.AddOwnerReference(argoApp, app.TypeMeta, app.ObjectMeta)
-			err = r.Client.Update(ctx, argoApp)
+			err = r.Update(ctx, argoApp)
 		}
 	}
 	return
 }
 
 func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructured.Unstructured, err error) {
-	app = app.DeepCopy()
-	argoApp := app.Spec.ArgoApp
-	if argoApp == nil {
+	if app.Spec.ArgoApp == nil {
 		err = fmt.Errorf("no argo found from the spec")
 		return
 	}
-
-	var tpl *template.Template
-	if tpl, err = template.New("argo").Parse(argoApplicationTemplate); err != nil {
-		return
-	}
-
+	argoApp := app.Spec.ArgoApp.DeepCopy()
 	// TODO set some default values
-	if argoApp.Project == "" {
-		argoApp.Project = "default"
+	if argoApp.Spec.Project == "" {
+		argoApp.Spec.Project = "default"
 	}
 
-	buffer := new(bytes.Buffer)
-	if err = tpl.Execute(buffer, argoApp); err == nil {
-		if result, err = GetObjectFromYaml(buffer.String()); err == nil {
-			result.SetName(app.GetName())
-			result.SetNamespace(app.GetNamespace())
-			k8sutil.AddOwnerReference(result, app.TypeMeta, app.ObjectMeta)
+	newArgoApp := &unstructured.Unstructured{}
+	newArgoApp.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "argoproj.io",
+		Version: "v1alpha1",
+		Kind:    "Application",
+	})
+	newArgoApp.SetName(app.GetName())
+	newArgoApp.SetNamespace(app.GetNamespace())
+
+	if err := SetNestedField(newArgoApp.Object, argoApp.Spec, "spec"); err != nil {
+		return nil, err
+	}
+
+	if argoApp.Operation != nil {
+		if err := SetNestedField(newArgoApp.Object, argoApp.Operation, "operation"); err != nil {
+			return nil, err
 		}
 	}
-	return
-}
 
-const argoApplicationTemplate = `apiVersion: argoproj.io/v1alpha1
-kind: Application
-spec:
-  project: "{{.Project}}"
-  source:
-    repoURL: "{{.Source.RepoURL}}"
-    targetRevision: {{.Source.TargetRevision}}
-    path: "{{.Source.Path}}"
-{{if .Source.Directory }}
-    directory:
-      recurse: {{.Source.Directory.Recurse}}
-{{end}}
-  destination:
-    server: "{{.Destination.Server}}"
-    namespace: "{{.Destination.Namespace}}"
-{{if .SyncPolicy }}
-{{if .SyncPolicy.Automated }}
-  syncPolicy:
-    automated:
-      prune: {{.SyncPolicy.Automated.Prune}}
-{{end}}
-{{end}}
-`
+	// set owner reference
+	k8sutil.AddOwnerReference(newArgoApp, app.TypeMeta, app.ObjectMeta)
+
+	return newArgoApp, nil
+}
 
 // GetName returns the name of this reconciler
 func (r *ApplicationReconciler) GetName() string {

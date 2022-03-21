@@ -25,9 +25,65 @@ type ApplicationSpec struct {
 	ArgoApp *ArgoApplication `json:"argoApp,omitempty"`
 }
 
-// ArgoApplication represents an ArgoCD Application
-// The fields simply are copied from the argo-cd project
+// ArgoApplication is a definition of Argo Application resource.
+// Those fields simply are copied from the argo-cd project
 type ArgoApplication struct {
+	Spec      ArgoApplicationSpec `json:"spec,omitempty"`
+	Operation *Operation          `json:"operation,omitempty"`
+}
+
+// OperationInitiator contains information about the initiator of an operation
+type OperationInitiator struct {
+	// Username contains the name of a user who started operation
+	Username string `json:"username,omitempty"`
+	// Automated is set to true if operation was initiated automatically by the application controller.
+	Automated bool `json:"automated,omitempty"`
+}
+
+// SyncOperationResource contains resources to sync.
+type SyncOperationResource struct {
+	Group     string `json:"group,omitempty"`
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// SyncOperation contains details about a sync operation.
+type SyncOperation struct {
+	// Revision is the revision (Git) or chart version (Helm) which to sync the application to
+	// If omitted, will use the revision specified in app spec.
+	Revision string `json:"revision,omitempty"`
+	// Prune specifies to delete resources from the cluster that are no longer tracked in git
+	Prune bool `json:"prune,omitempty"`
+	// DryRun specifies to perform a `kubectl apply --dry-run` without actually performing the sync
+	DryRun bool `json:"dryRun,omitempty"`
+	// SyncStrategy describes how to perform the sync
+	SyncStrategy *SyncStrategy `json:"syncStrategy,omitempty"`
+	// Resources describes which resources shall be part of the sync
+	Resources []SyncOperationResource `json:"resources,omitempty"`
+	// Source overrides the source definition set in the application.
+	// This is typically set in a Rollback operation and is nil during a Sync operation
+	Source *ApplicationSource `json:"source,omitempty"`
+	// Manifests is an optional field that overrides sync source with a local directory for development
+	Manifests []string `json:"manifests,omitempty"`
+	// SyncOptions provide per-sync sync-options, e.g. Validate=false
+	SyncOptions SyncOptions `json:"syncOptions,omitempty"`
+}
+
+// Operation contains information about a requested or running operation
+type Operation struct {
+	// Sync contains parameters for the operation
+	Sync *SyncOperation `json:"sync,omitempty"`
+	// InitiatedBy contains information about who initiated the operations
+	InitiatedBy OperationInitiator `json:"initiatedBy,omitempty"`
+	// Info is a list of informational items for this operation
+	Info []*Info `json:"info,omitempty"`
+	// Retry controls the strategy to apply if a sync fails
+	Retry RetryStrategy `json:"retry,omitempty"`
+}
+
+// ArgoApplicationSpec represents an ArgoCD Application
+type ArgoApplicationSpec struct {
 	// Source is a reference to the location of the application's manifests or chart
 	Source ApplicationSource `json:"source"`
 	// Destination is a reference to the target Kubernetes server and namespace
