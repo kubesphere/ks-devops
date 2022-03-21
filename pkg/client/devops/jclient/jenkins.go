@@ -50,12 +50,6 @@ func NewJenkinsClient(options *jenkins.Options) (*JenkinsClient, error) {
 		UserName: options.Username,
 		Token:    options.Password,
 	}
-	crumbIssuer, err := jenkinsCore.GetCrumb()
-	if err != nil {
-		return nil, err
-	} else if crumbIssuer != nil {
-		jenkinsCore.JenkinsCrumb = *crumbIssuer
-	}
 
 	devopsClient, _ := jenkins.NewDevopsClient(options) // For refactor purpose only
 	return &JenkinsClient{
