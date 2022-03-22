@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/kapis/common"
@@ -130,13 +131,11 @@ func TestAPIs(t *testing.T) {
 		k8sclient:    fake.NewFakeClientWithScheme(schema),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
-			list := &unstructured.Unstructured{}
+			list := &api.ListResult{}
 			err := yaml.Unmarshal(body, list)
 			assert.Nil(t, err)
 
-			items, _, err := unstructured.NestedSlice(list.Object, "items")
-			assert.Equal(t, 0, len(items))
-			assert.NotNil(t, err)
+			assert.Equal(t, 0, len(list.Items))
 		},
 	}, {
 		name: "get a normal list of the applications",
@@ -147,12 +146,11 @@ func TestAPIs(t *testing.T) {
 		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
-			list := &unstructured.Unstructured{}
+			list := &api.ListResult{}
 			err := yaml.Unmarshal(body, list)
 			assert.Nil(t, err)
 
-			items, _, err := unstructured.NestedSlice(list.Object, "items")
-			assert.Equal(t, 1, len(items))
+			assert.Equal(t, 1, len(list.Items))
 			assert.Nil(t, err)
 		},
 	}, {

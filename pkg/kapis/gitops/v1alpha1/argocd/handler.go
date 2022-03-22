@@ -21,16 +21,35 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
+	healthStatus := common.GetQueryParameter(req, healthStatusQueryParam)
+	syncStatus := common.GetQueryParameter(req, syncStatusQueryParam)
 
 	applicationList := &v1alpha1.ApplicationList{}
-	err := h.List(context.Background(), applicationList, client.InNamespace(namespace))
-	common.Response(req, res, applicationList, err)
+	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace)); err != nil {
+		common.Response(req, res, applicationList, err)
+		return
+	}
+
+	applications := applicationList.Items
+	applications = filterByLabels(applications, map[string]string{
+		// filter by sync status
+		v1alpha1.SyncStatusLabelKey: syncStatus,
+		// filter by health status
+		v1alpha1.HealthStatusLabelKey: healthStatus,
+	})
+
+	queryParam := query.ParseQueryParameter(req)
+	list := v1alpha3.DefaultList(toObjects(applications), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
+
+	common.Response(req, res, list, nil)
 }
 
 func (h *handler) getApplication(req *restful.Request, res *restful.Response) {

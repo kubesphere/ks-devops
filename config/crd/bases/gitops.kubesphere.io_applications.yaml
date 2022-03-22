@@ -38,6 +38,7 @@ spec:
             properties:
               argoApp:
                 description: ArgoApplication is a definition of Argo Application resource.
+                  Those fields simply are copied from the argo-cd project
                 properties:
                   operation:
                     description: Operation contains information about a requested
@@ -455,7 +456,6 @@ spec:
                     type: object
                   spec:
                     description: ArgoApplicationSpec represents an ArgoCD Application
-                      The fields simply are copied from the argo-cd project
                     properties:
                       destination:
                         description: Destination is a reference to the target Kubernetes

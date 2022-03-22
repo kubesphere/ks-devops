@@ -33,9 +33,14 @@ var (
 	NamespacePathParameter = restful.PathParameter("namespace", "The namespace name")
 )
 
-// GetPathParameter returns the parameter value from a request
+// GetPathParameter returns the path parameter value from a request
 func GetPathParameter(req *restful.Request, param *restful.Parameter) string {
 	return req.PathParameter(param.Data().Name)
+}
+
+// GetQueryParameter returns the query parameter value from a request
+func GetQueryParameter(req *restful.Request, param *restful.Parameter) string {
+	return req.QueryParameter(param.Data().Name)
 }
 
 // Response is a common response method

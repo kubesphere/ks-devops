@@ -11,6 +11,11 @@ resources:
 - bases/devops.kubesphere.io_pipelineruns.yaml
 - bases/devops.kubesphere.io_templates.yaml
 - bases/devops.kubesphere.io_clustertemplates.yaml
+- bases/devops.kubesphere.io_addons.yaml
+- bases/devops.kubesphere.io_addonstrategies.yaml
+- bases/gitops.kubesphere.io_applications.yaml
+- bases/devops.kubesphere.io_gitrepositories.yaml
+- bases/devops.kubesphere.io_webhooks.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

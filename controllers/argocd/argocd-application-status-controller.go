@@ -58,8 +58,21 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 	if status, _, err = unstructured.NestedMap(argoCDApp.Object, "status"); err == nil {
 		var statusData []byte
 		if statusData, err = json.Marshal(status); err == nil {
+			app = app.DeepCopy()
+			if app.GetLabels() == nil {
+				// make sure the labels are not nil
+				app.SetLabels(map[string]string{})
+			}
+			// set sync status into labels for filtering
+			if syncStatus, found, _ := unstructured.NestedString(status, "sync", "status"); found {
+				app.GetLabels()[v1alpha1.SyncStatusLabelKey] = syncStatus
+			}
+			// set health status into labels for filtering
+			if healthStatus, found, _ := unstructured.NestedString(status, "health", "status"); found {
+				app.GetLabels()[v1alpha1.HealthStatusLabelKey] = healthStatus
+			}
 			app.Status.ArgoApp = string(statusData)
-			err = r.Status().Update(ctx, app.DeepCopy())
+			err = r.Update(ctx, app)
 		}
 	}
 	return
