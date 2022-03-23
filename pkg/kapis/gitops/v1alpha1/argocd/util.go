@@ -20,25 +20,6 @@ import (
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 )
 
-func filterByLabels(applications []v1alpha1.Application, labels map[string]string) []v1alpha1.Application {
-	if len(labels) == 0 {
-		return applications
-	}
-	filtered := make([]v1alpha1.Application, 0)
-	for i := range applications {
-		contain := true
-		for key, value := range labels {
-			if value != "" && applications[i].Labels[key] != value {
-				contain = false
-			}
-		}
-		if contain {
-			filtered = append(filtered, applications[i])
-		}
-	}
-	return filtered
-}
-
 func toObjects(apps []v1alpha1.Application) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {

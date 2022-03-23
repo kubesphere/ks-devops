@@ -33,21 +33,20 @@ func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
 	syncStatus := common.GetQueryParameter(req, syncStatusQueryParam)
 
 	applicationList := &v1alpha1.ApplicationList{}
-	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace)); err != nil {
+	matchingLabels := client.MatchingLabels{}
+	if syncStatus != "" {
+		matchingLabels[v1alpha1.SyncStatusLabelKey] = syncStatus
+	}
+	if healthStatus != "" {
+		matchingLabels[v1alpha1.HealthStatusLabelKey] = healthStatus
+	}
+	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace), matchingLabels); err != nil {
 		common.Response(req, res, applicationList, err)
 		return
 	}
 
-	applications := applicationList.Items
-	applications = filterByLabels(applications, map[string]string{
-		// filter by sync status
-		v1alpha1.SyncStatusLabelKey: syncStatus,
-		// filter by health status
-		v1alpha1.HealthStatusLabelKey: healthStatus,
-	})
-
 	queryParam := query.ParseQueryParameter(req)
-	list := v1alpha3.DefaultList(toObjects(applications), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
+	list := v1alpha3.DefaultList(toObjects(applicationList.Items), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
 
 	common.Response(req, res, list, nil)
 }
