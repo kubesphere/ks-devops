@@ -46,6 +46,12 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
+// TODO perhaps we can find a better way to declaim the permission needs of the apiserver
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=s2ibinaries,verbs=get;list;update;delete;watch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=s2ibuildertemplates,verbs=get;list;update;delete;watch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=s2ibuilders,verbs=get;list;update;delete;watch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=s2iruns,verbs=get;list;update;delete;watch
+
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha2"}
 
 func AddToContainer(container *restful.Container, ksInformers externalversions.SharedInformerFactory,

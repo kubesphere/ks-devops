@@ -34,6 +34,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=addons,verbs=get;delete;create;update;watch;list
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=addonstrategies,verbs=get;delete;create;update;watch;list
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=releasercontrollers,verbs=get;delete;create;update;list
+//+kubebuilder:rbac:groups=argoproj.io,resources=argocds,verbs=get;delete;create;update;list
+
 // Reconciler takes the responsible for addon lifecycle
 type Reconciler struct {
 	client.Client

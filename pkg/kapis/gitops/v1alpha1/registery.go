@@ -24,6 +24,9 @@ import (
 	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/argocd"
 )
 
+// TODO perhaps we can find a better way to declaim the permission needs of the apiserver
+//+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update;delete;create;watch
+
 // AddToContainer adds web services into web service container.
 func AddToContainer(container *restful.Container, options *common.Options) []*restful.WebService {
 	services := []*restful.WebService{

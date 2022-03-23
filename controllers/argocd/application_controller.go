@@ -100,6 +100,11 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 		argoApp.Spec.Project = "default"
 	}
 
+	// application destination can't have both name and server defined
+	if argoApp.Spec.Destination.Name != "" && argoApp.Spec.Destination.Server != "" {
+		argoApp.Spec.Destination.Server = ""
+	}
+
 	newArgoApp := &unstructured.Unstructured{}
 	newArgoApp.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "argoproj.io",

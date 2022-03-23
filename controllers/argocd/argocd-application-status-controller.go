@@ -30,7 +30,7 @@ import (
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;update
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications/status,verbs=get;update
-//+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list
+//+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;watch
 
 // ApplicationStatusReconciler represents a controller to sync cluster to ArgoCD cluster
 type ApplicationStatusReconciler struct {
