@@ -236,6 +236,46 @@ func TestDefaultObjectMetaCompare(t *testing.T) {
 		},
 		field:             query.FieldUID,
 		expectedCmpResult: false,
+	}, {
+		name: "Should sort by creation timestamp in descending order by default#1",
+		left: v1.ObjectMeta{
+			CreationTimestamp: now,
+		},
+		right: v1.ObjectMeta{
+			CreationTimestamp: v1.NewTime(now.Add(time.Second)),
+		},
+		expectedCmpResult: false,
+	}, {
+		name: "Should sort by creation timestamp in descending order by default#2",
+		left: v1.ObjectMeta{
+			CreationTimestamp: v1.NewTime(now.Add(time.Second)),
+		},
+		right: v1.ObjectMeta{
+			CreationTimestamp: now,
+		},
+		expectedCmpResult: true,
+	}, {
+		name: "Should sort by name in ascending order by default when creation timestamps are the same#1",
+		left: v1.ObjectMeta{
+			CreationTimestamp: now,
+			Name:              "a",
+		},
+		right: v1.ObjectMeta{
+			CreationTimestamp: now,
+			Name:              "b",
+		},
+		expectedCmpResult: false,
+	}, {
+		name: "Should sort by name in ascending order by default when creation timestamps are the same#2",
+		left: v1.ObjectMeta{
+			CreationTimestamp: now,
+			Name:              "b",
+		},
+		right: v1.ObjectMeta{
+			CreationTimestamp: now,
+			Name:              "a",
+		},
+		expectedCmpResult: true,
 	},
 	}
 

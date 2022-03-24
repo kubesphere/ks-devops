@@ -184,10 +184,8 @@ func DefaultObjectMetaCompare(left, right metav1.Object, sortBy query.Field) boo
 	case query.FieldName:
 		// sort the name in ascending order
 		return strings.Compare(left.GetName(), right.GetName()) > 0
-	//	?sortBy=creationTimestamp
+	// Sort by creationTimestamp in descending order by default
 	default:
-		fallthrough
-	case query.FieldCreationTimeStamp:
 		// compare by name if creation timestamp is equal
 		leftTime := left.GetCreationTimestamp()
 		rightTime := right.GetCreationTimestamp()

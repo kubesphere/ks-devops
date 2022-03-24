@@ -290,6 +290,24 @@ func Test_handler_applicationList(t *testing.T) {
 			},
 			TotalItems: 3,
 		},
+	}, {
+		name: "Should sort by creationTimestamp in descending order by default",
+		args: args{
+			req: createRequest("/applications", "fake-namespace"),
+			apps: []v1alpha1.Application{
+				*createAppWithCreationTime("fake-app-2", "fake-namespace", current),
+				*createAppWithCreationTime("fake-app-1", "fake-namespace", yesterday),
+				*createAppWithCreationTime("fake-app-3", "fake-namespace", tomorrow),
+			},
+		},
+		wantResponse: api.ListResult{
+			Items: []interface{}{
+				*createAppWithCreationTime("fake-app-3", "fake-namespace", tomorrow),
+				*createAppWithCreationTime("fake-app-2", "fake-namespace", current),
+				*createAppWithCreationTime("fake-app-1", "fake-namespace", yesterday),
+			},
+			TotalItems: 3,
+		},
 	},
 	}
 	for _, tt := range tests {
