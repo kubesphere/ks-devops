@@ -43,6 +43,11 @@ import (
 	"kubesphere.io/devops/pkg/server/params"
 )
 
+// TODO perhaps we can find a better way to declaim the permission needs of the apiserver
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=devopsprojects,verbs=get;list;update;delete;create;watch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelines,verbs=get;list;update;delete;create;watch
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelineruns,verbs=get;list;update;delete;create;watch
+
 // GroupVersion describes CRD group and its version.
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
