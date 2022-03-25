@@ -142,6 +142,8 @@ rules:
   resources:
   - devopsprojects
   verbs:
+  - create
+  - delete
   - get
   - list
   - update
