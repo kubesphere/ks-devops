@@ -55,7 +55,7 @@ func TestRegisterRoutes(t *testing.T) {
 			options: &common.Options{GenericClient: fake.NewFakeClientWithScheme(schema)},
 		},
 		verify: func(t *testing.T, service *restful.WebService) {
-			assert.Equal(t, 6, len(service.Routes()))
+			assert.Greater(t, len(service.Routes()), 0)
 		},
 	}}
 	for _, tt := range tests {
@@ -302,6 +302,17 @@ func TestAPIs(t *testing.T) {
   "name": "name"
  }
 ]`, string(body))
+		},
+	}, {
+		name: "get applications summary",
+		request: request{
+			method: http.MethodGet,
+			uri:    "/namespaces/ns/applications/-/summary",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			assert.JSONEq(t, `{"total": 1, "healthStatus": {}, "syncStatus": {}}`, string(body))
 		},
 	}}
 	for _, tt := range tests {
