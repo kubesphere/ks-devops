@@ -35,6 +35,9 @@ func NewAPIServerCommand() (cmd *cobra.Command) {
 	// Load configuration from file
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
+		if conf.ArgoCDOption == nil {
+			conf.ArgoCDOption = &config.ArgoCDOption{}
+		}
 		s = &options.ServerRunOptions{
 			GenericServerRunOptions: s.GenericServerRunOptions,
 			Config:                  conf,

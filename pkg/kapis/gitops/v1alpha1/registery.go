@@ -20,6 +20,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/argocd"
 )
@@ -28,13 +29,13 @@ import (
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update;delete;create;watch
 
 // AddToContainer adds web services into web service container.
-func AddToContainer(container *restful.Container, options *common.Options) []*restful.WebService {
+func AddToContainer(container *restful.Container, options *common.Options, argoOption *config.ArgoCDOption) []*restful.WebService {
 	services := []*restful.WebService{
 		runtime.NewWebService(v1alpha1.GroupVersion),
 		runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion),
 	}
 	for _, service := range services {
-		argocd.RegisterRoutes(service, options)
+		argocd.RegisterRoutes(service, options, argoOption)
 		container.Add(service)
 	}
 	return services

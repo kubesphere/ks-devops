@@ -84,12 +84,13 @@ type Config struct {
 	RedisOptions          *cache.Options                     `json:"redis,omitempty" yaml:"redis,omitempty" mapstructure:"redis"`
 	S3Options             *s3.Options                        `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
 	SonarQubeOptions      *sonarqube.Options                 `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
+	ArgoCDOption          *ArgoCDOption                      `json:"argocd,omitempty" yaml:"argocd,omitempty" mapstructure:"argocd"`
 	AuthenticationOptions *authoptions.AuthenticationOptions `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
 	AuthMode              AuthMode                           `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
 	JWTSecret             string                             `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
 }
 
-// newConfig creates a default non-empty Config
+// New creates a default non-empty Config
 func New() *Config {
 	return &Config{
 		SonarQubeOptions:  sonarqube.NewSonarQubeOptions(),
@@ -126,7 +127,7 @@ func TryLoadFromDisk() (*Config, error) {
 	return conf, nil
 }
 
-// convertToMap simply converts config to map[string]bool
+// ToMap simply converts config to map[string]bool
 // to hide sensitive information
 func (conf *Config) ToMap() map[string]bool {
 	conf.stripEmptyOptions()

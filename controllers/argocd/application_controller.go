@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +33,7 @@ import (
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
 //+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;create;update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // ApplicationReconciler is the reconciler of the Application
 type ApplicationReconciler struct {
@@ -41,6 +43,10 @@ type ApplicationReconciler struct {
 }
 
 // Reconcile makes sure the Application and ArgoCD application works well
+// Consider all the ArgoCD application need to be in one particular namespace. But the Application from this project can be in different namespaces.
+// In order to avoid the naming conflict, we will check if the name existing the target namespace. Take the original name
+// as the generatedName of the ArgoCD application if there is a potential conflict. In the most cases, we can keep the original name
+// same to the ArgoCD Application name.
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
 	ctx := context.Background()
 	r.log.Info(fmt.Sprintf("start to reconcile application: %s", req.String()))
@@ -61,10 +67,20 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 	ctx := context.Background()
 
 	argoApp := createBareArgoCDApplicationObject()
+	argoCDNamespace, ok := app.Labels[v1alpha1.ArgoCDLocationLabelKey]
+	if !ok || "" == argoCDNamespace {
+		r.recorder.Eventf(app, corev1.EventTypeWarning, "Invalid",
+			"Cannot find the namespace of the Argo CD instance from key: %s", v1alpha1.ArgoCDLocationLabelKey)
+		return
+	}
+	argoCDAppName, hasArgoName := app.Labels[v1alpha1.ArgoCDAppNameLabelKey]
+	if argoCDAppName == "" {
+		argoCDAppName = app.GetName()
+	}
 
 	if err = r.Get(ctx, types.NamespacedName{
-		Namespace: app.GetNamespace(),
-		Name:      app.GetName(),
+		Namespace: argoCDNamespace,
+		Name:      argoCDAppName,
 	}, argoApp); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return
@@ -74,13 +90,41 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			return
 		}
 
-		err = r.Create(ctx, argoApp)
+		argoApp.SetName(app.Name)
+		argoApp.SetNamespace(argoCDNamespace)
+		if err = r.Create(ctx, argoApp); err == nil {
+			err = r.addArgoAppNameIntoLabels(app.GetNamespace(), app.GetName(), argoApp.GetName())
+		} else {
+			data, _ := argoApp.MarshalJSON()
+			r.log.Error(err, "failed to create application to ArgoCD", "data", string(data))
+			r.recorder.Eventf(app, corev1.EventTypeWarning, "FailedWithArgoCD",
+				"failed to create application to ArgoCD, error is: %v", err)
+		}
 	} else {
-		var newArgoApp *unstructured.Unstructured
-		if newArgoApp, err = createUnstructuredApplication(app); err == nil {
-			argoApp.Object["spec"] = newArgoApp.Object["spec"]
-			k8sutil.AddOwnerReference(argoApp, app.TypeMeta, app.ObjectMeta)
-			err = r.Update(ctx, argoApp)
+		if !hasArgoName {
+			// naming conflict happened
+			if argoApp, err = createUnstructuredApplication(app); err != nil {
+				return
+			}
+			argoApp.SetGenerateName(app.GetName())
+			argoApp.SetName("")
+			argoApp.SetNamespace(argoCDNamespace)
+
+			if err = r.Create(ctx, argoApp); err == nil {
+				err = r.addArgoAppNameIntoLabels(app.GetNamespace(), app.GetName(), argoApp.GetName())
+			} else {
+				data, _ := argoApp.MarshalJSON()
+				r.log.Error(err, "failed to create application to ArgoCD", "data", string(data))
+				r.recorder.Eventf(app, corev1.EventTypeWarning, "FailedWithArgoCD",
+					"failed to create application to ArgoCD, error is: %v", err)
+			}
+		} else {
+			var newArgoApp *unstructured.Unstructured
+			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
+				argoApp.Object["spec"] = newArgoApp.Object["spec"]
+				k8sutil.AddOwnerReference(argoApp, app.TypeMeta, app.ObjectMeta)
+				err = r.Update(ctx, argoApp)
+			}
 		}
 	}
 	return
@@ -103,6 +147,11 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	}
 
 	newArgoApp := createBareArgoCDApplicationObject()
+	newArgoApp.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppControlByLabelKey: "ks-devops",
+		v1alpha1.AppNamespaceLabelKey:       app.Namespace,
+		v1alpha1.AppNameLabelKey:            app.Name,
+	})
 	newArgoApp.SetName(app.GetName())
 	newArgoApp.SetNamespace(app.GetNamespace())
 
@@ -120,6 +169,22 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	k8sutil.AddOwnerReference(newArgoApp, app.TypeMeta, app.ObjectMeta)
 
 	return newArgoApp, nil
+}
+
+func (r *ApplicationReconciler) addArgoAppNameIntoLabels(namespace, name, argoAppName string) (err error) {
+	app := &v1alpha1.Application{}
+	ctx := context.Background()
+	if err = r.Client.Get(ctx, types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}, app); err == nil {
+		if app.Labels == nil {
+			app.Labels = make(map[string]string)
+		}
+		app.Labels[v1alpha1.ArgoCDAppNameLabelKey] = argoAppName
+		err = r.Update(ctx, app)
+	}
+	return
 }
 
 // GetName returns the name of this reconciler
