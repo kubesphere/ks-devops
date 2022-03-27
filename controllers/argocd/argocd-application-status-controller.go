@@ -74,8 +74,17 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 				app.GetLabels()[v1alpha1.HealthStatusLabelKey] = healthStatus
 			}
 
+			// unset operation field if it was absent
+			if _, found, err := unstructured.NestedMap(argoCDApp.Object, "operation"); err != nil {
+				return ctrl.Result{}, err
+			} else if !found && app.Spec.ArgoApp != nil {
+				app.Spec.ArgoApp.Operation = nil
+			}
+
 			// update labels
-			err = r.Update(ctx, app)
+			if err = r.Update(ctx, app); err != nil {
+				return
+			}
 
 			// update status subresource
 			app.Status.ArgoApp = string(statusData)
