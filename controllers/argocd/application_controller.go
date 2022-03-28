@@ -22,7 +22,6 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
@@ -61,9 +60,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Application) (err error) {
 	ctx := context.Background()
 
-	argoApp := &unstructured.Unstructured{}
-	argoApp.SetKind("Application")
-	argoApp.SetAPIVersion("argoproj.io/v1alpha1")
+	argoApp := createBareArgoCDApplicationObject()
 
 	if err = r.Get(ctx, types.NamespacedName{
 		Namespace: app.GetNamespace(),
@@ -105,12 +102,7 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 		argoApp.Spec.Destination.Server = ""
 	}
 
-	newArgoApp := &unstructured.Unstructured{}
-	newArgoApp.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "argoproj.io",
-		Version: "v1alpha1",
-		Kind:    "Application",
-	})
+	newArgoApp := createBareArgoCDApplicationObject()
 	newArgoApp.SetName(app.GetName())
 	newArgoApp.SetNamespace(app.GetNamespace())
 

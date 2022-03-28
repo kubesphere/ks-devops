@@ -21,9 +21,11 @@ import (
 	"encoding/json"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -57,8 +59,8 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 	var status map[string]interface{}
 	if status, _, err = unstructured.NestedMap(argoCDApp.Object, "status"); err == nil {
 		var statusData []byte
-		if statusData, err = json.Marshal(status); err == nil {
-			app = app.DeepCopy()
+		if statusData, err = json.Marshal(status); err == nil && !reflect.DeepEqual([]byte(app.Status.ArgoApp), statusData) {
+			//app = app.DeepCopy()
 			if app.GetLabels() == nil {
 				// make sure the labels are not nil
 				app.SetLabels(map[string]string{})
@@ -71,15 +73,29 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 			if healthStatus, found, _ := unstructured.NestedString(status, "health", "status"); found {
 				app.GetLabels()[v1alpha1.HealthStatusLabelKey] = healthStatus
 			}
+
+			// unset operation field if it was absent
+			if _, found, err := unstructured.NestedMap(argoCDApp.Object, "operation"); err != nil {
+				return ctrl.Result{}, err
+			} else if !found && app.Spec.ArgoApp != nil {
+				app.Spec.ArgoApp.Operation = nil
+			}
+
+			// update labels
+			if err = r.Update(ctx, app); err != nil {
+				return
+			}
+
+			// update status subresource
 			app.Status.ArgoApp = string(statusData)
-			err = r.Update(ctx, app)
+			err = r.Status().Update(ctx, app)
 		}
 	}
 	return
 }
 
 func getArgoCDApplication(client client.Reader, namespacedName types.NamespacedName) (app *unstructured.Unstructured, err error) {
-	app = getArgoCDApplicationObject()
+	app = createBareArgoCDApplicationObject()
 
 	if err = client.Get(context.Background(), namespacedName, app); err != nil {
 		app = nil
@@ -97,19 +113,22 @@ func (r *ApplicationStatusReconciler) GetGroupName() string {
 	return controllerGroupName
 }
 
-func getArgoCDApplicationObject() *unstructured.Unstructured {
-	cluster := &unstructured.Unstructured{}
-	cluster.SetKind("Application")
-	cluster.SetAPIVersion("argoproj.io/v1alpha1")
-	return cluster.DeepCopy()
+func createBareArgoCDApplicationObject() *unstructured.Unstructured {
+	argoApp := &unstructured.Unstructured{}
+	argoApp.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "argoproj.io",
+		Version: "v1alpha1",
+		Kind:    "Application",
+	})
+	return argoApp
 }
 
 // SetupWithManager init the logger, recorder and filters
 func (r *ApplicationStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	cluster := getArgoCDApplicationObject()
+	argoApp := createBareArgoCDApplicationObject()
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
-		For(cluster).
+		For(argoApp).
 		Complete(r)
 }
