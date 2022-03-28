@@ -27,7 +27,11 @@ type demoCR struct {
 }
 
 func TestAddFinalizer(t *testing.T) {
-	demo := &demoCR{}
+	demo := &demoCR{
+		ObjectMeta: metav1.ObjectMeta{
+			Finalizers: []string{"fake"},
+		},
+	}
 
 	type args struct {
 		objectMeta *metav1.ObjectMeta
@@ -37,19 +41,32 @@ func TestAddFinalizer(t *testing.T) {
 		name   string
 		args   args
 		verify func(t *testing.T, meta *metav1.ObjectMeta)
+		expect bool
 	}{{
 		name: "normal case",
 		args: args{
-			objectMeta: &demo.ObjectMeta,
+			objectMeta: demo.DeepCopy(),
 			finalizer:  "abc",
 		},
+		expect: true,
 		verify: func(t *testing.T, meta *metav1.ObjectMeta) {
-			assert.ElementsMatch(t, []string{"abc"}, meta.Finalizers)
+			assert.ElementsMatch(t, []string{"fake", "abc"}, meta.Finalizers)
+		},
+	}, {
+		name: "add with a duplicated finalizer",
+		args: args{
+			objectMeta: demo.DeepCopy(),
+			finalizer:  "fake",
+		},
+		expect: false,
+		verify: func(t *testing.T, meta *metav1.ObjectMeta) {
+			assert.ElementsMatch(t, []string{"fake"}, meta.Finalizers)
 		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			AddFinalizer(tt.args.objectMeta, tt.args.finalizer)
+			result := AddFinalizer(tt.args.objectMeta, tt.args.finalizer)
+			assert.Equal(t, tt.expect, result)
 			tt.verify(t, tt.args.objectMeta)
 		})
 	}

@@ -32,7 +32,7 @@ import (
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
-//+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;create;update
+//+kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;create;update;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // ApplicationReconciler is the reconciler of the Application
@@ -76,6 +76,32 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 	argoCDAppName, hasArgoName := app.Labels[v1alpha1.ArgoCDAppNameLabelKey]
 	if argoCDAppName == "" {
 		argoCDAppName = app.GetName()
+	}
+
+	// the application was deleted
+	if !app.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err = r.Get(ctx, types.NamespacedName{
+			Namespace: argoCDNamespace,
+			Name:      argoCDAppName,
+		}, argoApp); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return
+			}
+			err = nil
+		} else {
+			err = r.Delete(ctx, argoApp)
+		}
+
+		if err == nil {
+			k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName)
+			err = r.Update(context.TODO(), app)
+		}
+		return
+	}
+	if k8sutil.AddFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName) {
+		if err = r.Update(context.TODO(), app); err != nil {
+			return
+		}
 	}
 
 	if err = r.Get(ctx, types.NamespacedName{
@@ -122,7 +148,6 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			var newArgoApp *unstructured.Unstructured
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 				argoApp.Object["spec"] = newArgoApp.Object["spec"]
-				k8sutil.AddOwnerReference(argoApp, app.TypeMeta, app.ObjectMeta)
 				err = r.Update(ctx, argoApp)
 			}
 		}
@@ -164,10 +189,6 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 			return nil, err
 		}
 	}
-
-	// set owner reference
-	k8sutil.AddOwnerReference(newArgoApp, app.TypeMeta, app.ObjectMeta)
-
 	return newArgoApp, nil
 }
 

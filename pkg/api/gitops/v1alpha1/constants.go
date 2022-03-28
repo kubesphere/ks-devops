@@ -25,3 +25,6 @@ const (
 	AppNamespaceLabelKey       = GroupName + "/application-namespace"
 	AppNameLabelKey            = GroupName + "/application-name"
 )
+
+// ApplicationFinalizerName is the name of PipelineRun finalizer
+const ApplicationFinalizerName = "application." + GroupName
