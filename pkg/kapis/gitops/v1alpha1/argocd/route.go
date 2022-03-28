@@ -37,6 +37,13 @@ type ApplicationPageResult struct {
 	TotalItems int                    `json:"totalItems"`
 }
 
+// ApplicationsSummary is the model of application summary response.
+type ApplicationsSummary struct {
+	Total        int            `json:"total"`
+	HealthStatus map[string]int `json:"healthStatus"`
+	SyncStatus   map[string]int `json:"syncStatus"`
+}
+
 // RegisterRoutes is for registering Argo CD Application routes into WebService.
 func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	handler := newHandler(options)
@@ -52,6 +59,12 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 		Param(healthStatusQueryParam).
 		Doc("Search applications").
 		Returns(http.StatusOK, api.StatusOK, ApplicationPageResult{}))
+
+	service.Route(service.GET("/namespaces/{namespace}/application-summary").
+		To(handler.applicationSummary).
+		Param(common.NamespacePathParameter).
+		Doc("Fetch applications summary").
+		Returns(http.StatusOK, api.StatusOK, ApplicationsSummary{}))
 
 	service.Route(service.POST("/namespaces/{namespace}/applications").
 		To(handler.createApplication).
