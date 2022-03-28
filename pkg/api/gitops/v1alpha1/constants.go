@@ -16,7 +16,15 @@
 package v1alpha1
 
 const (
-	GroupName            = "gitops.kubesphere.io"
-	HealthStatusLabelKey = GroupName + "/health-status"
-	SyncStatusLabelKey   = GroupName + "/sync-status"
+	GroupName                  = "gitops.kubesphere.io"
+	HealthStatusLabelKey       = GroupName + "/health-status"
+	SyncStatusLabelKey         = GroupName + "/sync-status"
+	ArgoCDLocationLabelKey     = GroupName + "/argocd-location"
+	ArgoCDAppNameLabelKey      = GroupName + "/argocd-application"
+	ArgoCDAppControlByLabelKey = GroupName + "/argocd-application-control-by"
+	AppNamespaceLabelKey       = GroupName + "/application-namespace"
+	AppNameLabelKey            = GroupName + "/application-name"
 )
+
+// ApplicationFinalizerName is the name of PipelineRun finalizer
+const ApplicationFinalizerName = "application." + GroupName

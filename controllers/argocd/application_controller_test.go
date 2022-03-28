@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -58,11 +57,6 @@ func Test_createUnstructuredApplication(t *testing.T) {
 		},
 		verify: func(t *testing.T, gotResult *unstructured.Unstructured, gotErr error) {
 			assert.Nil(t, gotErr)
-
-			// make sure it has the ownerReference
-			refs, _, _ := unstructured.NestedSlice(gotResult.Object, "metadata", "ownerReferences")
-			assert.NotNil(t, refs)
-			assert.Equal(t, 1, len(refs))
 		},
 	}, {
 		name: "with some specific fields, with default values",
@@ -100,13 +94,16 @@ func Test_createUnstructuredApplication(t *testing.T) {
 }
 
 func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
-	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
 	app := &v1alpha1.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake",
 			Namespace: "fake",
+			Labels: map[string]string{
+				v1alpha1.ArgoCDLocationLabelKey: "fake",
+			},
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			ArgoApp: &v1alpha1.ArgoApplication{
@@ -129,9 +126,8 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	argoApp.SetNamespace("fake")
 
 	type fields struct {
-		Client   client.Client
-		log      logr.Logger
-		recorder record.EventRecorder
+		Client client.Client
+		log    logr.Logger
 	}
 	type args struct {
 		app *v1alpha1.Application
@@ -144,7 +140,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}{{
 		name: "without Argo Application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		},
 		args: args{
 			app: app.DeepCopy(),
@@ -167,7 +163,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}, {
 		name: "with Argo Application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		},
 		args: args{
 			app: app.DeepCopy(),
@@ -191,7 +187,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			r := &ApplicationReconciler{
 				Client:   tt.fields.Client,
 				log:      tt.fields.log,
-				recorder: tt.fields.recorder,
+				recorder: &record.FakeRecorder{},
 			}
 			err := r.reconcileArgoApplication(tt.args.app)
 			tt.verify(t, tt.fields.Client, err)

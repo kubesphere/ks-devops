@@ -161,7 +161,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 	))
 	wss = append(wss, gitops.AddToContainer(s.container, &common.Options{
 		GenericClient: s.Client,
-	})...)
+	}, s.Config.ArgoCDOption)...)
 	doc.AddSwaggerService(wss, s.container)
 }
 

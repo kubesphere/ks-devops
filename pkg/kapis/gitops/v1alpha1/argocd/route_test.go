@@ -27,6 +27,7 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 	"net/http/httptest"
@@ -60,7 +61,7 @@ func TestRegisterRoutes(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			RegisterRoutes(tt.args.service, tt.args.options)
+			RegisterRoutes(tt.args.service, tt.args.options, &config.ArgoCDOption{})
 			tt.verify(t, tt.args.service)
 		})
 	}
@@ -322,7 +323,7 @@ func TestAPIs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wsWithGroup := runtime.NewWebService(v1alpha1.GroupVersion)
-			RegisterRoutes(wsWithGroup, &common.Options{GenericClient: tt.k8sclient})
+			RegisterRoutes(wsWithGroup, &common.Options{GenericClient: tt.k8sclient}, &config.ArgoCDOption{})
 
 			container := restful.NewContainer()
 			container.Add(wsWithGroup)

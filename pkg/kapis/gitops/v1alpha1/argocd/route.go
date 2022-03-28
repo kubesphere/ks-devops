@@ -20,6 +20,7 @@ import (
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 )
@@ -45,8 +46,8 @@ type ApplicationsSummary struct {
 }
 
 // RegisterRoutes is for registering Argo CD Application routes into WebService.
-func RegisterRoutes(service *restful.WebService, options *common.Options) {
-	handler := newHandler(options)
+func RegisterRoutes(service *restful.WebService, options *common.Options, argoOption *config.ArgoCDOption) {
+	handler := newHandler(options, argoOption)
 	service.Route(service.GET("/namespaces/{namespace}/applications").
 		To(handler.applicationList).
 		Param(common.NamespacePathParameter).

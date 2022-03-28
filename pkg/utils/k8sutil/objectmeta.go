@@ -22,8 +22,11 @@ import (
 )
 
 // AddFinalizer adds an finalizer
-func AddFinalizer(objectMeta *metav1.ObjectMeta, finalizer string) {
+func AddFinalizer(objectMeta *metav1.ObjectMeta, finalizer string) (added bool) {
+	count := len(objectMeta.Finalizers)
 	objectMeta.Finalizers = sliceutil.AddToSlice(finalizer, objectMeta.Finalizers)
+	added = len(objectMeta.Finalizers) > count
+	return
 }
 
 // RemoveFinalizer removes an finalizer

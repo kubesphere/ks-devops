@@ -68,6 +68,7 @@ func (s *ServerRunOptions) Flags() (fss cliflag.NamedFlagSets) {
 	s.JenkinsOptions.AddFlags(fss.FlagSet("devops"), s.JenkinsOptions)
 	s.SonarQubeOptions.AddFlags(fss.FlagSet("sonarqube"), s.SonarQubeOptions)
 	s.S3Options.AddFlags(fss.FlagSet("s3"), s.S3Options)
+	s.ArgoCDOption.AddFlags(fss.FlagSet("argocd"))
 
 	fs = fss.FlagSet("klog")
 	local := flag.NewFlagSet("klog", flag.ExitOnError)

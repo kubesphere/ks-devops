@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,6 +86,10 @@ func (h *handler) createApplication(req *restful.Request, res *restful.Response)
 	application := &v1alpha1.Application{}
 	if err = req.ReadEntity(application); err == nil {
 		application.Namespace = namespace
+		if application.Labels == nil {
+			application.Labels = make(map[string]string)
+		}
+		application.Labels[v1alpha1.ArgoCDLocationLabelKey] = h.ArgoCDNamespace
 		err = h.Create(context.Background(), application)
 	}
 
@@ -171,10 +176,12 @@ func (h *handler) populateApplicationSummary(namespace string) (*ApplicationsSum
 
 type handler struct {
 	client.Client
+	ArgoCDNamespace string
 }
 
-func newHandler(options *common.Options) *handler {
+func newHandler(options *common.Options, argoOption *config.ArgoCDOption) *handler {
 	return &handler{
-		Client: options.GenericClient,
+		Client:          options.GenericClient,
+		ArgoCDNamespace: argoOption.Namespace,
 	}
 }
