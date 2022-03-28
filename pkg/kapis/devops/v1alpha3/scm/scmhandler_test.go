@@ -175,7 +175,7 @@ func TestSCMAPI(t *testing.T) {
 			}
 
 			gock.New("https://api.github.com").
-				Get("user/repos").
+				Get("orgs/octocat/repos").
 				MatchParam("per_page", "1").
 				MatchParam("page", "1").
 				Reply(200).
@@ -222,4 +222,23 @@ func TestSCMAPI(t *testing.T) {
 			tt.verify(httpWriter.Code, httpWriter.Body.Bytes(), t)
 		})
 	}
+}
+
+func TestGetCurrentUsername(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Get("/user").
+		Reply(200).
+		Type("application/json").
+		SetHeader("X-GitHub-Request-Id", "DD0E:6011:12F21A8:1926790:5A2064E2").
+		SetHeader("X-RateLimit-Limit", "60").
+		SetHeader("X-RateLimit-Remaining", "59").
+		SetHeader("X-RateLimit-Reset", "1512076018").
+		File("testdata/user.json")
+
+	h := &handler{}
+	username, err := h.getCurrentUsername("github", "", "")
+	assert.Equal(t, "octocat", username)
+	assert.Nil(t, err)
 }

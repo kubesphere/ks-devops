@@ -19,10 +19,10 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	"github.com/drone/go-scm/scm"
-	"github.com/drone/go-scm/scm/driver/github"
 	"github.com/go-logr/logr"
 	testing2 "github.com/go-logr/logr/testing"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

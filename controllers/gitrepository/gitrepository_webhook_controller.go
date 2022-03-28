@@ -16,7 +16,7 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"

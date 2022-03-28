@@ -18,8 +18,8 @@ package scm
 
 import (
 	"context"
-	goscm "github.com/drone/go-scm/scm"
 	"github.com/emicklei/go-restful"
+	goscm "github.com/jenkins-x/go-scm/scm"
 	v1 "k8s.io/api/core/v1"
 	"kubesphere.io/devops/pkg/client/git"
 	"kubesphere.io/devops/pkg/kapis"
@@ -82,7 +82,7 @@ func (h *handler) getRepositories(scm, org, secret, namespace string, size int) 
 		var resp *goscm.Response
 
 		var allRepos []*goscm.Repository
-		if allRepos, resp, err = c.Repositories.List(context.TODO(), goscm.ListOptions{
+		if allRepos, resp, err = c.Repositories.ListOrganisation(context.TODO(), org, goscm.ListOptions{
 			Page: 1,
 			Size: size,
 		}); err == nil {
@@ -128,6 +128,28 @@ func (h *handler) listRepositories(req *restful.Request, rsp *restful.Response) 
 	} else {
 		_ = rsp.WriteEntity(transformRepositories(repos))
 	}
+}
+
+func (h *handler) getCurrentUsername(scmProvider, secretName, secretNs string) (username string, err error) {
+	var secretRef *v1.SecretReference
+	if secretName != "" && secretNs != "" {
+		secretRef = &v1.SecretReference{
+			Namespace: secretNs, Name: secretName,
+		}
+	}
+	factory := git.NewClientFactory(scmProvider, secretRef, h.Client)
+
+	var c *goscm.Client
+	var user *goscm.User
+	if c, err = factory.GetClient(); err == nil {
+		user, _, err = c.Users.Find(context.Background())
+		if err != nil {
+			return
+		}
+
+		username = user.Login
+	}
+	return
 }
 
 func transformOrganizations(orgs []*goscm.Organization) (result []organization) {

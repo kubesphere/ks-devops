@@ -9,7 +9,6 @@ require (
 	github.com/aws/aws-sdk-go v1.38.52
 	github.com/beevik/etree v1.1.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/drone/go-scm v1.16.2
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20201014110547-68ccff494617
@@ -25,6 +24,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/h2non/gock v1.0.9
+	github.com/jenkins-x/go-scm v1.11.4
 	github.com/jenkins-zh/jenkins-client v0.0.9
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
