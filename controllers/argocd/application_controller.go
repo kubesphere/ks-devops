@@ -29,6 +29,7 @@ import (
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
@@ -224,6 +225,7 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&v1alpha1.Application{}).
 		Complete(r)
 }

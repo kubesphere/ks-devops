@@ -57,11 +57,6 @@ func Test_createUnstructuredApplication(t *testing.T) {
 		},
 		verify: func(t *testing.T, gotResult *unstructured.Unstructured, gotErr error) {
 			assert.Nil(t, gotErr)
-
-			// make sure it has the ownerReference
-			refs, _, _ := unstructured.NestedSlice(gotResult.Object, "metadata", "ownerReferences")
-			assert.NotNil(t, refs)
-			assert.Equal(t, 1, len(refs))
 		},
 	}, {
 		name: "with some specific fields, with default values",
