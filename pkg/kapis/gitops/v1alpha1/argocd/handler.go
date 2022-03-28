@@ -135,14 +135,14 @@ func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 	common.Response(req, res, argoClusters, err)
 }
 
-func (h *handler) applicationsSummary(request *restful.Request, response *restful.Response) {
+func (h *handler) applicationSummary(request *restful.Request, response *restful.Response) {
 	namespace := common.GetPathParameter(request, common.NamespacePathParameter)
 
-	summary, err := h.populateApplicationsSummary(namespace)
+	summary, err := h.populateApplicationSummary(namespace)
 	common.Response(request, response, summary, err)
 }
 
-func (h *handler) populateApplicationsSummary(namespace string) (*ApplicationsSummary, error) {
+func (h *handler) populateApplicationSummary(namespace string) (*ApplicationsSummary, error) {
 	applicationList := &v1alpha1.ApplicationList{}
 	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace)); err != nil {
 		return nil, err

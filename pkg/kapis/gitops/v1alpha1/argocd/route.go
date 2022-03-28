@@ -60,8 +60,8 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 		Doc("Search applications").
 		Returns(http.StatusOK, api.StatusOK, ApplicationPageResult{}))
 
-	service.Route(service.GET("/namespaces/{namespace}/applications/-/summary").
-		To(handler.applicationsSummary).
+	service.Route(service.GET("/namespaces/{namespace}/application-summary").
+		To(handler.applicationSummary).
 		Param(common.NamespacePathParameter).
 		Doc("Fetch applications summary").
 		Returns(http.StatusOK, api.StatusOK, ApplicationsSummary{}))

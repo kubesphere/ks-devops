@@ -76,6 +76,10 @@ func TestAPIs(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
 			Name:      "app",
+			Labels: map[string]string{
+				v1alpha1.HealthStatusLabelKey: "Healthy",
+				v1alpha1.SyncStatusLabelKey:   "Synced",
+			},
 		},
 	}
 
@@ -307,12 +311,12 @@ func TestAPIs(t *testing.T) {
 		name: "get applications summary",
 		request: request{
 			method: http.MethodGet,
-			uri:    "/namespaces/ns/applications/-/summary",
+			uri:    "/namespaces/ns/application-summary",
 		},
 		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
-			assert.JSONEq(t, `{"total": 1, "healthStatus": {}, "syncStatus": {}}`, string(body))
+			assert.JSONEq(t, `{"total": 1, "healthStatus": { "Healthy": 1 }, "syncStatus": { "Synced": 1 }}`, string(body))
 		},
 	}}
 	for _, tt := range tests {
