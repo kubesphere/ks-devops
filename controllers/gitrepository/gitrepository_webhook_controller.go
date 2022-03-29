@@ -128,9 +128,9 @@ func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha3.GitRepository) (err er
 			NativeEvents: webhook.Spec.Events,
 		}
 
-		if ok, id := exist(webhook.Spec.Server, hooks); ok {
+		if ok, _ := exist(webhook.Spec.Server, hooks); ok {
 			// update the existing webhooks
-			_, _, err = gitClient.Repositories.UpdateHook(context.TODO(), repoAddress, id, hookInput)
+			_, _, err = gitClient.Repositories.UpdateHook(context.TODO(), repoAddress, hookInput)
 		} else {
 			// create the webhook
 			_, _, err = gitClient.Repositories.CreateHook(context.TODO(), repoAddress, hookInput)

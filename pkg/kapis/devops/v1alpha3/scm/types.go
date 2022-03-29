@@ -28,3 +28,9 @@ type repository struct {
 	DefaultBranch string `json:"defaultBranch"`
 	Name          string `json:"name"`
 }
+
+type repositoryListResult struct {
+	Repositories struct {
+		Items []repository `json:"items"`
+	} `json:"repositories"`
+}

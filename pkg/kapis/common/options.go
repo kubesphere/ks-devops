@@ -19,6 +19,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/kapis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 // Options contain options needed by creating handlers.
@@ -31,6 +32,11 @@ var (
 	DevopsPathParameter = restful.PathParameter("devops", "DevOps project name")
 	// NamespacePathParameter is a path parameter definition for namespace
 	NamespacePathParameter = restful.PathParameter("namespace", "The namespace name")
+
+	// PageNumberQueryParameter is a restful query parameter of the page number
+	PageNumberQueryParameter = restful.QueryParameter("pageNumber", "The number of paging").DataType("int")
+	// PageSizeQueryParameter is a restful query parameter of the page size
+	PageSizeQueryParameter = restful.QueryParameter("pageSize", "The size of each paging data").DataType("int")
 )
 
 // GetPathParameter returns the path parameter value from a request
@@ -41,6 +47,22 @@ func GetPathParameter(req *restful.Request, param *restful.Parameter) string {
 // GetQueryParameter returns the query parameter value from a request
 func GetQueryParameter(req *restful.Request, param *restful.Parameter) string {
 	return req.QueryParameter(param.Data().Name)
+}
+
+// GetPageParameters returns the page number and page size from a request
+// the default value of page number is 1, page size is 10 if the number string is invalid
+func GetPageParameters(req *restful.Request) (pageNumber, pageSize int) {
+	pageNumberStr := req.QueryParameter(PageNumberQueryParameter.Data().Name)
+	pageSizeStr := req.QueryParameter(PageSizeQueryParameter.Data().Name)
+
+	var err error
+	if pageNumber, err = strconv.Atoi(pageNumberStr); err != nil {
+		pageNumber = 1
+	}
+	if pageSize, err = strconv.Atoi(pageSizeStr); err != nil {
+		pageSize = 10
+	}
+	return
 }
 
 // Response is a common response method
