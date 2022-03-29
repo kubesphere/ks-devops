@@ -45,6 +45,19 @@ type ApplicationsSummary struct {
 	SyncStatus   map[string]int `json:"syncStatus"`
 }
 
+// ApplicationSyncRequest is a request to apply an operation to change state.
+type ApplicationSyncRequest struct {
+	Revision      string                           `json:"revision"`
+	DryRun        bool                             `json:"dryRun"`
+	Prune         bool                             `json:"prune"`
+	Strategy      *v1alpha1.SyncStrategy           `json:"strategy,omitempty"`
+	Resources     []v1alpha1.SyncOperationResource `json:"resources"`
+	Manifests     []string                         `json:"manifests,omitempty"`
+	Infos         []*v1alpha1.Info                 `json:"infos,omitempty"`
+	RetryStrategy *v1alpha1.RetryStrategy          `json:"retryStrategy,omitempty"`
+	SyncOptions   *v1alpha1.SyncOptions            `json:"syncOptions,omitempty"`
+}
+
 // RegisterRoutes is for registering Argo CD Application routes into WebService.
 func RegisterRoutes(service *restful.WebService, options *common.Options, argoOption *config.ArgoCDOption) {
 	handler := newHandler(options, argoOption)
@@ -79,6 +92,14 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, argoOp
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
 		Doc("Get a particular application").
+		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
+
+	service.Route(service.POST("/namespaces/{namespace}/applications/{application}/sync").
+		To(handler.handleSyncApplication).
+		Param(common.NamespacePathParameter).
+		Param(pathParameterApplication).
+		Reads(ApplicationSyncRequest{}).
+		Doc("Sync a particular application manually").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.DELETE("/namespaces/{namespace}/applications/{application}").
