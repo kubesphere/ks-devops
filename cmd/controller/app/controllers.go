@@ -108,6 +108,10 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	argocdAppStatusReconciler := &argocd.ApplicationStatusReconciler{
 		Client: mgr.GetClient(),
 	}
+	argocdGitRepoReconciler := &argocd.GitRepositoryController{
+		Client:        mgr.GetClient(),
+		ArgoNamespace: s.ArgoCDOption.Namespace,
+	}
 
 	return map[string]func(mgr manager.Manager) error{
 		"gitrepository": func(mgr manager.Manager) error {
@@ -173,6 +177,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				return
 			}
 			if err = argocdAppStatusReconciler.SetupWithManager(mgr); err != nil {
+				return
+			}
+			if err = argocdGitRepoReconciler.SetupWithManager(mgr); err != nil {
 				return
 			}
 			return argocdAppReconciler.SetupWithManager(mgr)

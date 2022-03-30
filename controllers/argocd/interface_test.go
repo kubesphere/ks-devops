@@ -55,6 +55,12 @@ func TestInterfaceImplement(t *testing.T) {
 			NamedReconciler: &Reconciler{},
 			GroupReconciler: &Reconciler{},
 		},
+	}, {
+		name: "GitRepositoryReconciler",
+		instance: interInstance{
+			NamedReconciler: &GitRepositoryController{},
+			GroupReconciler: &GitRepositoryController{},
+		},
 	}}
 	for i := range tests {
 		tt := tests[i]
