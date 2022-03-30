@@ -43,10 +43,6 @@ var (
 	NameQueryParam          = restful.QueryParameter(ParameterName, "Filter by name, containing match pattern")
 	LabelSelectorQueryParam = restful.QueryParameter(ParameterLabelSelector, "Filter by labels")
 	FieldSelectorQueryParam = restful.QueryParameter(ParameterFieldSelector, "Filter by fields")
-	PageQueryParam          = restful.QueryParameter(ParameterPage, "Which page you want to query. Default value is 1")
-	LimitQueryParam         = restful.QueryParameter(ParameterLimit, "Which size per page you want to query. Default value is 10")
-	SortByQueryParam        = restful.QueryParameter(ParameterOrderBy, `Order by field. Default value is "creationTimestamp"`)
-	AscendingQueryParam     = restful.QueryParameter(ParameterAscending, "Sort order. Default is false(descending)")
 )
 
 // Query represents api search terms

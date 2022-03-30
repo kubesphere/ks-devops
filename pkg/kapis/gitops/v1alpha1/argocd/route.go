@@ -19,7 +19,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
@@ -64,11 +63,11 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, argoOp
 	service.Route(service.GET("/namespaces/{namespace}/applications").
 		To(handler.applicationList).
 		Param(common.NamespacePathParameter).
-		Param(query.PageQueryParam).
-		Param(query.LimitQueryParam).
-		Param(query.NameQueryParam).
-		Param(query.SortByQueryParam).
-		Param(query.AscendingQueryParam).
+		Param(common.PageQueryParameter).
+		Param(common.LimitQueryParameter).
+		Param(common.NameQueryParameter).
+		Param(common.SortByQueryParameter).
+		Param(common.AscendingQueryParameter).
 		Param(syncStatusQueryParam).
 		Param(healthStatusQueryParam).
 		Doc("Search applications").

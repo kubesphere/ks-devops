@@ -16,6 +16,10 @@ limitations under the License.
 
 package scm
 
+import (
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+)
+
 type organization struct {
 	Name string `json:"name"`
 	// Avatar is the image of an organization which comes from a git provider
@@ -33,4 +37,10 @@ type repositoryListResult struct {
 	Repositories struct {
 		Items []repository `json:"items"`
 	} `json:"repositories"`
+}
+
+// GitRepositoryPageResult is the model of page result of GitRepositories.
+type GitRepositoryPageResult struct {
+	Items      []v1alpha3.GitRepository `json:"items"`
+	TotalItems int                      `json:"totalItems"`
 }

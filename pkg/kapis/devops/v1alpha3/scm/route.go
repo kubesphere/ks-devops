@@ -77,8 +77,10 @@ func registerGitRepositoryAPIs(ws *restful.WebService, h *handler) {
 	ws.Route(ws.GET("/namespaces/{namespace}/gitrepositories").
 		To(h.listGitRepositories).
 		Param(common.NamespacePathParameter).
+		Param(common.PageQueryParameter).
+		Param(common.LimitQueryParameter).
 		Doc("List all the GitRepositories").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.GitRepository{}))
+		Returns(http.StatusOK, api.StatusOK, GitRepositoryPageResult{}))
 
 	ws.Route(ws.POST("/namespaces/{namespace}/gitrepositories/").
 		To(h.createGitRepositories).
