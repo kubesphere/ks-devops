@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	goscm "github.com/drone/go-scm/scm"
-	"github.com/drone/go-scm/scm/driver/github"
-	"github.com/drone/go-scm/scm/driver/gitlab"
-	"github.com/drone/go-scm/scm/transport/oauth2"
+	goscm "github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/github"
+	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
+	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -58,19 +58,21 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 		return
 	}
 
-	var gitToken string
-	if gitToken, err = c.getTokenFromSecret(c.secretRef); err != nil {
-		return
-	}
+	if c.secretRef != nil {
+		var gitToken string
+		if gitToken, err = c.getTokenFromSecret(c.secretRef); err != nil {
+			return
+		}
 
-	client.Client = &http.Client{
-		Transport: &oauth2.Transport{
-			Source: oauth2.StaticTokenSource(
-				&goscm.Token{
-					Token: gitToken,
-				},
-			),
-		},
+		client.Client = &http.Client{
+			Transport: &oauth2.Transport{
+				Source: oauth2.StaticTokenSource(
+					&goscm.Token{
+						Token: gitToken,
+					},
+				),
+			},
+		}
 	}
 	return
 }

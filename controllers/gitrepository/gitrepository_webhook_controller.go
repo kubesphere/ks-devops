@@ -16,7 +16,7 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -128,9 +128,9 @@ func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha3.GitRepository) (err er
 			NativeEvents: webhook.Spec.Events,
 		}
 
-		if ok, id := exist(webhook.Spec.Server, hooks); ok {
+		if ok, _ := exist(webhook.Spec.Server, hooks); ok {
 			// update the existing webhooks
-			_, _, err = gitClient.Repositories.UpdateHook(context.TODO(), repoAddress, id, hookInput)
+			_, _, err = gitClient.Repositories.UpdateHook(context.TODO(), repoAddress, hookInput)
 		} else {
 			// create the webhook
 			_, _, err = gitClient.Repositories.CreateHook(context.TODO(), repoAddress, hookInput)

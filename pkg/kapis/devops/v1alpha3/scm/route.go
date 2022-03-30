@@ -33,6 +33,7 @@ var (
 	pathParameterGitRepository    = restful.PathParameter("gitrepository", "The GitRepository customs resource")
 	queryParameterSecret          = restful.QueryParameter("secret", "the secret name")
 	queryParameterSecretNamespace = restful.QueryParameter("secretNamespace", "the namespace of target secret")
+	queryParameterIncludeUser     = restful.QueryParameter("includeUser", "Indicate if you want to include the current user")
 )
 
 // RegisterRoutersForSCM registers the APIs which related to scm
@@ -56,6 +57,7 @@ func registerSCMAPIs(ws *restful.WebService, h *handler) {
 		Param(pathParameterSCM).
 		Param(queryParameterSecret).
 		Param(queryParameterSecretNamespace).
+		Param(queryParameterIncludeUser.DataType("boolean").DefaultValue("true")).
 		Doc("List all the readable organizations").
 		Returns(http.StatusOK, api.StatusOK, []organization{}))
 
@@ -63,10 +65,12 @@ func registerSCMAPIs(ws *restful.WebService, h *handler) {
 		To(h.listRepositories).
 		Param(pathParameterSCM).
 		Param(pathParameterOrganization).
-		Param(queryParameterSecret).
-		Param(queryParameterSecretNamespace).
-		Doc("List all the readable repositories").
-		Returns(http.StatusOK, api.StatusOK, []repository{}))
+		Param(queryParameterSecret.Required(true)).
+		Param(queryParameterSecretNamespace.Required(true)).
+		Param(common.PageNumberQueryParameter).
+		Param(common.PageSizeQueryParameter).
+		Doc("List all the readable Repositories").
+		Returns(http.StatusOK, api.StatusOK, repositoryListResult{}))
 }
 
 func registerGitRepositoryAPIs(ws *restful.WebService, h *handler) {

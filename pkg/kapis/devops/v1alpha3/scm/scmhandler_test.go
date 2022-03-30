@@ -116,7 +116,7 @@ func TestSCMAPI(t *testing.T) {
 		name: "get the organization list",
 		args: args{
 			method: http.MethodGet,
-			uri:    "/scms/github/organizations?secret=token&secretNamespace=default",
+			uri:    "/scms/github/organizations?secret=token&secretNamespace=default&includeUser=false",
 		},
 		prepare: func() {
 			var mockHeaders = map[string]string{
@@ -154,7 +154,110 @@ func TestSCMAPI(t *testing.T) {
 			assert.Equal(t, "github", orgs[0].Name)
 		},
 	}, {
-		name: "get the repository list",
+		name: "get the organization list include current user",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/scms/github/organizations?secret=token&secretNamespace=default&includeUser=true",
+		},
+		prepare: func() {
+			var mockHeaders = map[string]string{
+				"X-GitHub-Request-Id":   "DD0E:6011:12F21A8:1926790:5A2064E2",
+				"X-RateLimit-Limit":     "60",
+				"X-RateLimit-Remaining": "59",
+				"X-RateLimit-Reset":     "1512076018",
+			}
+
+			var mockPageHeaders = map[string]string{
+				"Link": `<https://api.github.com/resource?page=1>; rel="next",` +
+					`<https://api.github.com/resource?page=1>; rel="prev",` +
+					`<https://api.github.com/resource?page=1>; rel="first",` +
+					`<https://api.github.com/resource?page=1>; rel="last"`,
+			}
+
+			gock.New("https://api.github.com").
+				Get("/user/orgs").
+				MatchParam("per_page", "1").
+				MatchParam("page", "1").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				SetHeaders(mockPageHeaders).
+				File("testdata/orgs.json")
+
+			gock.New("https://api.github.com").
+				Get("/user").
+				Reply(200).
+				Type("application/json").
+				SetHeader("X-GitHub-Request-Id", "DD0E:6011:12F21A8:1926790:5A2064E2").
+				SetHeader("X-RateLimit-Limit", "60").
+				SetHeader("X-RateLimit-Remaining", "59").
+				SetHeader("X-RateLimit-Reset", "1512076018").
+				File("testdata/user.json")
+		},
+		verify: func(code int, response []byte, t *testing.T) {
+			assert.Equal(t, 200, code)
+
+			var orgs []organization
+			err := json.Unmarshal(response, &orgs)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, len(orgs))
+			assert.Equal(t, "https://github.com/images/error/octocat_happy.gif", orgs[0].Avatar)
+			assert.Equal(t, "github", orgs[0].Name)
+			assert.Equal(t, "octocat", orgs[1].Name)
+		},
+	}, {
+		name: "get the repository list with the organization name",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/scms/github/organizations/octocat-org/repositories?secret=token&secretNamespace=default",
+		},
+		prepare: func() {
+			var mockHeaders = map[string]string{
+				"X-GitHub-Request-Id":   "DD0E:6011:12F21A8:1926790:5A2064E2",
+				"X-RateLimit-Limit":     "60",
+				"X-RateLimit-Remaining": "59",
+				"X-RateLimit-Reset":     "1512076018",
+			}
+
+			var mockPageHeaders = map[string]string{
+				"Link": `<https://api.github.com/resource?page=1>; rel="next",` +
+					`<https://api.github.com/resource?page=1>; rel="prev",` +
+					`<https://api.github.com/resource?page=1>; rel="first",` +
+					`<https://api.github.com/resource?page=1>; rel="last"`,
+			}
+
+			gock.New("https://api.github.com").
+				Get("orgs/octocat-org/repos").
+				MatchParam("per_page", "10").
+				MatchParam("page", "1").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				SetHeaders(mockPageHeaders).
+				File("testdata/repos.json")
+
+			gock.New("https://api.github.com").
+				Get("/user").
+				Reply(200).
+				Type("application/json").
+				SetHeader("X-GitHub-Request-Id", "DD0E:6011:12F21A8:1926790:5A2064E2").
+				SetHeader("X-RateLimit-Limit", "60").
+				SetHeader("X-RateLimit-Remaining", "59").
+				SetHeader("X-RateLimit-Reset", "1512076018").
+				File("testdata/user.json")
+		},
+		verify: func(code int, response []byte, t *testing.T) {
+			assert.Equal(t, 200, code)
+
+			var repos repositoryListResult
+			err := json.Unmarshal(response, &repos)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, len(repos.Repositories.Items))
+			assert.Equal(t, "Hello-World", repos.Repositories.Items[0].Name)
+			assert.Equal(t, "master", repos.Repositories.Items[0].DefaultBranch)
+		},
+	}, {
+		name: "get the repository list with the individual name",
 		args: args{
 			method: http.MethodGet,
 			uri:    "/scms/github/organizations/octocat/repositories?secret=token&secretNamespace=default",
@@ -175,7 +278,7 @@ func TestSCMAPI(t *testing.T) {
 			}
 
 			gock.New("https://api.github.com").
-				Get("user/repos").
+				Get("users/octocat/repos").
 				MatchParam("per_page", "1").
 				MatchParam("page", "1").
 				Reply(200).
@@ -183,16 +286,26 @@ func TestSCMAPI(t *testing.T) {
 				SetHeaders(mockHeaders).
 				SetHeaders(mockPageHeaders).
 				File("testdata/repos.json")
+
+			gock.New("https://api.github.com").
+				Get("/user").
+				Reply(200).
+				Type("application/json").
+				SetHeader("X-GitHub-Request-Id", "DD0E:6011:12F21A8:1926790:5A2064E2").
+				SetHeader("X-RateLimit-Limit", "60").
+				SetHeader("X-RateLimit-Remaining", "59").
+				SetHeader("X-RateLimit-Reset", "1512076018").
+				File("testdata/user.json")
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
 
-			var repos []repository
+			var repos repositoryListResult
 			err := json.Unmarshal(response, &repos)
 			assert.Nil(t, err)
-			assert.Equal(t, 1, len(repos))
-			assert.Equal(t, "Hello-World", repos[0].Name)
-			assert.Equal(t, "master", repos[0].DefaultBranch)
+			assert.Equal(t, 2, len(repos.Repositories.Items))
+			assert.Equal(t, "Hello-World", repos.Repositories.Items[0].Name)
+			assert.Equal(t, "master", repos.Repositories.Items[0].DefaultBranch)
 		},
 	}}
 	for _, tt := range tests {
