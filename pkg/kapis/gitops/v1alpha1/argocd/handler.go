@@ -204,13 +204,16 @@ func (h *handler) updateApplication(req *restful.Request, res *restful.Response)
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	name := common.GetPathParameter(req, pathParameterApplication)
 
+	var err error
 	application := &v1alpha1.Application{}
-	err := h.Get(context.Background(), types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, application)
-	if err == nil {
-		if err = req.ReadEntity(application); err == nil {
+	if err = req.ReadEntity(application); err == nil {
+		latestApp := &v1alpha1.Application{}
+		err = h.Get(context.Background(), types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		}, latestApp)
+		if err == nil {
+			application.ResourceVersion = latestApp.ResourceVersion
 			err = h.Update(context.Background(), application)
 		}
 	}
