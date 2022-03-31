@@ -318,7 +318,7 @@ func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) 
 	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
-//credentialobj in crd
+// CreateCredentialObj creates a secret
 func (d devopsOperator) CreateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error) {
 	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
@@ -342,9 +342,7 @@ func (d devopsOperator) GetCredentialObj(projectName string, secretName string) 
 	if secret, err := d.k8sclient.CoreV1().Secrets(projectObj.Status.AdminNamespace).Get(d.context, secretName, metav1.GetOptions{}); err != nil {
 		return nil, err
 	} else {
-		// TODO Mask the secret if there is no place to use plain secret.
-		// return secretutil.MaskCredential(secret), nil
-		return secret, nil
+		return secretutil.MaskCredential(secret), nil
 	}
 }
 
