@@ -47,6 +47,9 @@ func NewControllerManagerCommand() *cobra.Command {
 	// Load configuration from disk via viper, /etc/kubesphere/kubesphere.[yaml,json,xxx]
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
+		if conf.ArgoCDOption == nil {
+			conf.ArgoCDOption = &config.ArgoCDOption{}
+		}
 		// make sure LeaderElection is not nil
 		// override devops controller manager options
 		s = &options.DevOpsControllerManagerOptions{
@@ -57,6 +60,7 @@ func NewControllerManagerCommand() *cobra.Command {
 				Secret:           conf.AuthenticationOptions.JwtSecret,
 				MaximumClockSkew: conf.AuthenticationOptions.MaximumClockSkew,
 			},
+			ArgoCDOption:   conf.ArgoCDOption,
 			FeatureOptions: s.FeatureOptions,
 			LeaderElection: s.LeaderElection,
 			LeaderElect:    s.LeaderElect,

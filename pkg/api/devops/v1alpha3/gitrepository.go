@@ -24,6 +24,9 @@ import (
 // AnnotationKeyWebhookUpdates is a signal that should update the webhooks
 const AnnotationKeyWebhookUpdates = "devops.kubesphere.io/webhook-updates"
 
+// GitRepoFinalizerName is the finalizer name of the git repository
+const GitRepoFinalizerName = "finalizer.gitrepository.devops.kubesphere.io"
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
