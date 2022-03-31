@@ -19,9 +19,12 @@ package scm
 import (
 	"context"
 	"github.com/emicklei/go-restful"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/kapis/common"
+	resourcev1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -53,8 +56,21 @@ func (h *handler) createGitRepositories(req *restful.Request, res *restful.Respo
 func (h *handler) listGitRepositories(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	repoList := &v1alpha3.GitRepositoryList{}
-	err := h.List(context.Background(), repoList, client.InNamespace(namespace))
-	common.Response(req, res, repoList, err)
+	if err := h.List(context.Background(), repoList, client.InNamespace(namespace)); err != nil {
+		common.Response(req, res, repoList, err)
+		return
+	}
+	queryParam := query.ParseQueryParameter(req)
+	list := resourcev1alpha3.DefaultList(toObjects(repoList.Items), queryParam, resourcev1alpha3.DefaultCompare(), resourcev1alpha3.DefaultFilter(), nil)
+	common.Response(req, res, list, nil)
+}
+
+func toObjects(apps []v1alpha3.GitRepository) []runtime.Object {
+	objs := make([]runtime.Object, len(apps))
+	for i := range apps {
+		objs[i] = &apps[i]
+	}
+	return objs
 }
 
 func (h *handler) updateGitRepositories(req *restful.Request, res *restful.Response) {
