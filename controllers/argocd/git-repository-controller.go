@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update;delete
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
@@ -86,6 +86,11 @@ func (c *GitRepositoryController) handleFinalizer(repo *v1alpha3.GitRepository) 
 	} else {
 		err = c.Delete(ctx, secret)
 	}
+
+	if err == nil {
+		k8sutil.RemoveFinalizer(&repo.ObjectMeta, v1alpha3.GitRepoFinalizerName)
+		err = c.Update(context.TODO(), repo)
+	}
 	return
 }
 
@@ -106,6 +111,7 @@ func (c *GitRepositoryController) handleArgoGitRepo(repo *v1alpha3.GitRepository
 		secret.SetNamespace(ns)
 		secret.SetName(name)
 		c.setArgoGitRepoFields(repo, secret)
+		c.log.Info(fmt.Sprintf("create secret for ArgoCD: %s/%s", ns, name))
 		err = c.Create(ctx, secret)
 	} else {
 		c.setArgoGitRepoFields(repo, secret)
@@ -140,7 +146,7 @@ func (c *GitRepositoryController) setArgoGitRepoAuth(secret *v1.Secret, ref *v1.
 		Name:      ref.Name,
 	}, authSecret); err == nil {
 		switch authSecret.Type {
-		case v1.SecretTypeBasicAuth:
+		case v1.SecretTypeBasicAuth, v1alpha3.SecretTypeBasicAuth:
 			secret.Data["username"] = authSecret.Data[v1.BasicAuthUsernameKey]
 			secret.Data["password"] = authSecret.Data[v1.BasicAuthPasswordKey]
 		default:

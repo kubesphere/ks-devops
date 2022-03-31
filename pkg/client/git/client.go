@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"net/http"
 )
 
@@ -84,11 +85,11 @@ func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token
 	}
 
 	switch gitSecret.Type {
-	case v1.SecretTypeBasicAuth, "credential.devops.kubesphere.io/basic-auth":
+	case v1.SecretTypeBasicAuth, v1alpha3.SecretTypeBasicAuth:
 		token = string(gitSecret.Data[v1.BasicAuthPasswordKey])
 	case v1.SecretTypeOpaque:
 		token = string(gitSecret.Data[v1.ServiceAccountTokenKey])
-	case "credential.devops.kubesphere.io/secret-text":
+	case v1alpha3.SecretTypeSecretText:
 		token = string(gitSecret.Data["secret"])
 	}
 	return
