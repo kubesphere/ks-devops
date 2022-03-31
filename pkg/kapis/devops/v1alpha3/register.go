@@ -97,8 +97,9 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 	ws.Route(ws.POST("/devops/{devops}/credentials").
 		To(handler.CreateCredential).
 		Param(ws.PathParameter("devops", "devops name")).
+		Reads(v1.Secret{}).
 		Doc("create the credential of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, v1.Secret{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.GET("/devops/{devops}/credentials/{credential}").
@@ -106,15 +107,16 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("credential", "pipeline name")).
 		Doc("get the credential of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1.Secret{}).
+		Returns(http.StatusOK, api.StatusOK, v1.Secret{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.PUT("/devops/{devops}/credentials/{credential}").
 		To(handler.UpdateCredential).
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("credential", "credential name")).
+		Reads(v1.Secret{}).
 		Doc("put the credential of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1.Secret{}).
+		Returns(http.StatusOK, api.StatusOK, v1.Secret{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.DELETE("/devops/{devops}/credentials/{credential}").
@@ -122,7 +124,7 @@ func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebServic
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("credential", "credential name")).
 		Doc("delete the credential of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1.Secret{}).
+		Returns(http.StatusOK, api.StatusOK, v1.Secret{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 }
 
@@ -141,8 +143,9 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 	ws.Route(ws.POST("/devops/{devops}/pipelines").
 		To(handler.CreatePipeline).
 		Param(ws.PathParameter("devops", "devops name")).
+		Reads(v1alpha3.Pipeline{}).
 		Doc("create the pipeline of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.GET("/devops/{devops}/pipelines/{pipeline}").
@@ -151,7 +154,7 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("pipeline", "pipeline name")).
 		Doc("get the pipeline of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.PUT("/devops/{devops}/pipelines/{pipeline}").
@@ -159,7 +162,7 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("pipeline", "pipeline name")).
 		Doc("put the pipeline of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.DELETE("/devops/{devops}/pipelines/{pipeline}").
@@ -167,7 +170,7 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("pipeline", "pipeline name")).
 		Doc("delete the pipeline of the specified devops for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 }
 
@@ -185,8 +188,9 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 	ws.Route(ws.POST("/workspaces/{workspace}/devops").
 		To(handler.CreateDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
+		Reads(v1alpha3.DevOpsProject{}).
 		Doc("Create the devopsproject of the specified workspace for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.GET("/workspaces/{workspace}/devops/{devops}").
@@ -202,8 +206,9 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		To(handler.UpdateDevOpsProject).
 		Param(ws.PathParameter("workspace", "workspace name")).
 		Param(ws.PathParameter("devops", "project name")).
+		Reads(v1alpha3.DevOpsProject{}).
 		Doc("Put the devopsproject of the specified workspace for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
 	ws.Route(ws.DELETE("/workspaces/{workspace}/devops/{devops}").
@@ -211,6 +216,6 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.PathParameter("workspace", "workspace name")).
 		Param(ws.PathParameter("devops", "project name")).
 		Doc("Get the devopsproject of the specified workspace for the current user").
-		Returns(http.StatusOK, api.StatusOK, []v1alpha3.DevOpsProject{}).
+		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 }
