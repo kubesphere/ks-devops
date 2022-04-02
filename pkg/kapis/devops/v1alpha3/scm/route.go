@@ -26,6 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;update;delete;create;watch;patch
+
 var (
 	pathParameterSCM          = restful.PathParameter("scm", "the SCM type")
 	pathParameterOrganization = restful.PathParameter("organization",

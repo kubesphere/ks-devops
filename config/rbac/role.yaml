@@ -38,8 +38,10 @@ rules:
   - secrets
   verbs:
   - create
+  - delete
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
@@ -56,6 +58,7 @@ rules:
   - applications
   verbs:
   - create
+  - delete
   - get
   - list
   - update
@@ -154,8 +157,11 @@ rules:
   resources:
   - gitrepositories
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:

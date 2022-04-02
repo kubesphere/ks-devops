@@ -79,20 +79,19 @@ func (h *handler) updateGitRepositories(req *restful.Request, res *restful.Respo
 	ctx := context.Background()
 
 	patchRepo := &v1alpha3.GitRepository{}
-	repo := &v1alpha3.GitRepository{}
-
 	err := req.ReadEntity(patchRepo)
 	if err == nil {
+		repo := &v1alpha3.GitRepository{}
 		err = h.Get(ctx, types.NamespacedName{
 			Namespace: namespace,
 			Name:      repoName,
 		}, repo)
 		if err == nil {
-			repo.Spec = patchRepo.Spec
-			err = h.Update(ctx, repo)
+			patchRepo.ResourceVersion = repo.ResourceVersion
+			err = h.Update(ctx, patchRepo)
 		}
 	}
-	common.Response(req, res, repo, err)
+	common.Response(req, res, patchRepo, err)
 }
 
 func (h *handler) deleteGitRepositories(req *restful.Request, res *restful.Response) {
