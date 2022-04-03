@@ -327,3 +327,15 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.Dev
 	}
 	return
 }
+
+func (h *devopsHandler) BuildPipelineParameters(request *restful.Request, response *restful.Response) {
+	devops := request.PathParameter("devops")
+	pipeline := request.PathParameter("pipeline")
+	query := query.ParseQueryParameter(request)
+	if client, err := h.getDevOps(request); err == nil {
+		params, err := client.BuildPipelineParameters(devops, pipeline, query)
+		errorHandle(request, response, params, err)
+	} else {
+		kapis.HandleBadRequest(response, request, err)
+	}
+}

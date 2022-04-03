@@ -108,6 +108,7 @@ type NoScmPipeline struct {
 	Name              string                `json:"name" description:"name of pipeline"`
 	Description       string                `json:"description,omitempty" description:"description of pipeline"`
 	Discarder         *DiscarderProperty    `json:"discarder,omitempty" description:"Discarder of pipeline, managing when to drop a pipeline"`
+	ParametersFrom    []ParameterReference  `json:"parameters_from,omitempty" description:"Parameters define of pipeline from external configmap or secret"`
 	Parameters        []ParameterDefinition `json:"parameters,omitempty" description:"Parameters define of pipeline,user could pass param when run pipeline"`
 	DisableConcurrent bool                  `json:"disable_concurrent,omitempty" mapstructure:"disable_concurrent" description:"Whether to prohibit the pipeline from running in parallel"`
 	TimerTrigger      *TimerTrigger         `json:"timer_trigger,omitempty" mapstructure:"timer_trigger" description:"Timer to trigger pipeline run"`
@@ -222,9 +223,17 @@ type DiscarderProperty struct {
 
 type ParameterDefinition struct {
 	Name         string `json:"name" description:"name of param"`
-	DefaultValue string `json:"default_value,omitempty" mapstructure:"default_value" description:"default value of param"`
+	DefaultValue string `json:"default_value,omitempty" yaml:"default_value" mapstructure:"default_value" description:"default value of param"`
+	IsQuoted     bool   `json:"is_quoted" yaml:"is_quoted" description:"whether this param is quoted to build dynamic"`
 	Type         string `json:"type" description:"type of param"`
 	Description  string `json:"description,omitempty" description:"description of pipeline"`
+}
+
+type ParameterReference struct {
+	Kind      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
+	Name      string `json:"name" description:"reference resource name"`
+	ValuesKey string `json:"values_key" description:"reference resource data key"`
+	Method    string `json:"method" description:"reference method: data or RESTful request"`
 }
 
 type TimerTrigger struct {

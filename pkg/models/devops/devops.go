@@ -23,10 +23,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"strings"
 	"sync"
+
+	"gopkg.in/yaml.v2"
+	"kubesphere.io/devops/pkg/constants"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -64,6 +66,7 @@ type DevopsOperator interface {
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
+	BuildPipelineParameters(projectName string, pipelineName string, query *query.Query) ([]devopsv1alpha3.ParameterDefinition, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -1008,4 +1011,81 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 		rc = ioutil.NopCloser(body)
 	}
 	return rc
+}
+
+func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName string, query *query.Query) ([]devopsv1alpha3.ParameterDefinition, error) {
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	piplineObj, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(d.context, pipelineName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var ret []devopsv1alpha3.ParameterDefinition
+	if len(piplineObj.Spec.Pipeline.ParametersFrom) > 0 {
+		for _, param := range piplineObj.Spec.Pipeline.ParametersFrom {
+			if param.Kind == "ConfigMap" {
+				if param.Method == "data" {
+					params, err := buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
+					if err != nil {
+						//
+						klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
+						continue
+					}
+					ret = append(ret, params...)
+				}
+				if param.Method == "restful" {
+					params, err := buildParamFromRESTfull(d.k8sclient, param.Name)
+					if err != nil {
+						//
+						klog.Errorf("buildParamFromRESTfull error:[%v]", err)
+						continue
+					}
+					ret = append(ret, params...)
+				}
+			}
+		}
+		return ret, nil
+	}
+	return nil, nil
+}
+
+func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
+	var ret []devopsv1alpha3.ParameterDefinition
+	// need more check with name
+	nameInfo := strings.SplitN(name, "/", 2)
+	cnNs := nameInfo[0]
+	cmName := nameInfo[1]
+	ctx := context.Background()
+	cm, err := k8sclient.CoreV1().ConfigMaps(cnNs).Get(ctx, cmName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if paramData, ok := cm.Data[valuesKey]; ok {
+		err := yaml.Unmarshal([]byte(paramData), &ret)
+		return ret, err
+	}
+	return nil, fmt.Errorf("data not found in configmap with key [%s]", valuesKey)
+
+}
+
+func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string) ([]devopsv1alpha3.ParameterDefinition, error) {
+	var ret []devopsv1alpha3.ParameterDefinition
+	nameInfo := strings.SplitN(name, "/", 2)
+	cnNs := nameInfo[0]
+	cmName := nameInfo[1]
+	ctx := context.Background()
+	cm, err := k8sclient.CoreV1().ConfigMaps(cnNs).Get(ctx, cmName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := cm.Data["url"]; ok {
+
+		// request from url
+	}
+
+	return ret, nil
 }
