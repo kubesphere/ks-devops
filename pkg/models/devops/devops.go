@@ -42,6 +42,7 @@ import (
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/utils/secretutil"
 
+	"github.com/go-resty/resty/v2"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
@@ -1082,10 +1083,20 @@ func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string) ([]devo
 		return nil, err
 	}
 
-	if _, ok := cm.Data["url"]; ok {
-
+	if url, ok := cm.Data["url"]; ok {
+		client := resty.New()
 		// request from url
+		resp, err := client.R().Get(url)
+		if err != nil {
+			klog.Errorf("request to url [%s] failed:%v", url, err)
+		}
+		err = json.Unmarshal(resp.Body(), &ret)
+		if err != nil {
+			klog.Errorf("decode response from url [%s] failed:%v", url, err)
+		}
+
+		return ret, nil
 	}
 
-	return ret, nil
+	return ret, fmt.Errorf("parse config failed, url key not exist in [%s]", name)
 }
