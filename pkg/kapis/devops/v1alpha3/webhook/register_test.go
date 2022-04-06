@@ -18,13 +18,17 @@ package webhook
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/retry"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
@@ -112,9 +116,20 @@ func TestJenkinsWebhook(t *testing.T) {
 			}`,
 		},
 		assertion: func(t *testing.T, c client.Client) {
-			pipelineruns := &v1alpha3.PipelineRunList{}
-			assert.Nil(t, c.List(context.Background(), pipelineruns))
-			assert.Equal(t, 1, len(pipelineruns.Items))
+			_ = retry.OnError(retry.DefaultRetry, func(err error) bool {
+				return true
+			}, func() error {
+				pipelineRuns := &v1alpha3.PipelineRunList{}
+				_ = c.List(context.Background(), pipelineRuns)
+				if len(pipelineRuns.Items) > 0 {
+					return nil
+				}
+				time.Sleep(time.Second * 2)
+				return errors.New("not found")
+			})
+			pipelineRuns := &v1alpha3.PipelineRunList{}
+			_ = c.List(context.Background(), pipelineRuns)
+			assert.Equal(t, 1, len(pipelineRuns.Items))
 		},
 	}, {
 		name: "Should not create any PipelineRuns when type doesn't start with run",
@@ -163,4 +178,14 @@ func TestJenkinsWebhook(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test(t *testing.T) {
+	err := retry.OnError(retry.DefaultRetry, func(err error) bool {
+		return true
+	}, func() error {
+		time.Sleep(time.Second)
+		return errors.New("")
+	})
+	fmt.Println(err)
 }

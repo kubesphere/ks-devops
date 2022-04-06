@@ -433,3 +433,43 @@ func Test_createBarePipelineRunsIfNotPresent(t *testing.T) {
 		})
 	}
 }
+
+func Test_hasPendingPipelineRuns(t *testing.T) {
+	type args struct {
+		items []v1alpha3.PipelineRun
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{{
+		name: "have pending PipelineRuns",
+		args: args{
+			items: []v1alpha3.PipelineRun{{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						"a": "1",
+					},
+				},
+			}},
+		},
+		want: true,
+	}, {
+		name: "not have pending PipelineRuns",
+		args: args{
+			items: []v1alpha3.PipelineRun{{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha3.JenkinsPipelineRunIDAnnoKey: "1",
+					},
+				},
+			}},
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, hasPendingPipelineRuns(tt.args.items), "hasPendingPipelineRuns(%v)", tt.args.items)
+		})
+	}
+}

@@ -71,6 +71,12 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	// skip if there are any PipelineRuns don't have v1alpha3.JenkinsPipelineRunIDAnnoKey
+	// wait it until all PipelineRuns have the run id from Jenkins
+	if hasPendingPipelineRuns(prList.Items) {
+		return ctrl.Result{}, nil
+	}
+
 	boClient := job.BlueOceanClient{
 		JenkinsCore:  r.JenkinsCore,
 		Organization: "jenkins",
@@ -103,6 +109,16 @@ func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	r.recorder.Eventf(pipeline, v1.EventTypeNormal, PipelineRunSynced,
 		"Successfully synchronized %d PipelineRuns(s). PipelineRuns/JenkinsRuns proportion is %d/%d", len(pipelineRunsToBeCreated), len(prList.Items), len(jobRuns))
 	return ctrl.Result{}, nil
+}
+
+func hasPendingPipelineRuns(items []v1alpha3.PipelineRun) bool {
+	for i := range items {
+		item := items[i]
+		if id, ok := item.Annotations[v1alpha3.JenkinsPipelineRunIDAnnoKey]; !ok || id == "" {
+			return true
+		}
+	}
+	return false
 }
 
 func createBarePipelineRunsIfNotPresent(finder pipelineRunFinder, pipeline *v1alpha3.Pipeline, jobRuns []job.PipelineRun) []v1alpha3.PipelineRun {
