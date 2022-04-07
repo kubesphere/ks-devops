@@ -28,3 +28,6 @@ const (
 
 // ApplicationFinalizerName is the name of PipelineRun finalizer
 const ApplicationFinalizerName = "application." + GroupName
+
+// ArgoCDResourcesFinalizer is the name of Argo CD resource finalizer
+const ArgoCDResourcesFinalizer = "resources-finalizer.argocd.argoproj.io"

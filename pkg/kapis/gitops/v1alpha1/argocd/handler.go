@@ -28,6 +28,7 @@ import (
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -171,14 +172,31 @@ func (h *handler) updateOperation(namespace, name string, operation *v1alpha1.Op
 func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	name := common.GetPathParameter(req, pathParameterApplication)
+	cascade := common.GetQueryParameter(req, cascadeQueryParam)
 
+	ctx := context.Background()
 	application := &v1alpha1.Application{}
-	err := h.Get(context.Background(), types.NamespacedName{
+	objectKey := types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
-	}, application)
+	}
+	err := h.Get(ctx, objectKey, application)
 	if err == nil {
-		err = h.Delete(context.Background(), application)
+		// add the Argo CD resources finalizer if cascade is true
+		if cascade == "true" {
+			if k8sutil.AddFinalizer(&application.ObjectMeta, v1alpha1.ArgoCDResourcesFinalizer) {
+				if err = h.Update(ctx, application); err != nil {
+					common.Response(req, res, application, err)
+					return
+				}
+
+				if err = h.Get(ctx, objectKey, application); err != nil {
+					common.Response(req, res, application, err)
+					return
+				}
+			}
+		}
+		err = h.Delete(ctx, application)
 	}
 	common.Response(req, res, application, err)
 }
