@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -67,7 +68,7 @@ type DevopsOperator interface {
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
-	BuildPipelineParameters(projectName string, pipelineName string, query *query.Query) ([]devopsv1alpha3.ParameterDefinition, error)
+	BuildPipelineParameters(projectName string, pipelineName string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -1014,7 +1015,7 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 	return rc
 }
 
-func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName string, query *query.Query) ([]devopsv1alpha3.ParameterDefinition, error) {
+func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
 	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -1037,7 +1038,7 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 					ret = append(ret, params...)
 				}
 				if param.Method == "restful" {
-					params, err := buildParamFromRESTfull(d.k8sclient, param.Name)
+					params, err := buildParamFromRESTfull(d.k8sclient, param.Name, query)
 					if err != nil {
 						//
 						klog.Errorf("buildParamFromRESTfull error:[%v]", err)
@@ -1072,7 +1073,7 @@ func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey
 
 }
 
-func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string) ([]devopsv1alpha3.ParameterDefinition, error) {
+func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
 	var ret []devopsv1alpha3.ParameterDefinition
 	nameInfo := strings.SplitN(name, "/", 2)
 	cnNs := nameInfo[0]
@@ -1086,7 +1087,7 @@ func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string) ([]devo
 	if url, ok := cm.Data["url"]; ok {
 		client := resty.New()
 		// request from url
-		resp, err := client.R().Get(url)
+		resp, err := client.R().SetQueryParamsFromValues(query).Get(url)
 		if err != nil {
 			klog.Errorf("request to url [%s] failed:%v", url, err)
 		}
