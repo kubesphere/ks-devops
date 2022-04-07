@@ -230,11 +230,17 @@ type ParameterDefinition struct {
 }
 
 type ParameterReference struct {
-	Kind      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
+	Mode      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
 	Name      string `json:"name" description:"reference resource name"`
 	ValuesKey string `json:"values_key" description:"reference resource data key"`
 	Method    string `json:"method" description:"reference method: data or RESTful request"`
 }
+
+const (
+	PARAM_REF_MODE_CONFIG  = "config"
+	PARAM_REF_MODE_RESTFUL = "restful"
+	PARAM_REF_MODE_DATA    = "data"
+)
 
 type TimerTrigger struct {
 	// user in no scm job

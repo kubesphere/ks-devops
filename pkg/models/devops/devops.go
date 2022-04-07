@@ -1025,10 +1025,11 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 		return nil, err
 	}
 	var ret []devopsv1alpha3.ParameterDefinition
+	ret = append(ret, piplineObj.Spec.Pipeline.Parameters...)
 	if len(piplineObj.Spec.Pipeline.ParametersFrom) > 0 {
 		for _, param := range piplineObj.Spec.Pipeline.ParametersFrom {
-			if param.Kind == "ConfigMap" {
-				if param.Method == "data" {
+			if param.Mode == "ConfigMap" {
+				if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
 					params, err := buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
 					if err != nil {
 						//
@@ -1037,7 +1038,7 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 					}
 					ret = append(ret, params...)
 				}
-				if param.Method == "restful" {
+				if param.Method == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
 					params, err := buildParamFromRESTfull(d.k8sclient, param.Name, query)
 					if err != nil {
 						//
@@ -1048,9 +1049,8 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 				}
 			}
 		}
-		return ret, nil
 	}
-	return nil, nil
+	return ret, nil
 }
 
 func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
