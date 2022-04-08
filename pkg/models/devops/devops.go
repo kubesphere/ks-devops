@@ -1024,30 +1024,39 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 	if err != nil {
 		return nil, err
 	}
-	var ret []devopsv1alpha3.ParameterDefinition
-	ret = append(ret, piplineObj.Spec.Pipeline.Parameters...)
+	var allParams []devopsv1alpha3.ParameterDefinition
+	allParams = append(allParams, piplineObj.Spec.Pipeline.Parameters...)
 	if len(piplineObj.Spec.Pipeline.ParametersFrom) > 0 {
 		for _, param := range piplineObj.Spec.Pipeline.ParametersFrom {
-			if param.Mode == "ConfigMap" {
+			if param.Kind == "ConfigMap" {
 				if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
 					params, err := buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
 					if err != nil {
-						//
 						klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
 						continue
 					}
-					ret = append(ret, params...)
+					allParams = append(allParams, params...)
 				}
-				if param.Method == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
+				if param.Mode == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
 					params, err := buildParamFromRESTfull(d.k8sclient, param.Name, query)
 					if err != nil {
-						//
 						klog.Errorf("buildParamFromRESTfull error:[%v]", err)
 						continue
 					}
-					ret = append(ret, params...)
+					allParams = append(allParams, params...)
 				}
 			}
+		}
+	}
+	// remove items in ret with ducp name
+	tmpMap := make(map[string]byte)
+	var ret []devopsv1alpha3.ParameterDefinition
+	for i := 0; i < len(allParams); i++ {
+		idx := len(allParams) - 1 - i
+		cfgName := allParams[idx].Name
+		if _, ok := tmpMap[cfgName]; !ok {
+			ret = append(ret, allParams[idx])
+			tmpMap[cfgName] = 1
 		}
 	}
 	return ret, nil

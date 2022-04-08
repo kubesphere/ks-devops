@@ -230,10 +230,10 @@ type ParameterDefinition struct {
 }
 
 type ParameterReference struct {
-	Mode      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
+	Kind      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
 	Name      string `json:"name" description:"reference resource name"`
 	ValuesKey string `json:"values_key" description:"reference resource data key"`
-	Method    string `json:"method" description:"reference method: data or RESTful request"`
+	Mode      string `json:"mode" description:"reference method: data or RESTful request"`
 }
 
 const (
