@@ -18,11 +18,15 @@ package webhook
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
+	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/event/workflowrun"
 	"strings"
+	"time"
 
-	"k8s.io/klog"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,29 +98,51 @@ func (handler *Handler) handleWorkflowRunInitialize(workflowRunData *workflowrun
 		return nil
 	}
 
-	// TODO Execute process below asynchronously
-
-	pipelineRunList := &v1alpha3.PipelineRunList{}
-	if err := handler.List(context.Background(), pipelineRunList,
-		client.InNamespace(identifier.namespaceName),
-		client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: identifier.String()}); err != nil {
-		return err
-	}
-
-	if len(pipelineRunList.Items) == 0 {
-		parameters, err := workflowRunData.Actions.GetParameters()
-		if err != nil {
-			return err
+	go func() {
+		pipelineRunList := &v1alpha3.PipelineRunList{}
+		if err := handler.List(context.Background(), pipelineRunList,
+			client.InNamespace(identifier.namespaceName),
+			client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: identifier.String()}); err != nil {
+			return
 		}
 
-		pipelineRun, err := handler.createPipelineRun(identifier, convertParameters(parameters))
-		if err != nil {
-			return err
+		// TODO Currently, no good way to check if this event originally comes from Jenkins.
+		// Let's wait for the PipelineRun controller to set the Jenkins job run ID
+		pipelineRunListErr := handler.retryCheckPipelineRunList(identifier)
+		if pipelineRunListErr != nil {
+			parameters, err := workflowRunData.Actions.GetParameters()
+			if err != nil {
+				return
+			}
+
+			pipelineRun, err := handler.createPipelineRun(identifier, convertParameters(parameters))
+			if err != nil {
+				return
+			}
+			klog.Infof("Created a PipelineRun: %s/%s", pipelineRun.Namespace, pipelineRun.Name)
 		}
-		klog.Infof("Created a PipelineRun: %s/%s", pipelineRun.Namespace, pipelineRun.Name)
-		return nil
-	}
+	}()
 	return nil
+}
+
+func (handler *Handler) retryCheckPipelineRunList(id *pipelineRunIdentifier) error {
+	return retry.OnError(retry.DefaultRetry, func(err error) bool {
+		return true
+	}, func() error {
+		pipelineRunList := &v1alpha3.PipelineRunList{}
+		if err := handler.List(context.Background(), pipelineRunList,
+			client.InNamespace(id.namespaceName),
+			client.MatchingFields{v1alpha3.PipelineRunIdentifierIndexerName: id.String()}); err != nil {
+			return err
+		}
+
+		if len(pipelineRunList.Items) > 0 {
+			return nil
+		}
+
+		time.Sleep(time.Second)
+		return errors.New(string(metav1.StatusReasonNotFound))
+	})
 }
 
 func (handler *Handler) createPipelineRun(identifier *pipelineRunIdentifier, parameters []v1alpha3.Parameter) (*v1alpha3.PipelineRun, error) {

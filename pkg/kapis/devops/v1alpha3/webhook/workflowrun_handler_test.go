@@ -18,9 +18,12 @@ package webhook
 
 import (
 	"context"
+	"errors"
+	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/event/workflowrun"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -235,6 +238,17 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 		},
 		wantErr: false,
 		assertion: func(t *testing.T, c client.Client) {
+			_ = retry.OnError(retry.DefaultRetry, func(err error) bool {
+				return true
+			}, func() error {
+				pipelineRuns := &v1alpha3.PipelineRunList{}
+				_ = c.List(context.Background(), pipelineRuns)
+				if len(pipelineRuns.Items) > 0 {
+					return nil
+				}
+				time.Sleep(time.Second * 2)
+				return errors.New("not found")
+			})
 			pipelineRuns := &v1alpha3.PipelineRunList{}
 			_ = c.List(context.Background(), pipelineRuns)
 			assert.Equal(t, 1, len(pipelineRuns.Items))
@@ -244,7 +258,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 		args: args{
 			workflowRunData: createWorkflowRun("fake-namepsace", "fake-pipeline", "1", false),
 		},
-		wantErr: true,
+		wantErr: false,
 	}, {
 		name: "Should create nothing if WorkflowRunData is invalid",
 		args: args{
