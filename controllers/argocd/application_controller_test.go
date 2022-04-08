@@ -156,7 +156,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			}, app)
 			assert.Nil(t, err)
 			project, _, _ := unstructured.NestedString(app.Object, "spec", "project")
-			assert.Equal(t, "project", project)
+			assert.Equal(t, "fake", project)
 			prune, _, _ := unstructured.NestedBool(app.Object, "spec", "syncPolicy", "automated", "prune")
 			assert.True(t, prune)
 		},
@@ -179,7 +179,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			}, app)
 			assert.Nil(t, err)
 			project, _, _ := unstructured.NestedString(app.Object, "spec", "project")
-			assert.Equal(t, "project", project)
+			assert.Equal(t, "fake", project)
 		},
 	}}
 	for _, tt := range tests {
