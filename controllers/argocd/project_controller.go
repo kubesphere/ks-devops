@@ -42,6 +42,8 @@ type Reconciler struct {
 	client.Client
 	log      logr.Logger
 	recorder record.EventRecorder
+
+	ArgoNamespace string
 }
 
 // Reconcile makes sure the ArgoAppProject can be maintained which comes from the DevOpsProject
@@ -85,21 +87,21 @@ func (r *Reconciler) reconcileArgoProject(project *v1alpha3.DevOpsProject) (err 
 	argoAppProject.SetAPIVersion("argoproj.io/v1alpha1")
 
 	if err = r.Client.Get(ctx, types.NamespacedName{
-		Namespace: project.Name,
+		Namespace: r.ArgoNamespace,
 		Name:      project.Name,
 	}, argoAppProject); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return
 		}
 
-		if argoAppProject, err = createUnstructuredObject(project); err != nil {
+		if argoAppProject, err = createUnstructuredObject(project, r.ArgoNamespace); err != nil {
 			return
 		}
 
 		err = r.Client.Create(ctx, argoAppProject)
 	} else {
 		var newProject *unstructured.Unstructured
-		if newProject, err = createUnstructuredObject(project); err == nil {
+		if newProject, err = createUnstructuredObject(project, r.ArgoNamespace); err == nil {
 			argoAppProject.Object["spec"] = newProject.Object["spec"]
 			k8sutil.AddOwnerReference(argoAppProject, project.TypeMeta, project.ObjectMeta)
 			err = r.Client.Update(ctx, argoAppProject)
@@ -108,7 +110,7 @@ func (r *Reconciler) reconcileArgoProject(project *v1alpha3.DevOpsProject) (err 
 	return
 }
 
-func createUnstructuredObject(project *v1alpha3.DevOpsProject) (result *unstructured.Unstructured, err error) {
+func createUnstructuredObject(project *v1alpha3.DevOpsProject, argocdNamespace string) (result *unstructured.Unstructured, err error) {
 	project = project.DeepCopy()
 	if project.Spec.Argo == nil {
 		err = fmt.Errorf("no argo found from the spec")
@@ -142,7 +144,7 @@ func createUnstructuredObject(project *v1alpha3.DevOpsProject) (result *unstruct
 	if err = tpl.Execute(buffer, argo); err == nil {
 		if result, err = GetObjectFromYaml(buffer.String()); err == nil {
 			result.SetName(project.GetName())
-			result.SetNamespace(project.GetName())
+			result.SetNamespace(argocdNamespace)
 			k8sutil.AddOwnerReference(result, project.TypeMeta, project.ObjectMeta)
 		}
 	}

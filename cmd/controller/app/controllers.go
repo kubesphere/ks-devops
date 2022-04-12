@@ -97,7 +97,8 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
 
 	argocdReconciler := &argocd.Reconciler{
-		Client: mgr.GetClient(),
+		Client:        mgr.GetClient(),
+		ArgoNamespace: s.ArgoCDOption.Namespace,
 	}
 	argocdAppReconciler := &argocd.ApplicationReconciler{
 		Client: mgr.GetClient(),
