@@ -32,9 +32,10 @@ func TestCreateUnstructuredObject(t *testing.T) {
 	project := &v1alpha3.DevOpsProject{}
 	project.SetName("name")
 	project.SetNamespace("namespace")
+	argocdNs := "argocd"
 
 	// test against the nil situation
-	_, err := createUnstructuredObject(project)
+	_, err := createUnstructuredObject(project, argocdNs)
 	assert.NotNil(t, err, "should not do anything if there is no spec.argo")
 
 	var obj *unstructured.Unstructured
@@ -42,7 +43,7 @@ func TestCreateUnstructuredObject(t *testing.T) {
 	// test against the default value situation
 	p1 := project.DeepCopy()
 	p1.Spec.Argo = &v1alpha3.Argo{}
-	obj, err = createUnstructuredObject(p1)
+	obj, err = createUnstructuredObject(p1, argocdNs)
 	assert.Nil(t, err)
 	result, _, _ := unstructured.NestedStringSlice(obj.Object, "spec", "sourceRepos")
 	assert.Equal(t, []string{"*"}, result)
@@ -71,7 +72,7 @@ func TestCreateUnstructuredObject(t *testing.T) {
 			Kind:  "kind2",
 		}},
 	}
-	obj, err = createUnstructuredObject(p2)
+	obj, err = createUnstructuredObject(p2, argocdNs)
 	assert.Nil(t, err)
 	p2Repos, _, _ := unstructured.NestedStringSlice(obj.Object, "spec", "sourceRepos")
 	assert.Equal(t, []string{"repo1", "repo2"}, p2Repos)
@@ -104,7 +105,7 @@ func TestReconcileArgoProject(t *testing.T) {
 	appProject.SetAPIVersion("argoproj.io/v1alpha1")
 	appProject.SetKind("AppProject")
 	appProject.SetName("fake")
-	appProject.SetNamespace("fake")
+	appProject.SetNamespace("argocd")
 
 	tests := []struct {
 		name    string
@@ -135,7 +136,7 @@ func TestReconcileArgoProject(t *testing.T) {
 			appProject := appProject.DeepCopy()
 
 			err = c.Get(context.Background(), types.NamespacedName{
-				Namespace: "fake",
+				Namespace: "argocd",
 				Name:      "fake",
 			}, appProject)
 			assert.Nil(t, err)
@@ -157,7 +158,7 @@ func TestReconcileArgoProject(t *testing.T) {
 			appProject := appProject.DeepCopy()
 
 			err = c.Get(context.Background(), types.NamespacedName{
-				Namespace: "fake",
+				Namespace: "argocd",
 				Name:      "fake",
 			}, appProject)
 			assert.Nil(t, err)
@@ -168,7 +169,8 @@ func TestReconcileArgoProject(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Reconciler{
-				Client: tt.c,
+				Client:        tt.c,
+				ArgoNamespace: "argocd",
 			}
 			err := r.reconcileArgoProject(tt.project())
 			tt.verify(t, err, tt.c)
