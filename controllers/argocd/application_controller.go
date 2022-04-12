@@ -105,6 +105,10 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 		}
 	}
 
+	if err = r.setArgoProject(app); err != nil {
+		return
+	}
+
 	if err = r.Get(ctx, types.NamespacedName{
 		Namespace: argoCDNamespace,
 		Name:      argoCDAppName,
@@ -205,6 +209,30 @@ func (r *ApplicationReconciler) addArgoAppNameIntoLabels(namespace, name, argoAp
 		}
 		app.Labels[v1alpha1.ArgoCDAppNameLabelKey] = argoAppName
 		err = r.Update(ctx, app)
+	}
+	return
+}
+
+// TODO it might be better to do it as a mutating hook
+func (r *ApplicationReconciler) setArgoProject(app *v1alpha1.Application) (err error) {
+	if app.Spec.ArgoApp == nil {
+		return
+	}
+
+	// there is a appProject in the same namespace
+	if app.Spec.ArgoApp.Spec.Project != app.Namespace {
+		app.Spec.ArgoApp.Spec.Project = app.Namespace // update the cache as well
+		ctx := context.Background()
+		latestApp := &v1alpha1.Application{}
+		if err = r.Get(ctx, types.NamespacedName{
+			Namespace: app.Namespace,
+			Name:      app.Name,
+		}, latestApp); err != nil {
+			err = client.IgnoreNotFound(err)
+		} else {
+			latestApp.Spec.ArgoApp.Spec.Project = app.Namespace
+			err = r.Update(ctx, latestApp)
+		}
 	}
 	return
 }

@@ -55,10 +55,25 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error)
 		return
 	}
 
-	if argo := project.Spec.Argo; argo != nil {
-		// we only handle the project that have the Argo settings
-		err = r.reconcileArgoProject(project)
+	if project.Spec.Argo == nil {
+		// give it a default setting which is same with the default setting in Argo CD
+		project.Spec.Argo = &v1alpha3.Argo{
+			SourceRepos: []string{"*"},
+			Destinations: []v1alpha3.ApplicationDestination{{
+				Namespace: "*",
+				Server:    "*",
+			}},
+			ClusterResourceWhitelist: []metav1.GroupKind{{
+				Group: "*",
+				Kind:  "*",
+			}},
+		}
 	}
+	if err = r.Update(ctx, project); err != nil {
+		return
+	}
+
+	err = r.reconcileArgoProject(project)
 	return
 }
 
