@@ -29,6 +29,9 @@ var (
 	pathParameterApplication = restful.PathParameter("application", "The application name")
 	syncStatusQueryParam     = restful.QueryParameter("syncStatus", `Filter by sync status. Available values: "Unknown", "Synced" and "OutOfSync"`)
 	healthStatusQueryParam   = restful.QueryParameter("healthStatus", `Filter by health status. Available values: "Unknown", "Progressing", "Healthy", "Suspended", "Degraded" and "Missing"`)
+	cascadeQueryParam        = restful.QueryParameter("cascade",
+		"Delete both the app and its resources, rather than only the application if cascade is true").
+		DefaultValue("false").DataType("bool")
 )
 
 // ApplicationPageResult is the model of page result of Applications.
@@ -105,6 +108,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, argoOp
 		To(handler.delApplication).
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
+		Param(cascadeQueryParam).
 		Doc("Delete a particular application").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 

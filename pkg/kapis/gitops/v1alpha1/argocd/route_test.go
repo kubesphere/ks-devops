@@ -193,6 +193,25 @@ func TestAPIs(t *testing.T) {
 			assert.Nil(t, err)
 		},
 	}, {
+		name: "delete an application by cascade",
+		request: request{
+			method: http.MethodDelete,
+			uri:    "/namespaces/ns/applications/app?cascade=true",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &unstructured.Unstructured{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			name, _, err := unstructured.NestedString(list.Object, "metadata", "name")
+			assert.Equal(t, "app", name)
+			finalizers, _, err := unstructured.NestedSlice(list.Object, "metadata", "finalizers")
+			assert.Equal(t, []interface{}{"resources-finalizer.argocd.argoproj.io"}, finalizers)
+			assert.Nil(t, err)
+		},
+	}, {
 		name: "create an application",
 		request: request{
 			method: http.MethodPost,

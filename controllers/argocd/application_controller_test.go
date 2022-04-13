@@ -27,6 +27,8 @@ import (
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"testing"
 )
 
@@ -191,6 +193,99 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			}
 			err := r.reconcileArgoApplication(tt.args.app)
 			tt.verify(t, tt.fields.Client, err)
+		})
+	}
+}
+
+func Test_finalizersChangedPredicate_Update(t *testing.T) {
+	type fields struct {
+		Funcs predicate.Funcs
+	}
+	type args struct {
+		e event.UpdateEvent
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{{
+		name: "different finalizers",
+		args: args{
+			e: event.UpdateEvent{
+				MetaOld: &metav1.ObjectMeta{
+					Finalizers: []string{"b"},
+				},
+				ObjectOld: &v1alpha1.Application{},
+				MetaNew: &metav1.ObjectMeta{
+					Finalizers: []string{"a"},
+				},
+				ObjectNew: &v1alpha1.Application{},
+			},
+		},
+		want: true,
+	}, {
+		name: "different order with the finalizers",
+		args: args{
+			e: event.UpdateEvent{
+				MetaOld: &metav1.ObjectMeta{
+					Finalizers: []string{"b", "a"},
+				},
+				ObjectOld: &v1alpha1.Application{},
+				MetaNew: &metav1.ObjectMeta{
+					Finalizers: []string{"a", "b"},
+				},
+				ObjectNew: &v1alpha1.Application{},
+			},
+		},
+		want: true,
+	}, {
+		name: "ObjectOld is nil",
+		args: args{
+			e: event.UpdateEvent{
+				MetaOld:   &metav1.ObjectMeta{},
+				MetaNew:   &metav1.ObjectMeta{},
+				ObjectNew: &v1alpha1.Application{},
+			},
+		},
+		want: false,
+	}, {
+		name: "MetaNew is nil",
+		args: args{
+			e: event.UpdateEvent{
+				ObjectOld: &v1alpha1.Application{},
+				MetaOld:   &metav1.ObjectMeta{},
+				ObjectNew: &v1alpha1.Application{},
+			},
+		},
+		want: false,
+	}, {
+		name: "ObjectNew is nil",
+		args: args{
+			e: event.UpdateEvent{
+				MetaOld:   &metav1.ObjectMeta{},
+				ObjectOld: &v1alpha1.Application{},
+				MetaNew:   &metav1.ObjectMeta{},
+			},
+		},
+		want: false,
+	}, {
+		name: "metaOld is nil",
+		args: args{
+			e: event.UpdateEvent{
+				ObjectOld: &v1alpha1.Application{},
+				MetaNew:   &metav1.ObjectMeta{},
+				ObjectNew: &v1alpha1.Application{},
+			},
+		},
+		want: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fi := finalizersChangedPredicate{
+				Funcs: tt.fields.Funcs,
+			}
+			assert.Equalf(t, tt.want, fi.Update(tt.args.e), "Update(%v)", tt.args.e)
 		})
 	}
 }

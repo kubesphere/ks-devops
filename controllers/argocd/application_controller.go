@@ -25,11 +25,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"strings"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
@@ -95,6 +99,7 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 
 		if err == nil {
 			k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName)
+			k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ArgoCDResourcesFinalizer)
 			err = r.Update(context.TODO(), app)
 		}
 		return
@@ -153,7 +158,20 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			var newArgoApp *unstructured.Unstructured
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 				argoApp.Object["spec"] = newArgoApp.Object["spec"]
-				err = r.Update(ctx, argoApp)
+				argoApp.SetFinalizers(newArgoApp.GetFinalizers())
+				err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+					latestArgoApp := createBareArgoCDApplicationObject()
+					if err = r.Get(context.Background(), types.NamespacedName{
+						Namespace: argoApp.GetNamespace(),
+						Name:      argoApp.GetName(),
+					}, latestArgoApp); err != nil {
+						return
+					}
+
+					argoApp.SetResourceVersion(latestArgoApp.GetResourceVersion())
+					err = r.Update(ctx, argoApp)
+					return
+				})
 			}
 		}
 	}
@@ -184,6 +202,17 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	})
 	newArgoApp.SetName(app.GetName())
 	newArgoApp.SetNamespace(app.GetNamespace())
+
+	// copy all potential finalizers
+	finalizers := app.GetFinalizers()
+	targetFinalizers := make([]string, 0)
+	for i := range finalizers {
+		finalizer := finalizers[i]
+		if strings.HasSuffix(finalizer, "argocd.argoproj.io") {
+			targetFinalizers = append(targetFinalizers, finalizer)
+		}
+	}
+	newArgoApp.SetFinalizers(targetFinalizers)
 
 	if err := SetNestedField(newArgoApp.Object, argoApp.Spec, "spec"); err != nil {
 		return nil, err
@@ -247,13 +276,34 @@ func (r *ApplicationReconciler) GetGroupName() string {
 	return controllerGroupName
 }
 
+type finalizersChangedPredicate struct {
+	predicate.Funcs
+}
+
+// Update implements default UpdateEvent filter for validating finalizers change
+func (finalizersChangedPredicate) Update(e event.UpdateEvent) bool {
+	if e.MetaOld == nil {
+		return false
+	}
+	if e.ObjectOld == nil {
+		return false
+	}
+	if e.ObjectNew == nil {
+		return false
+	}
+	if e.MetaNew == nil {
+		return false
+	}
+	return !reflect.DeepEqual(e.MetaNew.GetFinalizers(), e.MetaOld.GetFinalizers())
+}
+
 // SetupWithManager setups the reconciler with a manager
 // setup the logger, recorder
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, finalizersChangedPredicate{})).
 		For(&v1alpha1.Application{}).
 		Complete(r)
 }
