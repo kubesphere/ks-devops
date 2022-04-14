@@ -246,7 +246,11 @@ func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 		"argocd.argoproj.io/secret-type": "cluster",
 	})
 
-	argoClusters := make([]v1alpha1.ApplicationDestination, 0)
+	// always have on cluster at least
+	argoClusters := []v1alpha1.ApplicationDestination{{
+		Server: "https://kubernetes.default.svc",
+		Name:   "in-cluster",
+	}}
 	if err == nil && secrets != nil && len(secrets.Items) > 0 {
 		for i := range secrets.Items {
 			secret := secrets.Items[i]
