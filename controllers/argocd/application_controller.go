@@ -104,14 +104,9 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 		}
 		return
 	}
-	if k8sutil.AddFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName) {
-		if err = r.Update(context.TODO(), app); err != nil {
-			return
-		}
-	}
 
-	if err = r.setArgoProject(app); err != nil {
-		return
+	if app.Spec.ArgoApp.Spec.Project != app.Namespace {
+		app.Spec.ArgoApp.Spec.Project = app.Namespace // update the cache as well
 	}
 
 	if err = r.Get(ctx, types.NamespacedName{
@@ -173,6 +168,12 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 					return
 				})
 			}
+		}
+	}
+
+	if err == nil {
+		if err = r.setArgoProject(app); err != nil {
+			return
 		}
 	}
 	return
@@ -248,19 +249,26 @@ func (r *ApplicationReconciler) setArgoProject(app *v1alpha1.Application) (err e
 		return
 	}
 
+	latestApp := &v1alpha1.Application{}
+	ctx := context.Background()
+	if err = r.Get(ctx, types.NamespacedName{
+		Namespace: app.Namespace,
+		Name:      app.Name,
+	}, latestApp); err != nil {
+		return client.IgnoreNotFound(err)
+	}
+	err = r.Update(ctx, latestApp)
+
 	// there is a appProject in the same namespace
-	if app.Spec.ArgoApp.Spec.Project != app.Namespace {
-		app.Spec.ArgoApp.Spec.Project = app.Namespace // update the cache as well
-		ctx := context.Background()
-		latestApp := &v1alpha1.Application{}
-		if err = r.Get(ctx, types.NamespacedName{
-			Namespace: app.Namespace,
-			Name:      app.Name,
-		}, latestApp); err != nil {
-			err = client.IgnoreNotFound(err)
-		} else {
-			latestApp.Spec.ArgoApp.Spec.Project = app.Namespace
-			err = r.Update(ctx, latestApp)
+	needUpdate := false
+	if latestApp.Spec.ArgoApp.Spec.Project != latestApp.Namespace {
+		latestApp.Spec.ArgoApp.Spec.Project = latestApp.Namespace
+		needUpdate = true
+	}
+
+	if k8sutil.AddFinalizer(&latestApp.ObjectMeta, v1alpha1.ApplicationFinalizerName) || needUpdate {
+		if err = r.Update(context.TODO(), latestApp); err != nil {
+			return
 		}
 	}
 	return
