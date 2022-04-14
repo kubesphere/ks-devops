@@ -298,7 +298,12 @@ func TestAPIs(t *testing.T) {
 		k8sclient:    fake.NewFakeClientWithScheme(schema, nonArgoClusterSecret.DeepCopy()),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
-			assert.Equal(t, "[]", string(body))
+			assert.Equal(t, `[
+ {
+  "server": "https://kubernetes.default.svc",
+  "name": "in-cluster"
+ }
+]`, string(body))
 		},
 	}, {
 		name: "get clusters, have invalid data",
@@ -309,7 +314,12 @@ func TestAPIs(t *testing.T) {
 		k8sclient:    fake.NewFakeClientWithScheme(schema, invalidArgoClusterSecret.DeepCopy()),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
-			assert.Equal(t, "[]", string(body))
+			assert.Equal(t, `[
+ {
+  "server": "https://kubernetes.default.svc",
+  "name": "in-cluster"
+ }
+]`, string(body))
 		},
 	}, {
 		name: "get clusters, have the expected data",
@@ -321,6 +331,10 @@ func TestAPIs(t *testing.T) {
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			assert.Equal(t, `[
+ {
+  "server": "https://kubernetes.default.svc",
+  "name": "in-cluster"
+ },
  {
   "server": "server",
   "name": "name"
