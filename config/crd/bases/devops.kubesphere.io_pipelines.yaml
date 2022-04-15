@@ -307,13 +307,34 @@ spec:
                           type: string
                         description:
                           type: string
+                        is_quoted:
+                          type: boolean
                         name:
                           type: string
                         type:
                           type: string
                       required:
+                      - is_quoted
                       - name
                       - type
+                      type: object
+                    type: array
+                  parameters_from:
+                    items:
+                      properties:
+                        kind:
+                          type: string
+                        mode:
+                          type: string
+                        name:
+                          type: string
+                        values_key:
+                          type: string
+                      required:
+                      - kind
+                      - mode
+                      - name
+                      - values_key
                       type: object
                     type: array
                   remote_trigger:

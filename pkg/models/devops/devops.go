@@ -1025,51 +1025,75 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 		return nil, err
 	}
 	var allParams []devopsv1alpha3.ParameterDefinition
+	if piplineObj.Spec.Pipeline == nil {
+		// if pipeline type is multi-branch, direct return a empty slice
+		return allParams, nil
+	}
+	externalParams := d.buildParametersRef(piplineObj.Spec.Pipeline.ParametersFrom, query)
 	allParams = append(allParams, piplineObj.Spec.Pipeline.Parameters...)
-	if len(piplineObj.Spec.Pipeline.ParametersFrom) > 0 {
-		for _, param := range piplineObj.Spec.Pipeline.ParametersFrom {
-			if param.Kind == "ConfigMap" {
-				if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
-					params, err := buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
-					if err != nil {
-						klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
-						continue
-					}
-					allParams = append(allParams, params...)
+	allParams = append(allParams, externalParams...)
+	// remove items with duplicated name
+	ret := mergeParameters(allParams)
+
+	return ret, nil
+}
+
+func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterReference, query url.Values) []devopsv1alpha3.ParameterDefinition {
+	var ret []devopsv1alpha3.ParameterDefinition
+	for _, param := range refs {
+		var params []devopsv1alpha3.ParameterDefinition
+		var err error
+		if param.Kind == "ConfigMap" {
+			if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
+				params, err = buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
+				if err != nil {
+					klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
+					continue
 				}
-				if param.Mode == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
-					params, err := buildParamFromRESTfull(d.k8sclient, param.Name, query)
-					if err != nil {
-						klog.Errorf("buildParamFromRESTfull error:[%v]", err)
-						continue
-					}
-					allParams = append(allParams, params...)
+
+			} else if param.Mode == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
+				params, err = buildParamFromRESTfull(d.k8sclient, param.Name, query)
+				if err != nil {
+					klog.Errorf("buildParamFromRESTfull error:[%v]", err)
+					continue
 				}
 			}
 		}
+		ret = append(ret, params...)
 	}
-	// remove items in ret with ducp name
-	tmpMap := make(map[string]byte)
+	return ret
+}
+
+func mergeParameters(params []devopsv1alpha3.ParameterDefinition) []devopsv1alpha3.ParameterDefinition {
 	var ret []devopsv1alpha3.ParameterDefinition
-	for i := 0; i < len(allParams); i++ {
-		idx := len(allParams) - 1 - i
-		cfgName := allParams[idx].Name
+	tmpMap := make(map[string]byte)
+	for i := 0; i < len(params); i++ {
+		idx := len(params) - 1 - i
+		cfgName := params[idx].Name
 		if _, ok := tmpMap[cfgName]; !ok {
-			ret = append(ret, allParams[idx])
+			ret = append(ret, params[idx])
 			tmpMap[cfgName] = 1
 		}
 	}
-	return ret, nil
+	return ret
+}
+
+func checkParametersCMName(fullName string) (namespace string, name string, err error) {
+	nameInfo := strings.Split(fullName, "/")
+	if len(nameInfo) != 2 {
+		return "", "", fmt.Errorf("invalid name [%s]", fullName)
+	}
+	return nameInfo[0], nameInfo[1], nil
 }
 
 func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
 	var ret []devopsv1alpha3.ParameterDefinition
-	// need more check with name
-	nameInfo := strings.SplitN(name, "/", 2)
-	cnNs := nameInfo[0]
-	cmName := nameInfo[1]
+	cmNS, cmName, err := checkParametersCMName(name)
+	if err != nil {
+		return ret, err
+	}
 	ctx := context.Background()
-	cm, err := k8sclient.CoreV1().ConfigMaps(cnNs).Get(ctx, cmName, metav1.GetOptions{})
+	cm, err := k8sclient.CoreV1().ConfigMaps(cmNS).Get(ctx, cmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -1084,25 +1108,30 @@ func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey
 
 func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
 	var ret []devopsv1alpha3.ParameterDefinition
-	nameInfo := strings.SplitN(name, "/", 2)
-	cnNs := nameInfo[0]
-	cmName := nameInfo[1]
+	cmNS, cmName, err := checkParametersCMName(name)
+	if err != nil {
+		return ret, err
+	}
 	ctx := context.Background()
-	cm, err := k8sclient.CoreV1().ConfigMaps(cnNs).Get(ctx, cmName, metav1.GetOptions{})
+	cm, err := k8sclient.CoreV1().ConfigMaps(cmNS).Get(ctx, cmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	if url, ok := cm.Data["url"]; ok {
+	if u, ok := cm.Data["url"]; ok {
+		_, err := url.Parse(u)
+		if err != nil || len(u) == 0 {
+			return ret, fmt.Errorf("invalid url [%s] in configmap[%s]", u, name)
+		}
 		client := resty.New()
 		// request from url
-		resp, err := client.R().SetQueryParamsFromValues(query).Get(url)
+		resp, err := client.R().SetQueryParamsFromValues(query).Get(u)
 		if err != nil {
-			klog.Errorf("request to url [%s] failed:%v", url, err)
+			klog.Errorf("request to url [%s] failed:%v", u, err)
 		}
 		err = json.Unmarshal(resp.Body(), &ret)
 		if err != nil {
-			klog.Errorf("decode response from url [%s] failed:%v", url, err)
+			klog.Errorf("decode response from url [%s] failed:%v", u, err)
 		}
 
 		return ret, nil

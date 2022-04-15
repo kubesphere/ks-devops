@@ -18,6 +18,10 @@ package v1alpha3
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -29,10 +33,7 @@ import (
 	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/constants"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestAPIsExist(t *testing.T) {
@@ -115,6 +116,12 @@ func TestAPIsExist(t *testing.T) {
 		args: args{
 			method: http.MethodGet,
 			uri:    "/devops/fake/pipelines/fake",
+		},
+	}, {
+		name: "build pipeline parameters",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/fake/pipelines/fake/parameters",
 		},
 	}, {
 		name: "update a pipeline",

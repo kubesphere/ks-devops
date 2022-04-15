@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -230,8 +231,7 @@ type ParameterDefinition struct {
 }
 
 type ParameterReference struct {
-	Kind      string `json:"kind" description:"reference kind: ConfigMap/Secret"`
-	Name      string `json:"name" description:"reference resource name"`
+	corev1.TypedLocalObjectReference
 	ValuesKey string `json:"values_key" description:"reference resource data key"`
 	Mode      string `json:"mode" description:"reference method: data or RESTful request"`
 }

@@ -178,7 +178,7 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.PathParameter("devops", "project name")).
 		Param(ws.PathParameter("pipeline", "pipeline name")).
 		Doc("Build Pipeline parameters").
-		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
+		Returns(http.StatusOK, api.StatusOK, []v1alpha3.ParameterDefinition{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 }
 
