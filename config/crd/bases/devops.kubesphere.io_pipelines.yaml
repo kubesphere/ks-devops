@@ -322,19 +322,13 @@ spec:
                   parameters_from:
                     items:
                       properties:
-                        kind:
-                          type: string
                         mode:
                           type: string
-                        name:
-                          type: string
-                        values_key:
+                        valuesKey:
                           type: string
                       required:
-                      - kind
                       - mode
-                      - name
-                      - values_key
+                      - valuesKey
                       type: object
                     type: array
                   remote_trigger:
