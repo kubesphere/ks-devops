@@ -1019,17 +1019,17 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 	if err != nil {
 		return nil, err
 	}
-	piplineObj, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(d.context, pipelineName, metav1.GetOptions{})
+	pipelineObj, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(d.context, pipelineName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	var allParams []devopsv1alpha3.ParameterDefinition
-	if piplineObj.Spec.Pipeline == nil {
+	if pipelineObj.Spec.Pipeline == nil {
 		// if pipeline type is multi-branch, direct return a empty slice
 		return allParams, nil
 	}
-	externalParams := d.buildParametersRef(piplineObj.Spec.Pipeline.ParametersFrom, query)
-	allParams = append(allParams, piplineObj.Spec.Pipeline.Parameters...)
+	externalParams := d.buildParametersRef(pipelineObj.Spec.Pipeline.ParametersFrom, query)
+	allParams = append(allParams, pipelineObj.Spec.Pipeline.Parameters...)
 	allParams = append(allParams, externalParams...)
 	// remove items with duplicated name
 	ret := mergeParameters(allParams)
@@ -1121,21 +1121,21 @@ func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string, query u
 		if err != nil || len(u) == 0 {
 			return ret, fmt.Errorf("invalid url [%s] in configmap[%s]", u, name)
 		}
-		r, err := http.NewRequest("GET", u, nil)
+		r, err := http.NewRequest(http.MethodGet, u, nil)
 		if err != nil {
-			klog.Errorf("request to url [%s] failed:%v", u, err)
+			return ret, fmt.Errorf("request to url [%s] failed:%v", u, err)
 		}
 		resp, err := http.DefaultClient.Do(r)
 		if err != nil {
-			klog.Errorf("request to url [%s] failed:%v", u, err)
+			return ret, fmt.Errorf("request to url [%s] failed:%v", u, err)
 		}
 		respContent, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			klog.Errorf("read response from url [%s] failed:%v", u, err)
+			return ret, fmt.Errorf("read response from url [%s] failed:%v", u, err)
 		}
 		err = json.Unmarshal(respContent, &ret)
 		if err != nil {
-			klog.Errorf("decode response from url [%s] failed:%v", u, err)
+			return ret, fmt.Errorf("decode response from url [%s] failed:%v", u, err)
 		}
 
 		return ret, nil
