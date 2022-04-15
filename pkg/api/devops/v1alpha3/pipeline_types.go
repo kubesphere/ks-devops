@@ -232,7 +232,7 @@ type ParameterDefinition struct {
 
 type ParameterReference struct {
 	corev1.TypedLocalObjectReference
-	ValuesKey string `json:"values_key" description:"reference resource data key"`
+	ValuesKey string `json:"valuesKey" description:"reference resource data key"`
 	Mode      string `json:"mode" description:"reference method: data or RESTful request"`
 }
 

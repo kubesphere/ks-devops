@@ -43,7 +43,6 @@ import (
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/utils/secretutil"
 
-	"github.com/go-resty/resty/v2"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
@@ -1117,19 +1116,24 @@ func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string, query u
 	if err != nil {
 		return nil, err
 	}
-
 	if u, ok := cm.Data["url"]; ok {
 		_, err := url.Parse(u)
 		if err != nil || len(u) == 0 {
 			return ret, fmt.Errorf("invalid url [%s] in configmap[%s]", u, name)
 		}
-		client := resty.New()
-		// request from url
-		resp, err := client.R().SetQueryParamsFromValues(query).Get(u)
+		r, err := http.NewRequest("GET", u, nil)
 		if err != nil {
 			klog.Errorf("request to url [%s] failed:%v", u, err)
 		}
-		err = json.Unmarshal(resp.Body(), &ret)
+		resp, err := http.DefaultClient.Do(r)
+		if err != nil {
+			klog.Errorf("request to url [%s] failed:%v", u, err)
+		}
+		respContent, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			klog.Errorf("read response from url [%s] failed:%v", u, err)
+		}
+		err = json.Unmarshal(respContent, &ret)
 		if err != nil {
 			klog.Errorf("decode response from url [%s] failed:%v", u, err)
 		}
