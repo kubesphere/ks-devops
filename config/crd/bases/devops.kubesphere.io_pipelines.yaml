@@ -307,14 +307,14 @@ spec:
                           type: string
                         description:
                           type: string
-                        is_quoted:
+                        isQuoted:
                           type: boolean
                         name:
                           type: string
                         type:
                           type: string
                       required:
-                      - is_quoted
+                      - isQuoted
                       - name
                       - type
                       type: object
@@ -322,12 +322,26 @@ spec:
                   parameters_from:
                     items:
                       properties:
+                        apiGroup:
+                          description: APIGroup is the group for the resource being
+                            referenced. If APIGroup is not specified, the specified
+                            Kind must be in the core API group. For any other third-party
+                            types, APIGroup is required.
+                          type: string
+                        kind:
+                          description: Kind is the type of resource being referenced
+                          type: string
                         mode:
+                          type: string
+                        name:
+                          description: Name is the name of resource being referenced
                           type: string
                         valuesKey:
                           type: string
                       required:
+                      - kind
                       - mode
+                      - name
                       - valuesKey
                       type: object
                     type: array

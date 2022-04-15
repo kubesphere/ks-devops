@@ -399,7 +399,7 @@ func Test_devopsOperator_BuildPipelineParameters(t *testing.T) {
     k1-c
   name: "dyn-param-k1"
   type: choice
-  is_quoted: true
+  isQuoted: true
   description: "dyn-param-k1"
 - default_value: |-
     k2-d
@@ -407,7 +407,7 @@ func Test_devopsOperator_BuildPipelineParameters(t *testing.T) {
     k2-f
   name: "dyn-param-k2"
   type: choice
-  is_quoted: false
+  isQuoted: false
   description: "dyn-param-k2"`,
 				},
 			}),
@@ -515,7 +515,7 @@ func Test_devopsOperator_buildParamFromConfigMapData(t *testing.T) {
     k1-c
   name: "dyn-param-k1"
   type: choice
-  is_quoted: true
+  isQuoted: true
   description: "dyn-param-k1"
 - default_value: |-
     k2-d
@@ -523,7 +523,7 @@ func Test_devopsOperator_buildParamFromConfigMapData(t *testing.T) {
     k2-f
   name: "dyn-param-k2"
   type: choice
-  is_quoted: false
+  isQuoted: false
   description: "dyn-param-k2"`,
 					},
 				}),
