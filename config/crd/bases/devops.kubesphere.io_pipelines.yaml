@@ -319,7 +319,7 @@ spec:
                       - type
                       type: object
                     type: array
-                  parameters_from:
+                  parametersFrom:
                     items:
                       properties:
                         apiGroup:
