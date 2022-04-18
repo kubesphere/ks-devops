@@ -1038,7 +1038,7 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 }
 
 func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterReference, query url.Values) []devopsv1alpha3.ParameterDefinition {
-	var ret []devopsv1alpha3.ParameterDefinition
+	ret := []devopsv1alpha3.ParameterDefinition{}
 	for _, param := range refs {
 		var params []devopsv1alpha3.ParameterDefinition
 		var err error
@@ -1064,7 +1064,7 @@ func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterRefere
 }
 
 func mergeParameters(params []devopsv1alpha3.ParameterDefinition) []devopsv1alpha3.ParameterDefinition {
-	var ret []devopsv1alpha3.ParameterDefinition
+	ret := []devopsv1alpha3.ParameterDefinition{}
 	tmpMap := make(map[string]byte)
 	for i := 0; i < len(params); i++ {
 		idx := len(params) - 1 - i
