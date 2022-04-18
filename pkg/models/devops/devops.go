@@ -1042,6 +1042,13 @@ func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterRefere
 	for _, param := range refs {
 		var params []devopsv1alpha3.ParameterDefinition
 		var err error
+		// set default value when key is not set
+		if len(param.Kind) == 0 {
+			param.Kind = "ConfigMap"
+		}
+		if len(param.ValuesKey) == 0 {
+			param.ValuesKey = "parameters"
+		}
 		if param.Kind == "ConfigMap" {
 			if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
 				params, err = buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
