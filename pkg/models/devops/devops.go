@@ -1028,7 +1028,7 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 		// if pipeline type is multi-branch, direct return a empty slice
 		return allParams, nil
 	}
-	externalParams := d.buildParametersRef(pipelineObj.Spec.Pipeline.ParametersFrom, query)
+	externalParams := d.buildParametersRef(pipelineObj.Spec.Pipeline.ParametersFrom, projectObj.Status.AdminNamespace, query)
 	allParams = append(allParams, pipelineObj.Spec.Pipeline.Parameters...)
 	allParams = append(allParams, externalParams...)
 	// remove items with duplicated name
@@ -1037,7 +1037,7 @@ func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName
 	return ret, nil
 }
 
-func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterReference, query url.Values) []devopsv1alpha3.ParameterDefinition {
+func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterReference, namespace string, query url.Values) []devopsv1alpha3.ParameterDefinition {
 	ret := []devopsv1alpha3.ParameterDefinition{}
 	for _, param := range refs {
 		var params []devopsv1alpha3.ParameterDefinition
@@ -1051,14 +1051,14 @@ func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterRefere
 		}
 		if param.Kind == "ConfigMap" {
 			if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
-				params, err = buildParamFromConfigMapData(d.k8sclient, param.Name, param.ValuesKey)
+				params, err = buildParamFromConfigMapData(d.k8sclient, namespace, param.Name, param.ValuesKey)
 				if err != nil {
 					klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
 					continue
 				}
 
 			} else if param.Mode == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
-				params, err = buildParamFromRESTfull(d.k8sclient, param.Name, query)
+				params, err = buildParamFromRESTfull(d.k8sclient, namespace, param.Name, query)
 				if err != nil {
 					klog.Errorf("buildParamFromRESTfull error:[%v]", err)
 					continue
@@ -1084,24 +1084,12 @@ func mergeParameters(params []devopsv1alpha3.ParameterDefinition) []devopsv1alph
 	return ret
 }
 
-func checkParametersCMName(fullName string) (namespace string, name string, err error) {
-	nameInfo := strings.Split(fullName, "/")
-	if len(nameInfo) != 2 {
-		return "", "", fmt.Errorf("invalid name [%s]", fullName)
-	}
-	return nameInfo[0], nameInfo[1], nil
-}
-
-func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
+func buildParamFromConfigMapData(k8sclient kubernetes.Interface, namespace, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
 	var ret []devopsv1alpha3.ParameterDefinition
-	cmNS, cmName, err := checkParametersCMName(name)
+	ctx := context.Background()
+	cm, err := k8sclient.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return ret, err
-	}
-	ctx := context.Background()
-	cm, err := k8sclient.CoreV1().ConfigMaps(cmNS).Get(ctx, cmName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
 	}
 
 	if paramData, ok := cm.Data[valuesKey]; ok {
@@ -1112,14 +1100,10 @@ func buildParamFromConfigMapData(k8sclient kubernetes.Interface, name, valuesKey
 
 }
 
-func buildParamFromRESTfull(k8sclient kubernetes.Interface, name string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
+func buildParamFromRESTfull(k8sclient kubernetes.Interface, namespace, name string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
 	var ret []devopsv1alpha3.ParameterDefinition
-	cmNS, cmName, err := checkParametersCMName(name)
-	if err != nil {
-		return ret, err
-	}
 	ctx := context.Background()
-	cm, err := k8sclient.CoreV1().ConfigMaps(cmNS).Get(ctx, cmName, metav1.GetOptions{})
+	cm, err := k8sclient.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

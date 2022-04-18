@@ -19,7 +19,6 @@ package devops
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -365,7 +364,7 @@ func Test_devopsOperator_BuildPipelineParameters(t *testing.T) {
 								TypedLocalObjectReference: corev1.TypedLocalObjectReference{
 									APIGroup: new(string),
 									Kind:     "ConfigMap",
-									Name:     "default/dyn-fake-cm",
+									Name:     "dyn-fake-cm",
 								},
 								ValuesKey: "params",
 								Mode:      devopsv1alpha3.PARAM_REF_MODE_CONFIG,
@@ -389,8 +388,8 @@ func Test_devopsOperator_BuildPipelineParameters(t *testing.T) {
 				TypeMeta: v1.TypeMeta{},
 				ObjectMeta: v1.ObjectMeta{
 					Name:         "dyn-fake-cm",
+					Namespace:    "fake-ns",
 					GenerateName: "dyn-fake-cm",
-					Namespace:    "default",
 				},
 				Data: map[string]string{
 					"params": `- default_value: |-
@@ -463,34 +462,14 @@ func Test_devopsOperator_mergeParameters(t *testing.T) {
 	assert.Equal(t, mergeParams[0].DefaultValue, "v2")
 }
 
-func Test_devopsOperator_checkParametersCMName(t *testing.T) {
-	invaildNameWithOutNs := "cm-name"
-	invaildNameWithMoreThanTwoSlash := "default/ns/cm-name"
-	correctName := "default/cm-name"
-
-	ns, name, err := checkParametersCMName(invaildNameWithOutNs)
-	assert.Equal(t, ns, "")
-	assert.Equal(t, name, "")
-	assert.Equal(t, err, fmt.Errorf("invalid name [%s]", invaildNameWithOutNs))
-
-	ns1, name1, err1 := checkParametersCMName(invaildNameWithMoreThanTwoSlash)
-	assert.Equal(t, ns1, "")
-	assert.Equal(t, name1, "")
-	assert.Equal(t, err1, fmt.Errorf("invalid name [%s]", invaildNameWithMoreThanTwoSlash))
-
-	ns2, name2, err2 := checkParametersCMName(correctName)
-	assert.Equal(t, ns2, "default")
-	assert.Equal(t, name2, "cm-name")
-	assert.Nil(t, err2)
-}
-
 func Test_devopsOperator_buildParamFromConfigMapData(t *testing.T) {
 	type fields struct {
 		k8sclient kubernetes.Interface
 	}
 	type args struct {
-		cmName    string
-		valuesKey string
+		cmName      string
+		cmNamespace string
+		valuesKey   string
 	}
 	tests := []struct {
 		name   string
@@ -529,8 +508,9 @@ func Test_devopsOperator_buildParamFromConfigMapData(t *testing.T) {
 				}),
 			},
 			args: args{
-				cmName:    "default/dyn-fake-cm",
-				valuesKey: "params",
+				cmName:      "dyn-fake-cm",
+				cmNamespace: "default",
+				valuesKey:   "params",
 			},
 			verify: func(params []devopsv1alpha3.ParameterDefinition, resultErr error, t *testing.T) {
 				assert.Len(t, params, 2)
@@ -540,7 +520,7 @@ func Test_devopsOperator_buildParamFromConfigMapData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			param, err := buildParamFromConfigMapData(tt.fields.k8sclient, tt.args.cmName, tt.args.valuesKey)
+			param, err := buildParamFromConfigMapData(tt.fields.k8sclient, tt.args.cmNamespace, tt.args.cmName, tt.args.valuesKey)
 			tt.verify(param, err, t)
 		})
 	}
@@ -551,7 +531,8 @@ func Test_devopsOperator_buildParamFromRESTfull(t *testing.T) {
 		k8sclient kubernetes.Interface
 	}
 	type args struct {
-		cmName string
+		cmName      string
+		cmNamespace string
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// mock here
@@ -593,7 +574,8 @@ func Test_devopsOperator_buildParamFromRESTfull(t *testing.T) {
 				}),
 			},
 			args: args{
-				cmName: "default/dyn-fake-cm-rest",
+				cmName:      "dyn-fake-cm-rest",
+				cmNamespace: "default",
 			},
 			verify: func(params []devopsv1alpha3.ParameterDefinition, resultErr error, t *testing.T) {
 				assert.Len(t, params, 1)
@@ -603,7 +585,7 @@ func Test_devopsOperator_buildParamFromRESTfull(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			param, err := buildParamFromRESTfull(tt.fields.k8sclient, tt.args.cmName, nil)
+			param, err := buildParamFromRESTfull(tt.fields.k8sclient, tt.args.cmNamespace, tt.args.cmName, nil)
 			tt.verify(param, err, t)
 		})
 	}
