@@ -232,8 +232,8 @@ type ParameterDefinition struct {
 
 type ParameterReference struct {
 	corev1.TypedLocalObjectReference `json:",inline"`
-	ValuesKey                        string `json:"valuesKey" description:"reference resource data key"`
-	Mode                             string `json:"mode" description:"reference method: data or RESTful request"`
+	ValuesKey                        string `json:"valuesKey,omitempty" description:"reference resource data key"`
+	Mode                             string `json:"mode,omitempty" description:"reference method: data or RESTful request"`
 }
 
 const (

@@ -401,9 +401,7 @@ spec:
                               type: string
                           required:
                           - kind
-                          - mode
                           - name
-                          - valuesKey
                           type: object
                         type: array
                       remote_trigger:
