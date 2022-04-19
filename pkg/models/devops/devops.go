@@ -23,10 +23,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"kubesphere.io/devops/pkg/constants"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
+
+	"gopkg.in/yaml.v2"
+	"kubesphere.io/devops/pkg/constants"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -64,6 +67,7 @@ type DevopsOperator interface {
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
+	BuildPipelineParameters(projectName string, pipelineName string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -1006,4 +1010,125 @@ func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
 		rc = ioutil.NopCloser(body)
 	}
 	return rc
+}
+
+func (d devopsOperator) BuildPipelineParameters(projectName string, pipelineName string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
+	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	pipelineObj, err := d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Get(d.context, pipelineName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var allParams []devopsv1alpha3.ParameterDefinition
+	if pipelineObj.Spec.Pipeline == nil {
+		// if pipeline type is multi-branch, direct return a empty slice
+		return allParams, nil
+	}
+	externalParams := d.buildParametersRef(pipelineObj.Spec.Pipeline.ParametersFrom, projectObj.Status.AdminNamespace, query)
+	allParams = append(allParams, pipelineObj.Spec.Pipeline.Parameters...)
+	allParams = append(allParams, externalParams...)
+	// remove items with duplicated name
+	ret := mergeParameters(allParams)
+
+	return ret, nil
+}
+
+func (d devopsOperator) buildParametersRef(refs []devopsv1alpha3.ParameterReference, namespace string, query url.Values) []devopsv1alpha3.ParameterDefinition {
+	ret := []devopsv1alpha3.ParameterDefinition{}
+	for _, param := range refs {
+		var params []devopsv1alpha3.ParameterDefinition
+		var err error
+		// set default value when key is not set
+		if len(param.Kind) == 0 {
+			param.Kind = "ConfigMap"
+		}
+		if len(param.ValuesKey) == 0 {
+			param.ValuesKey = "parameters"
+		}
+		if param.Kind == "ConfigMap" {
+			if param.Mode == devopsv1alpha3.PARAM_REF_MODE_CONFIG {
+				params, err = buildParamFromConfigMapData(d.k8sclient, namespace, param.Name, param.ValuesKey)
+				if err != nil {
+					klog.Errorf("buildParamFromConfigMapData error:[%v]", err)
+					continue
+				}
+
+			} else if param.Mode == devopsv1alpha3.PARAM_REF_MODE_RESTFUL {
+				params, err = buildParamFromRESTfull(d.k8sclient, namespace, param.Name, query)
+				if err != nil {
+					klog.Errorf("buildParamFromRESTfull error:[%v]", err)
+					continue
+				}
+			}
+		}
+		ret = append(ret, params...)
+	}
+	return ret
+}
+
+func mergeParameters(params []devopsv1alpha3.ParameterDefinition) []devopsv1alpha3.ParameterDefinition {
+	ret := []devopsv1alpha3.ParameterDefinition{}
+	tmpMap := make(map[string]byte)
+	for i := 0; i < len(params); i++ {
+		idx := len(params) - 1 - i
+		cfgName := params[idx].Name
+		if _, ok := tmpMap[cfgName]; !ok {
+			ret = append(ret, params[idx])
+			tmpMap[cfgName] = 1
+		}
+	}
+	return ret
+}
+
+func buildParamFromConfigMapData(k8sclient kubernetes.Interface, namespace, name, valuesKey string) ([]devopsv1alpha3.ParameterDefinition, error) {
+	var ret []devopsv1alpha3.ParameterDefinition
+	ctx := context.Background()
+	cm, err := k8sclient.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return ret, err
+	}
+
+	if paramData, ok := cm.Data[valuesKey]; ok {
+		err := yaml.Unmarshal([]byte(paramData), &ret)
+		return ret, err
+	}
+	return nil, fmt.Errorf("data not found in configmap with key [%s]", valuesKey)
+
+}
+
+func buildParamFromRESTfull(k8sclient kubernetes.Interface, namespace, name string, query url.Values) ([]devopsv1alpha3.ParameterDefinition, error) {
+	var ret []devopsv1alpha3.ParameterDefinition
+	ctx := context.Background()
+	cm, err := k8sclient.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if u, ok := cm.Data["url"]; ok {
+		_, err := url.Parse(u)
+		if err != nil || len(u) == 0 {
+			return ret, fmt.Errorf("invalid url [%s] in configmap[%s]", u, name)
+		}
+		r, err := http.NewRequest(http.MethodGet, u, nil)
+		if err != nil {
+			return ret, fmt.Errorf("request to url [%s] failed:%v", u, err)
+		}
+		resp, err := http.DefaultClient.Do(r)
+		if err != nil {
+			return ret, fmt.Errorf("request to url [%s] failed:%v", u, err)
+		}
+		respContent, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return ret, fmt.Errorf("read response from url [%s] failed:%v", u, err)
+		}
+		err = json.Unmarshal(respContent, &ret)
+		if err != nil {
+			return ret, fmt.Errorf("decode response from url [%s] failed:%v", u, err)
+		}
+
+		return ret, nil
+	}
+
+	return ret, fmt.Errorf("parse config failed, url key not exist in [%s]", name)
 }

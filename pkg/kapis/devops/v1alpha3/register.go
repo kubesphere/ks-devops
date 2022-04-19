@@ -172,6 +172,14 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Doc("delete the pipeline of the specified devops for the current user").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
+
+	ws.Route(ws.GET("/devops/{devops}/pipelines/{pipeline}/parameters").
+		To(handler.BuildPipelineParameters).
+		Param(ws.PathParameter("devops", "project name")).
+		Param(ws.PathParameter("pipeline", "pipeline name")).
+		Doc("Build Pipeline parameters").
+		Returns(http.StatusOK, api.StatusOK, []v1alpha3.ParameterDefinition{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
 }
 
 func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService) {
