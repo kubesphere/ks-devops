@@ -375,7 +375,6 @@ spec:
                             type:
                               type: string
                           required:
-                          - isQuoted
                           - name
                           - type
                           type: object
