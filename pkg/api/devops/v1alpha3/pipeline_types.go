@@ -225,7 +225,7 @@ type DiscarderProperty struct {
 type ParameterDefinition struct {
 	Name         string `json:"name" description:"name of param"`
 	DefaultValue string `json:"default_value,omitempty" yaml:"default_value" mapstructure:"default_value" description:"default value of param"`
-	IsQuoted     bool   `json:"isQuoted" yaml:"isQuoted" description:"whether this param is quoted to build dynamic"`
+	IsQuoted     bool   `json:"isQuoted,omitempty" yaml:"isQuoted" description:"whether this param is quoted to build dynamic"`
 	Type         string `json:"type" description:"type of param"`
 	Description  string `json:"description,omitempty" description:"description of pipeline"`
 }
