@@ -111,6 +111,7 @@ func (c *pipelines) Watch(ctx context.Context, opts v1.ListOptions) (watch.Inter
 
 // Create takes the representation of a pipeline and creates it.  Returns the server's representation of the pipeline, and an error, if there is any.
 func (c *pipelines) Create(ctx context.Context, pipeline *v1alpha3.Pipeline, opts v1.CreateOptions) (result *v1alpha3.Pipeline, err error) {
+	c.formatPipelineObj(ctx, pipeline)
 	result = &v1alpha3.Pipeline{}
 	err = c.client.Post().
 		Namespace(c.ns).
@@ -124,6 +125,7 @@ func (c *pipelines) Create(ctx context.Context, pipeline *v1alpha3.Pipeline, opt
 
 // Update takes the representation of a pipeline and updates it. Returns the server's representation of the pipeline, and an error, if there is any.
 func (c *pipelines) Update(ctx context.Context, pipeline *v1alpha3.Pipeline, opts v1.UpdateOptions) (result *v1alpha3.Pipeline, err error) {
+	c.formatPipelineObj(ctx, pipeline)
 	result = &v1alpha3.Pipeline{}
 	err = c.client.Put().
 		Namespace(c.ns).
@@ -134,6 +136,18 @@ func (c *pipelines) Update(ctx context.Context, pipeline *v1alpha3.Pipeline, opt
 		Do(ctx).
 		Into(result)
 	return
+}
+
+// workaround for TypedLocalObjectReference keys do not have omitempty
+// TODO: remove this func after https://github.com/kubernetes/kubernetes/issues/79354 got solution
+func (c *pipelines) formatPipelineObj(ctx context.Context, pipeline *v1alpha3.Pipeline)	{
+	if pipeline.Spec.Pipeline != nil {
+		for k, v := range pipeline.Spec.Pipeline.ParametersFrom {
+			if v.APIGroup == nil {
+				pipeline.Spec.Pipeline.ParametersFrom[k].APIGroup = new(string)
+			}
+		}
+	}
 }
 
 // UpdateStatus was generated because the type contains a Status member.
