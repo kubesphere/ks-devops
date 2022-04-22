@@ -118,12 +118,6 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/devops/fake/pipelines/fake",
 		},
 	}, {
-		name: "build pipeline parameters",
-		args: args{
-			method: http.MethodGet,
-			uri:    "/devops/fake/pipelines/fake/parameters",
-		},
-	}, {
 		name: "update a pipeline",
 		args: args{
 			method: http.MethodPut,

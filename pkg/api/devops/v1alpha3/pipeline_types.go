@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha3
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -109,7 +108,6 @@ type NoScmPipeline struct {
 	Name              string                `json:"name" description:"name of pipeline"`
 	Description       string                `json:"description,omitempty" description:"description of pipeline"`
 	Discarder         *DiscarderProperty    `json:"discarder,omitempty" description:"Discarder of pipeline, managing when to drop a pipeline"`
-	ParametersFrom    []ParameterReference  `json:"parametersFrom,omitempty" description:"Parameters define of pipeline from external configmap or secret"`
 	Parameters        []ParameterDefinition `json:"parameters,omitempty" description:"Parameters define of pipeline,user could pass param when run pipeline"`
 	DisableConcurrent bool                  `json:"disable_concurrent,omitempty" mapstructure:"disable_concurrent" description:"Whether to prohibit the pipeline from running in parallel"`
 	TimerTrigger      *TimerTrigger         `json:"timer_trigger,omitempty" mapstructure:"timer_trigger" description:"Timer to trigger pipeline run"`
@@ -225,22 +223,9 @@ type DiscarderProperty struct {
 type ParameterDefinition struct {
 	Name         string `json:"name" description:"name of param"`
 	DefaultValue string `json:"default_value,omitempty" yaml:"default_value" mapstructure:"default_value" description:"default value of param"`
-	IsQuoted     bool   `json:"isQuoted,omitempty" yaml:"isQuoted" description:"whether this param is quoted to build dynamic"`
 	Type         string `json:"type" description:"type of param"`
 	Description  string `json:"description,omitempty" description:"description of pipeline"`
 }
-
-type ParameterReference struct {
-	corev1.TypedLocalObjectReference `json:",inline"`
-	ValuesKey                        string `json:"valuesKey,omitempty" description:"reference resource data key"`
-	Mode                             string `json:"mode,omitempty" description:"reference method: data or RESTful request"`
-}
-
-const (
-	PARAM_REF_MODE_CONFIG  = "config"
-	PARAM_REF_MODE_RESTFUL = "restful"
-	PARAM_REF_MODE_DATA    = "data"
-)
 
 type TimerTrigger struct {
 	// user in no scm job
