@@ -165,6 +165,10 @@ func getArgoClusterConfigObject(configText string) (object *ClusterConfig) {
 	cluster := kubeconfig.Clusters[0]
 	user := kubeconfig.Users[0]
 
+	cluster.Cluster.CA = base64DecodeWithoutErrorCheck(cluster.Cluster.CA)
+	user.Auth.ClientCert = base64DecodeWithoutErrorCheck(user.Auth.ClientCert)
+	user.Auth.ClientKey = base64DecodeWithoutErrorCheck(user.Auth.ClientKey)
+
 	object = &ClusterConfig{
 		BearerToken: user.Auth.Token,
 		TLSClientConfig: TLSClientConfig{
@@ -175,6 +179,11 @@ func getArgoClusterConfigObject(configText string) (object *ClusterConfig) {
 		},
 	}
 	return
+}
+
+func base64DecodeWithoutErrorCheck(str string) string {
+	data, _ := base64.StdEncoding.DecodeString(str)
+	return string(data)
 }
 
 func getCluster(client client.Reader, namespacedName types.NamespacedName) (cluster *unstructured.Unstructured, err error) {

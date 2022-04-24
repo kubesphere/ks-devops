@@ -451,11 +451,14 @@ func Test_getArgoClusterConfigFormat(t *testing.T) {
 	configData := base64.StdEncoding.EncodeToString([]byte(`clusters:
 - cluster:
     insecure-skip-tls-verify: true
+    certificate-authority-data: LeRuIGZha2UK
     server: server
   name: name
 users:
 - name: name
   user:
+    client-certificate-data: LeRuIGZha2UK
+    client-key-data: LeRuIGZha2UK
     token: token`))
 	type args struct {
 		config string
@@ -469,7 +472,7 @@ users:
 		args: args{
 			config: configData,
 		},
-		want: []byte(`{"bearerToken":"token","tlsClientConfig":{"insecure":true}}`),
+		want: []byte(`{"bearerToken":"token","tlsClientConfig":{"insecure":true,"certData":"LeRuIGZha2UK","keyData":"LeRuIGZha2UK","caData":"LeRuIGZha2UK"}}`),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
