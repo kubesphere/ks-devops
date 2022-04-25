@@ -78,7 +78,7 @@ type clusterConfig struct {
 type clusterConfigConnection struct {
 	SkipTLS bool   `yaml:"insecure-skip-tls-verify,omitempty"`
 	Server  string `yaml:"server,omitempty"`
-	CA      string `yaml:"certificate-authority-data:,omitempty"`
+	CA      string `yaml:"certificate-authority-data,omitempty"`
 }
 
 type clusterConfigUser struct {

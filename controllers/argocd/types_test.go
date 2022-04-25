@@ -36,6 +36,7 @@ func Test_parseKubeConfig(t *testing.T) {
 clusters:
 - cluster:
     insecure-skip-tls-verify: true
+    certificate-authority-data: ca-data
     server: server
   name: name
 users:
@@ -49,6 +50,7 @@ users:
 				Cluster: clusterConfigConnection{
 					SkipTLS: true,
 					Server:  "server",
+					CA:      "ca-data",
 				},
 			}},
 			Users: []clusterConfigUser{{
