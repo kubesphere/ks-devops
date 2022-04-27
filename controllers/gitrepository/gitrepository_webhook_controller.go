@@ -43,9 +43,6 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO currently, this controller only can add a new webhook to a git repository. It might be
-//   possible to add more and more wenhooks, and there's no way to clean them.
-//   Second problem is that this controller cannot update the webhook when a webhook changed.
 func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
 	ctx := context.Background()
 	log := r.log.WithValues("GitRepository", req.NamespacedName)
@@ -252,11 +249,19 @@ func addToArrayInAnnotations(array map[string]string, key, value string) map[str
 	return array
 }
 
+func (r *Reconciler) GetName() string {
+	return "gitrepository-controller"
+}
+
+func (r *Reconciler) GetGroupName() string {
+	return groupName
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// the server should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
-	r.recorder = mgr.GetEventRecorderFor("gitrepository-controller")
-	r.log = ctrl.Log.WithName("gitrepository-controller")
+	r.recorder = mgr.GetEventRecorderFor(r.GetName())
+	r.log = ctrl.Log.WithName(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha3.GitRepository{}).
 		Complete(r)

@@ -98,9 +98,17 @@ func (r *WebhookReconciler) notifyGitRepo(ns, name string) (err error) {
 	return
 }
 
+func (r *WebhookReconciler) GetName() string {
+	return "webhook-notify"
+}
+
+func (r *WebhookReconciler) GetGroupName() string {
+	return groupName
+}
+
 func (r *WebhookReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.recorder = mgr.GetEventRecorderFor("webhook-notify")
-	r.log = ctrl.Log.WithName("webhook-notify")
+	r.recorder = mgr.GetEventRecorderFor(r.GetName())
+	r.log = ctrl.Log.WithName(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha3.Webhook{}).
 		Complete(r)

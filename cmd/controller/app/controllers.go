@@ -113,18 +113,11 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		Client:        mgr.GetClient(),
 		ArgoNamespace: s.ArgoCDOption.Namespace,
 	}
+	gitRepoReconcilers := gitrepository.GetReconcilers()
 
 	return map[string]func(mgr manager.Manager) error{
-		"gitrepository": func(mgr manager.Manager) error {
-			err := (&gitrepository.Reconciler{
-				Client: mgr.GetClient(),
-			}).SetupWithManager(mgr)
-			if err == nil {
-				err = (&gitrepository.WebhookReconciler{
-					Client: mgr.GetClient(),
-				}).SetupWithManager(mgr)
-			}
-			return err
+		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
+			return gitRepoReconcilers.SetupWithManager(mgr)
 		},
 		"addon": func(mgr manager.Manager) error {
 			err := (&addon.OperatorCRDReconciler{
