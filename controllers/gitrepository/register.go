@@ -19,8 +19,6 @@ import (
 
 func GetReconcilers() core.GroupedReconcilers {
 	return []core.GroupedReconciler{
-		&Reconciler{},
 		&AmendReconciler{},
-		&WebhookReconciler{},
 	}
 }
