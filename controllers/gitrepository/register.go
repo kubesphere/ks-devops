@@ -15,10 +15,13 @@ package gitrepository
 
 import (
 	"kubesphere.io/devops/controllers/core"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetReconcilers() core.GroupedReconcilers {
+func GetReconcilers(k8s client.Client) core.GroupedReconcilers {
 	return []core.GroupedReconciler{
-		&AmendReconciler{},
+		&AmendReconciler{
+			Client: k8s,
+		},
 	}
 }

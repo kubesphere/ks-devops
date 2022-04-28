@@ -19,7 +19,7 @@ import (
 )
 
 func TestGetReconcilers(t *testing.T) {
-	reconcilers := GetReconcilers()
+	reconcilers := GetReconcilers(nil)
 	for i := range reconcilers {
 		item := reconcilers[i]
 		assert.Equal(t, groupName, item.GetGroupName())

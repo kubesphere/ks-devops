@@ -15,6 +15,7 @@ package gitrepository
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -36,6 +37,7 @@ type AmendReconciler struct {
 
 func (r *AmendReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
 	ctx := context.Background()
+	r.log.Info(fmt.Sprintf("start to AmendReconciler: %s", req.String()))
 
 	repo := &v1alpha3.GitRepository{}
 	if err = r.Get(ctx, req.NamespacedName, repo); err != nil {
