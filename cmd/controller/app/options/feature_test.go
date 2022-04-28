@@ -37,6 +37,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 		want: map[string]bool{
 			"jenkins":       true,
 			"jenkinsconfig": true,
+			"gitrepository": true,
 		},
 	}, {
 		name: "no input (be nil) from users",
@@ -46,6 +47,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 		want: map[string]bool{
 			"jenkins":       true,
 			"jenkinsconfig": true,
+			"gitrepository": true,
 		},
 	}, {
 		name: "merge with the input from users",
@@ -57,6 +59,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 		want: map[string]bool{
 			"jenkins":       true,
 			"jenkinsconfig": true,
+			"gitrepository": true,
 			"fake":          true,
 		},
 	}, {

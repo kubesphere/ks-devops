@@ -35,6 +35,7 @@ func (o *FeatureOptions) GetControllers() map[string]bool {
 	defaultMap := map[string]bool{
 		"jenkins":       true,
 		"jenkinsconfig": true,
+		"gitrepository": true,
 	}
 
 	// support to only enable the specific controllers
