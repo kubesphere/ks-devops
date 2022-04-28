@@ -153,6 +153,7 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			var newArgoApp *unstructured.Unstructured
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 				argoApp.Object["spec"] = newArgoApp.Object["spec"]
+				argoApp.Object["operation"] = newArgoApp.Object["operation"]
 				argoApp.SetFinalizers(newArgoApp.GetFinalizers())
 				err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
 					latestArgoApp := createBareArgoCDApplicationObject()

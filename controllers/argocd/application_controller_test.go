@@ -72,6 +72,17 @@ func Test_createUnstructuredApplication(t *testing.T) {
 								Namespace: "namespace",
 							},
 						},
+						Operation: &v1alpha1.Operation{
+							Sync: &v1alpha1.SyncOperation{
+								Revision:    "master",
+								Prune:       true,
+								DryRun:      true,
+								SyncOptions: []string{"a=b"},
+							},
+							InitiatedBy: v1alpha1.OperationInitiator{
+								Username: "admin",
+							},
+						},
 					},
 				},
 			},
@@ -85,6 +96,16 @@ func Test_createUnstructuredApplication(t *testing.T) {
 			assert.Equal(t, "server", destServer)
 			destNs, _, _ := unstructured.NestedString(gotResult.Object, "spec", "destination", "namespace")
 			assert.Equal(t, "namespace", destNs)
+			revision, _, _ := unstructured.NestedString(gotResult.Object, "operation", "sync", "revision")
+			assert.Equal(t, "master", revision)
+			syncOptions, _, _ := unstructured.NestedStringSlice(gotResult.Object, "operation", "sync", "syncOptions")
+			assert.Equal(t, []string{"a=b"}, syncOptions)
+			prune, _, _ := unstructured.NestedBool(gotResult.Object, "operation", "sync", "prune")
+			assert.Equal(t, true, prune)
+			dryRun, _, _ := unstructured.NestedBool(gotResult.Object, "operation", "sync", "dryRun")
+			assert.Equal(t, true, dryRun)
+			initiatedBy, _, _ := unstructured.NestedString(gotResult.Object, "operation", "initiatedBy", "username")
+			assert.Equal(t, "admin", initiatedBy)
 		},
 	}}
 	for _, tt := range tests {
