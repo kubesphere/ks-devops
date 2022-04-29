@@ -63,20 +63,29 @@ func (h *handler) getOrganizations(scm, secret, namespace string, page, size int
 	var c *goscm.Client
 	if c, err = factory.GetClient(); err == nil {
 		var resp *goscm.Response
-
-		if orgs, resp, err = c.Organizations.List(ctx, goscm.ListOptions{Size: size, Page: page}); err == nil {
-			code = resp.Status
-		} else {
-			code = 101
-		}
-
 		if includeUser {
 			var user string
 			if user, err = h.getCurrentUsername(c); err == nil {
-				orgs = append(orgs, &goscm.Organization{
+				orgs = []*goscm.Organization{{
 					Name:   user,
 					Avatar: fmt.Sprintf("https://avatars.githubusercontent.com/%s", user),
-				})
+				}}
+			}
+
+			if size > 1 {
+				size--
+			}
+		} else {
+			orgs = []*goscm.Organization{}
+		}
+
+		if size > 0 {
+			var tmpOrgs []*goscm.Organization
+			if tmpOrgs, resp, err = c.Organizations.List(ctx, goscm.ListOptions{Size: size, Page: page}); err == nil {
+				code = resp.Status
+				orgs = append(orgs, tmpOrgs...)
+			} else {
+				code = 101
 			}
 		}
 	} else {
