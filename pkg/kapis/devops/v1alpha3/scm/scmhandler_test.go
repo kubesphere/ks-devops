@@ -206,6 +206,32 @@ func TestSCMAPI(t *testing.T) {
 			assert.Equal(t, "github", orgs[1].Name)
 		},
 	}, {
+		name: "get the organization list (real size is 1) include current user",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/scms/github/organizations?secret=token&secretNamespace=default&includeUser=true&pageNumber=1&pageSize=1",
+		},
+		prepare: func() {
+			gock.New("https://api.github.com").
+				Get("/user").
+				Reply(200).
+				Type("application/json").
+				SetHeader("X-GitHub-Request-Id", "DD0E:6011:12F21A8:1926790:5A2064E2").
+				SetHeader("X-RateLimit-Limit", "60").
+				SetHeader("X-RateLimit-Remaining", "59").
+				SetHeader("X-RateLimit-Reset", "1512076018").
+				File("testdata/user.json")
+		},
+		verify: func(code int, response []byte, t *testing.T) {
+			assert.Equal(t, 200, code)
+
+			var orgs []organization
+			err := json.Unmarshal(response, &orgs)
+			assert.Nil(t, err)
+			assert.Equal(t, 1, len(orgs))
+			assert.Equal(t, "octocat", orgs[0].Name)
+		},
+	}, {
 		name: "get the organization list include current user",
 		args: args{
 			method: http.MethodGet,

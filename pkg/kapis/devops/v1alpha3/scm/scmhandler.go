@@ -64,16 +64,18 @@ func (h *handler) getOrganizations(scm, secret, namespace string, page, size int
 	if c, err = factory.GetClient(); err == nil {
 		var resp *goscm.Response
 		if includeUser {
-			var user string
-			if user, err = h.getCurrentUsername(c); err == nil {
-				orgs = []*goscm.Organization{{
-					Name:   user,
-					Avatar: fmt.Sprintf("https://avatars.githubusercontent.com/%s", user),
-				}}
-			}
+			if page == 1 {
+				var user string
+				if user, err = h.getCurrentUsername(c); err == nil {
+					orgs = []*goscm.Organization{{
+						Name:   user,
+						Avatar: fmt.Sprintf("https://avatars.githubusercontent.com/%s", user),
+					}}
+				}
 
-			if size > 1 {
-				size--
+				if size >= 1 {
+					size--
+				}
 			}
 		} else {
 			orgs = []*goscm.Organization{}
