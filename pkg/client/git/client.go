@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	goscm "github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
 	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
 	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
@@ -36,6 +37,8 @@ type ClientFactory struct {
 	provider  string
 	secretRef *v1.SecretReference
 	k8sClient ResourceGetter
+
+	Server string
 }
 
 // NewClientFactory creates an instance of the ClientFactory
@@ -54,6 +57,10 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 		client = github.NewDefault()
 	case "gitlab":
 		client = gitlab.NewDefault()
+	case "bitbucket":
+		client = bitbucket.NewDefault()
+	case "bitbucket-server":
+		client, _ = bitbucket.New(c.Server)
 	default:
 		err = errors.New("not support git provider: " + c.provider)
 		return

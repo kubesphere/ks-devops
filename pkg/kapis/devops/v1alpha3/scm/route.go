@@ -32,6 +32,7 @@ var (
 	pathParameterSCM          = restful.PathParameter("scm", "the SCM type")
 	pathParameterOrganization = restful.PathParameter("organization",
 		"The git provider organization. For a GitHub repository address: https://github.com/kubesphere/ks-devops. kubesphere is the organization name")
+	queryParameterServer          = restful.PathParameter("server", "The address of a self-hosted scm provider")
 	pathParameterGitRepository    = restful.PathParameter("gitrepository", "The GitRepository customs resource")
 	queryParameterSecret          = restful.QueryParameter("secret", "the secret name")
 	queryParameterSecretNamespace = restful.QueryParameter("secretNamespace", "the namespace of target secret")
@@ -49,6 +50,7 @@ func registerSCMAPIs(ws *restful.WebService, h *handler) {
 	ws.Route(ws.POST("/scms/{scm}/verify").
 		To(h.verify).
 		Param(pathParameterSCM).
+		Param(queryParameterServer).
 		Param(queryParameterSecret).
 		Param(queryParameterSecretNamespace).
 		Doc("verify the token of different git providers").
@@ -57,6 +59,7 @@ func registerSCMAPIs(ws *restful.WebService, h *handler) {
 	ws.Route(ws.GET("/scms/{scm}/organizations").
 		To(h.listOrganizations).
 		Param(pathParameterSCM).
+		Param(queryParameterServer).
 		Param(queryParameterSecret).
 		Param(queryParameterSecretNamespace).
 		Param(queryParameterIncludeUser.DataType("boolean").DefaultValue("true")).
@@ -66,6 +69,7 @@ func registerSCMAPIs(ws *restful.WebService, h *handler) {
 	ws.Route(ws.GET("/scms/{scm}/organizations/{organization}/repositories").
 		To(h.listRepositories).
 		Param(pathParameterSCM).
+		Param(queryParameterServer).
 		Param(pathParameterOrganization).
 		Param(queryParameterSecret.Required(true)).
 		Param(queryParameterSecretNamespace.Required(true)).
