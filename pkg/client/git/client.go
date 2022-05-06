@@ -55,6 +55,10 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 		provider = "bitbucketserver"
 	}
 
+	if c.Server == "https://api.bitbucket.org" || c.Server == "https://bitbucket.org" {
+		provider = "bitbucketcloud"
+	}
+
 	var token string
 	username := ""
 	if c.secretRef != nil {
@@ -62,10 +66,9 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 			return
 		}
 	}
-	client, err = factory.NewClient(provider, c.Server, token)
-	if client != nil {
-		client.Username = username
-	}
+	client, err = factory.NewClient(provider, c.Server, token, func(scmClient *goscm.Client) {
+		scmClient.Username = username
+	})
 	return
 }
 
