@@ -63,7 +63,9 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 		}
 	}
 	client, err = factory.NewClient(provider, c.Server, token)
-	client.Username = username
+	if client != nil {
+		client.Username = username
+	}
 	return
 }
 
