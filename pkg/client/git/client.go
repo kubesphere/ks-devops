@@ -57,7 +57,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 		client = github.NewDefault()
 	case "gitlab":
 		client = gitlab.NewDefault()
-	case "bitbucket":
+	case "bitbucket", "bitbucket_cloud":
 		client = bitbucket.NewDefault()
 	case "bitbucket-server":
 		client, _ = bitbucket.New(c.Server)
