@@ -56,7 +56,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 	}
 
 	var token string
-	var username string
+	username := ""
 	if c.secretRef != nil {
 		if token, username, err = c.getTokenFromSecret(c.secretRef); err != nil {
 			return
