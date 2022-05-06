@@ -56,16 +56,18 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 	}
 
 	var token string
+	var username string
 	if c.secretRef != nil {
-		if token, err = c.getTokenFromSecret(c.secretRef); err != nil {
+		if token, username, err = c.getTokenFromSecret(c.secretRef); err != nil {
 			return
 		}
 	}
 	client, err = factory.NewClient(provider, c.Server, token)
+	client.Username = username
 	return
 }
 
-func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token string, err error) {
+func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token, username string, err error) {
 	var gitSecret *v1.Secret
 	if gitSecret, err = c.getSecret(secretRef); err != nil {
 		return
@@ -74,6 +76,7 @@ func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token
 	switch gitSecret.Type {
 	case v1.SecretTypeBasicAuth, v1alpha3.SecretTypeBasicAuth:
 		token = string(gitSecret.Data[v1.BasicAuthPasswordKey])
+		username = string(gitSecret.Data[v1.BasicAuthUsernameKey])
 	case v1.SecretTypeOpaque:
 		token = string(gitSecret.Data[v1.ServiceAccountTokenKey])
 	case v1alpha3.SecretTypeSecretText:
