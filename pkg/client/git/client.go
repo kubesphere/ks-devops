@@ -18,12 +18,8 @@ package git
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	goscm "github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
-	"github.com/jenkins-x/go-scm/scm/driver/github"
-	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,18 +47,12 @@ func NewClientFactory(provider string, secretRef *v1.SecretReference, k8sClient 
 
 // GetClient returns the git client with auth
 func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
+	provider := c.provider
 	switch c.provider {
-	case "github":
-		client = github.NewDefault()
-	case "gitlab":
-		client = gitlab.NewDefault()
-	case "bitbucket", "bitbucket_cloud":
-		client = bitbucket.NewDefault()
+	case "bitbucket_cloud":
+		provider = "bitbucketcloud"
 	case "bitbucket-server":
-		client, _ = bitbucket.New(c.Server)
-	default:
-		err = errors.New("not support git provider: " + c.provider)
-		return
+		provider = "bitbucketserver"
 	}
 
 	var token string
@@ -71,7 +61,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 			return
 		}
 	}
-	client, err = factory.NewClient(c.provider, c.Server, token)
+	client, err = factory.NewClient(provider, c.Server, token)
 	return
 }
 
