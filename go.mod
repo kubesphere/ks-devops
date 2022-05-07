@@ -68,4 +68,4 @@ replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 )
 
-replace github.com/jenkins-x/go-scm v1.11.4 => github.com/kubesphere-sigs/go-scm v1.5.1-0.20220507024854-9bf21cf20fb0
+replace github.com/jenkins-x/go-scm v1.11.4 => github.com/kubesphere-sigs/go-scm v1.5.1-0.20220507031329-56e7d91dd4e5
