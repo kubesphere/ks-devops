@@ -22,7 +22,6 @@ import (
 	"github.com/go-logr/logr"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -569,7 +568,7 @@ func TestReconciler_getGitClient(t *testing.T) {
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.NotNil(t, err, i)
-			assert.Equal(t, strings.HasPrefix(err.Error(), "not support git provider: "), true, i)
+			assert.Equal(t, strings.HasPrefix(err.Error(), "Unsupported"), true, i)
 			return true
 		},
 	}, {
@@ -592,7 +591,6 @@ func TestReconciler_getGitClient(t *testing.T) {
 			assert.NotNil(t, err, i)
 			return true
 		},
-		wantClient: github.NewDefault(),
 	}, {
 		name: "github provider",
 		fields: fields{

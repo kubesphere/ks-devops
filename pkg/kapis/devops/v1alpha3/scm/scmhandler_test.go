@@ -101,7 +101,7 @@ func TestSCMAPI(t *testing.T) {
 		name: "verify against a fake scm type",
 		args: args{
 			method: http.MethodPost,
-			uri:    "/scms/fake/verify?secret=token&secretNamespace=default",
+			uri:    "/scms/fake-scm/verify?secret=token&secretNamespace=default",
 		},
 		prepare: func() {},
 		verify: func(code int, response []byte, t *testing.T) {
