@@ -26,6 +26,7 @@ import (
 	"kubesphere.io/devops/pkg/kapis"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 // handler holds all the API handlers of SCM
@@ -95,11 +96,11 @@ func (h *handler) getRepositories(scm, server, org, secret, namespace string, pa
 
 	var c *goscm.Client
 	if c, err = factory.GetClient(); err == nil {
-		// check if the org name is an user account name
+		// check if the org name is a user account name
 		var user string
 		var listRepositoryFunc listRepository
 		if user, err = h.getCurrentUsername(c); err == nil {
-			if user == org {
+			if user == org && !strings.HasPrefix(scm, "bitbucket") {
 				listRepositoryFunc = c.Repositories.ListUser
 			} else {
 				listRepositoryFunc = c.Repositories.ListOrganisation
