@@ -19,7 +19,6 @@ package git
 import (
 	"fmt"
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,6 +92,9 @@ func TestGetClient(t *testing.T) {
 		wantErr    assert.ErrorAssertionFunc
 	}{{
 		name: "not support git provider",
+		fields: fields{
+			provider: "not-support",
+		},
 		args: args{
 			repo: &v1alpha3.GitRepository{
 				Spec: v1alpha3.GitRepositorySpec{
@@ -102,7 +104,7 @@ func TestGetClient(t *testing.T) {
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.NotNil(t, err, i)
-			assert.Equal(t, strings.HasPrefix(err.Error(), "not support git provider: "), true, i)
+			assert.Equal(t, strings.HasPrefix(err.Error(), "Unsupported"), true, i)
 			return true
 		},
 	}, {
@@ -116,7 +118,6 @@ func TestGetClient(t *testing.T) {
 			assert.NotNil(t, err, i)
 			return true
 		},
-		wantClient: github.NewDefault(),
 	}, {
 		name: "github provider",
 		fields: fields{

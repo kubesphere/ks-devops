@@ -26,6 +26,7 @@ import (
 	"kubesphere.io/devops/pkg/kapis"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 // handler holds all the API handlers of SCM
@@ -45,8 +46,9 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	scm := request.PathParameter("scm")
 	secretName := request.QueryParameter("secret")
 	secretNamespace := request.QueryParameter("secretNamespace")
+	server := common.GetQueryParameter(request, queryParameterServer)
 
-	_, code, err := h.getOrganizations(scm, secretName, secretNamespace, 1, 1, false)
+	_, code, err := h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
 
 	response.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	verifyResult := git.VerifyResult(err, code)
@@ -54,10 +56,11 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	_ = response.WriteAsJson(verifyResult)
 }
 
-func (h *handler) getOrganizations(scm, secret, namespace string, page, size int, includeUser bool) (orgs []*goscm.Organization, code int, err error) {
+func (h *handler) getOrganizations(scm, server, secret, namespace string, page, size int, includeUser bool) (orgs []*goscm.Organization, code int, err error) {
 	factory := git.NewClientFactory(scm, &v1.SecretReference{
 		Namespace: namespace, Name: secret,
 	}, h.Client)
+	factory.Server = server
 
 	ctx := context.Background()
 	var c *goscm.Client
@@ -85,18 +88,19 @@ func (h *handler) getOrganizations(scm, secret, namespace string, page, size int
 	return
 }
 
-func (h *handler) getRepositories(scm, org, secret, namespace string, page, size int) (repos []*goscm.Repository, code int, err error) {
+func (h *handler) getRepositories(scm, server, org, secret, namespace string, page, size int) (repos []*goscm.Repository, code int, err error) {
 	factory := git.NewClientFactory(scm, &v1.SecretReference{
 		Namespace: namespace, Name: secret,
 	}, h.Client)
+	factory.Server = server
 
 	var c *goscm.Client
 	if c, err = factory.GetClient(); err == nil {
-		// check if the org name is an user account name
+		// check if the org name is a user account name
 		var user string
 		var listRepositoryFunc listRepository
 		if user, err = h.getCurrentUsername(c); err == nil {
-			if user == org {
+			if user == org && !strings.HasPrefix(scm, "bitbucket") {
 				listRepositoryFunc = c.Repositories.ListUser
 			} else {
 				listRepositoryFunc = c.Repositories.ListOrganisation
@@ -124,10 +128,11 @@ func (h *handler) listOrganizations(req *restful.Request, rsp *restful.Response)
 	scm := req.PathParameter("scm")
 	secretName := req.QueryParameter("secret")
 	secretNamespace := req.QueryParameter("secretNamespace")
+	server := common.GetQueryParameter(req, queryParameterServer)
 	includeUser := common.GetQueryParameter(req, queryParameterIncludeUser) == "true"
 	pageNumber, pageSize := common.GetPageParameters(req)
 
-	orgs, _, err := h.getOrganizations(scm, secretName, secretNamespace, pageNumber, pageSize, includeUser)
+	orgs, _, err := h.getOrganizations(scm, server, secretName, secretNamespace, pageNumber, pageSize, includeUser)
 	if err != nil {
 		kapis.HandleError(req, rsp, err)
 	} else {
@@ -137,12 +142,13 @@ func (h *handler) listOrganizations(req *restful.Request, rsp *restful.Response)
 
 func (h *handler) listRepositories(req *restful.Request, rsp *restful.Response) {
 	scm := req.PathParameter("scm")
+	server := common.GetQueryParameter(req, queryParameterServer)
 	organization := req.PathParameter("organization")
 	secretName := req.QueryParameter("secret")
 	secretNamespace := req.QueryParameter("secretNamespace")
 	pageNumber, pageSize := common.GetPageParameters(req)
 
-	repos, _, err := h.getRepositories(scm, organization, secretName, secretNamespace, pageNumber, pageSize)
+	repos, _, err := h.getRepositories(scm, server, organization, secretName, secretNamespace, pageNumber, pageSize)
 	if err != nil {
 		kapis.HandleError(req, rsp, err)
 	} else {

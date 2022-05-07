@@ -18,17 +18,13 @@ package git
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	goscm "github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/driver/github"
-	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
-	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
+	"github.com/jenkins-x/go-scm/scm/factory"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"net/http"
 )
 
 // ClientFactory responsible for creating a git client
@@ -36,6 +32,8 @@ type ClientFactory struct {
 	provider  string
 	secretRef *v1.SecretReference
 	k8sClient ResourceGetter
+
+	Server string
 }
 
 // NewClientFactory creates an instance of the ClientFactory
@@ -49,36 +47,32 @@ func NewClientFactory(provider string, secretRef *v1.SecretReference, k8sClient 
 
 // GetClient returns the git client with auth
 func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
+	provider := c.provider
 	switch c.provider {
-	case "github":
-		client = github.NewDefault()
-	case "gitlab":
-		client = gitlab.NewDefault()
-	default:
-		err = errors.New("not support git provider: " + c.provider)
-		return
+	case "bitbucket_cloud":
+		provider = "bitbucketcloud"
+	case "bitbucket-server":
+		provider = "bitbucketserver"
 	}
 
+	if c.Server == "https://api.bitbucket.org" || c.Server == "https://bitbucket.org" {
+		provider = "bitbucketcloud"
+	}
+
+	var token string
+	username := ""
 	if c.secretRef != nil {
-		var gitToken string
-		if gitToken, err = c.getTokenFromSecret(c.secretRef); err != nil {
+		if token, username, err = c.getTokenFromSecret(c.secretRef); err != nil {
 			return
 		}
-
-		client.Client = &http.Client{
-			Transport: &oauth2.Transport{
-				Source: oauth2.StaticTokenSource(
-					&goscm.Token{
-						Token: gitToken,
-					},
-				),
-			},
-		}
 	}
+	client, err = factory.NewClient(provider, c.Server, token, func(scmClient *goscm.Client) {
+		scmClient.Username = username
+	})
 	return
 }
 
-func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token string, err error) {
+func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token, username string, err error) {
 	var gitSecret *v1.Secret
 	if gitSecret, err = c.getSecret(secretRef); err != nil {
 		return
@@ -87,6 +81,7 @@ func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token
 	switch gitSecret.Type {
 	case v1.SecretTypeBasicAuth, v1alpha3.SecretTypeBasicAuth:
 		token = string(gitSecret.Data[v1.BasicAuthPasswordKey])
+		username = string(gitSecret.Data[v1.BasicAuthUsernameKey])
 	case v1.SecretTypeOpaque:
 		token = string(gitSecret.Data[v1.ServiceAccountTokenKey])
 	case v1alpha3.SecretTypeSecretText:
