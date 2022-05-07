@@ -67,3 +67,5 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.18.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 )
+
+replace github.com/jenkins-x/go-scm v1.11.4 => github.com/LinuxSuRen/go-scm v1.5.1-0.20220507013824-86907865813b

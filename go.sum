@@ -28,6 +28,8 @@ github.com/Azure/go-autorest/tracing v0.5.0/go.mod h1:r/s2XiOKccPW3HrqB+W0TQzfbt
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/LinuxSuRen/go-scm v1.5.1-0.20220507013824-86907865813b h1:10hj5v7OlSkfCsrtOet8x/Q+JippJQRI216E3jTVDO8=
+github.com/LinuxSuRen/go-scm v1.5.1-0.20220507013824-86907865813b/go.mod h1:GB6XjszezsDOxKTsPoyk4MT/cKw30qkPdJ4tml+MImg=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16/go.mod h1:XB6nPKklQyQ7GC9LdcBEcBl8PF76WugXOPRXwdLnMv0=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
@@ -329,8 +331,6 @@ github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
-github.com/jenkins-x/go-scm v1.11.4 h1:uYEFE4Ty9nmlo8paG4ysSxmO5ii6uj7nCQIsSh+ppXU=
-github.com/jenkins-x/go-scm v1.11.4/go.mod h1:8zDNVAps5UCZ7nDVBCzkIrPaSGN4vHq+1bDrHLk6JJc=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
 github.com/jenkins-zh/jenkins-client v0.0.9 h1:yqWtjLifYWbVxR+wFdExh/cHSQ54i/Cdco2MYkc/5vI=
 github.com/jenkins-zh/jenkins-client v0.0.9/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
