@@ -1,5 +1,8 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
   - name: Search known questions in the Chinese KubeSphere forum
     url: https://kubesphere.com.cn/forum/
     about: KubeSphere DevOps 中文用戶可以在论坛中搜索已知问题
+  - name: Open Source Best Practice
+    url: https://github.com/LinuxSuRen/open-source-best-practice
+    about: 如果您参与开源的经历不多，欢迎阅读这份《参与开源最佳实践》
