@@ -17,6 +17,7 @@ limitations under the License.
 package jenkins
 
 import (
+	"github.com/beevik/etree"
 	"github.com/stretchr/testify/assert"
 	"kubesphere.io/devops/pkg/client/devops/jenkins/internal"
 	"reflect"
@@ -1194,3 +1195,40 @@ var withTrustForBitbucketJobXML = `<?xml version='1.1' encoding='UTF-8'?>
     <scriptPath>Jenkinsfile</scriptPath>
   </factory>
 </org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>`
+
+func Test_getElementTextValueOrEmpty(t *testing.T) {
+	fakeElement := etree.NewElement("parent")
+
+	child1 := etree.NewElement("child-1")
+	child1.SetText("value-1")
+	fakeElement.AddChild(child1)
+
+	type args struct {
+		element *etree.Element
+		name    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{{
+		name: "no target child element",
+		args: args{
+			element: fakeElement,
+			name:    "fake-2",
+		},
+		want: "",
+	}, {
+		name: "have target child element",
+		args: args{
+			element: fakeElement,
+			name:    "child-1",
+		},
+		want: "value-1",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, getElementTextValueOrEmpty(tt.args.element, tt.args.name), "getElementTextValueOrEmpty(%v, %v)", tt.args.element, tt.args.name)
+		})
+	}
+}

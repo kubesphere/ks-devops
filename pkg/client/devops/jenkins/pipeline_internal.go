@@ -138,8 +138,8 @@ func parsePipelineConfigXml(config string) (*devopsv1alpha3.NoScmPipeline, error
 			SelectElement("jenkins.model.BuildDiscarderProperty").
 			SelectElement("strategy")
 		pipeline.Discarder = &devopsv1alpha3.DiscarderProperty{
-			DaysToKeep: strategy.SelectElement("daysToKeep").Text(),
-			NumToKeep:  strategy.SelectElement("numToKeep").Text(),
+			DaysToKeep: getElementTextValueOrEmpty(strategy, "daysToKeep"),
+			NumToKeep:  getElementTextValueOrEmpty(strategy, "numToKeep"),
 		}
 	}
 
@@ -154,7 +154,7 @@ func parsePipelineConfigXml(config string) (*devopsv1alpha3.NoScmPipeline, error
 		triggersEle := triggerProperty.SelectElement("triggers")
 		if timerTrigger := triggersEle.SelectElement("hudson.triggers.TimerTrigger"); timerTrigger != nil {
 			pipeline.TimerTrigger = &devopsv1alpha3.TimerTrigger{
-				Cron: timerTrigger.SelectElement("spec").Text(),
+				Cron: getElementTextValueOrEmpty(timerTrigger, "spec"),
 			}
 		}
 
@@ -207,6 +207,14 @@ func appendParametersToEtree(properties *etree.Element, parameters []devopsv1alp
 	}
 }
 
+func getElementTextValueOrEmpty(element *etree.Element, name string) string {
+	subEle := element.SelectElement(name)
+	if subEle != nil {
+		return subEle.Text()
+	}
+	return ""
+}
+
 func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.ParameterDefinition {
 	var parameters []devopsv1alpha3.ParameterDefinition
 	if parametersProperty := properties.SelectElement("hudson.model.ParametersDefinitionProperty"); parametersProperty != nil {
@@ -215,42 +223,42 @@ func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.Paramete
 			switch param.Tag {
 			case "hudson.model.StringParameterDefinition":
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:         param.SelectElement("name").Text(),
-					Description:  param.SelectElement("description").Text(),
-					DefaultValue: param.SelectElement("defaultValue").Text(),
+					Name:         getElementTextValueOrEmpty(param, "name"),
+					Description:  getElementTextValueOrEmpty(param, "description"),
+					DefaultValue: getElementTextValueOrEmpty(param, "defaultValue"),
 					Type:         ParameterTypeMap["hudson.model.StringParameterDefinition"],
 				})
 			case "hudson.model.BooleanParameterDefinition":
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:         param.SelectElement("name").Text(),
-					Description:  param.SelectElement("description").Text(),
-					DefaultValue: param.SelectElement("defaultValue").Text(),
+					Name:         getElementTextValueOrEmpty(param, "name"),
+					Description:  getElementTextValueOrEmpty(param, "description"),
+					DefaultValue: getElementTextValueOrEmpty(param, "defaultValue"),
 					Type:         ParameterTypeMap["hudson.model.BooleanParameterDefinition"],
 				})
 			case "hudson.model.TextParameterDefinition":
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:         param.SelectElement("name").Text(),
-					Description:  param.SelectElement("description").Text(),
-					DefaultValue: param.SelectElement("defaultValue").Text(),
+					Name:         getElementTextValueOrEmpty(param, "name"),
+					Description:  getElementTextValueOrEmpty(param, "description"),
+					DefaultValue: getElementTextValueOrEmpty(param, "defaultValue"),
 					Type:         ParameterTypeMap["hudson.model.TextParameterDefinition"],
 				})
 			case "hudson.model.FileParameterDefinition":
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:        param.SelectElement("name").Text(),
-					Description: param.SelectElement("description").Text(),
+					Name:        getElementTextValueOrEmpty(param, "name"),
+					Description: getElementTextValueOrEmpty(param, "description"),
 					Type:        ParameterTypeMap["hudson.model.FileParameterDefinition"],
 				})
 			case "hudson.model.PasswordParameterDefinition":
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:         param.SelectElement("name").Text(),
-					Description:  param.SelectElement("description").Text(),
-					DefaultValue: param.SelectElement("name").Text(),
+					Name:         getElementTextValueOrEmpty(param, "name"),
+					Description:  getElementTextValueOrEmpty(param, "description"),
+					DefaultValue: getElementTextValueOrEmpty(param, "name"),
 					Type:         ParameterTypeMap["hudson.model.PasswordParameterDefinition"],
 				})
 			case "hudson.model.ChoiceParameterDefinition":
 				choiceParameter := devopsv1alpha3.ParameterDefinition{
-					Name:        param.SelectElement("name").Text(),
-					Description: param.SelectElement("description").Text(),
+					Name:        getElementTextValueOrEmpty(param, "name"),
+					Description: getElementTextValueOrEmpty(param, "description"),
 					Type:        ParameterTypeMap["hudson.model.ChoiceParameterDefinition"],
 				}
 				choicesEle := param.SelectElement("choices")
@@ -270,8 +278,8 @@ func getParametersfromEtree(properties *etree.Element) []devopsv1alpha3.Paramete
 				parameters = append(parameters, choiceParameter)
 			default:
 				parameters = append(parameters, devopsv1alpha3.ParameterDefinition{
-					Name:         param.SelectElement("name").Text(),
-					Description:  param.SelectElement("description").Text(),
+					Name:         getElementTextValueOrEmpty(param, "name"),
+					Description:  getElementTextValueOrEmpty(param, "description"),
 					DefaultValue: "unknown",
 					Type:         param.Tag,
 				})
@@ -293,8 +301,8 @@ func getMultiBranchJobTriggerfromEtree(properties *etree.Element) *devopsv1alpha
 	var s devopsv1alpha3.MultiBranchJobTrigger
 	triggerProperty := properties.SelectElement("org.jenkinsci.plugins.workflow.multibranch.PipelineTriggerProperty")
 	if triggerProperty != nil {
-		s.CreateActionJobsToTrigger = triggerProperty.SelectElement("createActionJobsToTrigger").Text()
-		s.DeleteActionJobsToTrigger = triggerProperty.SelectElement("deleteActionJobsToTrigger").Text()
+		s.CreateActionJobsToTrigger = getElementTextValueOrEmpty(triggerProperty, "createActionJobsToTrigger")
+		s.DeleteActionJobsToTrigger = getElementTextValueOrEmpty(triggerProperty, "deleteActionJobsToTrigger")
 	}
 	return &s
 }
@@ -422,20 +430,20 @@ func parseMultiBranchPipelineConfigXml(config string) (*devopsv1alpha3.MultiBran
 		}
 	}
 	if project.SelectElement("description") != nil {
-		pipeline.Description = project.SelectElement("description").Text()
+		pipeline.Description = getElementTextValueOrEmpty(project, "description")
 	}
 
 	if discarder := project.SelectElement("orphanedItemStrategy"); discarder != nil {
 		pipeline.Discarder = &devopsv1alpha3.DiscarderProperty{
-			DaysToKeep: discarder.SelectElement("daysToKeep").Text(),
-			NumToKeep:  discarder.SelectElement("numToKeep").Text(),
+			DaysToKeep: getElementTextValueOrEmpty(discarder, "daysToKeep"),
+			NumToKeep:  getElementTextValueOrEmpty(discarder, "numToKeep"),
 		}
 	}
 	if triggers := project.SelectElement("triggers"); triggers != nil {
 		if timerTrigger := triggers.SelectElement(
 			"com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger"); timerTrigger != nil {
 			pipeline.TimerTrigger = &devopsv1alpha3.TimerTrigger{
-				Interval: timerTrigger.SelectElement("interval").Text(),
+				Interval: getElementTextValueOrEmpty(timerTrigger, "interval"),
 			}
 		}
 	}
