@@ -19,6 +19,7 @@ package app
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"math/rand"
 	"strings"
 	"time"
@@ -82,7 +83,7 @@ func (o *jwtOption) preRunE(cmd *cobra.Command, args []string) (err error) {
 
 	// get secret from ConfigMap if it's empty
 	if o.secret == "" {
-		if o.secret = o.getSecret(); o.secret == "" {
+		if o.secret, err = o.getSecret(); o.secret == "" {
 			// generate a new secret if the ConfigMap does not contain it, then update it into ConfigMap
 			o.updateSecret(o.generateSecret())
 		}
@@ -90,18 +91,19 @@ func (o *jwtOption) preRunE(cmd *cobra.Command, args []string) (err error) {
 	return
 }
 
-func (o *jwtOption) getSecret() string {
-	if cm, err := o.configMapUpdater.GetConfigMap(context.TODO(), o.namespace, o.name); err == nil {
+func (o *jwtOption) getSecret() (secret string, err error) {
+	var cm *v1.ConfigMap
+	if cm, err = o.configMapUpdater.GetConfigMap(context.TODO(), o.namespace, o.name); err == nil {
 		if data, ok := cm.Data[config.DefaultConfigurationFileName]; ok {
 			dataMap := make(map[string]map[string]string, 0)
-			if err := yaml.Unmarshal([]byte(data), dataMap); err == nil {
+			if err = yaml.Unmarshal([]byte(data), dataMap); err == nil {
 				if _, ok := dataMap["authentication"]; ok {
-					return dataMap["authentication"]["jwtSecret"]
+					secret = dataMap["authentication"]["jwtSecret"]
 				}
 			}
 		}
 	}
-	return ""
+	return
 }
 
 func (o *jwtOption) generateSecret() string {
