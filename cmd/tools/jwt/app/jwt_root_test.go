@@ -127,7 +127,7 @@ var _ = Describe("", func() {
 			cmd := NewCmd(factory)
 			cmd.SetOut(bytes.NewBuffer([]byte{}))
 			_, err := cmd.ExecuteC()
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(BeNil())
 		})
 	})
 
@@ -159,7 +159,7 @@ var _ = Describe("", func() {
 			_, err := cmd.ExecuteC()
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("cannot find ConfigMap"))
+			Expect(err.Error()).To(ContainSubstring("not found"))
 		})
 
 		It("no kubesphere.yaml found", func() {
@@ -203,7 +203,7 @@ var _ = Describe("", func() {
 			cmd.SetArgs([]string{"jwt", "--output", "configmap"})
 			_, err := cmd.ExecuteC()
 
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 
 			// make sure the original ConfigMap data has not changed
 			opt := jwtOption{
