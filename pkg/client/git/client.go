@@ -52,7 +52,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 	case "bitbucket_cloud":
 		provider = "bitbucketcloud"
 	case "bitbucket-server":
-		provider = "bitbucketserver"
+		provider = "bitbucket"
 	}
 
 	if c.Server == "https://api.bitbucket.org" || c.Server == "https://bitbucket.org" {
