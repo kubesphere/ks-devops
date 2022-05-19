@@ -8,6 +8,7 @@ APISERVER_IMG ?= ${DOCKER_REPO}/devops-apiserver:$(VERSION)-$(COMMIT)
 TOOLS_IMG ?= ${DOCKER_REPO}/devops-tools:$(VERSION)-$(COMMIT)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+CONTAINER_CLI?=docker
 
 GV="devops.kubesphere.io:v1alpha1 devops.kubesphere.io:v1alpha3 gitops.kubesphere.io:v1alpha1"
 
@@ -83,11 +84,11 @@ generate-listers:
 
 # Build the docker image of controller-manager
 docker-build-controller:
-	docker build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-controller:
-	docker push ${CONTROLLER_IMG}
+	${CONTAINER_CLI} push ${CONTROLLER_IMG}
 
 # Build and push the docker image
 docker-build-push-controller: docker-build-controller docker-push-controller
@@ -96,22 +97,22 @@ run-apiserver:
 	go run cmd/apiserver/apiserver.go
 # Build the docker image of apiserver
 docker-build-apiserver:
-	docker build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-apiserver:
-	docker push ${APISERVER_IMG}
+	${CONTAINER_CLI} push ${APISERVER_IMG}
 
 # Build and push the docker image
 docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver
 
 # Build the docker image of apiserver
 docker-build-tools:
-	docker build . -f config/dockerfiles/tools/Dockerfile -t ${TOOLS_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/tools/Dockerfile -t ${TOOLS_IMG}
 
 # Push the docker image of controller-manager
 docker-push-tools:
-	docker push ${TOOLS_IMG}
+	${CONTAINER_CLI} push ${TOOLS_IMG}
 
 # Build and push the docker image
 docker-build-push-tools: docker-build-tools docker-push-tools
