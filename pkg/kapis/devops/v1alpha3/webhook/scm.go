@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
 	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -52,6 +53,10 @@ func getSCMClient(request *http.Request) *scm.Client {
 	if request.Header.Get("X-GitHub-Event") != "" {
 		return github.NewDefault()
 	}
+
+	if strings.HasPrefix(request.Header.Get("User-Agent"), "Bitbucket-Webhooks") {
+		return bitbucket.NewDefault()
+	}
 	return nil
 }
 
@@ -65,7 +70,7 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 	webhook, err := client.Webhooks.Parse(request.Request, func(webhook scm.Webhook) (string, error) {
 		return "", nil
 	})
-	fmt.Println(err, webhook)
+
 	if err != nil {
 		response.Write([]byte(err.Error()))
 		return
