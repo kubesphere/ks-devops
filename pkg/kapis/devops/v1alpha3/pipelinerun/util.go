@@ -19,6 +19,7 @@ package pipelinerun
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,6 +69,8 @@ func convertParameters(payload *devops.RunPayload) []v1alpha3.Parameter {
 
 // CreateScm creates SCM for multi-branch Pipeline.
 func CreateScm(ps *v1alpha3.PipelineSpec, branch string) (*v1alpha3.SCM, error) {
+	branch = strings.TrimPrefix(branch, "refs/heads/")
+
 	var scm *v1alpha3.SCM
 	if ps.Type == v1alpha3.MultiBranchPipelineType {
 		if branch == "" {

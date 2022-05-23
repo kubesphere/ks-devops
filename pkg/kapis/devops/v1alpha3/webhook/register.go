@@ -31,4 +31,8 @@ func RegisterWebhooks(genericClient client.Client, ws *restful.WebService) {
 		To(webhookHandler.ReceiveEventsFromJenkins).
 		Doc("Webhook for receiving events from Jenkins").
 		Returns(http.StatusOK, api.StatusOK, nil))
+
+	scmHandler := NewSCMHandler(genericClient)
+	ws.Route(ws.POST("/webhooks/scm").
+		To(scmHandler.scmWebhook))
 }

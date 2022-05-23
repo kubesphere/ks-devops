@@ -27,13 +27,13 @@ const PipelineFinalizerName = "pipeline.finalizers.kubesphere.io"
 
 const (
 	ResourceKindPipeline      = "Pipeline"
-	ResourceSingularPipeline  = "pipeline"
 	ResourcePluralPipeline    = "pipelines"
 	PipelinePrefix            = "pipeline.devops.kubesphere.io/"
 	PipelineSpecHash          = PipelinePrefix + "spechash"
 	PipelineSyncStatusAnnoKey = PipelinePrefix + "syncstatus"
 	PipelineSyncTimeAnnoKey   = PipelinePrefix + "synctime"
 	PipelineSyncMsgAnnoKey    = PipelinePrefix + "syncmsg"
+	PipelineLastChanges       = PipelinePrefix + "last-changes"
 	// PipelineJenkinsMetadataAnnoKey is the annotation key of Jenkins Pipeline data.
 	PipelineJenkinsMetadataAnnoKey = PipelinePrefix + "jenkins-metadata"
 	// PipelineJenkinsBranchesAnnoKey is the annotation key of Jenkins Pipeline branches.
