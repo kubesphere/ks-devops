@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/kapis/doc"
 	gitops "kubesphere.io/devops/pkg/kapis/gitops/v1alpha1"
@@ -141,6 +142,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 	}
 
 	var wss []*restful.WebService
+	tokenIssue := getTokenIssue(s.Config)
 
 	v1alpha2WSS, err := devopsv1alpha2.AddToContainer(s.container,
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
@@ -153,7 +155,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 		jenkinsCore)
 	utilruntime.Must(err)
 	wss = append(wss, v1alpha2WSS...)
-	wss = append(wss, devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client)...)
+	wss = append(wss, devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client, tokenIssue, jenkinsCore)...)
 	wss = append(wss, oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
@@ -163,6 +165,10 @@ func (s *APIServer) installKubeSphereAPIs() {
 		GenericClient: s.Client,
 	}, s.Config.ArgoCDOption)...)
 	doc.AddSwaggerService(wss, s.container)
+}
+
+func getTokenIssue(config *apiserverconfig.Config) token.Issuer {
+	return token.NewTokenIssuer(config.AuthenticationOptions.JwtSecret, config.AuthenticationOptions.MaximumClockSkew)
 }
 
 func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {

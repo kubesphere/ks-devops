@@ -17,6 +17,8 @@ limitations under the License.
 package webhook
 
 import (
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -25,14 +27,14 @@ import (
 )
 
 // RegisterWebhooks registers all webhooks into web service.
-func RegisterWebhooks(genericClient client.Client, ws *restful.WebService) {
+func RegisterWebhooks(genericClient client.Client, ws *restful.WebService, issue token.Issuer, jenkins core.JenkinsCore) {
 	webhookHandler := NewHandler(genericClient)
 	ws.Route(ws.POST("/webhooks/jenkins").
 		To(webhookHandler.ReceiveEventsFromJenkins).
 		Doc("Webhook for receiving events from Jenkins").
 		Returns(http.StatusOK, api.StatusOK, nil))
 
-	scmHandler := NewSCMHandler(genericClient)
+	scmHandler := NewSCMHandler(genericClient, issue, jenkins)
 	ws.Route(ws.POST("/webhooks/scm").
 		To(scmHandler.scmWebhook))
 }
