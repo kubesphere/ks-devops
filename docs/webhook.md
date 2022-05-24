@@ -5,7 +5,19 @@ There are several ways to trigger Pipeline via [webhook](https://en.wikipedia.or
 
 ## SCM Webhook
 
-TODO
+Supported SCM providers:
+* GitHub
+* Gitlab
+* Bitbucket
+
+The webhook address is:
+```
+http://ip:port/v1alpha3/webhooks/scm
+```
+
+### Using webhook locally
+
+It's also possible to use webhook feature locally. You just need to start a proyx with [ngrok](https://ngrok.com/).
 
 ## Automatic webhook
 

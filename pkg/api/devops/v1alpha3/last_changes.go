@@ -22,21 +22,25 @@ import "encoding/json"
 // LastChanges represents a set of last SCM changes
 type LastChanges map[string]string
 
+// GetLastChanges returns the last changes
 func GetLastChanges(jsonText string) (lastChange LastChanges, err error) {
 	lastChange = map[string]string{}
-	err = json.Unmarshal([]byte(jsonText), lastChange)
+	err = json.Unmarshal([]byte(jsonText), &lastChange)
 	return
 }
 
+// Update updates hash by ref
 func (l LastChanges) Update(ref, hash string) LastChanges {
 	l[ref] = hash
 	return l
 }
 
+// LastHash return last hash value
 func (l LastChanges) LastHash(ref string) (hash string) {
 	return l[ref]
 }
 
+// String returns the string JSON format
 func (l LastChanges) String() string {
 	data, _ := json.Marshal(l)
 	return string(data)

@@ -182,6 +182,18 @@ func TestJenkinsWebhook(t *testing.T) {
 }
 
 func TestSCMWebhook(t *testing.T) {
+	defaultPipeline := &v1alpha3.Pipeline{}
+	defaultPipeline.SetName("fake")
+	defaultPipeline.SetClusterName("default")
+	defaultPipeline.Spec.MultiBranchPipeline = &v1alpha3.MultiBranchPipeline{
+		GitSource: &v1alpha3.GitSource{
+			Url: "https://gitlab.com/linuxsuren/test",
+		},
+	}
+	defaultPipeline.SetAnnotations(map[string]string{
+		v1alpha3.PipelineJenkinsBranchesAnnoKey: `[{"name":"master"}]`,
+	})
+
 	type args struct {
 		method     string
 		uri        string
@@ -204,7 +216,7 @@ func TestSCMWebhook(t *testing.T) {
 			assert.Equal(t, "unknown SCM type", body)
 		},
 	}, {
-		name: "gitlab webhook",
+		name: "gitlab webhook with no pipeline matched",
 		args: args{
 			method:     http.MethodPost,
 			uri:        "/webhooks/scm",
@@ -215,7 +227,21 @@ func TestSCMWebhook(t *testing.T) {
 			},
 		},
 		assertion: func(t *testing.T, c client.Client, body string) {
-			assert.Equal(t, "unknown SCM type", body)
+			assert.Equal(t, "no pipeline matched", body)
+		},
+	}, {
+		name: "gitlab webhook",
+		args: args{
+			method:     http.MethodPost,
+			uri:        "/webhooks/scm",
+			initObject: []runtime.Object{defaultPipeline.DeepCopy()},
+			bodyJSON:   gitlabWebhookBody,
+			header: map[string]string{
+				"X-Gitlab-Event": "Push Hook",
+			},
+		},
+		assertion: func(t *testing.T, c client.Client, body string) {
+			assert.Equal(t, "ok", body)
 		},
 	}}
 	for _, tt := range tests {

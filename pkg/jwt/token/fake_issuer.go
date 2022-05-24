@@ -29,6 +29,7 @@ type FakeIssuer struct {
 	VerifyError  error
 }
 
+// IssueTo is a fake function
 func (f *FakeIssuer) IssueTo(user user.Info, tokenType TokenType, expiresIn time.Duration) (string, error) {
 	return f.Token, f.IssueToError
 }

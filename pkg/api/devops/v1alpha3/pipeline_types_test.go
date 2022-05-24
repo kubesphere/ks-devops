@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -58,6 +59,68 @@ func TestPipeline_IsMultiBranch(t *testing.T) {
 			if got := tt.pipeline.IsMultiBranch(); got != tt.want {
 				t.Errorf("Pipeline.IsMultiBranch() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestMultiBranchPipeline_GetGitURL(t *testing.T) {
+	type fields struct {
+		SourceType            string
+		GitSource             *GitSource
+		GitHubSource          *GithubSource
+		GitlabSource          *GitlabSource
+		BitbucketServerSource *BitbucketServerSource
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{{
+		name: "github",
+		fields: fields{
+			SourceType:   SourceTypeGithub,
+			GitHubSource: &GithubSource{Owner: "linuxsuren", Repo: "tools"},
+		},
+		want: "https://github.com/linuxsuren/tools",
+	}, {
+		name: "gitlab",
+		fields: fields{
+			SourceType:   SourceTypeGitlab,
+			GitlabSource: &GitlabSource{Owner: "linuxsuren", Repo: "tools"},
+		},
+		want: "https://gitlab.com/linuxsuren/tools",
+	}, {
+		name: "git",
+		fields: fields{
+			SourceType: SourceTypeGit,
+			GitSource:  &GitSource{Url: "https://fake.com"},
+		},
+		want: "https://fake.com",
+	}, {
+		name: "bitbucket",
+		fields: fields{
+			SourceType:            SourceTypeBitbucket,
+			BitbucketServerSource: &BitbucketServerSource{Owner: "linuxsuren", Repo: "tools"},
+		},
+		want: "https://bitbucket.org/linuxsuren/tools",
+	}, {
+		name: "fake",
+		fields: fields{
+			SourceType: "fake",
+			GitSource:  &GitSource{Url: "https://fake.com"},
+		},
+		want: "",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &MultiBranchPipeline{
+				SourceType:            tt.fields.SourceType,
+				GitSource:             tt.fields.GitSource,
+				GitHubSource:          tt.fields.GitHubSource,
+				GitlabSource:          tt.fields.GitlabSource,
+				BitbucketServerSource: tt.fields.BitbucketServerSource,
+			}
+			assert.Equalf(t, tt.want, b.GetGitURL(), "GetGitURL()")
 		})
 	}
 }

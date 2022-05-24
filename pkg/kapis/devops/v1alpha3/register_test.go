@@ -18,6 +18,8 @@ package v1alpha3
 
 import (
 	"context"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -58,7 +60,7 @@ func TestAPIsExist(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake", Namespace: "fake",
 		},
-	}))
+	}), &token.FakeIssuer{}, core.JenkinsCore{})
 
 	type args struct {
 		method string
@@ -185,7 +187,7 @@ func TestGetDevOpsProject(t *testing.T) {
 					constants.WorkspaceLabelKey: "ws",
 				},
 			},
-		})), fake.NewFakeClientWithScheme(schema))
+		})), fake.NewFakeClientWithScheme(schema), &token.FakeIssuer{}, core.JenkinsCore{})
 
 	type args struct {
 		method string

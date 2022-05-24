@@ -75,7 +75,7 @@ func getSCMClient(request *http.Request) *scm.Client {
 func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Response) {
 	scmClient := getSCMClient(request.Request)
 	if scmClient == nil {
-		response.Write([]byte("unknown SCM type"))
+		_, _ = response.Write([]byte("unknown SCM type"))
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 		return "", nil
 	})
 	if err != nil {
-		response.Write([]byte(err.Error()))
+		_, _ = response.Write([]byte(err.Error()))
 		return
 	}
 
@@ -96,29 +96,37 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 
 		pipelineList := &v1alpha3.PipelineList{}
 		if err = h.List(ctx, pipelineList); err == nil {
+			found := false
 			for i := range pipelineList.Items {
 				pipeline := pipelineList.Items[i]
 
 				if pipeline.Spec.MultiBranchPipeline != nil {
-					if pipeline.Spec.MultiBranchPipeline.GitSource != nil {
-						if gitRepoMatch(pipeline.Spec.MultiBranchPipeline.GitSource.Url, link) {
+					gitURL := pipeline.Spec.MultiBranchPipeline.GetGitURL()
+					if gitURL != "" {
+						if gitRepoMatch(gitURL, link) {
 							h.createPipelineRun(pipeline, pushHook)
+							found = true
 							break
 						}
 					}
 				}
 			}
+
+			if !found {
+				_, _ = response.Write([]byte("no pipeline matched"))
+				return
+			}
 		}
 	}
 
-	response.Write([]byte("ok"))
+	_, _ = response.Write([]byte("ok"))
 }
 
 func (h *SCMHandler) createPipelineRun(pipeline v1alpha3.Pipeline, hook *scm.PushHook) {
 	branch := strings.TrimPrefix(hook.Ref, "refs/heads/")
 	if !branchContains(pipeline, branch) {
 		if pipeline.IsMultiBranch() {
-			scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
+			_ = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
 		}
 		return
 	}
