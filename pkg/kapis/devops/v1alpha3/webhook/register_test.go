@@ -184,14 +184,10 @@ func TestJenkinsWebhook(t *testing.T) {
 func TestSCMWebhook(t *testing.T) {
 	defaultPipeline := &v1alpha3.Pipeline{}
 	defaultPipeline.SetName("fake")
-	defaultPipeline.SetClusterName("default")
-	defaultPipeline.Spec.MultiBranchPipeline = &v1alpha3.MultiBranchPipeline{
-		GitSource: &v1alpha3.GitSource{
-			Url: "https://gitlab.com/linuxsuren/test",
-		},
-	}
+	defaultPipeline.SetNamespace("default")
 	defaultPipeline.SetAnnotations(map[string]string{
-		v1alpha3.PipelineJenkinsBranchesAnnoKey: `[{"name":"master"}]`,
+		scmRefAnnotationKey: `["master"]`,
+		scmAnnotationKey:    "https://gitlab.com/linuxsuren/test",
 	})
 
 	type args struct {

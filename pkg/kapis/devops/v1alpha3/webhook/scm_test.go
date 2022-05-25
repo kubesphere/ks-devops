@@ -22,6 +22,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"net/http"
 	"testing"
 )
@@ -79,6 +81,56 @@ func Test_getSCMClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, getSCMClient(tt.args.request()), "getSCMClient(%v)", tt.args.request())
+		})
+	}
+}
+
+func Test_branchMatch(t *testing.T) {
+	type args struct {
+		pipeline v1alpha3.Pipeline
+		branch   string
+	}
+	tests := []struct {
+		name   string
+		args   args
+		wantOk bool
+	}{{
+		name: "no any annotations",
+		args: args{
+			pipeline: v1alpha3.Pipeline{},
+			branch:   "master",
+		},
+		wantOk: true,
+	}, {
+		name: "branch name equal literally",
+		args: args{
+			pipeline: v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						scmRefAnnotationKey: `["master", "good"]`,
+					},
+				},
+			},
+			branch: "master",
+		},
+		wantOk: true,
+	}, {
+		name: "branch name equal in regex",
+		args: args{
+			pipeline: v1alpha3.Pipeline{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						scmRefAnnotationKey: `["feat-.*", "good"]`,
+					},
+				},
+			},
+			branch: "feat-login",
+		},
+		wantOk: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.wantOk, branchMatch(tt.args.pipeline, tt.args.branch), "branchMatch(%v, %v)", tt.args.pipeline, tt.args.branch)
 		})
 	}
 }

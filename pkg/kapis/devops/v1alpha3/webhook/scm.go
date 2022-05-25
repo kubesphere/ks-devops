@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/jenkins-x/go-scm/scm"
@@ -31,8 +32,8 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
-	models "kubesphere.io/devops/pkg/models/pipeline"
 	"net/http"
+	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
@@ -40,6 +41,8 @@ import (
 
 // tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
 const tokenExpireIn time.Duration = 5 * time.Minute
+const scmAnnotationKey = "scm.devops.kubesphere.io"
+const scmRefAnnotationKey = "scm.devops.kubesphere.io/ref"
 
 // SCMHandler handles requests from webhooks.
 type SCMHandler struct {
@@ -88,6 +91,7 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 	}
 
 	ctx := context.TODO()
+	found := false
 	if webhook.Kind() == scm.WebhookKindPush {
 		repo := webhook.Repository()
 		link := repo.Link
@@ -96,51 +100,47 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 
 		pipelineList := &v1alpha3.PipelineList{}
 		if err = h.List(ctx, pipelineList); err == nil {
-			found := false
 			for i := range pipelineList.Items {
 				pipeline := pipelineList.Items[i]
+				if !branchMatch(pipeline, pushHook.Ref) {
+					continue
+				}
+				found = true
 
-				if pipeline.Spec.MultiBranchPipeline != nil {
+				if pipeline.IsMultiBranch() {
 					gitURL := pipeline.Spec.MultiBranchPipeline.GetGitURL()
-					if gitURL != "" {
-						if gitRepoMatch(gitURL, link) {
-							h.createPipelineRun(pipeline, pushHook)
-							found = true
-							break
-						}
+					if gitURL != "" && gitRepoMatch(gitURL, link) {
+						err = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
+					}
+				} else {
+					gitURL := pipeline.GetAnnotations()[scmAnnotationKey]
+					if gitRepoMatch(gitURL, link) {
+						err = h.createPipelineRun(pipeline, pushHook)
 					}
 				}
 			}
-
-			if !found {
-				_, _ = response.Write([]byte("no pipeline matched"))
-				return
-			}
 		}
 	}
 
-	_, _ = response.Write([]byte("ok"))
+	if !found {
+		_ = response.WriteErrorString(http.StatusOK, "no pipeline matched")
+		return
+	} else if err != nil {
+		_ = response.WriteError(http.StatusBadRequest, err)
+	} else {
+		_, _ = response.Write([]byte("ok"))
+	}
 }
 
-func (h *SCMHandler) createPipelineRun(pipeline v1alpha3.Pipeline, hook *scm.PushHook) {
+func (h *SCMHandler) createPipelineRun(pipeline v1alpha3.Pipeline, hook *scm.PushHook) (err error) {
 	branch := strings.TrimPrefix(hook.Ref, "refs/heads/")
-	if !branchContains(pipeline, branch) {
-		if pipeline.IsMultiBranch() {
-			_ = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
-		}
-		return
+
+	var scmObj *v1alpha3.SCM
+	if scmObj, err = pipelinerun.CreateScm(&pipeline.Spec, branch); err == nil {
+		run := pipelinerun.CreatePipelineRun(&pipeline, &devops.RunPayload{}, scmObj)
+		err = h.Create(context.Background(), run)
 	}
-
-	if noChanges(pipeline, branch) {
-		return
-	}
-
-	scm, err := pipelinerun.CreateScm(&pipeline.Spec, branch)
-	fmt.Println(err)
-
-	run := pipelinerun.CreatePipelineRun(&pipeline, &devops.RunPayload{}, scm)
-	err = h.Create(context.Background(), run)
-	fmt.Println(err)
+	return
 }
 
 func scanJenkinsMultiBranchPipeline(pipeline v1alpha3.Pipeline, jenkins core.JenkinsCore, issue token.Issuer) (err error) {
@@ -161,17 +161,25 @@ func scanJenkinsMultiBranchPipeline(pipeline v1alpha3.Pipeline, jenkins core.Jen
 	return
 }
 
-func branchContains(pipeline v1alpha3.Pipeline, branch string) (ok bool) {
-	branchesJSONText := pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]
-	branches, err := models.GetBranchSlice(branchesJSONText)
-	if err == nil {
-		ok, _ = branches.SearchByName(branch)
+// branchMatch matches the branch rules from annotation.
+// It supports regexp pattern, or returns true if no annotation found
+func branchMatch(pipeline v1alpha3.Pipeline, branch string) (ok bool) {
+	branchRules := pipeline.Annotations[scmRefAnnotationKey]
+	if branchRules == "" {
+		ok = true
+		return
+	}
+	var branchSlice []string
+	if err := json.Unmarshal([]byte(branchRules), &branchSlice); err == nil {
+		for i := range branchSlice {
+			rule := branchSlice[i]
+
+			if ok, _ = regexp.Match(rule, []byte(branch)); ok {
+				return
+			}
+		}
 	}
 	return
-}
-
-func noChanges(pipeline v1alpha3.Pipeline, branch string) bool {
-	return false
 }
 
 // gitRepoMatch if the source matches target
