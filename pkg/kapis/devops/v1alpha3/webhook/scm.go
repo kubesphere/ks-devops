@@ -43,6 +43,7 @@ import (
 const tokenExpireIn time.Duration = 5 * time.Minute
 const scmAnnotationKey = "scm.devops.kubesphere.io"
 const scmRefAnnotationKey = "scm.devops.kubesphere.io/ref"
+const triggerAnnotationKey = "devops.kubesphere.io/trigger"
 
 // SCMHandler handles requests from webhooks.
 type SCMHandler struct {
@@ -138,6 +139,7 @@ func (h *SCMHandler) createPipelineRun(pipeline v1alpha3.Pipeline, hook *scm.Pus
 	var scmObj *v1alpha3.SCM
 	if scmObj, err = pipelinerun.CreateScm(&pipeline.Spec, branch); err == nil {
 		run := pipelinerun.CreatePipelineRun(&pipeline, &devops.RunPayload{}, scmObj)
+		run.Annotations[triggerAnnotationKey] = "webhook"
 		err = h.Create(context.Background(), run)
 	}
 	return
