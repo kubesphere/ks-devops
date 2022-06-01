@@ -1,0 +1,20 @@
+# permissions for end users to view steptemplates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: steptemplate-viewer-role
+rules:
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - steptemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
+  - steptemplates/status
+  verbs:
+  - get
