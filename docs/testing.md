@@ -17,3 +17,12 @@ do
   ks pip create --ws simple --project test --template simple --name $(names)
 done
 ```
+then, run all the Pipelines
+
+```shell
+
+for a in $(ks get pipeline -n testkjhx9 -o custom-columns=Name:metadata.name)
+do
+  ks pip run  -n testkjhx9 -p  $a -b
+done
+```
