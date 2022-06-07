@@ -28,8 +28,10 @@ type handler struct {
 
 var (
 	// ClusterStepTemplate is path parameter definition of clustersteptemplate.
-	ClusterStepTemplate           = restful.PathParameter("clustersteptemplate", "The name of clustersteptemplate")
-	SecretNameQueryParameter      = restful.QueryParameter("secret", "The name of a secret")
+	ClusterStepTemplate = restful.PathParameter("clustersteptemplate", "The name of clustersteptemplate")
+	// SecretNameQueryParameter is a query parameter of secret
+	SecretNameQueryParameter = restful.QueryParameter("secret", "The name of a secret")
+	// SecretNamespaceQueryParameter is a query parameter of the secret namespace
 	SecretNamespaceQueryParameter = restful.QueryParameter("secretNamespace", "The namespace of a secret")
 )
 

@@ -29,12 +29,14 @@ type StepTemplateSpec struct {
 	Parameters []ParameterInStep `json:"parameters,omitempty"`
 }
 
+// SecretInStep is the secret which used in a step
 type SecretInStep struct {
 	Type    string            `json:"type,omitempty"`
 	Wrap    bool              `json:"wrap,omitempty"`
 	Mapping map[string]string `json:"mapping,omitempty"`
 }
 
+// ParameterInStep is the parameter which used in a step
 type ParameterInStep struct {
 	Name         string `json:"name"`
 	Required     bool   `json:"required,omitempty"`
