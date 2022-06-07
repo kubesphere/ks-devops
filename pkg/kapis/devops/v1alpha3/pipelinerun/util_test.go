@@ -18,6 +18,7 @@ package pipelinerun
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 
@@ -214,4 +215,15 @@ func Test_convertParameters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreatePipelineRun(t *testing.T) {
+	pipeline := &v1alpha3.Pipeline{}
+	pipeline.SetName("name")
+	pipeline.Namespace = "namespace"
+	pipelineRun := CreatePipelineRun(pipeline, nil, nil)
+
+	assert.Equal(t, pipelineRun.GenerateName, pipeline.Name+"-")
+	assert.Equal(t, pipelineRun.Namespace, pipeline.Namespace)
+	assert.NotNil(t, pipelineRun.Annotations)
 }

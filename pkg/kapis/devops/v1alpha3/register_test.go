@@ -18,6 +18,8 @@ package v1alpha3
 
 import (
 	"context"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,23 +46,21 @@ func TestAPIsExist(t *testing.T) {
 	assert.Nil(t, err)
 
 	container := restful.NewContainer()
-	AddToContainer(container, fakedevops.NewFakeDevops(nil),
-		k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(&v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "fake", Namespace: "fake",
-			},
-		}), nil, nil, "", nil,
-			fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "fake"},
-				Status:     v1alpha3.DevOpsProjectStatus{AdminNamespace: "fake"},
-			}, &v1alpha3.Pipeline{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "fake", Name: "fake"},
-			})),
-		fake.NewFakeClientWithScheme(schema, &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "fake", Namespace: "fake",
-			},
-		}))
+	AddToContainer(container, fakedevops.NewFakeDevops(nil), k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(&v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake", Namespace: "fake",
+		},
+	}), nil, nil, "", nil,
+		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+			ObjectMeta: metav1.ObjectMeta{Name: "fake"},
+			Status:     v1alpha3.DevOpsProjectStatus{AdminNamespace: "fake"},
+		}, &v1alpha3.Pipeline{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "fake", Name: "fake"},
+		})), fake.NewFakeClientWithScheme(schema, &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake", Namespace: "fake",
+		},
+	}), &token.FakeIssuer{}, core.JenkinsCore{})
 
 	type args struct {
 		method string
@@ -178,18 +178,16 @@ func TestGetDevOpsProject(t *testing.T) {
 	assert.Nil(t, err)
 	container := restful.NewContainer()
 
-	AddToContainer(container, fakedevops.NewFakeDevops(nil),
-		k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(), nil, nil, "", nil,
-			fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "fake",
-					Name:         "generated-fake",
-					Labels: map[string]string{
-						constants.WorkspaceLabelKey: "ws",
-					},
+	AddToContainer(container, fakedevops.NewFakeDevops(nil), k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(), nil, nil, "", nil,
+		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "fake",
+				Name:         "generated-fake",
+				Labels: map[string]string{
+					constants.WorkspaceLabelKey: "ws",
 				},
-			})),
-		fake.NewFakeClientWithScheme(schema))
+			},
+		})), fake.NewFakeClientWithScheme(schema), &token.FakeIssuer{}, core.JenkinsCore{})
 
 	type args struct {
 		method string

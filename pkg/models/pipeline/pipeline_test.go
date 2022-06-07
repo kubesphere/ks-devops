@@ -84,3 +84,36 @@ func TestBranchSlice_SearchByName(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBranchSlice(t *testing.T) {
+	type args struct {
+		jsonText string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantBranches BranchSlice
+		wantErr      bool
+	}{{
+		name: "normal",
+		args: args{
+			jsonText: `[{"name":"master"}]`,
+		},
+		wantErr: false,
+		wantBranches: []Branch{{
+			Name: "master",
+		}},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBranches, err := GetBranchSlice(tt.args.jsonText)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetBranchSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotBranches, tt.wantBranches) {
+				t.Errorf("GetBranchSlice() gotBranches = %v, want %v", gotBranches, tt.wantBranches)
+			}
+		})
+	}
+}
