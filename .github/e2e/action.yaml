@@ -13,7 +13,7 @@ runs:
       uses: ./.github/build-for-e2e
 
     - name: Run E2E testing
-      uses: apache/skywalking-infra-e2e@1.1.0
+      uses: apache/skywalking-infra-e2e@v1.1.0
       env:
         K8S_VERSION: ${{ matrix.k8sVersion }}
       with:
