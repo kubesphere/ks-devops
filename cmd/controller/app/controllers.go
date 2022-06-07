@@ -74,7 +74,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 	}).SetupWithManager(mgr); err != nil {
 		return err
 	}
-	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, jenkinsCore, s3Client, s)
+	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s)
 
 	// Add all controllers into manager.
 	for name, ok := range s.FeatureOptions.GetControllers() {
@@ -93,8 +93,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 }
 
 func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
-	devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface,
-	s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
+	devopsClient devops.Interface, s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
 
 	argocdReconciler := &argocd.Reconciler{
 		Client:        mgr.GetClient(),

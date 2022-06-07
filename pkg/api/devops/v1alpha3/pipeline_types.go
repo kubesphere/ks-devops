@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,13 +28,13 @@ const PipelineFinalizerName = "pipeline.finalizers.kubesphere.io"
 
 const (
 	ResourceKindPipeline      = "Pipeline"
-	ResourceSingularPipeline  = "pipeline"
 	ResourcePluralPipeline    = "pipelines"
 	PipelinePrefix            = "pipeline.devops.kubesphere.io/"
 	PipelineSpecHash          = PipelinePrefix + "spechash"
 	PipelineSyncStatusAnnoKey = PipelinePrefix + "syncstatus"
 	PipelineSyncTimeAnnoKey   = PipelinePrefix + "synctime"
 	PipelineSyncMsgAnnoKey    = PipelinePrefix + "syncmsg"
+	PipelineLastChanges       = PipelinePrefix + "last-changes"
 	// PipelineJenkinsMetadataAnnoKey is the annotation key of Jenkins Pipeline data.
 	PipelineJenkinsMetadataAnnoKey = PipelinePrefix + "jenkins-metadata"
 	// PipelineJenkinsBranchesAnnoKey is the annotation key of Jenkins Pipeline branches.
@@ -130,6 +131,28 @@ type MultiBranchPipeline struct {
 	BitbucketServerSource *BitbucketServerSource `json:"bitbucket_server_source,omitempty" description:"bitbucket server scm defile"`
 	ScriptPath            string                 `json:"script_path" mapstructure:"script_path" description:"script path in scm"`
 	MultiBranchJobTrigger *MultiBranchJobTrigger `json:"multibranch_job_trigger,omitempty" mapstructure:"multibranch_job_trigger" description:"Pipeline tasks that need to be triggered when branch creation/deletion"`
+}
+
+func (b *MultiBranchPipeline) GetGitURL() string {
+	switch b.SourceType {
+	case SourceTypeGit:
+		if b.GitSource != nil {
+			return b.GitSource.Url
+		}
+	case SourceTypeGithub:
+		if b.GitHubSource != nil {
+			return fmt.Sprintf("https://github.com/%s/%s", b.GitHubSource.Owner, b.GitHubSource.Repo)
+		}
+	case SourceTypeGitlab:
+		if b.GitlabSource != nil {
+			return fmt.Sprintf("https://gitlab.com/%s/%s", b.GitlabSource.Owner, b.GitlabSource.Repo)
+		}
+	case SourceTypeBitbucket:
+		if b.BitbucketServerSource != nil {
+			return fmt.Sprintf("https://bitbucket.org/%s/%s", b.BitbucketServerSource.Owner, b.BitbucketServerSource.Repo)
+		}
+	}
+	return ""
 }
 
 type GitSource struct {

@@ -16,7 +16,10 @@ limitations under the License.
 
 package pipeline
 
-import "github.com/jenkins-zh/jenkins-client/pkg/job"
+import (
+	"encoding/json"
+	"github.com/jenkins-zh/jenkins-client/pkg/job"
+)
 
 // Metadata holds some of pipeline fields that are only things we needed instead of whole job.Pipeline.
 type Metadata struct {
@@ -56,7 +59,14 @@ type Branch struct {
 // BranchSlice is alias of branch slice.
 type BranchSlice []Branch
 
-// SearchByName searchs branch by its name.
+// GetBranchSlice parse from a JSON text
+func GetBranchSlice(jsonText string) (branches BranchSlice, err error) {
+	branches = []Branch{}
+	err = json.Unmarshal([]byte(jsonText), &branches)
+	return
+}
+
+// SearchByName searches branch by its name.
 func (branches BranchSlice) SearchByName(name string) (bool, *Branch) {
 	i := 0
 	for ; i < len(branches); i++ {

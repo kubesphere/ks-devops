@@ -19,6 +19,8 @@
 package v1alpha3
 
 import (
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/steptemplate"
 	"net/http"
 
@@ -53,8 +55,8 @@ import (
 var GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"}
 
 // AddToContainer adds web service into container.
-func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface,
-	k8sClient k8s.Client, client client.Client) (wss []*restful.WebService) {
+func AddToContainer(container *restful.Container, devopsClient devopsClient.Interface, k8sClient k8s.Client,
+	client client.Client, tokenIssue token.Issuer, jenkins core.JenkinsCore) (wss []*restful.WebService) {
 
 	services := []*restful.WebService{
 		runtime.NewWebService(v1alpha3.GroupVersion),
@@ -71,7 +73,7 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 		steptemplate.RegisterRoutes(service, &common.Options{
 			GenericClient: client,
 		})
-		webhook.RegisterWebhooks(client, service)
+		webhook.RegisterWebhooks(client, service, tokenIssue, jenkins)
 		container.Add(service)
 	}
 	return services
