@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// StepTemplateSpec defines the desired state of StepTemplate
+// StepTemplateSpec defines the desired state of ClusterStepTemplate
 type StepTemplateSpec struct {
 	Secret     SecretInStep      `json:"secret,omitempty"`
 	Container  string            `json:"container,omitempty"`
@@ -42,17 +42,27 @@ type ParameterInStep struct {
 	DefaultValue string `json:"defaultValue,omitempty"`
 }
 
-// StepTemplateStatus defines the observed state of StepTemplate
+// StepTemplateStatus defines the observed state of ClusterStepTemplate
 type StepTemplateStatus struct {
-	Phase string `json:"phase"`
+	Phase StepTemplatePhase `json:"phase"`
 }
+
+// StepTemplatePhase represents the phase of the Step template
+type StepTemplatePhase string
+
+var (
+	// StepTemplatePhaseReady indicates the step template is ready to use
+	StepTemplatePhaseReady StepTemplatePhase = "ready"
+	// StepTemplatePhaseInit indicates the step template is not ready to use
+	StepTemplatePhaseInit StepTemplatePhase = "init"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// StepTemplate is the Schema for the steptemplates API
-type StepTemplate struct {
+// ClusterStepTemplate is the Schema for the steptemplates API
+type ClusterStepTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -62,18 +72,23 @@ type StepTemplate struct {
 
 //+kubebuilder:object:root=true
 
-// StepTemplateList contains a list of StepTemplate
-type StepTemplateList struct {
+// ClusterStepTemplateList contains a list of ClusterStepTemplate
+type ClusterStepTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []StepTemplate `json:"items"`
+	Items           []ClusterStepTemplate `json:"items"`
 }
 
-// DefaultSecretKeyMapping
+// DefaultSecretKeyMapping mainly used as the Jenkinsfile environment variables
 var DefaultSecretKeyMapping = map[string]string{
-	":": "",
+	"passwordVariable":   "PASSWORDVARIABLE",
+	"usernameVariable":   "USERNAMEVARIABLE",
+	"variable":           "VARIABLE",
+	"sshUserPrivateKey":  "SSHUSERPRIVATEKEY",
+	"keyFileVariable":    "KEYFILEVARIABLE",
+	"passphraseVariable": "PASSPHRASEVARIABLE",
 }
 
 func init() {
-	SchemeBuilder.Register(&StepTemplate{}, &StepTemplateList{})
+	SchemeBuilder.Register(&ClusterStepTemplate{}, &ClusterStepTemplateList{})
 }

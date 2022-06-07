@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: steptemplates.devops.kubesphere.io
+  name: clustersteptemplates.devops.kubesphere.io
 spec:
   group: devops.kubesphere.io
   names:
-    kind: StepTemplate
-    listKind: StepTemplateList
-    plural: steptemplates
-    singular: steptemplate
+    kind: ClusterStepTemplate
+    listKind: ClusterStepTemplateList
+    plural: clustersteptemplates
+    singular: clustersteptemplate
   scope: Cluster
   versions:
   - name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: StepTemplate is the Schema for the steptemplates API
+        description: ClusterStepTemplate is the Schema for the steptemplates API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: StepTemplateSpec defines the desired state of StepTemplate
+            description: StepTemplateSpec defines the desired state of ClusterStepTemplate
             properties:
               container:
                 type: string
@@ -70,7 +70,7 @@ spec:
                 type: string
             type: object
           status:
-            description: StepTemplateStatus defines the observed state of StepTemplate
+            description: StepTemplateStatus defines the observed state of ClusterStepTemplate
             properties:
               phase:
                 description: StepTemplatePhase represents the phase of the Step template

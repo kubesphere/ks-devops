@@ -19,6 +19,7 @@
 package v1alpha3
 
 import (
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/steptemplate"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -65,6 +66,9 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 		pipelinerun.RegisterRoutes(service, devopsClient, client)
 		pipeline.RegisterRoutes(service, client)
 		template.RegisterRoutes(service, &common.Options{
+			GenericClient: client,
+		})
+		steptemplate.RegisterRoutes(service, &common.Options{
 			GenericClient: client,
 		})
 		webhook.RegisterWebhooks(client, service)
