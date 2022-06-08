@@ -21,6 +21,7 @@ package v1alpha3
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"kubesphere.io/devops/pkg/jwt/token"
+	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/steptemplate"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -67,6 +68,9 @@ func AddToContainer(container *restful.Container, devopsClient devopsClient.Inte
 		pipelinerun.RegisterRoutes(service, devopsClient, client)
 		pipeline.RegisterRoutes(service, client)
 		template.RegisterRoutes(service, &common.Options{
+			GenericClient: client,
+		})
+		steptemplate.RegisterRoutes(service, &common.Options{
 			GenericClient: client,
 		})
 		webhook.RegisterWebhooks(client, service, tokenIssue, jenkins)

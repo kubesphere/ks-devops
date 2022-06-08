@@ -1,0 +1,8 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: ClusterStepTemplate
+metadata:
+  name: steptemplate-sample
+spec:
+  runtime: shell
+  template: |
+    echo 1
