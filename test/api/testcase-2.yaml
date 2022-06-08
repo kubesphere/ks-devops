@@ -1,0 +1,16 @@
+name: 'get a particular template'
+
+prepare:
+  kubernetes:
+    - data/devops_v1alpha3_steptemplate.yaml
+
+request:
+  method: GET
+  api: http://localhost:9090/v1alpha3/clustersteptemplates/steptemplate-sample
+
+expect:
+  statusCode: 200
+  content-type: application/json
+
+clean:
+  cleanPrepare: true

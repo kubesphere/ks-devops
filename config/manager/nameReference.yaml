@@ -1,0 +1,13 @@
+nameReference:
+  - kind: ConfigMap
+    fieldSpecs:
+      - kind: Deployment
+        path: spec/template/spec/volumes[0]/configmap/name
+  - kind: Namespace
+    fieldSpecs:
+      - kind: Deployment
+        path: spec/template/spec/initContainers[0]/command[6]
+  - kind: Namespace
+    fieldSpecs:
+      - kind: Deployment
+        path: spec/template/spec/initContainers[1]/command[5]

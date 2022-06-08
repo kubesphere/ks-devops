@@ -1,0 +1,20 @@
+name: render
+
+prepare:
+  kubernetes:
+    - data/devops_v1alpha3_steptemplate.yaml
+
+request:
+  method: GET
+  api: http://localhost:9090/v1alpha3/clustersteptemplates/steptemplate-sample/render
+
+expect:
+  statusCode: 200
+  content-type: application/json
+  body: |
+    {
+     "data": "sh '''\necho 1\n\n'''"
+    }
+
+clean:
+  cleanPrepare: true
