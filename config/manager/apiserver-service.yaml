@@ -1,0 +1,26 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: devops-apiserver
+  namespace: kubesphere-devops-system
+  labels:
+    app.kubernetes.io/instance: devops
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: ks-devops
+    app.kubernetes.io/version: v3.2.1
+    devops.kubesphere.io/component: apiserver
+    helm.sh/chart: ks-devops-0.1.10
+  annotations:
+    meta.helm.sh/release-name: devops
+    meta.helm.sh/release-namespace: kubesphere-devops-system
+spec:
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+      nodePort: 30427
+  selector:
+    app.kubernetes.io/instance: devops
+    app.kubernetes.io/name: ks-devops
+    devops.kubesphere.io/component: apiserver
+  type: NodePort

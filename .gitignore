@@ -28,3 +28,4 @@ __debug_bin
 
 kubesphere.yaml
 */**/*.xml
+logs.txt

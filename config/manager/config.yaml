@@ -1,0 +1,39 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: devops-config
+  namespace: kubesphere-devops-system
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: devops
+    meta.helm.sh/release-namespace: kubesphere-devops-system
+data:
+  kubesphere.yaml: |-
+    authentication:
+      authenticateRateLimiterDuration: 10m0s
+      authenticateRateLimiterMaxTries: "10"
+      jwtSecret: FAGmFiOZ9gJ42A39YChcKVzL6u20Cwim
+      loginHistoryRetentionPeriod: 168h
+      maximumClockSkew: 10s
+    devops:
+      host: http://devops-jenkins.kubesphere-devops-system
+      maxConnections: "100"
+      namespace: kubesphere-devops-system
+      password: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwidG9rZW5fdHlwZSI6ImFjY2Vzc190b2tlbiIsImlhdCI6MTY1MzgxOTQ2MiwiaXNzIjoia3ViZXNwaGVyZSIsIm5iZiI6MTY1MzgxOTQ2Mn0.setnyvEoaQqkGsHOJIGYW7dfMlDd4c3rxN4RnrVsT_8
+      username: admin
+      workerNamespace: kubesphere-devops-worker
+    ldap:
+      groupSearchBase: ou=Groups,dc=kubesphere,dc=io
+      host: openldap.kubesphere-system.svc:389
+      managerDN: cn=admin,dc=kubesphere,dc=io
+      managerPassword: admin
+      userSearchBase: ou=Users,dc=kubesphere,dc=io
+    s3:
+      accessKeyID: openpitrixminioaccesskey
+      bucket: s2i-binaries
+      disableSSL: "True"
+      endpoint: http://minio.kubesphere-system.svc:9000
+      forcePathStyle: "True"
+      region: us-east-1
+      secretAccessKey: openpitrixminiosecretkey

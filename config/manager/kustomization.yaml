@@ -1,2 +1,18 @@
 resources:
-- manager.yaml
+  - manager.yaml
+  - apiserver.yaml
+  - apiserver-service.yaml
+  - config.yaml
+
+configurations:
+  - nameReference.yaml
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+  - name: ghcr.io/kubesphere/devops-apiserver:v3.3.0-rc.0
+    newName: ghcr.io/kubesphere/devops-apiserver
+    newTag: master
+  - name: controller:latest
+    newName: ghcr.io/kubesphere/devops-controller
+    newTag: master

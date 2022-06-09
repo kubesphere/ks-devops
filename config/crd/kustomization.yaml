@@ -11,6 +11,7 @@ resources:
 - bases/devops.kubesphere.io_pipelineruns.yaml
 - bases/devops.kubesphere.io_templates.yaml
 - bases/devops.kubesphere.io_clustertemplates.yaml
+- bases/devops.kubesphere.io_clustersteptemplates.yaml
 - bases/devops.kubesphere.io_addons.yaml
 - bases/devops.kubesphere.io_addonstrategies.yaml
 - bases/gitops.kubesphere.io_applications.yaml
@@ -18,7 +19,7 @@ resources:
 - bases/devops.kubesphere.io_webhooks.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
-patchesStrategicMerge:
+#patchesStrategicMerge:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
 #- patches/webhook_in_pipelines.yaml

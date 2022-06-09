@@ -119,6 +119,9 @@ docker-build-push-tools: docker-build-tools docker-push-tools
 
 docker-build-push: docker-build-push-apiserver docker-build-push-controller
 
+atest:
+	atest run -p 'test/api/*.yaml'
+
 swagger-ui:
 	git clone https://github.com/swagger-api/swagger-ui -b v2.2.10 --depth 1 bin/swagger-ui
 
