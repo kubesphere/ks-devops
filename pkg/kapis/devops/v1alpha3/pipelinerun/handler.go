@@ -138,7 +138,7 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 	}
 	// create PipelineRun
 	pr := CreatePipelineRun(&pipeline, &payload, scm)
-	if user != nil && user.GetName() != "" {
+	if user.GetName() != "" {
 		pr.GetAnnotations()[v1alpha3.PipelineRunCreatorAnnoKey] = user.GetName()
 	}
 	if err := h.client.Create(context.Background(), pr); err != nil {
