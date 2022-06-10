@@ -1,55 +1,39 @@
-/*
-Copyright 2022 The KubeSphere Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package steptemplate
+package v1alpha3
 
 import (
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"testing"
 )
 
 func Test_handler_stepTemplateRender(t *testing.T) {
-	stepTemplate := &v1alpha3.StepTemplateSpec{
+	stepTemplate := &StepTemplateSpec{
 		Template: `echo 1`,
 		Runtime:  "shell",
 	}
-	stepTemplateWithParameters := &v1alpha3.StepTemplateSpec{
+	stepTemplateWithParameters := &StepTemplateSpec{
 		Template: `docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
 docker build {{.param.context}} -t {{.param.tag}}`,
 		Runtime:   "shell",
 		Container: "base",
-		Secret: v1alpha3.SecretInStep{
+		Secret: SecretInStep{
 			Wrap: true,
 			Type: string(v1.SecretTypeBasicAuth),
 		},
-		Parameters: []v1alpha3.ParameterInStep{{
+		Parameters: []ParameterInStep{{
 			Name: "context",
 		}, {
 			Name: "tag",
 		}},
 	}
-	stepTemplateWithDSL := &v1alpha3.StepTemplateSpec{
+	stepTemplateWithDSL := &StepTemplateSpec{
 		Template: `echo "1"`,
 		Runtime:  "dsl",
 	}
 
 	type args struct {
-		stepTemplate *v1alpha3.StepTemplateSpec
+		stepTemplate *StepTemplateSpec
 		param        map[string]string
 		secret       *v1.Secret
 	}
@@ -64,7 +48,7 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 			stepTemplate: stepTemplate,
 		},
 		wantOutput: `sh '''
-echo 1
+	echo 1
 '''`,
 		wantErr: false,
 	}, {
@@ -88,11 +72,11 @@ echo 1
 		},
 		wantOutput: `container("base") {
 	withCredential[usernamePassword(credentialsId : "docker" ,passwordVariable : 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
-	sh '''
-docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
-docker build dir -t image:tag
-'''
-}
+		sh '''
+			docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
+			docker build dir -t image:tag
+		'''
+	}
 }`,
 		wantErr: false,
 	}, {
@@ -105,7 +89,7 @@ docker build dir -t image:tag
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOutput, err := stepTemplateRender(tt.args.stepTemplate, tt.args.param, tt.args.secret)
+			gotOutput, err := tt.args.stepTemplate.Render(tt.args.param, tt.args.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stepTemplateRender() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -137,7 +121,7 @@ func Test_wrapWithCredential(t *testing.T) {
 	}, {
 		name: "secret as kubeconfig type",
 		args: args{
-			secretType: string(v1alpha3.SecretTypeKubeConfig),
+			secretType: string(SecretTypeKubeConfig),
 			secretName: "config",
 			target:     "echo 1",
 		},
@@ -147,7 +131,7 @@ func Test_wrapWithCredential(t *testing.T) {
 	}, {
 		name: "secret as secret text type",
 		args: args{
-			secretType: string(v1alpha3.SecretTypeSecretText),
+			secretType: string(SecretTypeSecretText),
 			secretName: "config",
 			target:     "echo 1",
 		},
@@ -157,7 +141,7 @@ func Test_wrapWithCredential(t *testing.T) {
 	}, {
 		name: "secret as ssh auth type",
 		args: args{
-			secretType: string(v1alpha3.SecretTypeSSHAuth),
+			secretType: string(SecretTypeSSHAuth),
 			secretName: "config",
 			target:     "echo 1",
 		},
@@ -170,6 +154,38 @@ func Test_wrapWithCredential(t *testing.T) {
 			if got := wrapWithCredential(tt.args.secretType, tt.args.secretName, tt.args.target); got != tt.want {
 				t.Errorf("wrapWithCredential() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_addIndent(t *testing.T) {
+	type args struct {
+		txt string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{{
+		name: "one line",
+		args: args{
+			txt: "one line",
+		},
+		want: "\tone line",
+	}, {
+		name: "three lines",
+		args: args{
+			txt: `one line
+two line
+three line`,
+		},
+		want: `	one line
+	two line
+	three line`,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, addIndent(tt.args.txt), "addIndent(%v)", tt.args.txt)
 		})
 	}
 }

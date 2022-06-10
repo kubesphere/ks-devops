@@ -41,7 +41,7 @@ type ParameterInStep struct {
 	Name         string `json:"name"`
 	Required     bool   `json:"required,omitempty"`
 	Display      string `json:"display,omitempty"`
-	DefaultValue string `json:"defaultValue,omitempty"`
+	DefaultValue string `json:"defaultValue,omitempty" yaml:"defaultValue"`
 }
 
 // StepTemplateStatus defines the observed state of ClusterStepTemplate

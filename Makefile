@@ -122,6 +122,12 @@ docker-build-push: docker-build-push-apiserver docker-build-push-controller
 atest:
 	atest run -p 'test/api/*.yaml'
 
+build-tpl:
+	mkdir -p bin
+	go build -o bin/tpl cmd/tools/tpl/*.go
+copy-tpl: build-tpl
+	cp bin/tpl /usr/local/bin/
+
 swagger-ui:
 	git clone https://github.com/swagger-api/swagger-ui -b v2.2.10 --depth 1 bin/swagger-ui
 
