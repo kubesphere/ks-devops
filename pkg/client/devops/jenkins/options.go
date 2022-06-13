@@ -71,6 +71,10 @@ func (s *Options) Validate() []error {
 		errors = append(errors, fmt.Errorf("jenkins's username or password is empty"))
 	}
 
+	if s.Password == "119d76305a05e7a2a65d096f71feb77921" {
+		errors = append(errors, fmt.Errorf("the token of the Jenkins needs to update"))
+	}
+
 	if s.MaxConnections <= 0 {
 		errors = append(errors, fmt.Errorf("jenkins's maximum connections should be greater than 0"))
 	}
