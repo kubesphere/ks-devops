@@ -101,7 +101,9 @@ func (h *handler) getRepositories(scm, server, org, secret, namespace string, pa
 		var listRepositoryFunc listRepository
 		if user, err = h.getCurrentUsername(c); err == nil {
 			if user == org && !strings.HasPrefix(scm, "bitbucket") {
-				listRepositoryFunc = c.Repositories.ListUser
+				listRepositoryFunc = func(ctx context.Context, s string, options goscm.ListOptions) ([]*goscm.Repository, *goscm.Response, error) {
+					return c.Repositories.List(ctx, options)
+				}
 			} else {
 				listRepositoryFunc = c.Repositories.ListOrganisation
 			}

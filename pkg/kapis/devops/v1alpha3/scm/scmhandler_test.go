@@ -278,9 +278,11 @@ func TestSCMAPI(t *testing.T) {
 			}
 
 			gock.New("https://api.github.com").
-				Get("users/octocat/repos").
+				Get("/user/repos").
 				MatchParam("per_page", "1").
 				MatchParam("page", "1").
+				MatchParam("visibility", "all").
+				MatchParam("affiliation", "owner").
 				Reply(200).
 				Type("application/json").
 				SetHeaders(mockHeaders).
