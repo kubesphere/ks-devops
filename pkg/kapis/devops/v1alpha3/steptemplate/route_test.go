@@ -110,7 +110,7 @@ func TestAPIs(t *testing.T) {
 		},
 		verify: func(bytes []byte, t *testing.T) {
 			assert.Equal(t, `{
- "data": "sh '''\necho 2\n'''"
+ "data": "sh '''\n\techo 2\n'''"
 }`, string(bytes))
 		},
 		wantCode: http.StatusOK,

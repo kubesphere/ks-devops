@@ -17,11 +17,9 @@ limitations under the License.
 package steptemplate
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/emicklei/go-restful"
-	"html/template"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -62,15 +60,7 @@ func (h *handler) renderClusterStepTemplate(req *restful.Request, resp *restful.
 		fmt.Printf("something goes wrong when getting secret, error: %v\n", err)
 	}
 
-	// get default param value from the template
 	param := make(map[string]string)
-	for i := range clusterStepTemplate.Spec.Parameters {
-		item := clusterStepTemplate.Spec.Parameters[i]
-		if item.DefaultValue != "" {
-			param[item.Name] = item.DefaultValue
-		}
-	}
-
 	// get the parameters from request
 	if err = req.ReadEntity(&param); err != nil {
 		// TODO considering have logger output instead of the std output
@@ -78,7 +68,7 @@ func (h *handler) renderClusterStepTemplate(req *restful.Request, resp *restful.
 	}
 
 	var output string
-	output, err = stepTemplateRender(&clusterStepTemplate.Spec, param, secret)
+	output, err = clusterStepTemplate.Spec.Render(param, secret)
 	writeResponse(map[string]string{
 		"data": output,
 	}, err, resp)
@@ -103,77 +93,4 @@ func writeResponse(object interface{}, err error, resp *restful.Response) {
 	} else {
 		_ = resp.WriteError(http.StatusInternalServerError, err)
 	}
-}
-
-func stepTemplateRender(stepTemplate *v1alpha3.StepTemplateSpec, param map[string]string, secret *v1.Secret) (output string, err error) {
-	switch stepTemplate.Runtime {
-	case "dsl":
-		output, err = dslRender(stepTemplate.Template, param, secret)
-	case "shell":
-		fallthrough
-	default:
-		output, err = shellRender(stepTemplate.Template, param, secret)
-	}
-
-	if stepTemplate.Secret.Wrap {
-		output = wrapWithCredential(stepTemplate.Secret.Type, secret.Name, output)
-	}
-
-	if err == nil && stepTemplate.Container != "" {
-		output = fmt.Sprintf(`container("%s") {
-	%s
-}`, stepTemplate.Container, output)
-	}
-	return
-}
-
-func wrapWithCredential(secretType, secretName, target string) string {
-	switch secretType {
-	case string(v1.SecretTypeBasicAuth), string(v1alpha3.SecretTypeBasicAuth):
-		return fmt.Sprintf(`withCredential[usernamePassword(credentialsId : "%s" ,passwordVariable : 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
-	%s
-}`, secretName, target)
-	case string(v1.SecretTypeBootstrapToken), string(v1alpha3.SecretTypeSecretText):
-		return fmt.Sprintf(`withCredential[string(credentialsId : "%s" ,variable : 'VARIABLE')]) {
-	%s
-}`, secretName, target)
-	case string(v1alpha3.SecretTypeKubeConfig):
-		return fmt.Sprintf(`withCredential[kubeconfigContent(credentialsId : "%s" ,variable : 'VARIABLE')]) {
-	%s
-}`, secretName, target)
-	case string(v1alpha3.SecretTypeSSHAuth):
-		return fmt.Sprintf(`withCredential[sshUserPrivateKey(credentialsId : "%s" ,keyFileVariable : 'KEYFILEVARIABLE' ,passphraseVariable : 'PASSPHRASEVARIABLE' ,usernameVariable : 'SSHUSERPRIVATEKEY')]) {
-	%s
-}`, secretName, target)
-	}
-	return target
-}
-
-func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
-	output = dslTpl
-
-	var tpl *template.Template
-	if tpl, err = template.New("shell").Parse(output); err != nil {
-		return
-	}
-
-	data := map[string]interface{}{
-		"param":  param,
-		"secret": secret,
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-	if err = tpl.Execute(buf, data); err == nil {
-		output = buf.String()
-	}
-	return
-}
-
-func shellRender(shellTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
-	if output, err = dslRender(shellTpl, param, secret); err == nil {
-		output = fmt.Sprintf(`sh '''
-%s
-'''`, output)
-	}
-	return
 }
