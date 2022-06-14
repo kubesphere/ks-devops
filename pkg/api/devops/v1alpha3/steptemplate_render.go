@@ -24,6 +24,7 @@ import (
 	"text/template"
 )
 
+// Render renders the template and returns the result
 func (t *StepTemplateSpec) Render(param map[string]string, secret *v1.Secret) (output string, err error) {
 	// taking the default parameter values
 	for i := range t.Parameters {
