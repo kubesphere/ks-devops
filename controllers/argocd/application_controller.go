@@ -205,6 +205,9 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	newArgoApp.SetName(app.GetName())
 	newArgoApp.SetNamespace(app.GetNamespace())
 
+	// make sure all Argo CD supported annotations and labels exist
+	copyArgoAnnotationsAndLabels(app, newArgoApp)
+
 	// copy all potential finalizers
 	finalizers := app.GetFinalizers()
 	targetFinalizers := make([]string, 0)
@@ -226,6 +229,30 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 		}
 	}
 	return newArgoApp, nil
+}
+
+func copyArgoAnnotationsAndLabels(app *v1alpha1.Application, argoApp *unstructured.Unstructured) {
+	var annotations map[string]string
+	if annotations = argoApp.GetAnnotations(); annotations == nil {
+		annotations = map[string]string{}
+	}
+	for k, v := range app.Annotations {
+		if strings.Contains(k, "argoproj.io") {
+			annotations[k] = v
+		}
+	}
+	argoApp.SetAnnotations(annotations)
+
+	var labels map[string]string
+	if labels = argoApp.GetLabels(); labels == nil {
+		labels = map[string]string{}
+	}
+	for k, v := range app.Labels {
+		if strings.Contains(k, "argoproj.io") {
+			labels[k] = v
+		}
+	}
+	argoApp.SetLabels(labels)
 }
 
 func (r *ApplicationReconciler) addArgoAppNameIntoLabels(namespace, name, argoAppName string) (err error) {

@@ -64,6 +64,16 @@ func Test_createUnstructuredApplication(t *testing.T) {
 		name: "with some specific fields, with default values",
 		args: args{
 			app: &v1alpha1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"argocd-image-updater.argoproj.io/image-list": "nginx",
+						"other": "other",
+					},
+					Labels: map[string]string{
+						"argocd.argoproj.io/instance": "instance",
+						"other":                       "other",
+					},
+				},
 				Spec: v1alpha1.ApplicationSpec{
 					ArgoApp: &v1alpha1.ArgoApplication{
 						Spec: v1alpha1.ArgoApplicationSpec{
@@ -106,6 +116,20 @@ func Test_createUnstructuredApplication(t *testing.T) {
 			assert.Equal(t, true, dryRun)
 			initiatedBy, _, _ := unstructured.NestedString(gotResult.Object, "operation", "initiatedBy", "username")
 			assert.Equal(t, "admin", initiatedBy)
+
+			// check annotations
+			annotations, _, _ := unstructured.NestedStringMap(gotResult.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
+			// check labels
+			labels, _, _ := unstructured.NestedStringMap(gotResult.Object, "metadata", "labels")
+			assert.Equal(t, map[string]string{
+				"argocd.argoproj.io/instance":                        "instance",
+				"gitops.kubesphere.io/application-name":              "",
+				"gitops.kubesphere.io/application-namespace":         "",
+				"gitops.kubesphere.io/argocd-application-control-by": "ks-devops",
+			}, labels)
 		},
 	}}
 	for _, tt := range tests {
@@ -307,6 +331,50 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 				Funcs: tt.fields.Funcs,
 			}
 			assert.Equalf(t, tt.want, fi.Update(tt.args.e), "Update(%v)", tt.args.e)
+		})
+	}
+}
+
+func Test_copyArgoAnnotationsAndLabels(t *testing.T) {
+	type args struct {
+		app     *v1alpha1.Application
+		argoApp *unstructured.Unstructured
+	}
+	tests := []struct {
+		name   string
+		args   args
+		verify func(*testing.T, *unstructured.Unstructured)
+	}{{
+		name: "normal",
+		args: args{
+			app: &v1alpha1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"other":           "other",
+						"a.argoproj.io/b": "ab",
+					},
+					Labels: map[string]string{
+						"other":           "other",
+						"a.argoproj.io/b": "ab",
+					},
+				},
+			},
+			argoApp: &unstructured.Unstructured{},
+		},
+		verify: func(t *testing.T, u *unstructured.Unstructured) {
+			annotations, _, _ := unstructured.NestedStringMap(u.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"a.argoproj.io/b": "ab",
+			}, annotations)
+			labels, _, _ := unstructured.NestedStringMap(u.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"a.argoproj.io/b": "ab",
+			}, labels)
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			copyArgoAnnotationsAndLabels(tt.args.app, tt.args.argoApp)
 		})
 	}
 }
