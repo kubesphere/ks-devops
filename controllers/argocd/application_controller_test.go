@@ -151,6 +151,9 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			Labels: map[string]string{
 				v1alpha1.ArgoCDLocationLabelKey: "fake",
 			},
+			Annotations: map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			},
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			ArgoApp: &v1alpha1.ArgoApplication{
@@ -165,12 +168,27 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			},
 		},
 	}
+	appWithLabel := app.DeepCopy()
+	appWithLabel.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppNameLabelKey:  "fake",
+		v1alpha1.ArgoCDLocationLabelKey: "fake",
+	})
 
 	argoApp := &unstructured.Unstructured{}
 	argoApp.SetKind("Application")
 	argoApp.SetAPIVersion("argoproj.io/v1alpha1")
 	argoApp.SetName("fake")
 	argoApp.SetNamespace("fake")
+
+	argoAppWithLabel := argoApp.DeepCopy()
+	argoAppWithLabel.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppNameLabelKey: "fake",
+	})
+
+	argoAppList := &unstructured.UnstructuredList{}
+	argoAppList.SetKind("ApplicationList")
+	argoAppList.SetAPIVersion("argoproj.io/v1alpha1")
+	argoAppList.Items = append(argoAppList.Items, *argoApp)
 
 	type fields struct {
 		Client client.Client
@@ -227,6 +245,44 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			assert.Nil(t, err)
 			project, _, _ := unstructured.NestedString(app.Object, "spec", "project")
 			assert.Equal(t, "fake", project)
+			annotations, _, _ := unstructured.NestedStringMap(app.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
+		},
+	}, {
+		name: "update the existing argo application which not have labels",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy(), argoAppList.DeepCopy()),
+		},
+		args: args{
+			app: app.DeepCopy(),
+		},
+		verify: func(t *testing.T, Client client.Client, err error) {
+			assert.Nil(t, err)
+		},
+	}, {
+		name: "update the existing argo application which has labels",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, appWithLabel.DeepCopy(), argoAppWithLabel.DeepCopy()),
+		},
+		args: args{
+			app: appWithLabel.DeepCopy(),
+		},
+		verify: func(t *testing.T, Client client.Client, err error) {
+			assert.Nil(t, err)
+
+			app := argoApp.DeepCopy()
+
+			err = Client.Get(context.TODO(), types.NamespacedName{
+				Namespace: "fake",
+				Name:      "fake",
+			}, app)
+			assert.Nil(t, err)
+			annotations, _, _ := unstructured.NestedStringMap(app.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
 		},
 	}}
 	for _, tt := range tests {

@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -154,6 +155,10 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 				argoApp.Object["spec"] = newArgoApp.Object["spec"]
 				argoApp.Object["operation"] = newArgoApp.Object["operation"]
+
+				// append annotations and labels
+				copyArgoAnnotationsAndLabels(newArgoApp, argoApp)
+
 				argoApp.SetFinalizers(newArgoApp.GetFinalizers())
 				err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
 					latestArgoApp := createBareArgoCDApplicationObject()
@@ -231,12 +236,12 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	return newArgoApp, nil
 }
 
-func copyArgoAnnotationsAndLabels(app *v1alpha1.Application, argoApp *unstructured.Unstructured) {
+func copyArgoAnnotationsAndLabels(app metav1.Object, argoApp metav1.Object) {
 	var annotations map[string]string
 	if annotations = argoApp.GetAnnotations(); annotations == nil {
 		annotations = map[string]string{}
 	}
-	for k, v := range app.Annotations {
+	for k, v := range app.GetAnnotations() {
 		if strings.Contains(k, "argoproj.io") {
 			annotations[k] = v
 		}
@@ -247,7 +252,7 @@ func copyArgoAnnotationsAndLabels(app *v1alpha1.Application, argoApp *unstructur
 	if labels = argoApp.GetLabels(); labels == nil {
 		labels = map[string]string{}
 	}
-	for k, v := range app.Labels {
+	for k, v := range app.GetLabels() {
 		if strings.Contains(k, "argoproj.io") {
 			labels[k] = v
 		}
