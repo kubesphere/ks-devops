@@ -357,7 +357,7 @@ func (p specificAnnotationsOrLabelsChangedPredicate) Update(e event.UpdateEvent)
 
 func mapKeysContains(filter string, annotations ...map[string]string) (has bool) {
 	for _, anno := range annotations {
-		for k, _ := range anno {
+		for k := range anno {
 			if has = strings.Contains(k, filter); has {
 				return
 			}
