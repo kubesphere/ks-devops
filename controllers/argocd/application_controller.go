@@ -338,13 +338,44 @@ func (finalizersChangedPredicate) Update(e event.UpdateEvent) bool {
 	return !reflect.DeepEqual(e.MetaNew.GetFinalizers(), e.MetaOld.GetFinalizers())
 }
 
+type specificAnnotationsOrLabelsChangedPredicate struct {
+	predicate.Funcs
+	filter string
+}
+
+func (p specificAnnotationsOrLabelsChangedPredicate) Update(e event.UpdateEvent) (changed bool) {
+	changed = !reflect.DeepEqual(e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+	if !changed {
+		if changed = !reflect.DeepEqual(e.MetaNew.GetLabels(), e.MetaOld.GetLabels()); changed {
+			changed = mapKeysContains(p.filter, e.MetaNew.GetLabels(), e.MetaOld.GetLabels())
+		}
+	} else {
+		changed = mapKeysContains(p.filter, e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+	}
+	return
+}
+
+func mapKeysContains(filter string, annotations ...map[string]string) (has bool) {
+	for _, anno := range annotations {
+		for k, _ := range anno {
+			if has = strings.Contains(k, filter); has {
+				return
+			}
+		}
+	}
+	return
+}
+
 // SetupWithManager setups the reconciler with a manager
 // setup the logger, recorder
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, finalizersChangedPredicate{})).
+		WithEventFilter(predicate.Or(
+			predicate.GenerationChangedPredicate{},
+			finalizersChangedPredicate{},
+			specificAnnotationsOrLabelsChangedPredicate{filter: "argoproj.io"})).
 		For(&v1alpha1.Application{}).
 		Complete(r)
 }

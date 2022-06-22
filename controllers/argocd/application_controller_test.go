@@ -434,3 +434,182 @@ func Test_copyArgoAnnotationsAndLabels(t *testing.T) {
 		})
 	}
 }
+
+func Test_mapKeysContains(t *testing.T) {
+	type args struct {
+		filter       string
+		annotations  map[string]string
+		annotations2 map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantHas bool
+	}{{
+		name: "do not contain the key string in one map",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name": "linuxsuren",
+			},
+		},
+		wantHas: false,
+	}, {
+		name: "do not contain the key string in two maps",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name": "linuxsuren",
+			},
+			annotations2: map[string]string{
+				"name": "linuxsuren-bot",
+			},
+		},
+		wantHas: false,
+	}, {
+		name: "contain the key string in one map",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name.fake.com": "linuxsuren",
+				"age":           "10",
+			},
+		},
+		wantHas: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.wantHas, mapKeysContains(tt.args.filter, tt.args.annotations, tt.args.annotations2), "mapKeysContains(%v, %v, %v)", tt.args.filter, tt.args.annotations, tt.args.annotations2)
+		})
+	}
+}
+
+func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
+	type fields struct {
+		Funcs  predicate.Funcs
+		filter string
+	}
+
+	defaultPredicate := fields{filter: "fake"}
+	type args struct {
+		e event.UpdateEvent
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantChanged bool
+	}{{
+		name:   "everything is same",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "annotations are different, but do not have key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"name": "fake",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"name": "linuxsuren",
+					},
+				},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "labels are different, but do not have key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "fake",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "linuxsuren",
+					},
+				},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "old meta's annotations has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "new meta's annotations has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "old meta's labels has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "new meta's labels has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: true,
+	}}
+	t.Logf("there are [%d] test cases\n", len(tests))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := specificAnnotationsOrLabelsChangedPredicate{
+				Funcs:  tt.fields.Funcs,
+				filter: tt.fields.filter,
+			}
+			assert.Equalf(t, tt.wantChanged, p.Update(tt.args.e), "Update(%v)", tt.args.e)
+		})
+	}
+}
