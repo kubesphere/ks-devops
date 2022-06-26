@@ -54,7 +54,7 @@ An example of target ConfigMap:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  annotation:
+  annotations:
     devops.kubesphere.io/ks-jenkins-config: ks-jenkins.yaml
     devops.kubesphere.io/jenkins-config-formula: custom
     devops.kubesphere.io/jenkins-config-customized: "true"
