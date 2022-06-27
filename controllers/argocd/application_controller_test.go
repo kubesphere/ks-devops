@@ -64,6 +64,16 @@ func Test_createUnstructuredApplication(t *testing.T) {
 		name: "with some specific fields, with default values",
 		args: args{
 			app: &v1alpha1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"argocd-image-updater.argoproj.io/image-list": "nginx",
+						"other": "other",
+					},
+					Labels: map[string]string{
+						"argocd.argoproj.io/instance": "instance",
+						"other":                       "other",
+					},
+				},
 				Spec: v1alpha1.ApplicationSpec{
 					ArgoApp: &v1alpha1.ArgoApplication{
 						Spec: v1alpha1.ArgoApplicationSpec{
@@ -106,6 +116,20 @@ func Test_createUnstructuredApplication(t *testing.T) {
 			assert.Equal(t, true, dryRun)
 			initiatedBy, _, _ := unstructured.NestedString(gotResult.Object, "operation", "initiatedBy", "username")
 			assert.Equal(t, "admin", initiatedBy)
+
+			// check annotations
+			annotations, _, _ := unstructured.NestedStringMap(gotResult.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
+			// check labels
+			labels, _, _ := unstructured.NestedStringMap(gotResult.Object, "metadata", "labels")
+			assert.Equal(t, map[string]string{
+				"argocd.argoproj.io/instance":                        "instance",
+				"gitops.kubesphere.io/application-name":              "",
+				"gitops.kubesphere.io/application-namespace":         "",
+				"gitops.kubesphere.io/argocd-application-control-by": "ks-devops",
+			}, labels)
 		},
 	}}
 	for _, tt := range tests {
@@ -127,6 +151,9 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			Labels: map[string]string{
 				v1alpha1.ArgoCDLocationLabelKey: "fake",
 			},
+			Annotations: map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			},
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			ArgoApp: &v1alpha1.ArgoApplication{
@@ -141,12 +168,27 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			},
 		},
 	}
+	appWithLabel := app.DeepCopy()
+	appWithLabel.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppNameLabelKey:  "fake",
+		v1alpha1.ArgoCDLocationLabelKey: "fake",
+	})
 
 	argoApp := &unstructured.Unstructured{}
 	argoApp.SetKind("Application")
 	argoApp.SetAPIVersion("argoproj.io/v1alpha1")
 	argoApp.SetName("fake")
 	argoApp.SetNamespace("fake")
+
+	argoAppWithLabel := argoApp.DeepCopy()
+	argoAppWithLabel.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppNameLabelKey: "fake",
+	})
+
+	argoAppList := &unstructured.UnstructuredList{}
+	argoAppList.SetKind("ApplicationList")
+	argoAppList.SetAPIVersion("argoproj.io/v1alpha1")
+	argoAppList.Items = append(argoAppList.Items, *argoApp)
 
 	type fields struct {
 		Client client.Client
@@ -203,6 +245,44 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 			assert.Nil(t, err)
 			project, _, _ := unstructured.NestedString(app.Object, "spec", "project")
 			assert.Equal(t, "fake", project)
+			annotations, _, _ := unstructured.NestedStringMap(app.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
+		},
+	}, {
+		name: "update the existing argo application which not have labels",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy(), argoAppList.DeepCopy()),
+		},
+		args: args{
+			app: app.DeepCopy(),
+		},
+		verify: func(t *testing.T, Client client.Client, err error) {
+			assert.Nil(t, err)
+		},
+	}, {
+		name: "update the existing argo application which has labels",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, appWithLabel.DeepCopy(), argoAppWithLabel.DeepCopy()),
+		},
+		args: args{
+			app: appWithLabel.DeepCopy(),
+		},
+		verify: func(t *testing.T, Client client.Client, err error) {
+			assert.Nil(t, err)
+
+			app := argoApp.DeepCopy()
+
+			err = Client.Get(context.TODO(), types.NamespacedName{
+				Namespace: "fake",
+				Name:      "fake",
+			}, app)
+			assert.Nil(t, err)
+			annotations, _, _ := unstructured.NestedStringMap(app.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, annotations)
 		},
 	}}
 	for _, tt := range tests {
@@ -307,6 +387,229 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 				Funcs: tt.fields.Funcs,
 			}
 			assert.Equalf(t, tt.want, fi.Update(tt.args.e), "Update(%v)", tt.args.e)
+		})
+	}
+}
+
+func Test_copyArgoAnnotationsAndLabels(t *testing.T) {
+	type args struct {
+		app     *v1alpha1.Application
+		argoApp *unstructured.Unstructured
+	}
+	tests := []struct {
+		name   string
+		args   args
+		verify func(*testing.T, *unstructured.Unstructured)
+	}{{
+		name: "normal",
+		args: args{
+			app: &v1alpha1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"other":           "other",
+						"a.argoproj.io/b": "ab",
+					},
+					Labels: map[string]string{
+						"other":           "other",
+						"a.argoproj.io/b": "ab",
+					},
+				},
+			},
+			argoApp: &unstructured.Unstructured{},
+		},
+		verify: func(t *testing.T, u *unstructured.Unstructured) {
+			annotations, _, _ := unstructured.NestedStringMap(u.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"a.argoproj.io/b": "ab",
+			}, annotations)
+			labels, _, _ := unstructured.NestedStringMap(u.Object, "metadata", "annotations")
+			assert.Equal(t, map[string]string{
+				"a.argoproj.io/b": "ab",
+			}, labels)
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			copyArgoAnnotationsAndLabels(tt.args.app, tt.args.argoApp)
+		})
+	}
+}
+
+func Test_mapKeysContains(t *testing.T) {
+	type args struct {
+		filter       string
+		annotations  map[string]string
+		annotations2 map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantHas bool
+	}{{
+		name: "do not contain the key string in one map",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name": "linuxsuren",
+			},
+		},
+		wantHas: false,
+	}, {
+		name: "do not contain the key string in two maps",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name": "linuxsuren",
+			},
+			annotations2: map[string]string{
+				"name": "linuxsuren-bot",
+			},
+		},
+		wantHas: false,
+	}, {
+		name: "contain the key string in one map",
+		args: args{
+			filter: "fake",
+			annotations: map[string]string{
+				"name.fake.com": "linuxsuren",
+				"age":           "10",
+			},
+		},
+		wantHas: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.wantHas, mapKeysContains(tt.args.filter, tt.args.annotations, tt.args.annotations2), "mapKeysContains(%v, %v, %v)", tt.args.filter, tt.args.annotations, tt.args.annotations2)
+		})
+	}
+}
+
+func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
+	type fields struct {
+		Funcs  predicate.Funcs
+		filter string
+	}
+
+	defaultPredicate := fields{filter: "fake"}
+	type args struct {
+		e event.UpdateEvent
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantChanged bool
+	}{{
+		name:   "everything is same",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "annotations are different, but do not have key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"name": "fake",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"name": "linuxsuren",
+					},
+				},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "labels are different, but do not have key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "fake",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "linuxsuren",
+					},
+				},
+			},
+		},
+		wantChanged: false,
+	}, {
+		name:   "old meta's annotations has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "new meta's annotations has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "old meta's labels has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{},
+				MetaOld: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+			},
+		},
+		wantChanged: true,
+	}, {
+		name:   "new meta's labels has key",
+		fields: defaultPredicate,
+		args: args{
+			e: event.UpdateEvent{
+				MetaNew: &metav1.ObjectMeta{
+					Labels: map[string]string{
+						"this.is.fake": "",
+					},
+				},
+				MetaOld: &metav1.ObjectMeta{},
+			},
+		},
+		wantChanged: true,
+	}}
+	t.Logf("there are [%d] test cases\n", len(tests))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := specificAnnotationsOrLabelsChangedPredicate{
+				Funcs:  tt.fields.Funcs,
+				filter: tt.fields.filter,
+			}
+			assert.Equalf(t, tt.wantChanged, p.Update(tt.args.e), "Update(%v)", tt.args.e)
 		})
 	}
 }

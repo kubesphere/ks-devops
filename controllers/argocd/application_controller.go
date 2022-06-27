@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -154,6 +155,10 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
 				argoApp.Object["spec"] = newArgoApp.Object["spec"]
 				argoApp.Object["operation"] = newArgoApp.Object["operation"]
+
+				// append annotations and labels
+				copyArgoAnnotationsAndLabels(newArgoApp, argoApp)
+
 				argoApp.SetFinalizers(newArgoApp.GetFinalizers())
 				err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
 					latestArgoApp := createBareArgoCDApplicationObject()
@@ -205,6 +210,9 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 	newArgoApp.SetName(app.GetName())
 	newArgoApp.SetNamespace(app.GetNamespace())
 
+	// make sure all Argo CD supported annotations and labels exist
+	copyArgoAnnotationsAndLabels(app, newArgoApp)
+
 	// copy all potential finalizers
 	finalizers := app.GetFinalizers()
 	targetFinalizers := make([]string, 0)
@@ -226,6 +234,30 @@ func createUnstructuredApplication(app *v1alpha1.Application) (result *unstructu
 		}
 	}
 	return newArgoApp, nil
+}
+
+func copyArgoAnnotationsAndLabels(app metav1.Object, argoApp metav1.Object) {
+	var annotations map[string]string
+	if annotations = argoApp.GetAnnotations(); annotations == nil {
+		annotations = map[string]string{}
+	}
+	for k, v := range app.GetAnnotations() {
+		if strings.Contains(k, "argoproj.io") {
+			annotations[k] = v
+		}
+	}
+	argoApp.SetAnnotations(annotations)
+
+	var labels map[string]string
+	if labels = argoApp.GetLabels(); labels == nil {
+		labels = map[string]string{}
+	}
+	for k, v := range app.GetLabels() {
+		if strings.Contains(k, "argoproj.io") {
+			labels[k] = v
+		}
+	}
+	argoApp.SetLabels(labels)
 }
 
 func (r *ApplicationReconciler) addArgoAppNameIntoLabels(namespace, name, argoAppName string) (err error) {
@@ -306,13 +338,44 @@ func (finalizersChangedPredicate) Update(e event.UpdateEvent) bool {
 	return !reflect.DeepEqual(e.MetaNew.GetFinalizers(), e.MetaOld.GetFinalizers())
 }
 
+type specificAnnotationsOrLabelsChangedPredicate struct {
+	predicate.Funcs
+	filter string
+}
+
+func (p specificAnnotationsOrLabelsChangedPredicate) Update(e event.UpdateEvent) (changed bool) {
+	changed = !reflect.DeepEqual(e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+	if !changed {
+		if changed = !reflect.DeepEqual(e.MetaNew.GetLabels(), e.MetaOld.GetLabels()); changed {
+			changed = mapKeysContains(p.filter, e.MetaNew.GetLabels(), e.MetaOld.GetLabels())
+		}
+	} else {
+		changed = mapKeysContains(p.filter, e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+	}
+	return
+}
+
+func mapKeysContains(filter string, annotations ...map[string]string) (has bool) {
+	for _, anno := range annotations {
+		for k := range anno {
+			if has = strings.Contains(k, filter); has {
+				return
+			}
+		}
+	}
+	return
+}
+
 // SetupWithManager setups the reconciler with a manager
 // setup the logger, recorder
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, finalizersChangedPredicate{})).
+		WithEventFilter(predicate.Or(
+			predicate.GenerationChangedPredicate{},
+			finalizersChangedPredicate{},
+			specificAnnotationsOrLabelsChangedPredicate{filter: "argoproj.io"})).
 		For(&v1alpha1.Application{}).
 		Complete(r)
 }
