@@ -40,6 +40,7 @@ spec:
                 type: string
               parameters:
                 items:
+                  description: ParameterInStep is the parameter which used in a step
                   properties:
                     defaultValue:
                       type: string
@@ -56,6 +57,7 @@ spec:
               runtime:
                 type: string
               secret:
+                description: SecretInStep is the secret which used in a step
                 properties:
                   mapping:
                     additionalProperties:

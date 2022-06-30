@@ -1,0 +1,12 @@
+apiVersion: gitops.kubesphere.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: updater
+spec:
+  # default value of kind is argocd
+#  kind: argocd
+  images:
+    - ghcr.io/linuxsuren-bot/open-podcasts-ui
+  arg:
+    app:
+      name: app

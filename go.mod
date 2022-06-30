@@ -59,6 +59,7 @@ replace (
 	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
+	golang.org/x/text => golang.org/x/text v0.3.7
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.6

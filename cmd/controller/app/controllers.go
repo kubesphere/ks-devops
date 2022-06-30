@@ -112,6 +112,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		Client:        mgr.GetClient(),
 		ArgoNamespace: s.ArgoCDOption.Namespace,
 	}
+	argcdImageUpdaterReconciler := &argocd.ImageUpdaterReconciler{
+		Client: mgr.GetClient(),
+	}
 	gitRepoReconcilers := gitrepository.GetReconcilers(mgr.GetClient())
 
 	return map[string]func(mgr manager.Manager) error{
@@ -176,6 +179,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				return
 			}
 			return argocdAppReconciler.SetupWithManager(mgr)
+		},
+		argcdImageUpdaterReconciler.GetGroupName() + "-image-updater": func(mgr manager.Manager) error {
+			return argcdImageUpdaterReconciler.SetupWithManager(mgr)
 		},
 	}
 }

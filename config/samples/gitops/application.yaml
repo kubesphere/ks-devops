@@ -2,14 +2,16 @@ apiVersion: gitops.kubesphere.io/v1alpha1
 kind: Application
 metadata:
   name: app
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: ghcr.io/linuxsuren-bot/open-podcasts-ui
 spec:
   argoApp:
     spec:
-      project: default
+      project: testddmtg
       source:
-        repoURL: https://gitlab.com/LinuxSuRen1/argocd
+        repoURL: https://github.com/linuxsuren-bot/open-podcasts/
         targetRevision: HEAD
-        path: test
+        path: config/default
         directory:
           recurse: true
       destination:
