@@ -67,6 +67,12 @@ func TestInterfaceImplement(t *testing.T) {
 			NamedReconciler: &ImageUpdaterReconciler{},
 			GroupReconciler: &ImageUpdaterReconciler{},
 		},
+	}, {
+		name: "ArgoCDApplicationStatusController",
+		instance: interInstance{
+			NamedReconciler: &ApplicationStatusReconciler{},
+			GroupReconciler: &ApplicationStatusReconciler{},
+		},
 	}}
 	for i := range tests {
 		tt := tests[i]

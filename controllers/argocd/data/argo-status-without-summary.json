@@ -1,0 +1,7 @@
+{
+  "health": {
+    "status": "Healthy"
+  },
+  "reconciledAt": "2022-06-30T06:48:05Z",
+  "sourceType": "Kustomize"
+}

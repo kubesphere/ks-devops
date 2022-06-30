@@ -26,7 +26,7 @@ type ImageUpdaterSpec struct {
 	// +kubebuilder:default:=argocd
 	// +kubebuilder:validation:Enum=argocd;fluxcd
 	Kind   string            `json:"kind,omitempty"`
-	Images []string          `json:"images"`
+	Images []string          `json:"images,omitempty"`
 	Argo   *ArgoImageUpdater `json:"argo,omitempty"`
 }
 
