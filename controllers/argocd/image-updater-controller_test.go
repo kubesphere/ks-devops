@@ -118,7 +118,8 @@ func TestReconcile(t *testing.T) {
 			Kind:   "argocd",
 			Images: []string{"nginx"},
 			Argo: &v1alpha1.ArgoImageUpdater{
-				App: v1.LocalObjectReference{Name: "app"},
+				App:   v1.LocalObjectReference{Name: "app"},
+				Write: v1alpha1.WriteMethodBuiltIn,
 			},
 		},
 	}
@@ -128,6 +129,12 @@ func TestReconcile(t *testing.T) {
 	noArgoSettingUpdater.Spec.Argo = nil
 	emptyAppName := updater.DeepCopy()
 	emptyAppName.Spec.Argo.App.Name = ""
+	invalidWriteMethod := updater.DeepCopy()
+	invalidWriteMethod.Spec.Argo.Write = "invalid"
+	withSecretUpdater := updater.DeepCopy()
+	withSecretUpdater.Spec.Argo.Secrets = map[string]string{
+		"nginx": "ns/secret",
+	}
 
 	defaultReq := ctrl.Request{
 		NamespacedName: types.NamespacedName{
@@ -225,7 +232,56 @@ func TestReconcile(t *testing.T) {
 			}, resultApp)
 			assert.Nil(t, err)
 			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list":        "nginx",
+				"argocd-image-updater.argoproj.io/write-back-method": "argocd",
+			}, resultApp.Annotations)
+
+			return true
+		},
+		wantResult: ctrl.Result{},
+	}, {
+		name: "invalid write method",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, invalidWriteMethod, app),
+		},
+		args: args{req: defaultReq},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			c := i[1].(client.Client)
+			assert.Nil(t, err)
+
+			resultApp := &v1alpha1.Application{}
+			err = c.Get(context.Background(), types.NamespacedName{
+				Namespace: "fake",
+				Name:      "app",
+			}, resultApp)
+			assert.Nil(t, err)
+			assert.Equal(t, map[string]string{
 				"argocd-image-updater.argoproj.io/image-list": "nginx",
+			}, resultApp.Annotations)
+
+			return true
+		},
+		wantResult: ctrl.Result{},
+	}, {
+		name: "with image secret",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, withSecretUpdater, app),
+		},
+		args: args{req: defaultReq},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			c := i[1].(client.Client)
+			assert.Nil(t, err)
+
+			resultApp := &v1alpha1.Application{}
+			err = c.Get(context.Background(), types.NamespacedName{
+				Namespace: "fake",
+				Name:      "app",
+			}, resultApp)
+			assert.Nil(t, err)
+			assert.Equal(t, map[string]string{
+				"argocd-image-updater.argoproj.io/image-list":        "nginx",
+				"argocd-image-updater.argoproj.io/write-back-method": "argocd",
+				"argocd-image-updater.argoproj.io/nginx.pull-secret": "pullsecret:ns/secret",
 			}, resultApp.Annotations)
 
 			return true
@@ -244,6 +300,52 @@ func TestReconcile(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.wantResult, gotResult, "Reconcile(%v)", tt.args.req)
+		})
+	}
+}
+
+func Test_setImagePreference(t *testing.T) {
+	type args struct {
+		argo        *v1alpha1.ArgoImageUpdater
+		annotations map[string]string
+	}
+	tests := []struct {
+		name   string
+		args   args
+		verify func(*testing.T, map[string]string)
+	}{{
+		name: "normal case",
+		args: args{
+			argo: &v1alpha1.ArgoImageUpdater{
+				Secrets: map[string]string{
+					"nginx": "ns/name",
+				},
+				AllowTags: map[string]string{
+					"nginx": "v1.1.1",
+				},
+				IgnoreTags: map[string]string{
+					"nginx": "latest",
+				},
+				UpdateStrategy: map[string]string{
+					"nginx": "semver",
+				},
+				Platforms: map[string]string{
+					"nginx": "linux/amd64",
+				},
+			},
+			annotations: map[string]string{},
+		},
+		verify: func(t *testing.T, m map[string]string) {
+			assert.Equal(t, "pullsecret:ns/name", m["argocd-image-updater.argoproj.io/nginx.pull-secret"])
+			assert.Equal(t, "v1.1.1", m["argocd-image-updater.argoproj.io/nginx.allow-tags"])
+			assert.Equal(t, "latest", m["argocd-image-updater.argoproj.io/nginx.ignore-tags"])
+			assert.Equal(t, "semver", m["argocd-image-updater.argoproj.io/nginx.update-strategy"])
+			assert.Equal(t, "linux/amd64", m["argocd-image-updater.argoproj.io/nginx.platforms"])
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setImagePreference(tt.args.argo, tt.args.annotations)
 		})
 	}
 }

@@ -73,6 +73,14 @@ spec:
                     additionalProperties:
                       type: string
                     type: object
+                  write:
+                    default: built-in
+                    description: WriteMethod is an alias of string that represents
+                      the write back method of Argo CD Image updater
+                    enum:
+                    - built-in
+                    - git
+                    type: string
                 required:
                 - app
                 type: object

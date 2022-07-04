@@ -83,9 +83,39 @@ func (r *ImageUpdaterReconciler) Reconcile(req ctrl.Request) (result ctrl.Result
 	if app.Annotations == nil {
 		app.Annotations = map[string]string{}
 	}
+	setImagePreference(argo, app.Annotations)
+
 	updateImageList(updater.Spec.Images, app.Annotations)
 	err = r.Update(ctx, app)
 	return
+}
+
+func setImagePreference(argo *v1alpha1.ArgoImageUpdater, annotations map[string]string) {
+	// set write method
+	if argo.Write.GetValue() != "" {
+		annotations["argocd-image-updater.argoproj.io/write-back-method"] = argo.Write.GetValue()
+	}
+
+	for name, secret := range argo.Secrets {
+		annotations[fmt.Sprintf("argocd-image-updater.argoproj.io/%s.pull-secret", name)] =
+			fmt.Sprintf("pullsecret:%s", secret)
+	}
+
+	for name, tagReg := range argo.AllowTags {
+		annotations[fmt.Sprintf("argocd-image-updater.argoproj.io/%s.allow-tags", name)] = fmt.Sprintf("regexp:%s", tagReg)
+	}
+
+	for name, strategy := range argo.UpdateStrategy {
+		annotations[fmt.Sprintf("argocd-image-updater.argoproj.io/%s.update-strategy", name)] = strategy
+	}
+
+	for name, platform := range argo.Platforms {
+		annotations[fmt.Sprintf("argocd-image-updater.argoproj.io/%s.platforms", name)] = platform
+	}
+
+	for name, ignoreTag := range argo.IgnoreTags {
+		annotations[fmt.Sprintf("argocd-image-updater.argoproj.io/%s.ignore-tags", name)] = ignoreTag
+	}
 }
 
 func updateImageList(images []string, annotations map[string]string) {
