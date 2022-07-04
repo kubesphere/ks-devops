@@ -49,12 +49,12 @@ spec:
   images:
   - nginx:^0.1
   - myalias=some/image
-  write: build-in | git
-  engine: argocd | fluxcd
+  kind: argocd | fluxcd
   argocd:
     app:
       name: demo
       namespace: demo
+    write: built-in | git
     update-strategy:
       nginx: semver
       myalias: latest
