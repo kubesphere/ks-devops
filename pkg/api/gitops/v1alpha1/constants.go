@@ -26,6 +26,11 @@ const (
 	AppNameLabelKey            = GroupName + "/application-name"
 )
 
+const (
+	// AnnoKeyImages is the key for the image list
+	AnnoKeyImages = GroupName + "/images"
+)
+
 // ApplicationFinalizerName is the name of PipelineRun finalizer
 const ApplicationFinalizerName = "application." + GroupName
 

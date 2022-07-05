@@ -32,6 +32,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"strings"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;update
@@ -97,13 +98,19 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 				app.Spec.ArgoApp.Operation = nil
 			}
 
-			// update labels
-			if err = r.Update(ctx, app); err != nil {
-				return
+			var argoS *argoStatus
+			if argoS, err = parseArgoStatus(statusData); err == nil {
+				if app.Annotations == nil {
+					app.Annotations = map[string]string{}
+				}
+				app.Annotations[v1alpha1.AnnoKeyImages] = strings.Join(argoS.Summary.Images, ",")
 			}
 
-			app.Status.ArgoApp = string(statusData)
-			err = r.Status().Update(ctx, app)
+			// update labels
+			if err = r.Update(ctx, app); err == nil {
+				app.Status.ArgoApp = string(statusData)
+				err = r.Status().Update(ctx, app)
+			}
 		}
 	}
 	return
@@ -136,6 +143,21 @@ func createBareArgoCDApplicationObject() *unstructured.Unstructured {
 		Kind:    "Application",
 	})
 	return argoApp
+}
+
+// we can add more fields when need it
+type argoStatus struct {
+	Summary argoStatusSummary `json:"summary"`
+}
+
+type argoStatusSummary struct {
+	Images []string `json:"images"`
+}
+
+func parseArgoStatus(data []byte) (status *argoStatus, err error) {
+	status = &argoStatus{}
+	err = json.Unmarshal(data, status)
+	return
 }
 
 // SetupWithManager init the logger, recorder and filters

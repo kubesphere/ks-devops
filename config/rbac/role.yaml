@@ -308,3 +308,11 @@ rules:
   verbs:
   - get
   - update
+- apiGroups:
+  - gitops.kubesphere.io
+  resources:
+  - imageupdaters
+  verbs:
+  - get
+  - list
+  - watch

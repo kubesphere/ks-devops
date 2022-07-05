@@ -48,5 +48,6 @@ header:
     - 'pkg/client/devops/jenkins/job.go'
     - 'pkg/client/devops/jenkins/request.go'
     - 'pkg/client/devops/jenkins/utils.go'
+    - '**/*.json'
 
   comment: on-failure

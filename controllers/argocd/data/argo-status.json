@@ -1,0 +1,35 @@
+{
+  "health": {
+    "status": "Healthy"
+  },
+  "reconciledAt": "2022-06-30T06:48:05Z",
+  "sourceType": "Kustomize",
+  "summary": {
+    "images": [
+      "ghcr.io/linuxsuren-bot/open-podcasts-ui:v1.0.2",
+      "ghcr.io/linuxsuren-bot/open-podcasts:v1.0.0",
+      "ghcr.io/opensource-f2f/kube-rbac-proxy:v0.8.0",
+      "ghcr.io/opensource-f2f/open-podcasts-apiserver:dev"
+    ]
+  },
+  "sync": {
+    "comparedTo": {
+      "destination": {
+        "name": "in-cluster",
+        "namespace": "argocd"
+      },
+      "source": {
+        "kustomize": {
+          "images": [
+            "ghcr.io/linuxsuren-bot/open-podcasts-ui:v1.0.2"
+          ]
+        },
+        "path": "config/default",
+        "repoURL": "https://github.com/linuxsuren-bot/open-podcasts/",
+        "targetRevision": "HEAD"
+      }
+    },
+    "revision": "1d4fcf1f56f5dbe2ae65abb001ffc304f1d58070",
+    "status": "Synced"
+  }
+}

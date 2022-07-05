@@ -17,8 +17,10 @@ limitations under the License.
 package argocd
 
 import (
+	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -115,12 +117,30 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	defaultApp := &v1alpha1.Application{}
 	defaultApp.SetName("name")
 	defaultApp.SetNamespace("ns")
+	defaultApp.Spec.ArgoApp = &v1alpha1.ArgoApplication{}
 
 	defaultArgoCDApp := &unstructured.Unstructured{}
 	defaultArgoCDApp.SetKind("Application")
 	defaultArgoCDApp.SetAPIVersion("argoproj.io/v1alpha1")
 	defaultArgoCDApp.SetName("name")
 	defaultArgoCDApp.SetNamespace("ns")
+
+	appWithStatus := defaultArgoCDApp.DeepCopy()
+	appWithStatus.SetLabels(map[string]string{
+		v1alpha1.AppNamespaceLabelKey: "ns",
+		v1alpha1.AppNameLabelKey:      "name",
+	})
+	_ = unstructured.SetNestedMap(appWithStatus.Object, map[string]interface{}{
+		"summary": map[string]interface{}{
+			"images": []interface{}{"nginx"},
+		},
+		"sync": map[string]interface{}{
+			"status": "ready",
+		},
+		"health": map[string]interface{}{
+			"status": "ready",
+		},
+	}, "status")
 
 	type fields struct {
 		Client client.Client
@@ -185,6 +205,52 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			return true
 		},
+	}, {
+		name: "have status from argo application",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, appWithStatus, defaultApp),
+		},
+		args: args{
+			req: controllerruntime.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "ns",
+					Name:      "name",
+				},
+			},
+		},
+		wantResult: controllerruntime.Result{},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+
+			c := i[1].(client.Client)
+			app := &v1alpha1.Application{}
+			err = c.Get(context.Background(), types.NamespacedName{
+				Namespace: "ns",
+				Name:      "name",
+			}, app)
+			assert.Nil(t, err)
+
+			assert.Equal(t, "nginx", app.Annotations[v1alpha1.AnnoKeyImages])
+			return true
+		},
+	}, {
+		name: "cannot found inner app",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, appWithStatus),
+		},
+		args: args{
+			req: controllerruntime.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "ns",
+					Name:      "name",
+				},
+			},
+		},
+		wantResult: controllerruntime.Result{},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,10 +260,54 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 				recorder: &record.FakeRecorder{},
 			}
 			gotResult, err := r.Reconcile(tt.args.req)
-			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
+			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req), tt.fields.Client) {
 				return
 			}
 			assert.Equalf(t, tt.wantResult, gotResult, "Reconcile(%v)", tt.args.req)
+		})
+	}
+}
+
+func Test_parseArgoStatus(t *testing.T) {
+	type args struct {
+		dataFile string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantStatus *argoStatus
+		wantErr    assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{dataFile: "data/argo-status.json"},
+		wantStatus: &argoStatus{argoStatusSummary{
+			Images: []string{"ghcr.io/linuxsuren-bot/open-podcasts-ui:v1.0.2",
+				"ghcr.io/linuxsuren-bot/open-podcasts:v1.0.0",
+				"ghcr.io/opensource-f2f/kube-rbac-proxy:v0.8.0",
+				"ghcr.io/opensource-f2f/open-podcasts-apiserver:dev"}}},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}, {
+		name:       "no summary",
+		args:       args{dataFile: "data/argo-status-without-summary.json"},
+		wantStatus: &argoStatus{},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := ioutil.ReadFile(tt.args.dataFile)
+			assert.Nil(t, err)
+
+			gotStatus, err := parseArgoStatus(data)
+			if !tt.wantErr(t, err, fmt.Sprintf("parseArgoStatus(%v)", tt.args.dataFile)) {
+				return
+			}
+			assert.Equalf(t, tt.wantStatus, gotStatus, "parseArgoStatus(%v)", tt.args.dataFile)
 		})
 	}
 }
