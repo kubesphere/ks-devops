@@ -17,8 +17,10 @@ limitations under the License.
 package pipeline
 
 import (
+	"kubesphere.io/devops/pkg/models/pipeline"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 )
@@ -148,6 +150,191 @@ func Test_convertParameterDefinitions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := convertParameterDefinitions(tt.args.paramDefs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertParameterDefinitions() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertCauses(t *testing.T) {
+	type args struct {
+		jobCauses []job.Cause
+	}
+	tests := []struct {
+		name string
+		args args
+		want []pipeline.Cause
+	}{{
+		name: "normal",
+		args: args{
+			jobCauses: []job.Cause{{
+				"shortDescription": "shortDescription",
+			}},
+		},
+		want: []pipeline.Cause{{
+			ShortDescription: "shortDescription",
+		}},
+	}, {
+		name: "parameter and result is nil",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertCauses(tt.args.jobCauses); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertCauses() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertBranches(t *testing.T) {
+	type args struct {
+		jobBranches []job.PipelineBranch
+	}
+	tests := []struct {
+		name string
+		args args
+		want []pipeline.Branch
+	}{{
+		name: "parameter and result is nil",
+		want: []pipeline.Branch{},
+	}, {
+		name: "normal",
+		args: args{
+			jobBranches: []job.PipelineBranch{{
+				BluePipelineItem: job.BluePipelineItem{
+					Name:        "name",
+					DisplayName: "displayName",
+					Disabled:    true,
+				},
+				BlueRunnableItem: job.BlueRunnableItem{
+					WeatherScore: 100,
+				},
+			}},
+		},
+		want: []pipeline.Branch{{
+			Name:         "name",
+			RawName:      "displayName",
+			WeatherScore: 100,
+			Disabled:     true,
+		}},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertBranches(tt.args.jobBranches); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertBranches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertLatestRun(t *testing.T) {
+	now := job.Time{
+		Time: time.Now(),
+	}
+	var durationInMillis int64
+
+	type args struct {
+		jobLatestRun *job.PipelineRunSummary
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pipeline.LatestRun
+	}{{
+		name: "parameter and result is nil",
+	}, {
+		name: "normal",
+		args: args{
+			jobLatestRun: &job.PipelineRunSummary{
+				BlueItemRun: job.BlueItemRun{
+					DurationInMillis: &durationInMillis,
+					EndTime:          now,
+					StartTime:        now,
+					ID:               "id",
+					Name:             "name",
+					Result:           "result",
+					State:            "state",
+				},
+			},
+		},
+		want: &pipeline.LatestRun{
+			EndTime:          now,
+			DurationInMillis: &durationInMillis,
+			StartTime:        now,
+			ID:               "id",
+			Name:             "name",
+			Result:           "result",
+			State:            "state",
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertLatestRun(tt.args.jobLatestRun); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertLatestRun() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertPipeline(t *testing.T) {
+	var durationInMillis int64
+
+	type args struct {
+		jobPipeline *job.Pipeline
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pipeline.Metadata
+	}{{
+		name: "normal",
+		args: args{
+			jobPipeline: &job.Pipeline{
+				BlueMultiBranchPipeline: job.BlueMultiBranchPipeline{
+					BluePipelineItem: job.BluePipelineItem{
+						Name:     "name",
+						Disabled: true,
+					},
+					BlueRunnableItem: job.BlueRunnableItem{
+						WeatherScore:              100,
+						EstimatedDurationInMillis: durationInMillis,
+					},
+					BlueContainerItem: job.BlueContainerItem{
+						NumberOfPipelines: 100,
+						NumberOfFolders:   100,
+					},
+					BlueMultiBranchItem: job.BlueMultiBranchItem{
+						BranchNames:                    []string{"master"},
+						NumberOfFailingBranches:        100,
+						NumberOfSuccessfulBranches:     100,
+						NumberOfSuccessfulPullRequests: 100,
+						TotalNumberOfBranches:          100,
+						TotalNumberOfPullRequests:      100,
+					},
+					ScriptPath: "Jenkinsfile",
+				},
+			},
+		},
+		want: &pipeline.Metadata{
+			WeatherScore:                   100,
+			EstimatedDurationInMillis:      durationInMillis,
+			Name:                           "name",
+			Disabled:                       true,
+			NumberOfPipelines:              100,
+			NumberOfFolders:                100,
+			TotalNumberOfBranches:          100,
+			NumberOfSuccessfulBranches:     100,
+			TotalNumberOfPullRequests:      100,
+			NumberOfFailingBranches:        100,
+			NumberOfSuccessfulPullRequests: 100,
+			BranchNames:                    []string{"master"},
+			ScriptPath:                     "Jenkinsfile",
+			Parameters:                     []job.ParameterDefinition{},
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertPipeline(tt.args.jobPipeline); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertPipeline() = %v, want %v", got, tt.want)
 			}
 		})
 	}
