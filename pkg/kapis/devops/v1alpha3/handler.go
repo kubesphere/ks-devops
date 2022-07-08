@@ -204,6 +204,30 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 	}
 }
 
+// GenericPayload represents a generic HTTP request payload data structure
+type GenericPayload struct {
+	Data string `json:"data"`
+}
+
+func (h *devopsHandler) UpdateJenkinsfile(request *restful.Request, response *restful.Response) {
+	projectName := request.PathParameter("devops")
+	pipelineName := request.PathParameter("pipeline")
+	mode := request.QueryParameter("mode")
+
+	var err error
+	payload := &GenericPayload{}
+	if err = request.ReadEntity(payload); err != nil {
+		kapis.HandleBadRequest(response, request, err)
+		return
+	}
+
+	var client devops.DevopsOperator
+	if client, err = h.getDevOps(request); err == nil {
+		err = client.UpdateJenkinsfile(projectName, pipelineName, mode, payload.Data)
+	}
+	errorHandle(request, response, nil, err)
+}
+
 func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restful.Response) {
 	devops := request.PathParameter("devops")
 	pipeline := request.PathParameter("pipeline")
