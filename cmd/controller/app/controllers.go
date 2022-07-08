@@ -19,6 +19,7 @@ package app
 import (
 	"kubesphere.io/devops/controllers/addon"
 	"kubesphere.io/devops/controllers/argocd"
+	"kubesphere.io/devops/controllers/fluxcd"
 	"kubesphere.io/devops/controllers/gitrepository"
 	"kubesphere.io/devops/controllers/jenkins/devopscredential"
 	"kubesphere.io/devops/controllers/jenkins/devopsproject"
@@ -117,6 +118,10 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	}
 	gitRepoReconcilers := gitrepository.GetReconcilers(mgr.GetClient())
 
+	fluxcdGitRepoReconciler := &fluxcd.GitRepositoryReconciler{
+		Client: mgr.GetClient(),
+	}
+
 	return map[string]func(mgr manager.Manager) error{
 		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
 			return gitRepoReconcilers.SetupWithManager(mgr)
@@ -182,6 +187,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		},
 		argcdImageUpdaterReconciler.GetGroupName() + "-image-updater": func(mgr manager.Manager) error {
 			return argcdImageUpdaterReconciler.SetupWithManager(mgr)
+		},
+		"fluxcd": func(mgr manager.Manager) error {
+			return fluxcdGitRepoReconciler.SetupWithManager(mgr)
 		},
 	}
 }
