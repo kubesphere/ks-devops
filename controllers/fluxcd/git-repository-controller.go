@@ -36,6 +36,7 @@ import (
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update;delete
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups="source.toolkit.fluxcd.io",resources=gitrepositories,verbs=get;list;create;update;delete
 
 // GitRepositoryReconciler is the reconciler of the FluxCDGitRepository
 type GitRepositoryReconciler struct {
@@ -62,7 +63,7 @@ func (r *GitRepositoryReconciler) reconcileFluxGitRepo(repo *v1alpha3.GitReposit
 	ctx := context.Background()
 	FluxGitRepo := createBareFluxGitRepoObject()
 	// FluxGitRepo's namespace = v1alpha3.GitRepository's namespace
-	// FluxGitRepo's name = v1alpha3.GitRepository's name + "-flux-git-repo"
+	// FluxGitRepo's name = "fluxcd-" + v1alpha3.GitRepository's name
 	ns, name := repo.GetNamespace(), getFluxRepoName(repo.GetName())
 
 	if !repo.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -92,63 +93,56 @@ func (r *GitRepositoryReconciler) reconcileFluxGitRepo(repo *v1alpha3.GitReposit
 		}
 		// flux git repo did not existed
 		// create
-		if FluxGitRepo, err = r.createUnstructuredFluxGitRepo(repo); err != nil {
-			return
-		}
+		FluxGitRepo := createUnstructuredFluxGitRepo(repo)
 		if err = r.Create(ctx, FluxGitRepo); err != nil {
-			data, _ := FluxGitRepo.MarshalJSON()
-			r.log.Error(err, "failed to create FluxCDGitRepository", "data", string(data))
 			r.recorder.Eventf(FluxGitRepo, v1.EventTypeWarning, "FailedWithFluxCD",
 				"failed to create FluxCDGitRepository, error is: %v", err)
 		}
 	} else {
 		// flux git repo existed
 		// update
-		var newFluxGitRepo *unstructured.Unstructured
-		if newFluxGitRepo, err = r.createUnstructuredFluxGitRepo(repo); err == nil {
-			FluxGitRepo.Object["spec"] = newFluxGitRepo.Object["spec"]
-			err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
-				latestGitRepo := createBareFluxGitRepoObject()
-				if err = r.Get(context.Background(), types.NamespacedName{
-					Namespace: FluxGitRepo.GetNamespace(),
-					Name:      FluxGitRepo.GetName(),
-				}, latestGitRepo); err != nil {
-					return
-				}
-
-				FluxGitRepo.SetResourceVersion(latestGitRepo.GetResourceVersion())
-				r.log.Info("update FluxCDGitRepository", "name", FluxGitRepo.GetName())
-				err = r.Update(ctx, FluxGitRepo)
+		newFluxGitRepo := createUnstructuredFluxGitRepo(repo)
+		FluxGitRepo.Object["spec"] = newFluxGitRepo.Object["spec"]
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+			latestGitRepo := createBareFluxGitRepoObject()
+			if err = r.Get(context.Background(), types.NamespacedName{
+				Namespace: FluxGitRepo.GetNamespace(),
+				Name:      FluxGitRepo.GetName(),
+			}, latestGitRepo); err != nil {
 				return
-			})
-		}
+			}
+
+			FluxGitRepo.SetResourceVersion(latestGitRepo.GetResourceVersion())
+			r.log.Info("update FluxCDGitRepository", "name", FluxGitRepo.GetName())
+			err = r.Update(ctx, FluxGitRepo)
+			return
+		})
+
 	}
 	return
 }
 
-func (r *GitRepositoryReconciler) createUnstructuredFluxGitRepo(repo *v1alpha3.GitRepository) (*unstructured.Unstructured, error) {
+func createUnstructuredFluxGitRepo(repo *v1alpha3.GitRepository) *unstructured.Unstructured {
 	newFluxGitRepo := createBareFluxGitRepoObject()
 	newFluxGitRepo.SetNamespace(repo.GetNamespace())
 	newFluxGitRepo.SetName(getFluxRepoName(repo.GetName()))
 
 	// set url
-	if err := unstructured.SetNestedField(newFluxGitRepo.Object, repo.Spec.URL, "spec", "url"); err != nil {
-		return nil, err
-	}
+	_ = unstructured.SetNestedField(newFluxGitRepo.Object, repo.Spec.URL, "spec", "url")
 	// set interval
-	if err := unstructured.SetNestedField(newFluxGitRepo.Object, "1m", "spec", "interval"); err != nil {
-		return nil, err
+	_ = unstructured.SetNestedField(newFluxGitRepo.Object, "1m", "spec", "interval")
+	// set secretRef
+	if repo.Spec.Secret != nil && repo.Spec.Secret.Name != "" {
+		_ = unstructured.SetNestedField(newFluxGitRepo.Object, repo.Spec.Secret.Name, "spec", "secretRef", "name")
 	}
-	//TODO set secretRef
-	//if err := unstructured.SetNestedField(newFluxGitRepo.Object, repo.Spec.Secret.Name, "spec", "secretRef"); err != nil {
-	//	return nil, err
-	//}
 
-	return newFluxGitRepo, nil
+	//TODO: set other optional fields, like Ref ...
+
+	return newFluxGitRepo
 }
 
 func getFluxRepoName(name string) string {
-	return fmt.Sprintf("%s-flux-git-repo", name)
+	return fmt.Sprintf("fluxcd-%s", name)
 }
 
 // GetName returns the name of this reconciler
