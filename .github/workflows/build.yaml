@@ -125,7 +125,7 @@ jobs:
           labels: ${{ steps.metaContributors.outputs.labels }}
           platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.2.0
+        uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
           image-ref: 'ghcr.io/kubesphere/devops-controller:sha-${{ steps.build_env.outputs.short_sha }}'
@@ -134,6 +134,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          trivyignores: .github/workflows/.trivyignore
 
   BuildAPIServer:
     runs-on: ubuntu-20.04
@@ -218,7 +219,7 @@ jobs:
           labels: ${{ steps.metaContributors.outputs.labels }}
           platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.2.0
+        uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
           image-ref: 'ghcr.io/kubesphere/devops-apiserver:sha-${{ steps.build_env.outputs.short_sha }}'
@@ -227,6 +228,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          trivyignores: .github/workflows/.trivyignore
 
   BuildTools:
     runs-on: ubuntu-20.04
@@ -311,7 +313,7 @@ jobs:
           labels: ${{ steps.metaContributors.outputs.labels }}
           platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.2.0
+        uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
           image-ref: 'ghcr.io/kubesphere/devops-tools:sha-${{ steps.build_env.outputs.short_sha }}'
@@ -320,6 +322,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          trivyignores: .github/workflows/.trivyignore
 
   UnitTest:
     name: Test
