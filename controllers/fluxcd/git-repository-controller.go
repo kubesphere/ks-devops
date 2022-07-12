@@ -33,8 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update;delete
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;create;update;patch;delete
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 //+kubebuilder:rbac:groups="source.toolkit.fluxcd.io",resources=gitrepositories,verbs=get;list;create;update;delete
 
@@ -61,60 +60,60 @@ func (r *GitRepositoryReconciler) Reconcile(req ctrl.Request) (result ctrl.Resul
 
 func (r *GitRepositoryReconciler) reconcileFluxGitRepo(repo *v1alpha3.GitRepository) (err error) {
 	ctx := context.Background()
-	FluxGitRepo := createBareFluxGitRepoObject()
+	fluxGitRepo := createBareFluxGitRepoObject()
 	// FluxGitRepo's namespace = v1alpha3.GitRepository's namespace
 	// FluxGitRepo's name = "fluxcd-" + v1alpha3.GitRepository's name
 	ns, name := repo.GetNamespace(), getFluxRepoName(repo.GetName())
 
 	if !repo.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, FluxGitRepo); err != nil {
+		if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, fluxGitRepo); err != nil {
 			err = client.IgnoreNotFound(err)
 		} else {
-			r.log.Info("delete FluxCDGitRepository", "name", FluxGitRepo.GetName())
-			err = r.Delete(ctx, FluxGitRepo)
+			r.log.Info("delete FluxCDGitRepository", "name", fluxGitRepo.GetName())
+			err = r.Delete(ctx, fluxGitRepo)
 		}
 
 		if err == nil {
 			k8sutil.RemoveFinalizer(&repo.ObjectMeta, v1alpha3.GitRepoFinalizerName)
-			err = r.Update(context.TODO(), repo)
+			err = r.Update(ctx, repo)
 		}
 		return
 	}
 	if k8sutil.AddFinalizer(&repo.ObjectMeta, v1alpha3.GitRepoFinalizerName) {
-		err = r.Update(context.TODO(), repo)
+		err = r.Update(ctx, repo)
 		if err != nil {
 			return
 		}
 	}
 
-	if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, FluxGitRepo); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, fluxGitRepo); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return
 		}
 		// flux git repo did not existed
 		// create
-		FluxGitRepo := createUnstructuredFluxGitRepo(repo)
-		if err = r.Create(ctx, FluxGitRepo); err != nil {
-			r.recorder.Eventf(FluxGitRepo, v1.EventTypeWarning, "FailedWithFluxCD",
+		newFluxGitRepo := createUnstructuredFluxGitRepo(repo)
+		if err = r.Create(ctx, newFluxGitRepo); err != nil {
+			r.recorder.Eventf(newFluxGitRepo, v1.EventTypeWarning, "FailedWithFluxCD",
 				"failed to create FluxCDGitRepository, error is: %v", err)
 		}
 	} else {
 		// flux git repo existed
 		// update
 		newFluxGitRepo := createUnstructuredFluxGitRepo(repo)
-		FluxGitRepo.Object["spec"] = newFluxGitRepo.Object["spec"]
+		fluxGitRepo.Object["spec"] = newFluxGitRepo.Object["spec"]
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
 			latestGitRepo := createBareFluxGitRepoObject()
-			if err = r.Get(context.Background(), types.NamespacedName{
-				Namespace: FluxGitRepo.GetNamespace(),
-				Name:      FluxGitRepo.GetName(),
+			if err = r.Get(ctx, types.NamespacedName{
+				Namespace: fluxGitRepo.GetNamespace(),
+				Name:      fluxGitRepo.GetName(),
 			}, latestGitRepo); err != nil {
 				return
 			}
 
-			FluxGitRepo.SetResourceVersion(latestGitRepo.GetResourceVersion())
-			r.log.Info("update FluxCDGitRepository", "name", FluxGitRepo.GetName())
-			err = r.Update(ctx, FluxGitRepo)
+			fluxGitRepo.SetResourceVersion(latestGitRepo.GetResourceVersion())
+			r.log.Info("update FluxCDGitRepository", "name", fluxGitRepo.GetName())
+			err = r.Update(ctx, fluxGitRepo)
 			return
 		})
 
@@ -151,13 +150,13 @@ func (r *GitRepositoryReconciler) GetName() string {
 }
 
 func createBareFluxGitRepoObject() *unstructured.Unstructured {
-	FluxGitRepo := &unstructured.Unstructured{}
-	FluxGitRepo.SetGroupVersionKind(schema.GroupVersionKind{
+	fluxGitRepo := &unstructured.Unstructured{}
+	fluxGitRepo.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "source.toolkit.fluxcd.io",
 		Version: "v1beta2",
 		Kind:    "GitRepository",
 	})
-	return FluxGitRepo
+	return fluxGitRepo
 }
 
 // SetupWithManager setups the reconciler with a manager
