@@ -41,13 +41,18 @@ const (
 	PipelineJenkinsBranchesAnnoKey = PipelinePrefix + "jenkins-branches"
 	// PipelineRequestToSyncRunsAnnoKey is the annotation key of requesting to synchronize PipelineRun after a dedicated time.
 	PipelineRequestToSyncRunsAnnoKey = PipelinePrefix + "request-to-sync-pipelineruns"
+	// PipelineJenkinsfileValueAnnoKey is the annotation key of the Jenkinsfile content
+	PipelineJenkinsfileValueAnnoKey = PipelinePrefix + "jenkinsfile"
+	// PipelineJenkinsfileEditModeAnnoKey is the annotation key of the Jenkinsfile edit mode
+	PipelineJenkinsfileEditModeAnnoKey = PipelinePrefix + "jenkinsfile.edit.mode"
+
+	// PipelineJenkinsfileEditModeJSON indicates the Jenkinsfile editing mode is JSON
+	PipelineJenkinsfileEditModeJSON = "json"
 )
 
 // PipelineSpec defines the desired state of Pipeline
 type PipelineSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Type                string               `json:"type" description:"type of devops pipeline, in scm or no scm"`
+	Type                PipelineType         `json:"type" description:"type of devops pipeline, in scm or no scm"`
 	Pipeline            *NoScmPipeline       `json:"pipeline,omitempty" description:"no scm pipeline structs"`
 	MultiBranchPipeline *MultiBranchPipeline `json:"multi_branch_pipeline,omitempty" description:"in scm pipeline structs"`
 }
@@ -91,9 +96,12 @@ func (p *Pipeline) IsMultiBranch() bool {
 	return p.Spec.Type == MultiBranchPipelineType
 }
 
+// PipelineType is an alias of string that represents the type of Pipelines
+type PipelineType string
+
 const (
-	NoScmPipelineType       = "pipeline"
-	MultiBranchPipelineType = "multi-branch-pipeline"
+	NoScmPipelineType       PipelineType = "pipeline"
+	MultiBranchPipelineType PipelineType = "multi-branch-pipeline"
 )
 
 const (

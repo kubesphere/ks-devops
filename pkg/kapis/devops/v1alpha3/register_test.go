@@ -159,6 +159,12 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodDelete,
 			uri:    "/workspaces/fake/devops/fake",
 		},
+	}, {
+		name: "update jenkinsfile",
+		args: args{
+			method: http.MethodPut,
+			uri:    "/devops/fake/pipelines/fake/jenkinsfile",
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

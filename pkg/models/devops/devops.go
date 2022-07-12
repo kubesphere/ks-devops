@@ -65,6 +65,7 @@ type DevopsOperator interface {
 	DeletePipelineObj(projectName string, pipelineName string) error
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
+	UpdateJenkinsfile(projectName, pipelineName, mode, jenkinsfile string) error
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -291,11 +292,40 @@ func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3
 	// trying to avoid the error of `Operation cannot be fulfilled on` by getting the latest resourceVersion
 	if latestPipe, err := d.ksclient.DevopsV1alpha3().Pipelines(ns).Get(d.context, name, metav1.GetOptions{}); err == nil {
 		pipeline.ResourceVersion = latestPipe.ResourceVersion
+
+		// avoid update the Jenkinsfile in this API, see also UpdateJenkinsfile
+		if pipeline.Spec.Pipeline != nil && latestPipe.Spec.Pipeline != nil {
+			pipeline.Spec.Pipeline.Jenkinsfile = latestPipe.Spec.Pipeline.Jenkinsfile
+		}
 	} else {
 		return nil, fmt.Errorf("cannot found pipeline %s/%s, error: %v", ns, name, err)
 	}
 
 	return d.ksclient.DevopsV1alpha3().Pipelines(ns).Update(d.context, pipeline, metav1.UpdateOptions{})
+}
+
+// UpdateJenkinsfile updates the Jenkinsfile value with specific edit mode
+func (d devopsOperator) UpdateJenkinsfile(projectName, pipelineName, mode, jenkinsfile string) (err error) {
+	var pipeline *devopsv1alpha3.Pipeline
+	if pipeline, err = d.ksclient.DevopsV1alpha3().Pipelines(projectName).Get(d.context, pipelineName, metav1.GetOptions{}); err != nil {
+		return
+	}
+
+	if pipeline.Annotations == nil {
+		pipeline.Annotations = map[string]string{}
+	}
+	switch mode {
+	case devopsv1alpha3.PipelineJenkinsfileEditModeJSON:
+		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileEditModeAnnoKey] = devopsv1alpha3.PipelineJenkinsfileEditModeJSON
+		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileValueAnnoKey] = jenkinsfile
+	default:
+		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
+		if pipeline.Spec.Pipeline != nil {
+			pipeline.Spec.Pipeline.Jenkinsfile = jenkinsfile
+		}
+	}
+	_, err = d.ksclient.DevopsV1alpha3().Pipelines(projectName).Update(d.context, pipeline, metav1.UpdateOptions{})
+	return
 }
 
 func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error) {

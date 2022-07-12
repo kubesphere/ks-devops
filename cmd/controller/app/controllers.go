@@ -74,7 +74,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 	}).SetupWithManager(mgr); err != nil {
 		return err
 	}
-	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s)
+	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s, jenkinsCore)
 
 	// Add all controllers into manager.
 	for name, ok := range s.FeatureOptions.GetControllers() {
@@ -93,7 +93,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 }
 
 func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
-	devopsClient devops.Interface, s *options.DevOpsControllerManagerOptions) map[string]func(mgr manager.Manager) error {
+	devopsClient devops.Interface, s *options.DevOpsControllerManagerOptions, jenkinsCore core.JenkinsCore) map[string]func(mgr manager.Manager) error {
 
 	argocdReconciler := &argocd.Reconciler{
 		Client:        mgr.GetClient(),
@@ -162,6 +162,16 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 					client.KubeSphere(), devopsClient,
 					informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
 					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
+			}
+
+			tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
+			if err == nil {
+				jenkinsfileReconciler := &jenkinspipeline.JenkinsfileReconciler{
+					Client:      mgr.GetClient(),
+					TokenIssuer: tokenIssuer,
+					JenkinsCore: jenkinsCore,
+				}
+				err = jenkinsfileReconciler.SetupWithManager(mgr)
 			}
 			return err
 		},
