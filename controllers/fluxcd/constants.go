@@ -27,3 +27,7 @@ const (
 	// Kustomization stand for FluxCD Kustomization Application Type
 	Kustomization AppType = "Kustomization"
 )
+
+// DefaultKubeConfigKey is the Default key for kubeconfig
+// https://fluxcd.io/docs/components/helm/helmreleases/#remote-clusters--cluster-api
+const DefaultKubeConfigKey = "value"

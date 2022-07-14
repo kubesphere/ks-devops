@@ -15,7 +15,18 @@ spec:
       config:
         kustomization:
           - destination:
+              # host cluster
               kubeConfig:
+              targetNamespace: default
+            interval: 8m0s
+            prune: true
+            path: "nginx"
+          - destination:
+              # member cluster
+              kubeConfig:
+                secretRef:
+                  name: node-1
+                  key: value
               targetNamespace: default
             interval: 8m0s
             prune: true

@@ -27,6 +27,7 @@ spec:
           template:
           deploy:
             - destination:
+                # host cluster
                 kubeConfig:
                 targetNamespace: helm-app
               interval: 1m0s
@@ -37,8 +38,15 @@ spec:
               install:
                 createNamespace: true
             - destination:
+                # member cluster
                 kubeConfig:
-                targetNamespace: another-helm-app
+                  secretRef:
+                    name: node-1
+                    key: value
+                targetNamespace: helm-app
+              # StorageNamespace used for the Helm storage.
+              # Defaults to the namespace of the HelmRelease.
+              storageNamespace: default
               interval: 1m0s
               upgrade:
                 remediation:
