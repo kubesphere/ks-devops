@@ -1,0 +1,48 @@
+apiVersion: gitops.kubesphere.io/v1alpha1
+kind: Application
+metadata:
+  name: chengleqi-test-helm
+  namespace: my-devops-projecthmhx2
+  labels:
+    gitops.kubesphere.io/save-helm-template: "true"
+spec:
+  kind: fluxcd
+  fluxApp:
+    spec:
+      source:
+        sourceRef:
+          kind: GitRepository
+          name: fluxcd-github-repo
+          namespace: my-devops-projecthmhx2
+      config:
+        helmRelease:
+          chart:
+            interval: 5m0s
+            chart: ./helm-chart
+            version: "0.1.0"
+            valuesFiles:
+              - ./helm-chart/values.yaml
+              - ./helm-chart/aliyun-values.yaml
+            reconcileStrategy: Revision
+          template:
+          deploy:
+            - destination:
+                kubeConfig:
+                targetNamespace: helm-app
+              interval: 1m0s
+              upgrade:
+                remediation:
+                  remediateLastFailure: true
+                force: true
+              install:
+                createNamespace: true
+            - destination:
+                kubeConfig:
+                targetNamespace: another-helm-app
+              interval: 1m0s
+              upgrade:
+                remediation:
+                  remediateLastFailure: true
+                force: true
+              install:
+                createNamespace: true

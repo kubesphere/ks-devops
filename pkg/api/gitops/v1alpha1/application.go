@@ -17,12 +17,694 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type FluxApplication struct {
+	Spec FluxApplicationSpec `json:"spec,omitempty"`
+}
+
+type FluxApplicationSpec struct {
+	Source *FluxApplicationSource `json:"source,omitempty"`
+	Config *FluxApplicationConfig `json:"config"`
+}
+
+type FluxApplicationSource struct {
+	SourceRef CrossNamespaceObjectReference `json:"sourceRef"`
+}
+
+// CrossNamespaceObjectReference contains enough information to let you locate
+// the typed referenced object at cluster level.
+type CrossNamespaceObjectReference struct {
+	// APIVersion of the referent.
+	APIVersion string `json:"apiVersion,omitempty"`
+
+	// Kind of the referent.
+	// Enum=HelmRepository;GitRepository;Bucket
+	Kind string `json:"kind,omitempty"`
+
+	// Name of the referent.
+	Name string `json:"name"`
+
+	// Namespace of the referent.
+	Namespace string `json:"namespace,omitempty"`
+}
+
+type FluxApplicationDestination struct {
+	// The KubeConfig for reconciling the Kustomization on a remote cluster.
+	// When used in combination with KustomizationSpec.ServiceAccountName,
+	// forces the controller to act on behalf of that Service Account at the
+	// target cluster.
+	// If the --default-service-account flag is set, its value will be used as
+	// a controller level fallback for when KustomizationSpec.ServiceAccountName
+	// is empty.
+	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
+	// TargetNamespace to target when performing operations for the HelmRelease.
+	// Defaults to the namespace of the HelmRelease.
+	TargetNamespace string `json:"targetNamespace,omitempty"`
+}
+
+// KubeConfig references a Kubernetes secret that contains a kubeconfig file.
+type KubeConfig struct {
+	// SecretRef holds the name of a secret that contains a key with
+	// the kubeconfig file as the value. If no key is set, the key will default
+	// to 'value'. The secret must be in the same namespace as
+	// the Kustomization.
+	// It is recommended that the kubeconfig is self-contained, and the secret
+	// is regularly updated if credentials such as a cloud-access-token expire.
+	// Cloud specific `cmd-path` auth helpers will not function without adding
+	// binaries and credentials to the Pod that is responsible for reconciling
+	// the Kustomization.
+	SecretRef SecretKeyReference `json:"secretRef,omitempty"`
+}
+
+// SecretKeyReference contains enough information to locate the referenced Kubernetes Secret object in the same
+// namespace. Optionally a key can be specified.
+// Use this type instead of core/v1 SecretKeySelector when the Key is optional and the Optional field is not
+// applicable.
+type SecretKeyReference struct {
+	// Name of the Secret.
+	Name string `json:"name"`
+
+	// Key in the Secret, when not specified an implementation-specific default key is used.
+	Key string `json:"key,omitempty"`
+}
+
+type FluxApplicationConfig struct {
+	// HelmRelease for FluxCD HelmRelease
+	HelmRelease *HelmReleaseSpec `json:"helmRelease,omitempty"`
+
+	// Kustomization for FluxCD Kustomization
+	Kustomization []*KustomizationSpec `json:"kustomization,omitempty"`
+}
+
+// HelmReleaseSpec defines the desired state of a Helm release.
+type HelmReleaseSpec struct {
+	// Chart defines the template of the v1beta2.HelmChart that should be created
+	// for this HelmRelease.
+	Chart *HelmChartTemplateSpec `json:"chart,omitempty"`
+
+	// Template ref a HelmTemplate that has been saved before
+	Template string `json:"template,omitempty"`
+
+	// HelmReleaseConfig stand for multi-clusters and multi-targetNamespace config
+	Deploy []*Deploy `json:"deploy"`
+}
+
+// HelmChartTemplateSpec is just a simple copy of helm.toolkit.fluxcd.io/HelmRelease's HelmChartTemplateSpec fields
+// exclude sourceRef field because it's in the fluxApp.spec.source field
+type HelmChartTemplateSpec struct {
+	// The name or path the Helm chart is available at in the SourceRef.
+	Chart string `json:"chart"`
+
+	// Version semver expression, ignored for charts from v1beta2.GitRepository and
+	// v1beta2.Bucket sources. Defaults to latest when omitted.
+	// +kubebuilder:default:=*
+	Version string `json:"version,omitempty"`
+
+	// Interval at which to check the v1beta2.Source for updates. Defaults to
+	// 'HelmReleaseSpec.Interval'.
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// Determines what enables the creation of a new artifact. Valid values are
+	// ('ChartVersion', 'Revision').
+	// See the documentation of the values for an explanation on their behavior.
+	// Defaults to ChartVersion when omitted.
+	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
+
+	// Alternative list of values files to use as the chart values (values.yaml
+	// is not included by default), expected to be a relative path in the SourceRef.
+	// Values files are merged in the order of this list with the last file overriding
+	// the first. Ignored when omitted.
+	ValuesFiles []string `json:"valuesFiles,omitempty"`
+}
+
+type Deploy struct {
+	// Destination stand for the destination of the helmrelease
+	Destination FluxApplicationDestination `json:"destination"`
+
+	// The interval at which to reconcile the Kustomization.
+	Interval metav1.Duration `json:"interval"`
+	// Suspend tells the controller to suspend reconciliation for this HelmRelease,
+	// it does not apply to already started reconciliations. Defaults to false.
+	Suspend bool `json:"suspend,omitempty"`
+
+	// Timeout is the time to wait for any individual Kubernetes operation (like Jobs
+	// for hooks) during the performance of a Helm action. Defaults to '5m0s'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// DependsOn may contain a meta.NamespacedObjectReference slice with
+	// references to HelmRelease resources that must be ready before this HelmRelease
+	// can be reconciled.
+	DependsOn []NamespacedObjectReference `json:"dependsOn,omitempty"`
+
+	// The name of the Kubernetes service account to impersonate
+	// when reconciling this HelmRelease.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// ReleaseName used for the Helm release. Defaults to a composition of
+	// '[TargetNamespace-]Name'.
+	ReleaseName string `json:"releaseName,omitempty"`
+
+	// StorageNamespace used for the Helm storage.
+	// Defaults to the namespace of the HelmRelease.
+	StorageNamespace string `json:"storageNamespace,omitempty"`
+
+	// MaxHistory is the number of revisions saved by Helm for this HelmRelease.
+	// Use '0' for an unlimited number of revisions; defaults to '10'.
+	MaxHistory *int `json:"maxHistory,omitempty"`
+
+	// Install holds the configuration for Helm install actions for this HelmRelease.
+	Install *Install `json:"install,omitempty"`
+
+	// Upgrade holds the configuration for Helm upgrade actions for this HelmRelease.
+	Upgrade *Upgrade `json:"upgrade,omitempty"`
+
+	// Test holds the configuration for Helm test actions for this HelmRelease.
+	Test *Test `json:"test,omitempty"`
+
+	// Rollback holds the configuration for Helm rollback actions for this HelmRelease.
+	Rollback *Rollback `json:"rollback,omitempty"`
+
+	// Uninstall holds the configuration for Helm uninstall actions for this HelmRelease.
+	Uninstall *Uninstall `json:"uninstall,omitempty"`
+
+	// ValuesFrom holds references to resources containing Helm values for this HelmRelease,
+	// and information about how they should be merged.
+	ValuesFrom []ValuesReference `json:"valuesFrom,omitempty"`
+
+	// Values holds the values for this Helm release.
+	Values *apiextensionsv1.JSON `json:"values,omitempty"`
+
+	// PostRenderers holds an array of Helm PostRenderers, which will be applied in order
+	// of their definition.
+	PostRenderers []PostRenderer `json:"postRenderers,omitempty"`
+}
+
+type Install struct {
+	// Timeout is the time to wait for any individual Kubernetes operation (like
+	// Jobs for hooks) during the performance of a Helm install action. Defaults to
+	// 'HelmReleaseSpec.Timeout'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Remediation holds the remediation configuration for when the Helm install
+	// action for the HelmRelease fails. The default is to not perform any action.
+	Remediation *InstallRemediation `json:"remediation,omitempty"`
+
+	// DisableWait disables the waiting for resources to be ready after a Helm
+	// install has been performed.
+	DisableWait bool `json:"disableWait,omitempty"`
+
+	// DisableWaitForJobs disables waiting for jobs to complete after a Helm
+	// install has been performed.
+	DisableWaitForJobs bool `json:"disableWaitForJobs,omitempty"`
+
+	// DisableHooks prevents hooks from running during the Helm install action.
+	DisableHooks bool `json:"disableHooks,omitempty"`
+
+	// DisableOpenAPIValidation prevents the Helm install action from validating
+	// rendered templates against the Kubernetes OpenAPI Schema.
+	DisableOpenAPIValidation bool `json:"disableOpenAPIValidation,omitempty"`
+
+	// Replace tells the Helm install action to re-use the 'ReleaseName', but only
+	// if that name is a deleted release which remains in the history.
+	Replace bool `json:"replace,omitempty"`
+
+	// SkipCRDs tells the Helm install action to not install any CRDs. By default,
+	// CRDs are installed if not already present.
+	SkipCRDs bool `json:"skipCRDs,omitempty"`
+
+	// CRDs upgrade CRDs from the Helm Chart's crds directory according
+	// to the CRD upgrade policy provided here. Valid values are `Skip`,
+	// `Create` or `CreateReplace`. Default is `Create` and if omitted
+	// CRDs are installed but not updated.
+	//
+	// Skip: do neither install nor replace (update) any CRDs.
+	//
+	// Create: new CRDs are created, existing CRDs are neither updated nor deleted.
+	//
+	// CreateReplace: new CRDs are created, existing CRDs are updated (replaced)
+	// but not deleted.
+	//
+	// By default, CRDs are applied (installed) during Helm install action.
+	// With this option users can opt-in to CRD replace existing CRDs on Helm
+	// install actions, which is not (yet) natively supported by Helm.
+	// https://helm.sh/docs/chart_best_practices/custom_resource_definitions.
+	CRDs CRDsPolicy `json:"crds,omitempty"`
+
+	// CreateNamespace tells the Helm install action to create the
+	// HelmReleaseSpec.TargetNamespace if it does not exist yet.
+	// On uninstall, the namespace will not be garbage collected.
+	CreateNamespace bool `json:"createNamespace,omitempty"`
+}
+
+type InstallRemediation struct {
+	// Retries is the number of retries that should be attempted on failures before
+	// bailing. Remediation, using an uninstall, is performed between each attempt.
+	// Defaults to '0', a negative integer equals to unlimited retries.
+	Retries int `json:"retries,omitempty"`
+
+	// IgnoreTestFailures tells the controller to skip remediation when the Helm
+	// tests are run after an install action but fail. Defaults to
+	// 'Test.IgnoreFailures'.
+	IgnoreTestFailures *bool `json:"ignoreTestFailures,omitempty"`
+
+	// RemediateLastFailure tells the controller to remediate the last failure, when
+	// no retries remain. Defaults to 'false'.
+	RemediateLastFailure *bool `json:"remediateLastFailure,omitempty"`
+}
+
+type Upgrade struct {
+	// Timeout is the time to wait for any individual Kubernetes operation (like
+	// Jobs for hooks) during the performance of a Helm upgrade action. Defaults to
+	// 'HelmReleaseSpec.Timeout'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Remediation holds the remediation configuration for when the Helm upgrade
+	// action for the HelmRelease fails. The default is to not perform any action.
+	Remediation *UpgradeRemediation `json:"remediation,omitempty"`
+
+	// DisableWait disables the waiting for resources to be ready after a Helm
+	// upgrade has been performed.
+	DisableWait bool `json:"disableWait,omitempty"`
+
+	// DisableWaitForJobs disables waiting for jobs to complete after a Helm
+	// upgrade has been performed.
+	DisableWaitForJobs bool `json:"disableWaitForJobs,omitempty"`
+
+	// DisableHooks prevents hooks from running during the Helm upgrade action.
+	DisableHooks bool `json:"disableHooks,omitempty"`
+
+	// DisableOpenAPIValidation prevents the Helm upgrade action from validating
+	// rendered templates against the Kubernetes OpenAPI Schema.
+	DisableOpenAPIValidation bool `json:"disableOpenAPIValidation,omitempty"`
+
+	// Force forces resource updates through a replacement strategy.
+	Force bool `json:"force,omitempty"`
+
+	// PreserveValues will make Helm reuse the last release's values and merge in
+	// overrides from 'Values'. Setting this flag makes the HelmRelease
+	// non-declarative.
+	PreserveValues bool `json:"preserveValues,omitempty"`
+
+	// CleanupOnFail allows deletion of new resources created during the Helm
+	// upgrade action when it fails.
+	CleanupOnFail bool `json:"cleanupOnFail,omitempty"`
+
+	// CRDs upgrade CRDs from the Helm Chart's crds directory according
+	// to the CRD upgrade policy provided here. Valid values are `Skip`,
+	// `Create` or `CreateReplace`. Default is `Skip` and if omitted
+	// CRDs are neither installed nor upgraded.
+	//
+	// Skip: do neither install nor replace (update) any CRDs.
+	//
+	// Create: new CRDs are created, existing CRDs are neither updated nor deleted.
+	//
+	// CreateReplace: new CRDs are created, existing CRDs are updated (replaced)
+	// but not deleted.
+	//
+	// By default, CRDs are not applied during Helm upgrade action. With this
+	// option users can opt-in to CRD upgrade, which is not (yet) natively supported by Helm.
+	// https://helm.sh/docs/chart_best_practices/custom_resource_definitions.
+	CRDs CRDsPolicy `json:"crds,omitempty"`
+}
+
+type UpgradeRemediation struct {
+	// Retries is the number of retries that should be attempted on failures before
+	// bailing. Remediation, using 'Strategy', is performed between each attempt.
+	// Defaults to '0', a negative integer equals to unlimited retries.
+	Retries int `json:"retries,omitempty"`
+
+	// IgnoreTestFailures tells the controller to skip remediation when the Helm
+	// tests are run after an upgrade action but fail.
+	// Defaults to 'Test.IgnoreFailures'.
+	IgnoreTestFailures *bool `json:"ignoreTestFailures,omitempty"`
+
+	// RemediateLastFailure tells the controller to remediate the last failure, when
+	// no retries remain. Defaults to 'false' unless 'Retries' is greater than 0.
+	RemediateLastFailure *bool `json:"remediateLastFailure,omitempty"`
+
+	// Strategy to use for failure remediation. Defaults to 'rollback'.
+	Strategy *RemediationStrategy `json:"strategy,omitempty"`
+}
+
+// CRDsPolicy defines the install/upgrade approach to use for CRDs when
+// installing or upgrading a HelmRelease.
+type CRDsPolicy string
+
+// RemediationStrategy returns the strategy to use to remediate a failed install
+// or upgrade.
+type RemediationStrategy string
+
+type Test struct {
+	// Enable enables Helm test actions for this HelmRelease after an Helm install
+	// or upgrade action has been performed.
+	Enable bool `json:"enable,omitempty"`
+
+	// Timeout is the time to wait for any individual Kubernetes operation during
+	// the performance of a Helm test action. Defaults to 'HelmReleaseSpec.Timeout'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// IgnoreFailures tells the controller to skip remediation when the Helm tests
+	// are run but fail. Can be overwritten for tests run after install or upgrade
+	// actions in 'Install.IgnoreTestFailures' and 'Upgrade.IgnoreTestFailures'.
+	IgnoreFailures bool `json:"ignoreFailures,omitempty"`
+}
+
+type Rollback struct {
+	// Timeout is the time to wait for any individual Kubernetes operation (like
+	// Jobs for hooks) during the performance of a Helm rollback action. Defaults to
+	// 'HelmReleaseSpec.Timeout'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// DisableWait disables the waiting for resources to be ready after a Helm
+	// rollback has been performed.
+	DisableWait bool `json:"disableWait,omitempty"`
+
+	// DisableWaitForJobs disables waiting for jobs to complete after a Helm
+	// rollback has been performed.
+	DisableWaitForJobs bool `json:"disableWaitForJobs,omitempty"`
+
+	// DisableHooks prevents hooks from running during the Helm rollback action.
+	DisableHooks bool `json:"disableHooks,omitempty"`
+
+	// Recreate performs pod restarts for the resource if applicable.
+	Recreate bool `json:"recreate,omitempty"`
+
+	// Force forces resource updates through a replacement strategy.
+	Force bool `json:"force,omitempty"`
+
+	// CleanupOnFail allows deletion of new resources created during the Helm
+	// rollback action when it fails.
+	CleanupOnFail bool `json:"cleanupOnFail,omitempty"`
+}
+
+type Uninstall struct {
+	// Timeout is the time to wait for any individual Kubernetes operation (like
+	// Jobs for hooks) during the performance of a Helm uninstall action. Defaults
+	// to 'HelmReleaseSpec.Timeout'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// DisableHooks prevents hooks from running during the Helm rollback action.
+	DisableHooks bool `json:"disableHooks,omitempty"`
+
+	// KeepHistory tells Helm to remove all associated resources and mark the
+	// release as deleted, but retain the release history.
+	KeepHistory bool `json:"keepHistory,omitempty"`
+
+	// DisableWait disables waiting for all the resources to be deleted after
+	// a Helm uninstall is performed.
+	DisableWait bool `json:"disableWait,omitempty"`
+}
+
+type ValuesReference struct {
+	// Kind of the values referent, valid values are ('Secret', 'ConfigMap').
+	Kind string `json:"kind"`
+
+	// Name of the values referent. Should reside in the same namespace as the
+	// referring resource.
+	Name string `json:"name"`
+
+	// ValuesKey is the data key where the values.yaml or a specific value can be
+	// found at. Defaults to 'values.yaml'.
+	ValuesKey string `json:"valuesKey,omitempty"`
+
+	// TargetPath is the YAML dot notation path the value should be merged at. When
+	// set, the ValuesKey is expected to be a single flat value. Defaults to 'None',
+	// which results in the values getting merged at the root.
+	TargetPath string `json:"targetPath,omitempty"`
+
+	// Optional marks this ValuesReference as optional. When set, a not found error
+	// for the values reference is ignored, but any ValuesKey, TargetPath or
+	// transient error will still result in a reconciliation failure.
+	Optional bool `json:"optional,omitempty"`
+}
+
+type PostRenderer struct {
+	// Kustomization to apply as PostRenderer.
+	Kustomize *Kustomize `json:"kustomize,omitempty"`
+}
+
+type Kustomize struct {
+	// Strategic merge and JSON patches, defined as inline YAML objects,
+	// capable of targeting objects based on kind, label and annotation selectors.
+	Patches []Patch `json:"patches,omitempty"`
+
+	// Strategic merge patches, defined as inline YAML objects.
+	PatchesStrategicMerge []apiextensionsv1.JSON `json:"patchesStrategicMerge,omitempty"`
+
+	// Images is a list of (image name, new name, new tag or digest)
+	// for changing image names, tags or digests. This can also be achieved with a
+	// patch, but this operator is simpler to specify.
+	Images []Image `json:"images,omitempty" yaml:"images,omitempty"`
+}
+
+// KustomizationSpec defines the configuration to calculate the desired state from a Source using Kustomize.
+type KustomizationSpec struct {
+	// Destination stand for the destination of the kustomization
+	Destination FluxApplicationDestination `json:"destination"`
+
+	// DependsOn may contain a meta.NamespacedObjectReference slice
+	// with references to Kustomization resources that must be ready before this
+	// Kustomization can be reconciled.
+	DependsOn []NamespacedObjectReference `json:"dependsOn,omitempty"`
+
+	// Decrypt Kubernetes secrets before applying them on the cluster.
+	Decryption *Decryption `json:"decryption,omitempty"`
+
+	// The interval at which to reconcile the Kustomization.
+	Interval metav1.Duration `json:"interval"`
+
+	// The interval at which to retry a previously failed reconciliation.
+	// When not specified, the controller uses the KustomizationSpec.Interval
+	// value to retry failures.
+	RetryInterval *metav1.Duration `json:"retryInterval,omitempty"`
+
+	// Path to the directory containing the kustomization.yaml file, or the
+	// set of plain YAMLs a kustomization.yaml should be generated for.
+	// Defaults to 'None', which translates to the root path of the SourceRef.
+	Path string `json:"path,omitempty"`
+
+	// PostBuild describes which actions to perform on the YAML manifest
+	// generated by building the kustomize overlay.
+	PostBuild *PostBuild `json:"postBuild,omitempty"`
+
+	// Prune enables garbage collection.
+	Prune bool `json:"prune"`
+
+	// A list of resources to be included in the health assessment.
+	HealthChecks []NamespacedObjectKindReference `json:"healthChecks,omitempty"`
+
+	// Strategic merge and JSON patches, defined as inline YAML objects,
+	// capable of targeting objects based on kind, label and annotation selectors.
+	Patches []Patch `json:"patches,omitempty"`
+
+	// Images is a list of (image name, new name, new tag or digest)
+	// for changing image names, tags or digests. This can also be achieved with a
+	// patch, but this operator is simpler to specify.
+	Images []Image `json:"images,omitempty"`
+
+	// The name of the Kubernetes service account to impersonate
+	// when reconciling this Kustomization.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// This flag tells the controller to suspend subsequent kustomize executions,
+	// it does not apply to already started executions. Defaults to false.
+	Suspend bool `json:"suspend,omitempty"`
+
+	// Timeout for validation, apply and health checking operations.
+	// Defaults to 'Interval' duration.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Force instructs the controller to recreate resources
+	// when patching fails due to an immutable field change.
+	Force bool `json:"force,omitempty"`
+
+	// Wait instructs the controller to check the health of all the reconciled resources.
+	// When enabled, the HealthChecks are ignored. Defaults to false.
+	Wait bool `json:"wait,omitempty"`
+}
+
+// PostBuild describes which actions to perform on the YAML manifest
+// generated by building the kustomize overlay.
+type PostBuild struct {
+	// Substitute holds a map of key/value pairs.
+	// The variables defined in your YAML manifests
+	// that match any of the keys defined in the map
+	// will be substituted with the set value.
+	// Includes support for bash string replacement functions
+	// e.g. ${var:=default}, ${var:position} and ${var/substring/replacement}.
+	Substitute map[string]string `json:"substitute,omitempty"`
+
+	// SubstituteFrom holds references to ConfigMaps and Secrets containing
+	// the variables and their values to be substituted in the YAML manifests.
+	// The ConfigMap and the Secret data keys represent the var names and they
+	// must match the vars declared in the manifests for the substitution to happen.
+	SubstituteFrom []SubstituteReference `json:"substituteFrom,omitempty"`
+}
+
+// SubstituteReference contains a reference to a resource containing
+// the variables name and value.
+type SubstituteReference struct {
+	// Kind of the values referent, valid values are ('Secret', 'ConfigMap').
+	Kind string `json:"kind"`
+
+	// Name of the values referent. Should reside in the same namespace as the
+	// referring resource.
+	Name string `json:"name"`
+
+	// Optional indicates whether the referenced resource must exist, or whether to
+	// tolerate its absence. If true and the referenced resource is absent, proceed
+	// as if the resource was present but empty, without any variables defined.
+	Optional bool `json:"optional,omitempty"`
+}
+
+// Decryption defines how decryption is handled for Kubernetes manifests.
+type Decryption struct {
+	// Provider is the name of the decryption engine.
+	Provider string `json:"provider"`
+
+	// The secret name containing the private OpenPGP keys used for decryption.
+	SecretRef *LocalObjectReference `json:"secretRef,omitempty"`
+}
+
+// ResourceInventory contains a list of Kubernetes resource object references that have been applied by a Kustomization.
+type ResourceInventory struct {
+	// Entries of Kubernetes resource object references.
+	Entries []ResourceRef `json:"entries"`
+}
+
+// ResourceRef contains the information necessary to locate a resource within a cluster.
+type ResourceRef struct {
+	// ID is the string representation of the Kubernetes resource object's metadata,
+	// in the format '<namespace>_<name>_<group>_<kind>'.
+	ID string `json:"id"`
+
+	// Version is the API version of the Kubernetes resource object's kind.
+	Version string `json:"v"`
+}
+
+// LocalObjectReference contains enough information to locate the referenced Kubernetes resource object.
+type LocalObjectReference struct {
+	// Name of the referent.
+	// +required
+	Name string `json:"name"`
+}
+
+// NamespacedObjectReference contains enough information to locate the referenced Kubernetes resource object in any
+// namespace.
+type NamespacedObjectReference struct {
+	// Name of the referent.
+	// +required
+	Name string `json:"name"`
+
+	// Namespace of the referent, when not specified it acts as LocalObjectReference.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// NamespacedObjectKindReference contains enough information to locate the typed referenced Kubernetes resource object
+// in any namespace.
+type NamespacedObjectKindReference struct {
+	// API version of the referent, if not specified the Kubernetes preferred version will be used.
+	// +optional
+	APIVersion string `json:"apiVersion,omitempty"`
+
+	// Kind of the referent.
+	// +required
+	Kind string `json:"kind"`
+
+	// Name of the referent.
+	// +required
+	Name string `json:"name"`
+
+	// Namespace of the referent, when not specified it acts as LocalObjectReference.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// Image contains an image name, a new name, a new tag or digest, which will replace the original name and tag.
+type Image struct {
+	// Name is a tag-less image name.
+	// +required
+	Name string `json:"name"`
+
+	// NewName is the value used to replace the original name.
+	// +optional
+	NewName string `json:"newName,omitempty"`
+
+	// NewTag is the value used to replace the original tag.
+	// +optional
+	NewTag string `json:"newTag,omitempty"`
+
+	// Digest is the value used to replace the original image tag.
+	// If digest is present NewTag value is ignored.
+	// +optional
+	Digest string `json:"digest,omitempty"`
+}
+
+// Patch contains an inline StrategicMerge or JSON6902 patch, and the target the patch should
+// be applied to.
+type Patch struct {
+	// Patch contains an inline StrategicMerge patch or an inline JSON6902 patch with
+	// an array of operation objects.
+	// +required
+	Patch string `json:"patch,omitempty"`
+
+	// Target points to the resources that the patch document should be applied to.
+	// +optional
+	Target Selector `json:"target,omitempty"`
+}
+
+// Selector specifies a set of resources. Any resource that matches intersection of all conditions is included in this
+// set.
+type Selector struct {
+	// Group is the API group to select resources from.
+	// Together with Version and Kind it is capable of unambiguously identifying and/or selecting resources.
+	// https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+	// +optional
+	Group string `json:"group,omitempty"`
+
+	// Version of the API Group to select resources from.
+	// Together with Group and Kind it is capable of unambiguously identifying and/or selecting resources.
+	// https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+	// +optional
+	Version string `json:"version,omitempty"`
+
+	// Kind of the API Group to select resources from.
+	// Together with Group and Version it is capable of unambiguously
+	// identifying and/or selecting resources.
+	// https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+	// +optional
+	Kind string `json:"kind,omitempty"`
+
+	// Namespace to select resources from.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// Name to match resources with.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// AnnotationSelector is a string that follows the label selection expression
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+	// It matches with the resource annotations.
+	// +optional
+	AnnotationSelector string `json:"annotationSelector,omitempty"`
+
+	// LabelSelector is a string that follows the label selection expression
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+	// It matches with the resource labels.
+	// +optional
+	LabelSelector string `json:"labelSelector,omitempty"`
+}
+
 // ApplicationSpec is the specification of the Application
 type ApplicationSpec struct {
+	Kind    Engine           `json:"kind"`
 	ArgoApp *ArgoApplication `json:"argoApp,omitempty"`
+	FluxApp *FluxApplication `json:"fluxApp,omitempty"`
 }
 
 // ArgoApplication is a definition of Argo Application resource.
@@ -347,7 +1029,6 @@ type SyncStrategyApply struct {
 // If no hook annotation is specified falls back to `kubectl apply`.
 type SyncStrategyHook struct {
 	// Embed SyncStrategyApply type to inherit any `apply` options
-	// +optional
 	SyncStrategyApply `json:",inline"`
 }
 
@@ -368,7 +1049,9 @@ type Application struct {
 
 // ApplicationStatus represents the status of the Application
 type ApplicationStatus struct {
+	Kind    Engine `json:"kind"`
 	ArgoApp string `json:"argoApp,omitempty"`
+	FluxApp string `json:"fluxApp,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

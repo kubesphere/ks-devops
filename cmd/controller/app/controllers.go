@@ -133,6 +133,10 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		TargetConfigMapNamespace: s.FeatureOptions.SystemNamespace,
 	}
 
+	fluxcdApplicationReconciler := &fluxcd.ApplicationReconciler{
+		Client: mgr.GetClient(),
+	}
+
 	return map[string]func(mgr manager.Manager) error{
 		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
 			return gitRepoReconcilers.SetupWithManager(mgr)
@@ -214,8 +218,11 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		argcdImageUpdaterReconciler.GetGroupName() + "-image-updater": func(mgr manager.Manager) error {
 			return argcdImageUpdaterReconciler.SetupWithManager(mgr)
 		},
-		"fluxcd": func(mgr manager.Manager) error {
-			return fluxcdGitRepoReconciler.SetupWithManager(mgr)
+		fluxcdApplicationReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
+			if err = fluxcdGitRepoReconciler.SetupWithManager(mgr); err != nil {
+				return
+			}
+			return fluxcdApplicationReconciler.SetupWithManager(mgr)
 		},
 	}
 }

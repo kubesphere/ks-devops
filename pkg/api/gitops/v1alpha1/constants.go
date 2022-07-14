@@ -38,3 +38,18 @@ const ApplicationFinalizerName = "application." + GroupName
 const ArgoCDResourcesFinalizer = "resources-finalizer.argocd.argoproj.io"
 
 const ArtifactRepoLabelKey = GroupName + "/is-artifact-repository"
+
+type Engine string
+
+const (
+	ArgoCD Engine = "argocd"
+	FluxCD Engine = "fluxcd"
+)
+
+const (
+	// SaveTemplateLabelKey control whether to save a HelmTemplate
+	SaveTemplateLabelKey = GroupName + "/save-helm-template"
+
+	// HelmTemplateName represent the user interface HelmTemplate name
+	HelmTemplateName = GroupName + "/helm-template-name"
+)
