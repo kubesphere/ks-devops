@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,7 +66,7 @@ func (r *GitRepositoryReconciler) reconcileFluxGitRepo(repo *v1alpha3.GitReposit
 	// FluxGitRepo's name = "fluxcd-" + v1alpha3.GitRepository's name
 	ns, name := repo.GetNamespace(), getFluxRepoName(repo.GetName())
 
-	if !repo.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !isArtifactRepo(repo) || !repo.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, fluxGitRepo); err != nil {
 			err = client.IgnoreNotFound(err)
 		} else {
@@ -135,7 +136,9 @@ func createUnstructuredFluxGitRepo(repo *v1alpha3.GitRepository) *unstructured.U
 		_ = unstructured.SetNestedField(newFluxGitRepo.Object, repo.Spec.Secret.Name, "spec", "secretRef", "name")
 	}
 
-	//TODO: set other optional fields, like Ref ...
+	newFluxGitRepo.SetLabels(map[string]string{
+		"app.kubernetes.io/managed-by": v1alpha1.GroupName,
+	})
 
 	return newFluxGitRepo
 }
@@ -157,6 +160,14 @@ func createBareFluxGitRepoObject() *unstructured.Unstructured {
 		Kind:    "GitRepository",
 	})
 	return fluxGitRepo
+}
+
+// isArtifactRepo check whether the repo is ArtifactRepo
+func isArtifactRepo(repo *v1alpha3.GitRepository) bool {
+	if v, ok := repo.GetLabels()[v1alpha1.ArtifactRepoLabelKey]; ok {
+		return v == "true"
+	}
+	return false
 }
 
 // SetupWithManager setups the reconciler with a manager

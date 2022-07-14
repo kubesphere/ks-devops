@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -37,33 +38,38 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	repo := v1alpha3.GitRepository{
+	NonArtifactRepo := &v1alpha3.GitRepository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-repo",
-			Namespace: "devops-project",
+			Name:      "fake-repo",
+			Namespace: "fake-ns",
+			Labels: map[string]string{
+				v1alpha1.ArtifactRepoLabelKey: "false",
+			},
 		},
 		Spec: v1alpha3.GitRepositorySpec{
 			Provider: "git",
-			URL:      "https://example.com/fake/fake",
-			Secret:   nil,
+			URL:      "https://fakeGitHub.com/faker/fake-project",
+			Secret: &v1.SecretReference{
+				Name:      "fake-secret",
+				Namespace: "fake-ns",
+			},
 		},
 	}
 
-	repoWithAuth := repo.DeepCopy()
-	repoWithAuth.Spec.Secret = &v1.SecretReference{
-		Name:      "fake-auth",
-		Namespace: "devops-project",
-	}
+	ArtifactRepo := NonArtifactRepo.DeepCopy()
+	ArtifactRepo.SetLabels(map[string]string{
+		v1alpha1.ArtifactRepoLabelKey: "true",
+	})
 
 	now := metav1.Now()
-	repoWithDeletion := repoWithAuth.DeepCopy()
-	repoWithDeletion.DeletionTimestamp = &now
+	ArtifactRepoWithDeletion := ArtifactRepo.DeepCopy()
+	ArtifactRepoWithDeletion.DeletionTimestamp = &now
 
-	repoWithNewURL := repoWithAuth.DeepCopy()
-	repoWithNewURL.Spec.URL = "https://example.com/fake/real"
+	ArtifactRepoWithNewURL := ArtifactRepo.DeepCopy()
+	ArtifactRepoWithNewURL.Spec.URL = "https://fakeGitHub.com/faker/another-fake-project"
 
 	FluxGitRepo := createBareFluxGitRepoObject()
-	preDelFluxGitRepo := createUnstructuredFluxGitRepo(repoWithAuth)
+	preDelFluxGitRepo := createUnstructuredFluxGitRepo(ArtifactRepo)
 
 	type fields struct {
 		Client client.Client
@@ -79,103 +85,125 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		verify func(t *testing.T, Client client.Client, err error)
 	}{
 		{
-			name: "create a git repository without Secret",
+			name: "create a Non-Artifact git repository",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+				Client: fake.NewFakeClientWithScheme(schema, NonArtifactRepo.DeepCopy()),
 			},
 			args: args{
-				repo: repo.DeepCopy(),
+				repo: NonArtifactRepo.DeepCopy(),
 			},
 			verify: func(t *testing.T, Client client.Client, err error) {
 				assert.Nil(t, err)
 				gitrepo := FluxGitRepo.DeepCopy()
 				err = Client.Get(context.TODO(), types.NamespacedName{
-					Name:      getFluxRepoName(repo.GetName()),
-					Namespace: repo.GetNamespace(),
-				}, gitrepo)
-				assert.Nil(t, err)
-				url, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "url")
-				assert.Equal(t, "https://example.com/fake/fake", url)
-				secretName, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "secretRef", "name")
-				assert.Equal(t, "", secretName)
-			},
-		},
-		{
-			name: "create a git repository with Secret",
-			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repoWithAuth.DeepCopy()),
-			},
-			args: args{
-				repo: repoWithAuth.DeepCopy(),
-			},
-			verify: func(t *testing.T, Client client.Client, err error) {
-				assert.Nil(t, err)
-				gitrepo := FluxGitRepo.DeepCopy()
-				err = Client.Get(context.TODO(), types.NamespacedName{
-					Name:      getFluxRepoName(repo.GetName()),
-					Namespace: repo.GetNamespace(),
-				}, gitrepo)
-				assert.Nil(t, err)
-				url, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "url")
-				assert.Equal(t, "https://example.com/fake/fake", url)
-				secretName, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "secretRef", "name")
-				assert.Equal(t, "fake-auth", secretName)
-			},
-		},
-		{
-			name: "delete a git repository with Secret",
-			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repoWithAuth.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
-			},
-			args: args{
-				repo: repoWithDeletion.DeepCopy(),
-			},
-			verify: func(t *testing.T, Client client.Client, err error) {
-				assert.Nil(t, err)
-				gitrepo := FluxGitRepo.DeepCopy()
-				err = Client.Get(context.TODO(), types.NamespacedName{
-					Name:      getFluxRepoName(repo.GetName()),
-					Namespace: repo.GetNamespace(),
+					Name:      getFluxRepoName(ArtifactRepo.GetName()),
+					Namespace: ArtifactRepo.GetNamespace(),
 				}, gitrepo)
 				assert.True(t, apierrors.IsNotFound(err))
 			},
 		},
 		{
-			name: "delete a git repository but not found a corresponding flux git repository",
+			name: "create a Artifact git repository",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repoWithAuth.DeepCopy()),
+				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy()),
 			},
 			args: args{
-				repo: repoWithDeletion.DeepCopy(),
+				repo: ArtifactRepo.DeepCopy(),
 			},
 			verify: func(t *testing.T, Client client.Client, err error) {
 				assert.Nil(t, err)
 				gitrepo := FluxGitRepo.DeepCopy()
 				err = Client.Get(context.TODO(), types.NamespacedName{
-					Name:      getFluxRepoName(repo.GetName()),
-					Namespace: repo.GetNamespace(),
+					Name:      getFluxRepoName(ArtifactRepo.GetName()),
+					Namespace: ArtifactRepo.GetNamespace(),
+				}, gitrepo)
+				assert.Nil(t, err)
+				url, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "url")
+				assert.Equal(t, "https://fakeGitHub.com/faker/fake-project", url)
+				secretName, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "secretRef", "name")
+				assert.Equal(t, "fake-secret", secretName)
+				ok := gitrepo.GetLabels()[v1alpha1.GroupName]
+				assert.True(t, true, ok)
+			},
+		},
+		{
+			name: "delete a Artifact git repository by click the delete button",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+			},
+			args: args{
+				repo: ArtifactRepoWithDeletion.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.Nil(t, err)
+				gitrepo := FluxGitRepo.DeepCopy()
+				err = Client.Get(context.TODO(), types.NamespacedName{
+					Name:      getFluxRepoName(ArtifactRepo.GetName()),
+					Namespace: ArtifactRepo.GetNamespace(),
 				}, gitrepo)
 				assert.True(t, apierrors.IsNotFound(err))
 			},
 		},
 		{
-			name: "update a git repository with Secret",
+			name: "update a Artifact git repository (delete the ArtifactRepo Label)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repoWithAuth.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
 			},
 			args: args{
-				repo: repoWithNewURL.DeepCopy(),
+				repo: NonArtifactRepo.DeepCopy(),
 			},
 			verify: func(t *testing.T, Client client.Client, err error) {
 				assert.Nil(t, err)
 				gitrepo := FluxGitRepo.DeepCopy()
 				err = Client.Get(context.TODO(), types.NamespacedName{
-					Name:      getFluxRepoName(repo.GetName()),
-					Namespace: repo.GetNamespace(),
+					Name:      getFluxRepoName(ArtifactRepo.GetName()),
+					Namespace: ArtifactRepo.GetNamespace(),
+				}, gitrepo)
+				assert.True(t, apierrors.IsNotFound(err))
+			},
+		},
+		{
+			name: "update a Artifact git repository (normal case)",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+			},
+			args: args{
+				repo: ArtifactRepoWithNewURL.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.Nil(t, err)
+				gitrepo := FluxGitRepo.DeepCopy()
+				err = Client.Get(context.TODO(), types.NamespacedName{
+					Name:      getFluxRepoName(ArtifactRepo.GetName()),
+					Namespace: ArtifactRepo.GetNamespace(),
 				}, gitrepo)
 				assert.Nil(t, err)
 				url, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "url")
-				assert.Equal(t, "https://example.com/fake/real", url)
+				assert.Equal(t, "https://fakeGitHub.com/faker/another-fake-project", url)
+			},
+		},
+		{
+			name: "update a Non-Artifact git repository (add the ArtifactRepo Label)",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, NonArtifactRepo.DeepCopy()),
+			},
+			args: args{
+				repo: ArtifactRepo.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.Nil(t, err)
+				gitrepo := FluxGitRepo.DeepCopy()
+				err = Client.Get(context.TODO(), types.NamespacedName{
+					Name:      getFluxRepoName(NonArtifactRepo.GetName()),
+					Namespace: NonArtifactRepo.GetNamespace(),
+				}, gitrepo)
+				assert.Nil(t, err)
+				url, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "url")
+				assert.Equal(t, "https://fakeGitHub.com/faker/fake-project", url)
+				secretName, _, _ := unstructured.NestedString(gitrepo.Object, "spec", "secretRef", "name")
+				assert.Equal(t, "fake-secret", secretName)
+				ok := gitrepo.GetLabels()[v1alpha1.GroupName]
+				assert.True(t, true, ok)
 			},
 		},
 	}
@@ -218,12 +246,13 @@ func TestGitRepositoryReconciler_getFluxRepoName(t *testing.T) {
 func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
-	err = v1.SchemeBuilder.AddToScheme(schema)
-	assert.Nil(t, err)
 
-	repo := v1alpha3.GitRepository{}
-	repo.SetName("fake-git-repo")
-	repo.SetNamespace("devops-project")
+	repo := v1alpha3.GitRepository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-repo",
+			Namespace: "fake-ns",
+		},
+	}
 
 	type fields struct {
 		Client client.Client
@@ -247,8 +276,8 @@ func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 			args: args{
 				req: ctrl.Request{
 					NamespacedName: types.NamespacedName{
-						Name:      "fake-git-repo",
-						Namespace: "another-devops-project",
+						Name:      "fake-repo",
+						Namespace: "another-fake-ns",
 					},
 				},
 			},
@@ -262,8 +291,8 @@ func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 			args: args{
 				req: ctrl.Request{
 					NamespacedName: types.NamespacedName{
-						Name:      "fake-git-repo",
-						Namespace: "devops-project",
+						Name:      "fake-repo",
+						Namespace: "fake-ns",
 					},
 				},
 			},
