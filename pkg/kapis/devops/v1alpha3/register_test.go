@@ -22,6 +22,7 @@ import (
 	"kubesphere.io/devops/pkg/jwt/token"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/emicklei/go-restful"
@@ -67,8 +68,10 @@ func TestAPIsExist(t *testing.T) {
 		uri    string
 	}
 	tests := []struct {
-		name string
-		args args
+		name       string
+		args       args
+		body       string
+		expectCode int
 	}{{
 		name: "credential list",
 		args: args{
@@ -81,6 +84,7 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/devops/fake/credentials",
 		},
+		expectCode: 400,
 	}, {
 		name: "get a credential",
 		args: args{
@@ -93,6 +97,7 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPut,
 			uri:    "/devops/fake/credentials/fake",
 		},
+		expectCode: 400,
 	}, {
 		name: "delete a credential",
 		args: args{
@@ -111,6 +116,7 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/devops/fake/pipelines",
 		},
+		expectCode: 400,
 	}, {
 		name: "get a pipeline",
 		args: args{
@@ -118,11 +124,20 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/devops/fake/pipelines/fake",
 		},
 	}, {
-		name: "update a pipeline",
+		name: "update a pipeline without body",
 		args: args{
 			method: http.MethodPut,
 			uri:    "/devops/fake/pipelines/fake",
 		},
+		expectCode: 400,
+	}, {
+		name: "update a pipeline with body",
+		args: args{
+			method: http.MethodPut,
+			uri:    "/devops/fake/pipelines/fake",
+		},
+		body:       `{}`,
+		expectCode: 400,
 	}, {
 		name: "delete a pipeline",
 		args: args{
@@ -141,6 +156,7 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/workspaces/fake/devops",
 		},
+		expectCode: 400,
 	}, {
 		name: "get a devops",
 		args: args{
@@ -153,6 +169,7 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPut,
 			uri:    "/workspaces/fake/devops/fake",
 		},
+		expectCode: 400,
 	}, {
 		name: "delete a devops",
 		args: args{
@@ -160,21 +177,35 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/workspaces/fake/devops/fake",
 		},
 	}, {
+		name: "update jenkinsfile without body",
+		args: args{
+			method: http.MethodPut,
+			uri:    "/devops/fake/pipelines/fake-pipeline/jenkinsfile",
+		},
+		expectCode: 400,
+	}, {
 		name: "update jenkinsfile",
 		args: args{
 			method: http.MethodPut,
-			uri:    "/devops/fake/pipelines/fake/jenkinsfile",
+			uri:    "/devops/fake/pipelines/fake-pipeline/jenkinsfile",
 		},
+		body:       `{"data":"fake-jenkinsfile"}`,
+		expectCode: 404,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			httpRequest, _ := http.NewRequest(tt.args.method,
-				"http://fake.com/kapis/devops.kubesphere.io/v1alpha3"+tt.args.uri, nil)
+				"http://fake.com/kapis/devops.kubesphere.io/v1alpha3"+tt.args.uri, strings.NewReader(tt.body))
 			httpRequest = httpRequest.WithContext(context.WithValue(context.TODO(), constants.K8SToken, constants.ContextKeyK8SToken("")))
+			httpRequest.Header.Set("Content-Type", "application/json")
+
+			if tt.expectCode == 0 {
+				tt.expectCode = http.StatusOK
+			}
 
 			httpWriter := httptest.NewRecorder()
 			container.Dispatch(httpWriter, httpRequest)
-			assert.NotEqual(t, 404, httpWriter.Code)
+			assert.Equal(t, tt.expectCode, httpWriter.Code)
 		})
 	}
 }
