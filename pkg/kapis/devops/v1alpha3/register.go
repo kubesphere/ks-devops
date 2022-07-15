@@ -178,8 +178,7 @@ func registerRoutersForPipelines(handler *devopsHandler, ws *restful.WebService)
 		Param(ws.QueryParameter("mode", "the mode(json or raw) that you expect to update the Jenkinsfile")).
 		Reads(&GenericPayload{}, "The Jenkinsfile content should be in the 'data' field").
 		Doc("Update the Jenkinsfile of a Pipeline").
-		Returns(http.StatusOK, api.StatusOK, v1alpha3.Pipeline{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
+		Returns(http.StatusOK, api.StatusOK, GenericResponse{}))
 
 	ws.Route(ws.DELETE("/devops/{devops}/pipelines/{pipeline}").
 		To(handler.DeletePipeline).
