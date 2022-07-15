@@ -86,6 +86,14 @@ func TestAPIsExist(t *testing.T) {
 		},
 		expectCode: 400,
 	}, {
+		name: "create a credential with body",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/devops/fake/credentials",
+		},
+		body:       `{}`,
+		expectCode: 200,
+	}, {
 		name: "get a credential",
 		args: args{
 			method: http.MethodGet,
@@ -98,6 +106,14 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/devops/fake/credentials/fake",
 		},
 		expectCode: 400,
+	}, {
+		name: "update a credential with body",
+		args: args{
+			method: http.MethodPut,
+			uri:    "/devops/fake/credentials/fake",
+		},
+		body:       `{}`,
+		expectCode: 200,
 	}, {
 		name: "delete a credential",
 		args: args{
@@ -118,6 +134,14 @@ func TestAPIsExist(t *testing.T) {
 		},
 		expectCode: 400,
 	}, {
+		name: "create a pipeline with body",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/devops/fake/pipelines",
+		},
+		body:       `{}`,
+		expectCode: 200,
+	}, {
 		name: "get a pipeline",
 		args: args{
 			method: http.MethodGet,
@@ -137,7 +161,7 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/devops/fake/pipelines/fake",
 		},
 		body:       `{}`,
-		expectCode: 400,
+		expectCode: 200,
 	}, {
 		name: "delete a pipeline",
 		args: args{
@@ -158,6 +182,14 @@ func TestAPIsExist(t *testing.T) {
 		},
 		expectCode: 400,
 	}, {
+		name: "create a devops with body",
+		args: args{
+			method: http.MethodPost,
+			uri:    "/workspaces/fake/devops",
+		},
+		body:       `{}`,
+		expectCode: 400,
+	}, {
 		name: "get a devops",
 		args: args{
 			method: http.MethodGet,
@@ -170,6 +202,14 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/workspaces/fake/devops/fake",
 		},
 		expectCode: 400,
+	}, {
+		name: "update a devops with body",
+		args: args{
+			method: http.MethodPut,
+			uri:    "/workspaces/fake/devops/fake",
+		},
+		body:       `{}`,
+		expectCode: 404,
 	}, {
 		name: "delete a devops",
 		args: args{
