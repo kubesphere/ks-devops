@@ -23,29 +23,25 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	
+
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
 	"github.com/jenkins-zh/jenkins-client/pkg/util"
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
-type fixReconciler struct {
-	Reconciler
-}
-
 const (
 	organizationAPIPrefix = "/blue/rest/organizations"
 	organization          = "jenkins"
 )
 
-func (c *fixReconciler) getGetPipelineAPI(pipelineName string, folders ...string) string {
+func (c *Reconciler) getPipelineAPI(pipelineName string, folders ...string) string {
 	api := fmt.Sprintf("%s/%s", organizationAPIPrefix, organization)
 	folders = append(folders, pipelineName)
 	for _, folder := range folders {
@@ -54,8 +50,8 @@ func (c *fixReconciler) getGetPipelineAPI(pipelineName string, folders ...string
 	return api
 }
 
-func (c *fixReconciler) getGetPipelineBranchAPI(option *job.GetBranchesOption) string {
-	api := c.getGetPipelineAPI(option.PipelineName, option.Folders...)
+func (c *Reconciler) getPipelineBranchAPI(option *job.GetBranchesOption) string {
+	api := c.getPipelineAPI(option.PipelineName, option.Folders...)
 	api = api + "/branches/"
 	apiURL := &url.URL{
 		Path: api,
@@ -74,21 +70,20 @@ func (c *fixReconciler) getGetPipelineBranchAPI(option *job.GetBranchesOption) s
 	return apiURL.String()
 }
 
-var _ = Describe("Pipeline", func() {
+var _ = Describe("Pipeline metadata", func() {
 	var (
 		ctrl         *gomock.Controller
-		c            fixReconciler
+		c            Reconciler
 		roundTripper *mhttp.MockRoundTripper
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		c = fixReconciler{}
+		c = Reconciler{}
 		roundTripper = mhttp.NewMockRoundTripper(ctrl)
-		c.Reconciler.JenkinsCore.RoundTripper = roundTripper
-		c.Reconciler.JenkinsCore.URL = "http://localhost"
+		c.JenkinsCore.RoundTripper = roundTripper
+		c.JenkinsCore.URL = "http://localhost"
 	})
-
 	AfterEach(func() {
 		ctrl.Finish()
 	})
@@ -96,7 +91,7 @@ var _ = Describe("Pipeline", func() {
 	Context("Pipeline Metadata", func() {
 		It("Metadata with default namespace", func() {
 			pipelineName := "pipelineA"
-			api := c.getGetPipelineAPI(pipelineName, metav1.NamespaceDefault)
+			api := c.getPipelineAPI(pipelineName, metav1.NamespaceDefault)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, api)
 			request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 			response := &http.Response{
@@ -107,25 +102,23 @@ var _ = Describe("Pipeline", func() {
 				RoundTrip(core.NewRequestMatcher(request)).
 				Return(response, nil)
 
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   metav1.NamespaceDefault,
 					Annotations: map[string]string{},
 				},
 			}
-			err := c.obtainAndUpdatePipelineMetadata(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineMetadata(pipeline)
 
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
 		})
-	})
-	Context("Pipeline Metadata", func() {
 		It("Metadata with custom namespace", func() {
 			pipelineName := "pipelineA"
 			customNamespace := "namespaceA"
-			api := c.getGetPipelineAPI(pipelineName, customNamespace)
+			api := c.getPipelineAPI(pipelineName, customNamespace)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, api)
 			request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 			response := &http.Response{
@@ -136,18 +129,18 @@ var _ = Describe("Pipeline", func() {
 				RoundTrip(core.NewRequestMatcher(request)).
 				Return(response, nil)
 
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   customNamespace,
 					Annotations: map[string]string{},
 				},
 			}
-			err := c.obtainAndUpdatePipelineMetadata(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineMetadata(pipeline)
 
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
 		})
 	})
 
@@ -162,7 +155,7 @@ var _ = Describe("Pipeline", func() {
 		}
 		It("Multi Branch Pipeline default namespace", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   metav1.NamespaceDefault,
@@ -173,23 +166,23 @@ var _ = Describe("Pipeline", func() {
 				},
 			}
 			option := &job.GetBranchesOption{
-				Folders:      []string{pipelinev1alpha3.Namespace},
-				PipelineName: pipelinev1alpha3.Name,
+				Folders:      []string{pipeline.Namespace},
+				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getGetPipelineBranchAPI(option)
+			branchAPI := c.getPipelineBranchAPI(option)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
-			err := c.obtainAndUpdatePipelineBranches(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineBranches(pipeline)
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
 		})
 		It("Multi Branch Pipeline custom namespace", func() {
 			pipelineName := "pipelineA"
 			namespace := "namespaceA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   namespace,
@@ -201,23 +194,23 @@ var _ = Describe("Pipeline", func() {
 			}
 
 			option := &job.GetBranchesOption{
-				Folders:      []string{pipelinev1alpha3.Namespace},
-				PipelineName: pipelinev1alpha3.Name,
+				Folders:      []string{pipeline.Namespace},
+				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getGetPipelineBranchAPI(option)
-			requestURL, err := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
+			branchAPI := c.getPipelineBranchAPI(option)
+			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
-			err = c.obtainAndUpdatePipelineBranches(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineBranches(pipeline)
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
 		})
 		It("Multi Branch Pipeline with query", func() {
 			pipelineName := "pipelineA"
 			namespace := "namespaceA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   namespace,
@@ -229,25 +222,25 @@ var _ = Describe("Pipeline", func() {
 			}
 
 			option := &job.GetBranchesOption{
-				Folders:      []string{pipelinev1alpha3.Namespace},
-				PipelineName: pipelinev1alpha3.Name,
+				Folders:      []string{pipeline.Namespace},
+				PipelineName: pipeline.Name,
 				Filter:       job.OriginFilter,
 				Start:        123,
 				Limit:        456,
 			}
-			branchAPI := c.getGetPipelineBranchAPI(option)
-			requestURL, err := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
+			branchAPI := c.getPipelineBranchAPI(option)
+			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
-			err = c.obtainAndUpdatePipelineBranches(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineBranches(pipeline)
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
 		})
 		It("Multi Branch Pipeline Response a branch", func() {
 			pipelineName := "pipelineA"
 			namespace := "namespaceA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        pipelineName,
 					Namespace:   namespace,
@@ -259,12 +252,12 @@ var _ = Describe("Pipeline", func() {
 			}
 
 			option := &job.GetBranchesOption{
-				Folders:      []string{pipelinev1alpha3.Namespace},
-				PipelineName: pipelinev1alpha3.Name,
+				Folders:      []string{pipeline.Namespace},
+				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getGetPipelineBranchAPI(option)
-			requestURL, err := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
+			branchAPI := c.getPipelineBranchAPI(option)
+			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `
 [{
    "disabled":false,
@@ -284,77 +277,77 @@ var _ = Describe("Pipeline", func() {
 }]
 `)
 
-			err = c.obtainAndUpdatePipelineBranches(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineBranches(pipeline)
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(pipelinev1alpha3.Annotations).NotTo(gomega.BeNil())
-			gomega.Expect(pipelinev1alpha3.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
 		})
 
 		It("single branch", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pipelineName,
 				},
 			}
-			err := c.obtainAndUpdatePipelineBranches(pipelinev1alpha3)
+			err := c.obtainAndUpdatePipelineBranches(pipeline)
 			gomega.Expect(err).To(gomega.Succeed())
-			gomega.Expect(len(pipelinev1alpha3.Annotations)).To(gomega.Equal(0))
+			gomega.Expect(len(pipeline.Annotations)).To(gomega.Equal(0))
 		})
 
 		It("pipeline Metadata Predicate should call create", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pipelineName,
 				},
 			}
 			instance := pipelineMetadataPredicate
 			evt := event.CreateEvent{
-				Object: pipelinev1alpha3,
+				Object: pipeline,
 			}
 
 			gomega.Expect(instance.Create(evt)).To(gomega.BeTrue())
 		})
 		It("pipeline Metadata Predicate should not call delete", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pipelineName,
 				},
 			}
 			instance := pipelineMetadataPredicate
 			evt := event.DeleteEvent{
-				Object: pipelinev1alpha3,
+				Object: pipeline,
 			}
 
 			gomega.Expect(instance.Delete(evt)).To(gomega.BeFalse())
 		})
 		It("pipeline Metadata Predicate should not call update", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pipelineName,
 				},
 			}
 			instance := pipelineMetadataPredicate
 			evt := event.UpdateEvent{
-				ObjectOld: pipelinev1alpha3,
-				ObjectNew: pipelinev1alpha3,
+				ObjectOld: pipeline,
+				ObjectNew: pipeline,
 			}
 
 			gomega.Expect(instance.Update(evt)).To(gomega.BeFalse())
 		})
 		It("pipeline Metadata Predicate should not call Generic", func() {
 			pipelineName := "pipelineA"
-			pipelinev1alpha3 := &v1alpha3.Pipeline{
+			pipeline := &v1alpha3.Pipeline{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: pipelineName,
 				},
 			}
 			instance := pipelineMetadataPredicate
 			evt := event.GenericEvent{
-				Object: pipelinev1alpha3,
+				Object: pipeline,
 			}
 
 			gomega.Expect(instance.Generic(evt)).To(gomega.BeFalse())

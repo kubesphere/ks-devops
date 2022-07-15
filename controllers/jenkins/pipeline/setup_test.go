@@ -19,11 +19,13 @@ package pipeline_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestPipeline(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Pipeline Suite")
+	junitReporter := reporters.NewJUnitReporter("pipelinerun-test.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "test PipelineRun controller", []Reporter{junitReporter})
 }

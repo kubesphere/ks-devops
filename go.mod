@@ -28,7 +28,7 @@ require (
 	github.com/jenkins-zh/jenkins-client v0.0.10-0.20220706065616-22f8c7675234
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/ginkgo/v2 v2.1.4
+	github.com/onsi/ginkgo/v2 v2.1.4 // indirect
 	github.com/onsi/gomega v1.19.0
 	github.com/sony/sonyflake v1.0.0
 	github.com/speps/go-hashids v2.0.0+incompatible
