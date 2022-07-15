@@ -41,7 +41,7 @@ const (
 	organization          = "jenkins"
 )
 
-func (c *Reconciler) getPipelineAPI(pipelineName string, folders ...string) string {
+func getPipelineAPI(pipelineName string, folders ...string) string {
 	api := fmt.Sprintf("%s/%s", organizationAPIPrefix, organization)
 	folders = append(folders, pipelineName)
 	for _, folder := range folders {
@@ -50,8 +50,8 @@ func (c *Reconciler) getPipelineAPI(pipelineName string, folders ...string) stri
 	return api
 }
 
-func (c *Reconciler) getPipelineBranchAPI(option *job.GetBranchesOption) string {
-	api := c.getPipelineAPI(option.PipelineName, option.Folders...)
+func getPipelineBranchAPI(option *job.GetBranchesOption) string {
+	api := getPipelineAPI(option.PipelineName, option.Folders...)
 	api = api + "/branches/"
 	apiURL := &url.URL{
 		Path: api,
@@ -91,7 +91,7 @@ var _ = Describe("Pipeline metadata", func() {
 	Context("Pipeline Metadata", func() {
 		It("Metadata with default namespace", func() {
 			pipelineName := "pipelineA"
-			api := c.getPipelineAPI(pipelineName, metav1.NamespaceDefault)
+			api := getPipelineAPI(pipelineName, metav1.NamespaceDefault)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, api)
 			request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 			response := &http.Response{
@@ -118,7 +118,7 @@ var _ = Describe("Pipeline metadata", func() {
 		It("Metadata with custom namespace", func() {
 			pipelineName := "pipelineA"
 			customNamespace := "namespaceA"
-			api := c.getPipelineAPI(pipelineName, customNamespace)
+			api := getPipelineAPI(pipelineName, customNamespace)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, api)
 			request, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 			response := &http.Response{
@@ -170,7 +170,7 @@ var _ = Describe("Pipeline metadata", func() {
 				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getPipelineBranchAPI(option)
+			branchAPI := getPipelineBranchAPI(option)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
@@ -198,7 +198,7 @@ var _ = Describe("Pipeline metadata", func() {
 				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getPipelineBranchAPI(option)
+			branchAPI := getPipelineBranchAPI(option)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
@@ -228,7 +228,7 @@ var _ = Describe("Pipeline metadata", func() {
 				Start:        123,
 				Limit:        456,
 			}
-			branchAPI := c.getPipelineBranchAPI(option)
+			branchAPI := getPipelineBranchAPI(option)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `[]`)
 
@@ -256,7 +256,7 @@ var _ = Describe("Pipeline metadata", func() {
 				PipelineName: pipeline.Name,
 				Limit:        100000,
 			}
-			branchAPI := c.getPipelineBranchAPI(option)
+			branchAPI := getPipelineBranchAPI(option)
 			requestURL, _ := util.URLJoinAsString(c.JenkinsCore.URL, branchAPI)
 			given(requestURL, http.StatusOK, `
 [{
