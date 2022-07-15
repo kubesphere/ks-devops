@@ -209,6 +209,18 @@ type GenericPayload struct {
 	Data string `json:"data"`
 }
 
+// GenericResponse represents a generic HTTP response data structure
+type GenericResponse struct {
+	Result string `json:"result"`
+}
+
+// NewSuccessResponse creates a response for the success case
+func NewSuccessResponse() *GenericResponse {
+	return &GenericResponse{
+		Result: "success",
+	}
+}
+
 func (h *devopsHandler) UpdateJenkinsfile(request *restful.Request, response *restful.Response) {
 	projectName := request.PathParameter("devops")
 	pipelineName := request.PathParameter("pipeline")
@@ -225,7 +237,7 @@ func (h *devopsHandler) UpdateJenkinsfile(request *restful.Request, response *re
 	if client, err = h.getDevOps(request); err == nil {
 		err = client.UpdateJenkinsfile(projectName, pipelineName, mode, payload.Data)
 	}
-	errorHandle(request, response, nil, err)
+	errorHandle(request, response, NewSuccessResponse(), err)
 }
 
 func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restful.Response) {
