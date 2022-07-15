@@ -114,6 +114,8 @@ var _ = Describe("Pipeline metadata", func() {
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
+			expectMetadataAnno := `{"weatherScore":0,"name":"pipelineA"}`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).To(gomega.Equal(expectMetadataAnno))
 		})
 		It("Metadata with custom namespace", func() {
 			pipelineName := "pipelineA"
@@ -141,6 +143,8 @@ var _ = Describe("Pipeline metadata", func() {
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).NotTo(gomega.BeNil())
+			expectMetadataAnno := `{"weatherScore":0,"name":"pipelineA"}`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsMetadataAnnoKey]).To(gomega.Equal(expectMetadataAnno))
 		})
 	})
 
@@ -175,9 +179,12 @@ var _ = Describe("Pipeline metadata", func() {
 			given(requestURL, http.StatusOK, `[]`)
 
 			err := c.obtainAndUpdatePipelineBranches(pipeline)
+
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			expectBranchAnno := `[]`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).To(gomega.Equal(expectBranchAnno))
 		})
 		It("Multi Branch Pipeline custom namespace", func() {
 			pipelineName := "pipelineA"
@@ -203,9 +210,12 @@ var _ = Describe("Pipeline metadata", func() {
 			given(requestURL, http.StatusOK, `[]`)
 
 			err := c.obtainAndUpdatePipelineBranches(pipeline)
+
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			expectBranchAnno := `[]`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).To(gomega.Equal(expectBranchAnno))
 		})
 		It("Multi Branch Pipeline with query", func() {
 			pipelineName := "pipelineA"
@@ -233,9 +243,12 @@ var _ = Describe("Pipeline metadata", func() {
 			given(requestURL, http.StatusOK, `[]`)
 
 			err := c.obtainAndUpdatePipelineBranches(pipeline)
+
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			expectBranchAnno := `[]`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).To(gomega.Equal(expectBranchAnno))
 		})
 		It("Multi Branch Pipeline Response a branch", func() {
 			pipelineName := "pipelineA"
@@ -278,9 +291,12 @@ var _ = Describe("Pipeline metadata", func() {
 `)
 
 			err := c.obtainAndUpdatePipelineBranches(pipeline)
+
 			gomega.Expect(err).To(gomega.Succeed())
 			gomega.Expect(pipeline.Annotations).NotTo(gomega.BeNil())
 			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).NotTo(gomega.BeNil())
+			expectBranchAnno := `[{"name":"v0.0.1","rawName":"v0.0.1","weatherScore":100,"branch":{"url":"https://github.com/JohnNiang/devops-java-thin-sample/tree/v0.0.1"}}]`
+			gomega.Expect(pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]).To(gomega.Equal(expectBranchAnno))
 		})
 
 		It("single branch", func() {
