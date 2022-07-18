@@ -35,7 +35,7 @@ make install
 - Copy config/samples/kubesphere.yaml to dir /etc/kubesphere/ .
 - Before starting the APIServer, execute the following one command to clone Swagger UI
 ```shell
-make swagger
+make swagger-ui
 ```
 - Debug code...
 
