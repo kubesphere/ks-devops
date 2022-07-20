@@ -32,11 +32,14 @@ components, please see also [the sample file](config/samples/kubesphere.yaml).
 ```shell
 make install
 ```
-- Copy config/samples/kubesphere.yaml to dir /etc/kubesphere/ .
+
+- Copy config/samples/kubesphere.yaml to root directory of the repository.
 - Before starting the APIServer, execute the following one command to clone Swagger UI
+
 ```shell
 make swagger-ui
 ```
+
 - Debug code...
 
 - Execute the following command to uninstall our CRDs:
