@@ -71,3 +71,5 @@ replace (
 )
 
 replace github.com/jenkins-x/go-scm v1.11.4 => github.com/kubesphere-sigs/go-scm v1.5.1-0.20220516023517-090ddb380729
+
+replace github.com/jenkins-zh/jenkins-client => github.com/linuxsuren/jenkins-client v0.0.0-20220721125630-dff7396a6ca1
