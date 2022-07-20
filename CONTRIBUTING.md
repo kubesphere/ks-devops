@@ -11,6 +11,7 @@ Before you get started to contribute. Please the following requirements:
 | Golang | Skilled | [Youtube tutorial for beginner](https://www.youtube.com/watch?v=75lJDVT1h0s&list=PLzMcBGfZo4-mtY_SE3HuzQJzuj4VlUG0q) |
 | GitHub | Skilled | [Official learning lab](https://lab.github.com/) |
 | Kubernetes | Basic development skills | [Official document](https://kubernetes.io/) |
+| Kustomize  | Basic development skills | [Official document](https://github.com/kubernetes-sigs/kustomize) |
 | Helm chart | Basic development skills | [Official document](https://helm.sh/) |
 | Docker | Skilled | [Official document](https://docs.docker.com/) |
 | Jenkins | Familiar [optional] | [Official website](https://www.jenkins.io/), [Tutorial in Chinese](https://www.bilibili.com/video/BV1fp4y1r7Dd) |
@@ -30,6 +31,13 @@ components, please see also [the sample file](config/samples/kubesphere.yaml).
 
 ```shell
 make install
+```
+
+- Copy config/samples/kubesphere.yaml to root directory of the repository.
+- Before starting the APIServer, execute the following one command to clone Swagger UI
+
+```shell
+make swagger-ui
 ```
 
 - Debug code...
