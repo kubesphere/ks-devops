@@ -52,7 +52,9 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	pip := &v1alpha3.Pipeline{}
 	pip.SetNamespace("ns")
 	pip.SetName("name")
-	pip.Annotations = map[string]string{}
+	pip.Annotations = map[string]string{
+		v1alpha3.PipelineJenkinsfileEditModeAnnoKey: "raw",
+	}
 	pip.Spec.Type = v1alpha3.NoScmPipelineType
 	pip.Spec.Pipeline = &v1alpha3.NoScmPipeline{
 		Jenkinsfile: `jenkinsfile`,
@@ -64,6 +66,9 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 
 	invalidEditMode := pip.DeepCopy()
 	invalidEditMode.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = "invalid"
+
+	emptyEditMode := pip.DeepCopy()
+	emptyEditMode.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
 
 	irregularPip := pip.DeepCopy()
 	irregularPip.Spec.Type = ""
@@ -100,6 +105,21 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 		name: "invalid edit mode",
 		fields: fields{
 			Client:      fake.NewFakeClientWithScheme(schema, invalidEditMode),
+			JenkinsCore: core.JenkinsCore{},
+			log:         log.NullLogger{},
+			TokenIssuer: &token.FakeIssuer{},
+		},
+		args: args{
+			req: defaultReq,
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}, {
+		name: "empty edit mode",
+		fields: fields{
+			Client:      fake.NewFakeClientWithScheme(schema, emptyEditMode),
 			JenkinsCore: core.JenkinsCore{},
 			log:         log.NullLogger{},
 			TokenIssuer: &token.FakeIssuer{},

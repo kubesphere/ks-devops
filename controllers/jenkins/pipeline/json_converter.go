@@ -73,10 +73,11 @@ func (r *JenkinsfileReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 
 	editMode := pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey]
 	switch editMode {
-	case "":
+	case v1alpha3.PipelineJenkinsfileEditModeRaw:
 		result, err = r.reconcileJenkinsfileEditMode(pip, coreClient)
 	case v1alpha3.PipelineJenkinsfileEditModeJSON:
 		result, err = r.reconcileJSONEditMode(pip, coreClient)
+	case "":
 	default:
 		r.log.Info(fmt.Sprintf("invalid edit mode: %s", editMode))
 		return
@@ -86,7 +87,6 @@ func (r *JenkinsfileReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 
 func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipeline, coreClient core.Client) (
 	result ctrl.Result, err error) {
-
 	jenkinsfile := pip.Spec.Pipeline.Jenkinsfile
 
 	var toJSONResult core.GenericResult
@@ -99,6 +99,7 @@ func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipel
 		pip.Annotations = map[string]string{}
 	}
 	pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey] = toJSONResult.GetResult()
+	pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
 	err = r.Update(context.Background(), pip)
 	return
 }
