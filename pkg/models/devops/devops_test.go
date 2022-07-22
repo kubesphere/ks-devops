@@ -19,7 +19,9 @@ package devops
 import (
 	"context"
 	"fmt"
+	v12 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"net/http"
 	"testing"
 
@@ -541,6 +543,64 @@ func Test_devopsOperator_UpdatePipelineObj(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "UpdatePipelineObj(%v, %v)", tt.args.projectName, tt.args.pipeline)
+		})
+	}
+}
+
+func Test_devopsOperator_GetJenkinsAgentLabels(t *testing.T) {
+	cm := &v12.ConfigMap{
+		Data: map[string]string{
+			"agent.labels": "good,bad",
+		},
+	}
+	cm.SetName("jenkins-agent-config")
+	cm.SetNamespace("kubesphere-devops-system")
+
+	type fields struct {
+		devopsClient devops.Interface
+		k8sclient    kubernetes.Interface
+		ksclient     versioned.Interface
+		context      context.Context
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		wantLabels []string
+		wantErr    assert.ErrorAssertionFunc
+	}{{
+		name: "not found ConfigMap",
+		fields: fields{
+			k8sclient: k8sfake.NewSimpleClientset(),
+		},
+		wantLabels: nil,
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.NotNil(t, err)
+			return true
+		},
+	}, {
+		name: "normal",
+		fields: fields{
+			k8sclient: k8sfake.NewSimpleClientset(cm.DeepCopy()),
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+		wantLabels: []string{"good", "bad"},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := devopsOperator{
+				devopsClient: tt.fields.devopsClient,
+				k8sclient:    tt.fields.k8sclient,
+				ksclient:     tt.fields.ksclient,
+				context:      tt.fields.context,
+			}
+			gotLabels, err := d.GetJenkinsAgentLabels()
+			if !tt.wantErr(t, err, fmt.Sprintf("GetJenkinsAgentLabels()")) {
+				return
+			}
+			assert.Equalf(t, tt.wantLabels, gotLabels, "GetJenkinsAgentLabels()")
 		})
 	}
 }

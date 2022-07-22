@@ -231,6 +231,13 @@ func TestAPIsExist(t *testing.T) {
 		},
 		body:       `{"data":"fake-jenkinsfile"}`,
 		expectCode: 404,
+	}, {
+		name: "get Jenkins labels",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/ci/nodelabels",
+		},
+		expectCode: http.StatusBadRequest,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -17,34 +17,10 @@ limitations under the License.
 package devops
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/fatih/structs"
-
 	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/utils/stringutils"
 )
-
-func GetColumnsFromStruct(s interface{}) []string {
-	names := structs.Names(s)
-	for i, name := range names {
-		names[i] = stringutils.CamelCaseToUnderscore(name)
-	}
-	return names
-}
-
-func GetColumnsFromStructWithPrefix(prefix string, s interface{}) []string {
-	names := structs.Names(s)
-	for i, name := range names {
-		names[i] = WithPrefix(prefix, stringutils.CamelCaseToUnderscore(name))
-	}
-	return names
-}
-
-func WithPrefix(prefix, str string) string {
-	return prefix + "." + str
-}
 
 const (
 	StatusActive     = "active"
@@ -299,27 +275,7 @@ var JenkinsPipelinePermissionMap = map[string]devops.ProjectPermissionIds{
 	},
 }
 
-// get roleName of the project
-func GetProjectRoleName(projectId, role string) string {
-	return fmt.Sprintf("%s-%s-project", projectId, role)
-}
-
-// get roleName of the pipeline
-func GetPipelineRoleName(projectId, role string) string {
-	return fmt.Sprintf("%s-%s-pipeline", projectId, role)
-}
-
-// get pattern string of the project
-func GetProjectRolePattern(projectId string) string {
-	return fmt.Sprintf("^%s$", projectId)
-}
-
-// get pattern string of the project
-func GetPipelineRolePattern(projectId string) string {
-	return fmt.Sprintf("^%s/.*", projectId)
-}
-
-// get unified sync current time
+// GetSyncNowTime returns unified sync current time
 func GetSyncNowTime() string {
 	return time.Now().String()
 }

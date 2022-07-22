@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/jwt/token"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -122,8 +123,8 @@ func setLabelsToConfigMap(labels []string, cm *v1.ConfigMap) (changed bool) {
 	if cm.Data == nil {
 		cm.Data = map[string]string{}
 	}
-	if cm.Data["agent.labels"] != strings.Join(labels, ",") {
-		cm.Data["agent.labels"] = strings.Join(labels, ",")
+	if cm.Data[devops.JenkinsAgentLabelsKey] != strings.Join(labels, ",") {
+		cm.Data[devops.JenkinsAgentLabelsKey] = strings.Join(labels, ",")
 		changed = true
 	}
 	return

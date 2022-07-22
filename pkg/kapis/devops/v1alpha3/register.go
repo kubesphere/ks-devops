@@ -85,6 +85,7 @@ func registerRoutes(devopsClient devopsClient.Interface, k8sClient k8s.Client, c
 	registerRoutersForPipelines(handler, ws)
 	registerRoutersForWorkspace(handler, ws)
 	scm.RegisterRoutersForSCM(client, ws)
+	registerRoutersForCI(handler, ws)
 }
 
 func registerRoutersForCredentials(handler *devopsHandler, ws *restful.WebService) {
@@ -233,4 +234,11 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		Doc("Get the devopsproject of the specified workspace for the current user").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
+}
+
+func registerRoutersForCI(handler *devopsHandler, ws *restful.WebService) {
+	ws.Route(ws.GET("/ci/nodelabels").
+		To(handler.getJenkinsLabels).
+		Doc("Get the all labels of the Jenkins").
+		Returns(http.StatusOK, api.StatusOK, GenericArrayResponse{}))
 }

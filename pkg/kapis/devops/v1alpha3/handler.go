@@ -221,6 +221,21 @@ func NewSuccessResponse() *GenericResponse {
 	}
 }
 
+// GenericArrayResponse represents a generic array response
+type GenericArrayResponse struct {
+	Status  string   `json:"status"`
+	Data    []string `json:"data"`
+	Message string   `json:"message"`
+}
+
+// NewSuccessGenericArrayResponse creates a generic array response
+func NewSuccessGenericArrayResponse(data []string) *GenericArrayResponse {
+	return &GenericArrayResponse{
+		Status: "success",
+		Data:   data,
+	}
+}
+
 func (h *devopsHandler) UpdateJenkinsfile(request *restful.Request, response *restful.Response) {
 	projectName := request.PathParameter("devops")
 	pipelineName := request.PathParameter("pipeline")
@@ -343,6 +358,17 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 		errorHandle(request, response, servererr.None, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
+	}
+}
+
+func (h *devopsHandler) getJenkinsLabels(request *restful.Request, response *restful.Response) {
+	client, err := h.getDevOps(request)
+
+	var labels []string
+	if labels, err = client.GetJenkinsAgentLabels(); err != nil {
+		kapis.HandleBadRequest(response, request, err)
+	} else {
+		errorHandle(request, response, NewSuccessGenericArrayResponse(labels), nil)
 	}
 }
 
