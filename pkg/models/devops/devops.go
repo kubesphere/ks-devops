@@ -603,4 +603,450 @@ func (d devopsOperator) GetNodesDetail(projectName, pipelineName, runId string, 
 				return
 			}
 
-		
+			stepChan <- &devops.NodesStepsIndex{Id: index, Steps: Steps}
+			wg.Done()
+		}(v.ID, i)
+	}
+
+	wg.Wait()
+	close(stepChan)
+
+	for oneNodeSteps := range stepChan {
+		if oneNodeSteps != nil {
+			nodesDetails[oneNodeSteps.Id].Steps = append(nodesDetails[oneNodeSteps.Id].Steps, oneNodeSteps.Steps...)
+		}
+	}
+
+	return nodesDetails, err
+}
+
+func (d devopsOperator) GetBranchPipeline(projectName, pipelineName, branchName string, req *http.Request) (*devops.BranchPipeline, error) {
+
+	res, err := d.devopsClient.GetBranchPipeline(projectName, pipelineName, branchName, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetBranchPipelineRun(projectName, pipelineName, branchName, runId string, req *http.Request) (*devops.PipelineRun, error) {
+
+	res, err := d.devopsClient.GetBranchPipelineRun(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) StopBranchPipeline(projectName, pipelineName, branchName, runId string, req *http.Request) (*devops.StopPipeline, error) {
+
+	req.Method = http.MethodPut
+	res, err := d.devopsClient.StopBranchPipeline(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) ReplayBranchPipeline(projectName, pipelineName, branchName, runId string, req *http.Request) (*devops.ReplayPipeline, error) {
+
+	res, err := d.devopsClient.ReplayBranchPipeline(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) RunBranchPipeline(projectName, pipelineName, branchName string, req *http.Request) (*devops.RunPipeline, error) {
+
+	res, err := d.devopsClient.RunBranchPipeline(projectName, pipelineName, branchName, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetBranchArtifacts(projectName, pipelineName, branchName, runId string, req *http.Request) ([]devops.Artifacts, error) {
+
+	res, err := d.devopsClient.GetBranchArtifacts(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetBranchRunLog(projectName, pipelineName, branchName, runId string, req *http.Request) ([]byte, error) {
+
+	res, err := d.devopsClient.GetBranchRunLog(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetBranchStepLog(projectName, pipelineName, branchName, runId, nodeId, stepId string, req *http.Request) ([]byte, http.Header, error) {
+
+	resBody, header, err := d.devopsClient.GetBranchStepLog(projectName, pipelineName, branchName, runId, nodeId, stepId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, nil, err
+	}
+
+	return resBody, header, err
+}
+
+func (d devopsOperator) GetBranchNodeSteps(projectName, pipelineName, branchName, runId, nodeId string, req *http.Request) ([]devops.NodeSteps, error) {
+
+	res, err := d.devopsClient.GetBranchNodeSteps(projectName, pipelineName, branchName, runId, nodeId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetBranchPipelineRunNodes(projectName, pipelineName, branchName, runId string, req *http.Request) ([]devops.BranchPipelineRunNodes, error) {
+
+	res, err := d.devopsClient.GetBranchPipelineRunNodes(projectName, pipelineName, branchName, runId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) SubmitBranchInputStep(projectName, pipelineName, branchName, runId, nodeId, stepId string, req *http.Request) ([]byte, error) {
+
+	newBody, err := getInputReqBody(req.Body)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	req.Body = newBody
+	resBody, err := d.devopsClient.SubmitBranchInputStep(projectName, pipelineName, branchName, runId, nodeId, stepId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return resBody, err
+}
+
+func (d devopsOperator) GetBranchNodesDetail(projectName, pipelineName, branchName, runId string, req *http.Request) ([]devops.NodesDetail, error) {
+	var wg sync.WaitGroup
+	var nodesDetails []devops.NodesDetail
+	stepChan := make(chan *devops.NodesStepsIndex, channelMaxCapacity)
+
+	respNodes, err := d.GetBranchPipelineRunNodes(projectName, pipelineName, branchName, runId, req)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	Nodes, err := json.Marshal(respNodes)
+	err = json.Unmarshal(Nodes, &nodesDetails)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	// get all steps in nodes.
+	for i, v := range nodesDetails {
+		wg.Add(1)
+		go func(nodeId string, index int) {
+			Steps, err := d.GetBranchNodeSteps(projectName, pipelineName, branchName, runId, nodeId, req)
+			if err != nil {
+				klog.Error(err)
+				return
+			}
+
+			stepChan <- &devops.NodesStepsIndex{Id: index, Steps: Steps}
+			wg.Done()
+		}(v.ID, i)
+	}
+
+	wg.Wait()
+	close(stepChan)
+
+	for oneNodeSteps := range stepChan {
+		if oneNodeSteps != nil {
+			nodesDetails[oneNodeSteps.Id].Steps = append(nodesDetails[oneNodeSteps.Id].Steps, oneNodeSteps.Steps...)
+		}
+	}
+
+	return nodesDetails, err
+}
+
+func (d devopsOperator) GetPipelineBranch(projectName, pipelineName string, req *http.Request) (*devops.PipelineBranch, error) {
+
+	res, err := d.devopsClient.GetPipelineBranch(projectName, pipelineName, convertToHttpParameters(req))
+	//baseUrl+req.URL.RawQuery, req)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) ScanBranch(projectName, pipelineName string, req *http.Request) ([]byte, error) {
+
+	resBody, err := d.devopsClient.ScanBranch(projectName, pipelineName, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return resBody, err
+}
+
+func (d devopsOperator) GetConsoleLog(projectName, pipelineName string, req *http.Request) ([]byte, error) {
+
+	resBody, err := d.devopsClient.GetConsoleLog(projectName, pipelineName, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return resBody, err
+}
+
+func (d devopsOperator) GetCrumb(req *http.Request) (*devops.Crumb, error) {
+
+	res, err := d.devopsClient.GetCrumb(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetSCMServers(scmId string, req *http.Request) ([]devops.SCMServer, error) {
+
+	req.Method = http.MethodGet
+	resBody, err := d.devopsClient.GetSCMServers(scmId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+	}
+	return resBody, err
+}
+
+func (d devopsOperator) GetSCMOrg(scmId string, req *http.Request) ([]devops.SCMOrg, error) {
+
+	res, err := d.devopsClient.GetSCMOrg(scmId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GetOrgRepo(scmId, organizationId string, req *http.Request) (devops.OrgRepo, error) {
+
+	res, err := d.devopsClient.GetOrgRepo(scmId, organizationId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return devops.OrgRepo{}, err
+	}
+
+	return res, err
+}
+
+// CreateSCMServers creates a Bitbucket server config item in Jenkins configuration if there's no same API address exist
+func (d devopsOperator) CreateSCMServers(scmId string, req *http.Request) (*devops.SCMServer, error) {
+
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	createReq := &devops.CreateScmServerReq{}
+	err = json.Unmarshal(requestBody, createReq)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	req.Body = nil
+	servers, err := d.GetSCMServers(scmId, req)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	createReq.ApiURL = strings.TrimSuffix(createReq.ApiURL, "/")
+	for _, server := range servers {
+		if strings.TrimSuffix(server.ApiURL, "/") == createReq.ApiURL {
+			return &server, nil
+		}
+	}
+	req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+
+	req.Method = http.MethodPost
+	resBody, err := d.devopsClient.CreateSCMServers(scmId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	return resBody, err
+}
+
+func (d devopsOperator) Validate(scmId string, req *http.Request) (*devops.Validates, error) {
+
+	req.Method = http.MethodPut
+	resBody, err := d.devopsClient.Validate(scmId, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return resBody, err
+}
+
+func (d devopsOperator) GetNotifyCommit(req *http.Request) ([]byte, error) {
+
+	req.Method = http.MethodGet
+
+	res, err := d.devopsClient.GetNotifyCommit(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GithubWebhook(req *http.Request) ([]byte, error) {
+
+	res, err := d.devopsClient.GithubWebhook(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) GenericWebhook(req *http.Request) (data []byte, err error) {
+	res, err := d.devopsClient.GenericWebhook(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) CheckScriptCompile(projectName, pipelineName string, req *http.Request) (*devops.CheckScript, error) {
+
+	resBody, err := d.devopsClient.CheckScriptCompile(projectName, pipelineName, convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return resBody, err
+}
+
+func (d devopsOperator) CheckCron(projectName string, req *http.Request) (*devops.CheckCronRes, error) {
+
+	res, err := d.devopsClient.CheckCron(projectName, convertToHttpParameters(req))
+
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) ToJenkinsfile(req *http.Request) (*devops.ResJenkinsfile, error) {
+
+	res, err := d.devopsClient.ToJenkinsfile(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) ToJSON(req *http.Request) (map[string]interface{}, error) {
+
+	res, err := d.devopsClient.ToJSON(convertToHttpParameters(req))
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (d devopsOperator) isGenerateNameUnique(workspace, generateName string) (bool, error) {
+	projects, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+		return false, err
+	}
+	for _, p := range projects.Items {
+		if p.Labels != nil && p.Labels[constants.WorkspaceLabelKey] == workspace && p.GenerateName == generateName {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func getInputReqBody(reqBody io.ReadCloser) (newReqBody io.ReadCloser, err error) {
+	var checkBody devops.CheckPlayload
+	var jsonBody []byte
+	var workRound struct {
+		ID         string                           `json:"id,omitempty" description:"id"`
+		Parameters []devops.CheckPlayloadParameters `json:"parameters"`
+		Abort      bool                             `json:"abort,omitempty" description:"abort or not"`
+	}
+
+	Body, err := ioutil.ReadAll(reqBody)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+
+	err = json.Unmarshal(Body, &checkBody)
+
+	if checkBody.Abort != true && checkBody.Parameters == nil {
+		workRound.Parameters = []devops.CheckPlayloadParameters{}
+		workRound.ID = checkBody.ID
+		jsonBody, _ = json.Marshal(workRound)
+	} else {
+		jsonBody, _ = json.Marshal(checkBody)
+	}
+
+	newReqBody = parseBody(bytes.NewBuffer(jsonBody))
+
+	return newReqBody, nil
+
+}
+
+func parseBody(body io.Reader) (newReqBody io.ReadCloser) {
+	rc, ok := body.(io.ReadCloser)
+	if !ok && body != nil {
+		rc = ioutil.NopCloser(body)
+	}
+	return rc
+}
