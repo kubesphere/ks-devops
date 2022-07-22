@@ -48,6 +48,8 @@ const (
 
 	// PipelineJenkinsfileEditModeJSON indicates the Jenkinsfile editing mode is JSON
 	PipelineJenkinsfileEditModeJSON = "json"
+	// PipelineJenkinsfileEditModeRaw indicates the Jenkinsfile editing mode is groovy
+	PipelineJenkinsfileEditModeRaw = "raw"
 )
 
 // PipelineSpec defines the desired state of Pipeline
