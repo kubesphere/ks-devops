@@ -317,15 +317,18 @@ func (d devopsOperator) UpdateJenkinsfile(projectName, pipelineName, mode, jenki
 	if pipeline.Annotations == nil {
 		pipeline.Annotations = map[string]string{}
 	}
+	pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileEditModeAnnoKey] = mode
+
 	switch mode {
 	case devopsv1alpha3.PipelineJenkinsfileEditModeJSON:
-		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileEditModeAnnoKey] = devopsv1alpha3.PipelineJenkinsfileEditModeJSON
 		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileValueAnnoKey] = jenkinsfile
-	default:
-		pipeline.Annotations[devopsv1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
+	case devopsv1alpha3.PipelineJenkinsfileEditModeRaw:
 		if pipeline.Spec.Pipeline != nil {
 			pipeline.Spec.Pipeline.Jenkinsfile = jenkinsfile
 		}
+	default:
+		err = fmt.Errorf("invalid edit mode: %s", mode)
+		return
 	}
 	_, err = d.ksclient.DevopsV1alpha3().Pipelines(projectName).Update(d.context, pipeline, metav1.UpdateOptions{})
 	return
