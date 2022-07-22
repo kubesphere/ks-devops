@@ -398,6 +398,27 @@ func Test_devopsOperator_UpdateJenkinsfile(t *testing.T) {
 			jenkinsfile:  "jenkinsfile",
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.NotNil(t, err)
+			return true
+		},
+		verify: func(t *testing.T, ksclient versioned.Interface) {
+			pip, err := ksclient.DevopsV1alpha3().Pipelines("ns").Get(context.Background(), "fake", metav1.GetOptions{})
+			assert.Nil(t, err)
+			assert.Equal(t, "", pip.Spec.Pipeline.Jenkinsfile)
+			assert.Equal(t, "", pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey])
+		},
+	}, {
+		name: "mode value is raw",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(pipeline.DeepCopy()),
+		},
+		args: args{
+			projectName:  "ns",
+			pipelineName: "fake",
+			mode:         "raw",
+			jenkinsfile:  "jenkinsfile",
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
 			return true
 		},
@@ -405,7 +426,7 @@ func Test_devopsOperator_UpdateJenkinsfile(t *testing.T) {
 			pip, err := ksclient.DevopsV1alpha3().Pipelines("ns").Get(context.Background(), "fake", metav1.GetOptions{})
 			assert.Nil(t, err)
 			assert.Equal(t, "jenkinsfile", pip.Spec.Pipeline.Jenkinsfile)
-			assert.Equal(t, "", pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey])
+			assert.Equal(t, "raw", pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey])
 		},
 	}}
 	for _, tt := range tests {
