@@ -19,11 +19,13 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -346,6 +348,47 @@ func Test_setImagePreference(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setImagePreference(tt.args.argo, tt.args.annotations)
+		})
+	}
+}
+
+func TestImageUpdaterReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		mgr ctrl.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &core.FakeManager{
+				Client: fake.NewFakeClientWithScheme(schema),
+				Scheme: schema,
+			},
+		},
+		wantErr: core.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ImageUpdaterReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
 		})
 	}
 }

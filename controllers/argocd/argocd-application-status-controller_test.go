@@ -19,13 +19,14 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,7 +36,7 @@ import (
 )
 
 func Test_getArgoCDApplication(t *testing.T) {
-	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 	err = v1.SchemeBuilder.AddToScheme(schema)
 	assert.Nil(t, err)
@@ -107,7 +108,7 @@ func Test_getArgoCDApplicationObject(t *testing.T) {
 }
 
 func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
-	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 	err = v1.SchemeBuilder.AddToScheme(schema)
 	assert.Nil(t, err)
@@ -308,6 +309,47 @@ func Test_parseArgoStatus(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.wantStatus, gotStatus, "parseArgoStatus(%v)", tt.args.dataFile)
+		})
+	}
+}
+
+func TestApplicationStatusReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		mgr controllerruntime.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &core.FakeManager{
+				Scheme: schema,
+				Client: fake.NewFakeClientWithScheme(schema),
+			},
+		},
+		wantErr: core.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ApplicationStatusReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
 		})
 	}
 }

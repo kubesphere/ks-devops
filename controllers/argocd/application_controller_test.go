@@ -18,13 +18,17 @@ package argocd
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -610,6 +614,49 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 				filter: tt.fields.filter,
 			}
 			assert.Equalf(t, tt.wantChanged, p.Update(tt.args.e), "Update(%v)", tt.args.e)
+		})
+	}
+}
+
+func TestApplicationReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+	err = v1alpha1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		mgr controllerruntime.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &core.FakeManager{
+				Client: fake.NewFakeClientWithScheme(schema),
+				Scheme: schema,
+			},
+		},
+		wantErr: core.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ApplicationReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
 		})
 	}
 }

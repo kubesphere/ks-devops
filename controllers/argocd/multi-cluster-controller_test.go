@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/controllers/core"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -477,6 +479,49 @@ users:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, string(tt.want), string(getArgoClusterConfigData(tt.args.config)), "getArgoClusterConfigFormat(%v)", tt.args.config)
+		})
+	}
+}
+
+func TestMultiClusterReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client          client.Client
+		log             logr.Logger
+		recorder        record.EventRecorder
+		argocdNamespace string
+	}
+	type args struct {
+		mgr controllerruntime.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &core.FakeManager{
+				Client: fake.NewFakeClientWithScheme(schema),
+				Scheme: schema,
+			},
+		},
+		wantErr: core.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &MultiClusterReconciler{
+				Client:          tt.fields.Client,
+				log:             tt.fields.log,
+				recorder:        tt.fields.recorder,
+				argocdNamespace: tt.fields.argocdNamespace,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
 		})
 	}
 }
