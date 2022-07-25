@@ -58,7 +58,9 @@ func (r *AgentLabelsReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 	if cm, err = r.getConfigMap(); err != nil {
 		if apierrors.IsNotFound(err) {
 			err = r.initConfigMap()
-		} else {
+		}
+
+		if err != nil {
 			return
 		}
 	}

@@ -218,9 +218,6 @@ func TestAgentLabelsReconciler_SetupWithManager(t *testing.T) {
 		log             logr.Logger
 		recorder        record.EventRecorder
 	}
-	type args struct {
-		mgr controllerruntime.Manager
-	}
 	tests := []struct {
 		name    string
 		fields  fields

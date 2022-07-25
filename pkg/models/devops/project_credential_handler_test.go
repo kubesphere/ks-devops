@@ -35,8 +35,8 @@ func Test_projectCredentialGetter_GetProjectCredentialUsage(t *testing.T) {
 		devopsClient devops.Interface
 	}
 	type args struct {
-		projectId    string
-		credentialId string
+		projectID    string
+		credentialID string
 	}
 	tests := []struct {
 		name    string
@@ -50,8 +50,8 @@ func Test_projectCredentialGetter_GetProjectCredentialUsage(t *testing.T) {
 			devopsClient: &fake.Devops{},
 		},
 		args: args{
-			projectId:    "projectId",
-			credentialId: "credentialId",
+			projectID:    "projectID",
+			credentialID: "credentialID",
 		},
 		want: nil,
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -63,18 +63,18 @@ func Test_projectCredentialGetter_GetProjectCredentialUsage(t *testing.T) {
 		fields: fields{
 			devopsClient: &fake.Devops{
 				Credentials: map[string]map[string]*v1.Secret{
-					"projectId": {
-						"credentialId": nil,
+					"projectID": {
+						"credentialID": nil,
 					},
 				},
 			},
 		},
 		args: args{
-			projectId:    "projectId",
-			credentialId: "credentialId",
+			projectID:    "projectID",
+			credentialID: "credentialID",
 		},
 		want: &devops.Credential{
-			Id: "credentialId",
+			Id: "credentialID",
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -86,11 +86,11 @@ func Test_projectCredentialGetter_GetProjectCredentialUsage(t *testing.T) {
 			o := &projectCredentialGetter{
 				devopsClient: tt.fields.devopsClient,
 			}
-			got, err := o.GetProjectCredentialUsage(tt.args.projectId, tt.args.credentialId)
-			if !tt.wantErr(t, err, fmt.Sprintf("GetProjectCredentialUsage(%v, %v)", tt.args.projectId, tt.args.credentialId)) {
+			got, err := o.GetProjectCredentialUsage(tt.args.projectID, tt.args.credentialID)
+			if !tt.wantErr(t, err, fmt.Sprintf("GetProjectCredentialUsage(%v, %v)", tt.args.projectID, tt.args.credentialID)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "GetProjectCredentialUsage(%v, %v)", tt.args.projectId, tt.args.credentialId)
+			assert.Equalf(t, tt.want, got, "GetProjectCredentialUsage(%v, %v)", tt.args.projectID, tt.args.credentialID)
 		})
 	}
 }

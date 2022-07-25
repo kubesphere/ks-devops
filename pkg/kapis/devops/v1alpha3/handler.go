@@ -363,6 +363,10 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 
 func (h *devopsHandler) getJenkinsLabels(request *restful.Request, response *restful.Response) {
 	client, err := h.getDevOps(request)
+	if err != nil {
+		kapis.HandleBadRequest(response, request, err)
+		return
+	}
 
 	var labels []string
 	if labels, err = client.GetJenkinsAgentLabels(); err != nil {
