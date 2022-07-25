@@ -40,7 +40,11 @@ spec:
           spec:
             description: GitRepositorySpec represents the desired state of a GitRepository
             properties:
+              owner:
+                type: string
               provider:
+                type: string
+              repo:
                 type: string
               secret:
                 description: SecretReference represents a Secret Reference. It has
@@ -55,6 +59,8 @@ spec:
                       name must be unique.
                     type: string
                 type: object
+              server:
+                type: string
               url:
                 type: string
               webhooks:
@@ -68,6 +74,17 @@ spec:
                       type: string
                   type: object
                 type: array
+            type: object
+          status:
+            description: GitRepositoryStatus represents the status of a git repository
+            properties:
+              connection:
+                description: Connection indicates if the connection is ok
+                type: string
+              message:
+                description: Message describes the message when trying to connect
+                  it
+                type: string
             type: object
         type: object
     served: true

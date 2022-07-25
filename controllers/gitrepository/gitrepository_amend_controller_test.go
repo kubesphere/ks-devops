@@ -17,8 +17,19 @@ limitations under the License.
 package gitrepository
 
 import (
+	"context"
+	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
+	mgrcore "kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"testing"
 )
 
@@ -51,6 +62,21 @@ func Test_amendGitlabURL(t *testing.T) {
 		verify: func(t *testing.T, repo *v1alpha3.GitRepository) {
 			assert.Equal(t, "https://gitlab.com/linuxsuren/test.git", repo.Spec.URL)
 		},
+	}, {
+		name: "gitlab, have owner and repo, but without URL",
+		args: args{
+			repo: &v1alpha3.GitRepository{
+				Spec: v1alpha3.GitRepositorySpec{
+					Provider: "gitlab",
+					Owner:    "linuxsuren",
+					Repo:     "test",
+				},
+			},
+		},
+		wantChanged: true,
+		verify: func(t *testing.T, repo *v1alpha3.GitRepository) {
+			assert.Equal(t, "https://gitlab.com/linuxsuren/test.git", repo.Spec.URL)
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -58,8 +84,181 @@ func Test_amendGitlabURL(t *testing.T) {
 				tt.verify = func(t *testing.T, repo *v1alpha3.GitRepository) {
 				}
 			}
-			assert.Equalf(t, tt.wantChanged, amendGitlabURL(tt.args.repo), "amendGitlabURL(%v)", tt.args.repo)
+			amend := gitlabPublicAmend{}
+			if !amend.Match(tt.args.repo) {
+				return
+			}
+			assert.Equalf(t, tt.wantChanged, amend.Amend(tt.args.repo), "amendGitlabURL(%v)", tt.args.repo)
 			tt.verify(t, tt.args.repo)
+		})
+	}
+}
+
+func TestAmendReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &AmendReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			mgr := &mgrcore.FakeManager{
+				Client: tt.fields.Client,
+				Scheme: schema,
+			}
+			tt.wantErr(t, r.SetupWithManager(mgr), fmt.Sprintf("SetupWithManager(%v)", mgr))
+		})
+	}
+}
+
+func TestAmendReconciler_Reconcile(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	repo := &v1alpha3.GitRepository{}
+	repo.SetName("fake")
+	repo.SetNamespace("ns")
+	repo.Spec.Provider = "gitlab"
+	repo.Spec.Owner = "linuxsuren"
+	repo.Spec.Repo = "test"
+	repo.Spec.URL = "https://gitlab.com/linuxsuren/test"
+
+	ghRepo := repo.DeepCopy()
+	ghRepo.Spec.Provider = "github"
+	ghRepo.Spec.URL = ""
+
+	bitbucket := ghRepo.DeepCopy()
+	bitbucket.Spec.Provider = "bitbucket"
+
+	type fields struct {
+		Client client.Client
+	}
+	type args struct {
+		req controllerruntime.Request
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		wantResult controllerruntime.Result
+		wantErr    assert.ErrorAssertionFunc
+		verify     func(tt *testing.T, c client.Client)
+	}{{
+		name: "not found",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema),
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}, {
+		name: "gitlab case",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+		},
+		args: args{
+			req: controllerruntime.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "ns",
+					Name:      "fake",
+				},
+			},
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+	}, {
+		name: "github case",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, ghRepo.DeepCopy()),
+		},
+		args: args{
+			req: controllerruntime.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "ns",
+					Name:      "fake",
+				},
+			},
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+		verify: func(tt *testing.T, c client.Client) {
+			repo := &v1alpha3.GitRepository{}
+			err := c.Get(context.Background(), types.NamespacedName{
+				Namespace: "ns",
+				Name:      "fake",
+			}, repo)
+			assert.Nil(tt, err)
+			assert.Equal(tt, "https://github.com/linuxsuren/test", repo.Spec.URL)
+		},
+	}, {
+		name: "bitbucket case",
+		fields: fields{
+			Client: fake.NewFakeClientWithScheme(schema, bitbucket.DeepCopy()),
+		},
+		args: args{
+			req: controllerruntime.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "ns",
+					Name:      "fake",
+				},
+			},
+		},
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return true
+		},
+		verify: func(tt *testing.T, c client.Client) {
+			repo := &v1alpha3.GitRepository{}
+			err := c.Get(context.Background(), types.NamespacedName{
+				Namespace: "ns",
+				Name:      "fake",
+			}, repo)
+			assert.Nil(tt, err)
+			assert.Equal(tt, "https://bitbucket.org/linuxsuren/test", repo.Spec.URL)
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &AmendReconciler{
+				Client: tt.fields.Client,
+				log:    log.NullLogger{},
+			}
+			gotResult, err := r.Reconcile(tt.args.req)
+			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
+				return
+			}
+			assert.Equalf(t, tt.wantResult, gotResult, "Reconcile(%v)", tt.args.req)
+			if tt.verify != nil {
+				tt.verify(t, tt.fields.Client)
+			}
 		})
 	}
 }

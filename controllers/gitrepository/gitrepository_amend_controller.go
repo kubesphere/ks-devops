@@ -45,19 +45,82 @@ func (r *AmendReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err e
 		return
 	}
 
-	if amendGitlabURL(repo) {
-		err = r.Update(ctx, repo)
+	for _, amend := range gitProviderAmends {
+		if amend.Match(repo) {
+			if amend.Amend(repo) {
+				err = r.Update(ctx, repo)
+			}
+			break
+		}
 	}
 	return
 }
 
-func amendGitlabURL(repo *v1alpha3.GitRepository) (changed bool) {
-	if strings.ToLower(repo.Spec.Provider) != "gitlab" {
-		return
+var gitProviderAmends []GitProviderAmend
+
+func init() {
+	gitProviderAmends = []GitProviderAmend{
+		&gitlabPublicAmend{},
+		&githubPublicAmend{},
+		&bitbucketPublicAmend{},
+	}
+}
+
+// GitProviderAmend is the interface of all the potential git providers
+type GitProviderAmend interface {
+	// Match determine if the implement wants to amend it
+	Match(*v1alpha3.GitRepository) bool
+	// Amend tries to amend it, returns true if any changes happened
+	Amend(*v1alpha3.GitRepository) bool
+}
+
+type gitlabPublicAmend struct {
+}
+
+func (a *gitlabPublicAmend) Match(repo *v1alpha3.GitRepository) bool {
+	return strings.ToLower(repo.Spec.Provider) == "gitlab"
+}
+
+func (a *gitlabPublicAmend) Amend(repo *v1alpha3.GitRepository) (changed bool) {
+	if repo.Spec.URL == "" {
+		repo.Spec.URL = fmt.Sprintf("https://gitlab.com/%s/%s",
+			repo.Spec.Owner, repo.Spec.Repo)
 	}
 
 	if !strings.HasSuffix(repo.Spec.URL, ".git") {
 		repo.Spec.URL += ".git"
+		changed = true
+	}
+	return
+}
+
+type githubPublicAmend struct {
+}
+
+func (a *githubPublicAmend) Match(repo *v1alpha3.GitRepository) bool {
+	return strings.ToLower(repo.Spec.Provider) == "github"
+}
+
+func (a *githubPublicAmend) Amend(repo *v1alpha3.GitRepository) (changed bool) {
+	if repo.Spec.URL == "" {
+		repo.Spec.URL = fmt.Sprintf("https://github.com/%s/%s",
+			repo.Spec.Owner, repo.Spec.Repo)
+		changed = true
+	}
+	return
+}
+
+type bitbucketPublicAmend struct {
+}
+
+func (a *bitbucketPublicAmend) Match(repo *v1alpha3.GitRepository) bool {
+	return strings.ToLower(repo.Spec.Provider) == "bitbucket"
+}
+
+func (a *bitbucketPublicAmend) Amend(repo *v1alpha3.GitRepository) (changed bool) {
+	if repo.Spec.URL == "" {
+		repo.Spec.URL = fmt.Sprintf("https://bitbucket.org/%s/%s",
+			repo.Spec.Owner, repo.Spec.Repo)
 		changed = true
 	}
 	return
