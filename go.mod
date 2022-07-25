@@ -12,7 +12,6 @@ require (
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20201014110547-68ccff494617
-	github.com/fatih/structs v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	github.com/go-logr/logr v0.3.0
 	github.com/go-logr/zapr v0.2.0 // indirect
@@ -25,7 +24,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.4
-	github.com/jenkins-zh/jenkins-client v0.0.10-0.20220706065616-22f8c7675234
+	github.com/jenkins-zh/jenkins-client v0.0.11
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0

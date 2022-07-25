@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The KubeSphere Authors.
+Copyright 2020,2022 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +15,11 @@ limitations under the License.
 */
 
 package devops
+
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 //
 //import (
@@ -132,3 +137,8 @@ package devops
 //		Status: v1alpha1.S2iBinaryStatus{},
 //	}
 //}
+
+func TestNewS2iBinaryUploader(t *testing.T) {
+	uploader := NewS2iBinaryUploader(nil, nil, nil, nil)
+	assert.NotNil(t, uploader)
+}

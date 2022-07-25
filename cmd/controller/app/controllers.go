@@ -121,6 +121,13 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	fluxcdGitRepoReconciler := &fluxcd.GitRepositoryReconciler{
 		Client: mgr.GetClient(),
 	}
+	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
+	jenkinsAgentLabelsReconciler := config.AgentLabelsReconciler{
+		Client:          mgr.GetClient(),
+		TargetNamespace: "kubesphere-devops-system",
+		TokenIssuer:     tokenIssuer,
+		JenkinsClient:   jenkinsCore,
+	}
 
 	return map[string]func(mgr manager.Manager) error{
 		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
@@ -169,7 +176,6 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
 			}
 
-			tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 			if err == nil {
 				jenkinsfileReconciler := &jenkinspipeline.JenkinsfileReconciler{
 					Client:      mgr.GetClient(),
@@ -177,6 +183,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 					JenkinsCore: jenkinsCore,
 				}
 				err = jenkinsfileReconciler.SetupWithManager(mgr)
+			}
+			if err == nil {
+				err = jenkinsAgentLabelsReconciler.SetupWithManager(mgr)
 			}
 			return err
 		},

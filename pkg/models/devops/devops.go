@@ -42,6 +42,7 @@ import (
 	"kubesphere.io/devops/pkg/utils/secretutil"
 
 	"kubesphere.io/devops/pkg/api"
+	devopsapi "kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 	"kubesphere.io/devops/pkg/client/devops"
@@ -121,6 +122,8 @@ type DevopsOperator interface {
 
 	ToJenkinsfile(req *http.Request) (*devops.ResJenkinsfile, error)
 	ToJSON(req *http.Request) (map[string]interface{}, error)
+
+	GetJenkinsAgentLabels() ([]string, error)
 }
 
 type devopsOperator struct {
@@ -996,6 +999,16 @@ func (d devopsOperator) ToJSON(req *http.Request) (map[string]interface{}, error
 	}
 
 	return res, err
+}
+
+func (d devopsOperator) GetJenkinsAgentLabels() (labels []string, err error) {
+	var cm *v1.ConfigMap
+	if cm, err = d.k8sclient.CoreV1().ConfigMaps("kubesphere-devops-system").
+		Get(context.Background(), "jenkins-agent-config", metav1.GetOptions{}); err == nil {
+		labelsInStr := cm.Data[devopsapi.JenkinsAgentLabelsKey]
+		labels = strings.Split(labelsInStr, ",")
+	}
+	return
 }
 
 func (d devopsOperator) isGenerateNameUnique(workspace, generateName string) (bool, error) {

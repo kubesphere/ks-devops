@@ -135,8 +135,6 @@ github.com/evanphx/json-patch v4.5.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLi
 github.com/evanphx/json-patch v4.9.0+incompatible h1:kLcOMZeuLAJvL2BPWLMIj5oaZQobrkAqrL+WFZwQses=
 github.com/evanphx/json-patch v4.9.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
-github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
-github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible h1:TcekIExNqud5crz4xD2pavyTgWiPvpYe4Xau31I0PRk=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
@@ -341,8 +339,8 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
-github.com/jenkins-zh/jenkins-client v0.0.10-0.20220706065616-22f8c7675234 h1:gO2Ca6t/V7l7SD9H6mAy6UkcHVT0Ey3sZ6o0jIKPUHg=
-github.com/jenkins-zh/jenkins-client v0.0.10-0.20220706065616-22f8c7675234/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
+github.com/jenkins-zh/jenkins-client v0.0.11 h1:g7f4WhI4iA6JA6l3fW5E/vSsBNYYr3/Ey+wwLxPTKeQ=
+github.com/jenkins-zh/jenkins-client v0.0.11/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
 github.com/jenkins-zh/jenkins-formulas v0.0.5/go.mod h1:zS8fm8u5L6FcjZM0QznXsLV9T2UtSVK+hT6Sm76iUZ4=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
