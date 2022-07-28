@@ -32,6 +32,7 @@ const GitRepoFinalizerName = "finalizer.gitrepository.devops.kubesphere.io"
 
 // GitRepository is the Schema for the webhook API
 // +k8s:openapi-gen=true
+// +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider"
 // +kubebuilder:printcolumn:name="Server",type="string",JSONPath=".spec.server"
 type GitRepository struct {
 	metav1.TypeMeta   `json:",inline"`
