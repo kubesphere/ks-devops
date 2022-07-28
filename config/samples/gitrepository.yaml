@@ -2,11 +2,8 @@ apiVersion: devops.kubesphere.io/v1alpha3
 kind: GitRepository
 metadata:
   name: gitrepository
+  namespace: testxb4m8
 spec:
   provider: github
-  url: https://github.com/linuxsuren/test
-  secret:
-    name: github
-    namespace: default
-  webhooks:
-    - name: webhook
+  owner: linuxsuren
+  repo: test

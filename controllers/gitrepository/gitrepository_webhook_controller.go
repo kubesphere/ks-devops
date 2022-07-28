@@ -87,7 +87,7 @@ func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha3.GitRepository) (err er
 
 	repoAddress := getRepo(repo)
 	if repoAddress == "" {
-		err = fmt.Errorf("not support: %v", repo.Spec.URL)
+		err = fmt.Errorf("failed to createOrUpdate webhook due to repo address is empty")
 		return
 	}
 
