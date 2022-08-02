@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The KubeSphere Authors.
+Copyright 2019-2022 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@ import (
 )
 
 // IsValidPort check if given number is an valid port
-// 0 is considered as an inalid port
+// 0 is considered as an invalid port
 func IsValidPort(port int) bool {
 	return port > 0 && port < 65535
 }
 
+// GetRequestIP returns the real ip from a HTTP request
 func GetRequestIP(req *http.Request) string {
 	address := strings.Trim(req.Header.Get("X-Real-Ip"), " ")
 	if address != "" {

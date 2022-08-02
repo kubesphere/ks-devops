@@ -161,7 +161,7 @@ func (r *AgentLabelsReconciler) GetName() string {
 
 // GetGroupName returns the group name of this reconciler
 func (r *AgentLabelsReconciler) GetGroupName() string {
-	return "jenkins"
+	return reconcilerGroupName
 }
 
 func getSpecificConfigMapPredicate(name, namespace string) predicate.Funcs {

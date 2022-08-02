@@ -21,17 +21,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-logr/logr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/controllers/predicate"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"strings"
 )
 
@@ -165,10 +163,7 @@ func (r *ApplicationStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	argoApp := createBareArgoCDApplicationObject()
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
-	var withLabelPredicate = predicate.NewPredicateFuncs(func(meta metav1.Object, object runtime.Object) (ok bool) {
-		_, ok = meta.GetLabels()[v1alpha1.ArgoCDAppControlByLabelKey]
-		return
-	})
+	var withLabelPredicate = predicate.NewPredicateFuncs(predicate.NewFilterHasLabel(v1alpha1.ArgoCDAppControlByLabelKey))
 	return ctrl.NewControllerManagedBy(mgr).
 		For(argoApp).
 		WithEventFilter(withLabelPredicate).

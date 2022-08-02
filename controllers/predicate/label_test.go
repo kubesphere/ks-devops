@@ -1,12 +1,9 @@
 /*
-Copyright 2018-2022 The KubeSphere Authors.
-
+Copyright 2022 The KubeSphere Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,28 +11,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package stringutils
+package predicate
 
 import (
-	"unicode/utf8"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"testing"
 )
 
-// Reverse makes the string reversed
-func Reverse(s string) string {
-	size := len(s)
-	buf := make([]byte, size)
-	for start := 0; start < size; {
-		r, n := utf8.DecodeRuneInString(s[start:])
-		start += n
-		utf8.EncodeRune(buf[size-start:], r)
-	}
-	return string(buf)
-}
+func TestNewFilterHasLabel(t *testing.T) {
+	filter := NewFilterHasLabel("fake")
+	assert.NotNil(t, filter)
 
-// SetOrDefault uses a default value or the original
-func SetOrDefault(val string, defVal string) string {
-	if val == "" {
-		return defVal
-	}
-	return val
+	ok := filter(&v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Labels: map[string]string{
+			"fake": "good",
+		},
+	}}, nil)
+	assert.True(t, ok)
+	ok = filter(&v1.ConfigMap{}, nil)
+	assert.False(t, ok)
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The KubeSphere Authors.
+Copyright 2019-2022 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,23 +22,27 @@ import (
 	"io"
 )
 
+// MD5Reader is a reader to read the dm5
 type MD5Reader struct {
 	md5  hash.Hash
 	body io.Reader
 }
 
-func (reader *MD5Reader) Read(b []byte) (int, error) {
-	n, err := reader.body.Read(b)
-	if err != nil {
-		return n, err
+// Read reads the data
+func (reader *MD5Reader) Read(b []byte) (n int, err error) {
+	n, err = reader.body.Read(b)
+	if err == nil {
+		n, err = reader.md5.Write(b[:n])
 	}
-	return reader.md5.Write(b[:n])
+	return
 }
 
+// MD5 returns the data
 func (reader *MD5Reader) MD5() []byte {
 	return reader.md5.Sum(nil)
 }
 
+// NewMD5Reader creates a md5 reader
 func NewMD5Reader(reader io.Reader) *MD5Reader {
 	return &MD5Reader{
 		md5:  md5.New(),

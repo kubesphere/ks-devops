@@ -128,6 +128,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		TokenIssuer:     tokenIssuer,
 		JenkinsClient:   jenkinsCore,
 	}
+	jenkinsPodTemplate := config.PodTemplateReconciler{
+		Client: mgr.GetClient(),
+	}
 
 	return map[string]func(mgr manager.Manager) error{
 		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
@@ -186,6 +189,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 			}
 			if err == nil {
 				err = jenkinsAgentLabelsReconciler.SetupWithManager(mgr)
+			}
+			if err == nil {
+				err = jenkinsPodTemplate.SetupWithManager(mgr)
 			}
 			return err
 		},

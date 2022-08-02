@@ -37,6 +37,12 @@ func TestInterfaceImplement(t *testing.T) {
 			NamedReconciler: &AgentLabelsReconciler{},
 			GroupReconciler: &AgentLabelsReconciler{},
 		},
+	}, {
+		name: "PodTemplateReconciler",
+		instance: interInstance{
+			NamedReconciler: &PodTemplateReconciler{},
+			GroupReconciler: &PodTemplateReconciler{},
+		},
 	}}
 	for i := range tests {
 		tt := tests[i]
