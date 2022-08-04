@@ -53,24 +53,30 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 	r.log.Info(fmt.Sprintf("start to reconcile application: %s", req.String()))
 
 	app := &v1alpha1.Application{}
-	// only reconcile fluxcd application
-	app.Spec.Kind = v1alpha1.FluxCD
-
 	if err = r.Get(ctx, req.NamespacedName, app); err != nil {
 		err = client.IgnoreNotFound(err)
 		return
 	}
 
-	if app.Spec.FluxApp != nil {
-		err = r.reconcileApp(app)
+	if isFluxApp(app) {
+		err = r.reconcileFluxApp(app)
 	}
 	return
 }
 
-func (r *ApplicationReconciler) reconcileApp(app *v1alpha1.Application) (err error) {
-	if appType := isHelmOrKustomize(app); appType == HelmRelease {
+func isFluxApp(app *v1alpha1.Application) bool {
+	return app.Spec.Kind == v1alpha1.FluxCD && app.Spec.FluxApp != nil
+}
+
+func (r *ApplicationReconciler) reconcileFluxApp(app *v1alpha1.Application) (err error) {
+	var at AppType
+	if at, err = isHelmOrKustomize(app); err != nil {
+		return err
+	}
+	if at == HelmRelease {
 		return r.reconcileHelm(app)
-	} else if appType == Kustomization {
+	}
+	if at == Kustomization {
 		return r.reconcileKustomization(app)
 	}
 	return
@@ -206,7 +212,7 @@ func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application
 
 	kusList := createBareFluxKustomizationListObject()
 	if err = r.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
-		"app.kubernetes.io/managed-by": getKusManagerName(appNS, appName),
+		"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
 	}); err != nil {
 		return
 	}
@@ -251,7 +257,7 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 		},
 	})
 	kus.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": getKusManagerName(appNS, appName),
+		"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
 	})
 	err = r.Create(ctx, kus)
 	return
@@ -276,11 +282,16 @@ func setFluxKustomizationFields(kus *unstructured.Unstructured, app *v1alpha1.Ap
 	_ = unstructured.SetNestedField(kus.Object, deploy.Destination.TargetNamespace, "spec", "targetNamespace")
 }
 
-func isHelmOrKustomize(app *v1alpha1.Application) AppType {
-	if app.Spec.FluxApp.Spec.Config.HelmRelease != nil {
-		return HelmRelease
+func isHelmOrKustomize(app *v1alpha1.Application) (AppType, error) {
+	conf := app.Spec.FluxApp.Spec.Config.DeepCopy()
+	helm, kus := conf.HelmRelease != nil, conf.Kustomization != nil
+	if helm && !kus {
+		return HelmRelease, nil
 	}
-	return Kustomization
+	if !helm && kus {
+		return Kustomization, nil
+	}
+	return "", fmt.Errorf("should has one and only one FluxApplicationConfig (HelmRelease or Kustomization)")
 }
 
 // GetGroupName returns the group name
@@ -293,6 +304,7 @@ func (r *ApplicationReconciler) GetName() string {
 	return "FluxApplicationReconciler"
 }
 
+// TODO: it will be better to use hash name for naming conflict reason
 func getHelmReleaseName(targetNamespace string) string {
 	return targetNamespace
 }
@@ -305,7 +317,7 @@ func getHelmTemplateName(ns, name string) string {
 	return ns + "-" + name
 }
 
-func getKusManagerName(ns, name string) string {
+func getKusGroupName(ns, name string) string {
 	return ns + "-" + name
 }
 

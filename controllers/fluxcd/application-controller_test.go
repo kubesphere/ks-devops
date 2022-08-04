@@ -18,6 +18,8 @@ package fluxcd
 
 import (
 	"context"
+	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +27,7 @@ import (
 	apischema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,18 +41,86 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
+	schema.AddKnownTypeWithName(apischema.GroupVersionKind{
+		Group:   "helm.toolkit.fluxcd.io",
+		Version: "v2beta1",
+		Kind:    "HelmReleaseList",
+	}, &unstructured.UnstructuredList{})
+
 	argoApp := &v1alpha1.Application{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-app",
 			Namespace: "fake-ns",
+			Name:      "fake-app",
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			Kind: v1alpha1.ArgoCD,
 		},
 	}
 
-	fluxApp := argoApp.DeepCopy()
-	fluxApp.Spec.Kind = v1alpha1.FluxCD
+	fluxApp := &v1alpha1.Application{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "gitops.kubesphere.io/v1alpha1",
+			Kind:       "Application",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "fake-ns",
+			Name:      "fake-app",
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			Kind: "fluxcd",
+			FluxApp: &v1alpha1.FluxApplication{
+				Spec: v1alpha1.FluxApplicationSpec{
+					Source: &v1alpha1.FluxApplicationSource{
+						SourceRef: v1alpha1.CrossNamespaceObjectReference{
+							APIVersion: "source.toolkit.fluxcd.io/v1beta2",
+							Kind:       "GitRepository",
+							Name:       "fake-repo",
+							Namespace:  "fake-ns",
+						},
+					},
+					Config: &v1alpha1.FluxApplicationConfig{
+						HelmRelease: &v1alpha1.HelmReleaseSpec{
+							Chart: &v1alpha1.HelmChartTemplateSpec{
+								Chart:   "./helm-chart",
+								Version: "0.1.0",
+								Interval: &metav1.Duration{
+									Duration: time.Minute,
+								},
+								ReconcileStrategy: "Revision",
+								ValuesFiles: []string{
+									"./helm-chart/values.yaml",
+								},
+							},
+							Deploy: []*v1alpha1.Deploy{
+								{
+									Destination: v1alpha1.FluxApplicationDestination{
+										KubeConfig: &v1alpha1.KubeConfig{
+											SecretRef: v1alpha1.SecretKeyReference{
+												Name: "aliyun-kubeconfig",
+												Key:  "kubeconfig",
+											},
+										},
+										TargetNamespace: "fake-targetNamespace",
+									},
+								},
+								{
+									Destination: v1alpha1.FluxApplicationDestination{
+										KubeConfig: &v1alpha1.KubeConfig{
+											SecretRef: v1alpha1.SecretKeyReference{
+												Name: "tencentcloud-kubeconfig",
+												Key:  "kubeconfig",
+											},
+										},
+										TargetNamespace: "another-fake-targetNamespace",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	type fields struct {
 		Client client.Client
@@ -73,8 +144,8 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 			args: args{
 				req: ctrl.Request{
 					NamespacedName: types.NamespacedName{
-						Namespace: "fake-app",
-						Name:      "fake-ns",
+						Namespace: "fake-ns",
+						Name:      "fake-app",
 					},
 				},
 			},
@@ -96,7 +167,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name: "found a fluxcd application",
+			name: "found a flux application",
 			fields: fields{
 				Client: fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
 			},
@@ -303,11 +374,33 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	fluxKus.SetNamespace(kusApp.GetNamespace())
 	fluxKus.SetName(getKustomizationName(KusDeploy.Destination.TargetNamespace))
 	fluxKus.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": getKusManagerName(kusApp.GetNamespace(), kusApp.GetName()),
+		"app.kubernetes.io/managed-by": getKusGroupName(kusApp.GetNamespace(), kusApp.GetName()),
 	})
 
 	kusAppWithUpdate := kusApp.DeepCopy()
 	kusAppWithUpdate.Spec.FluxApp.Spec.Config.Kustomization[0].Path = "another-kustomization"
+
+	fakeApp := &v1alpha1.Application{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "gitops.kubesphere.io/v1alpha1",
+			Kind:       "Application",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-app",
+			Namespace: "fake-ns",
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			Kind: "fluxcd",
+			FluxApp: &v1alpha1.FluxApplication{
+				Spec: v1alpha1.FluxApplicationSpec{
+					Config: &v1alpha1.FluxApplicationConfig{
+						HelmRelease:   nil,
+						Kustomization: nil,
+					},
+				},
+			},
+		},
+	}
 
 	type fields struct {
 		Client client.Client
@@ -323,6 +416,18 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		verify func(t *testing.T, Client client.Client, err error)
 	}{
 		{
+			name: "reconcile a invalid fluxApp",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema),
+			},
+			args: args{
+				app: fakeApp.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.NotNil(t, err)
+			},
+		},
+		{
 			name: "create a Multi-Clusters FluxApp(HelmRelease) without saving Template",
 			fields: fields{
 				Client: fake.NewFakeClientWithScheme(schema),
@@ -331,8 +436,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				app: helmApp.DeepCopy(),
 			},
 			verify: func(t *testing.T, Client client.Client, err error) {
-				ctx := context.Background()
 				assert.Nil(t, err)
+				ctx := context.Background()
 
 				fluxHRList := createBareFluxHelmReleaseListObject()
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
@@ -588,7 +693,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				kusList := createBareFluxKustomizationListObject()
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getKusManagerName(appNS, appName),
+					"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(kusList.Items))
@@ -638,7 +743,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				kusList := createBareFluxKustomizationListObject()
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getKusManagerName(appNS, appName),
+					"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(kusList.Items))
@@ -661,7 +766,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				log:      log.NullLogger{},
 				recorder: &record.FakeRecorder{},
 			}
-			err := r.reconcileApp(tt.args.app)
+			err := r.reconcileFluxApp(tt.args.app)
 			tt.verify(t, tt.fields.Client, err)
 		})
 	}
@@ -680,4 +785,43 @@ func TestApplicationReconciler_GetGroupName(t *testing.T) {
 		r := &ApplicationReconciler{}
 		assert.Equal(t, "fluxcd", r.GetGroupName())
 	})
+}
+
+func TestApplicationReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		mgr ctrl.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &core.FakeManager{
+				Scheme: schema,
+				Client: fake.NewFakeClientWithScheme(schema),
+			},
+		},
+		wantErr: core.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ApplicationReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
+		})
+	}
 }
