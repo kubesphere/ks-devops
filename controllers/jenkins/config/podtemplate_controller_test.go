@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"testing"
+	"time"
 )
 
 func TestPodTemplateReconciler_SetupWithManager(t *testing.T) {
@@ -57,6 +58,7 @@ func TestPodTemplateReconciler_SetupWithManager(t *testing.T) {
 			assert.NotEmpty(t, r.TargetConfigMapName)
 			assert.NotEmpty(t, r.TargetConfigMapNamespace)
 			assert.NotEmpty(t, r.TargetConfigMapKey)
+			assert.Equal(t, r.Interval, 5*time.Minute)
 		})
 	}
 }
@@ -144,6 +146,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 			assert.Nil(t, err)
 			return true
 		},
+		wantResult: controllerruntime.Result{RequeueAfter: 5 * time.Minute},
 		verify: func(t *testing.T, c client.Client) {
 			podT := v1.PodTemplate{}
 			err := c.Get(context.Background(), types.NamespacedName{
@@ -161,6 +164,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 			assert.Nil(t, err)
 			return true
 		},
+		wantResult: controllerruntime.Result{RequeueAfter: 5 * time.Minute},
 		verify: func(t *testing.T, c client.Client) {
 			podT := v1.PodTemplate{}
 			err := c.Get(context.Background(), types.NamespacedName{

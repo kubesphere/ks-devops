@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"time"
 )
 
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;update
@@ -37,6 +38,7 @@ type PodTemplateReconciler struct {
 	TargetConfigMapName      string
 	TargetConfigMapNamespace string
 	TargetConfigMapKey       string
+	Interval                 time.Duration
 
 	client.Client
 	log      logr.Logger
@@ -99,6 +101,11 @@ func (r *PodTemplateReconciler) Reconcile(req ctrl.Request) (result ctrl.Result,
 			}
 		}
 	}
+
+	if err == nil {
+		// make sure the PodTemplates always could be in the Jenkins CasC
+		result = ctrl.Result{RequeueAfter: r.Interval}
+	}
 	return
 }
 
@@ -120,6 +127,9 @@ func (r *PodTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.TargetConfigMapName = stringutils.SetOrDefault(r.TargetConfigMapName, "jenkins-casc-config")
 	r.TargetConfigMapNamespace = stringutils.SetOrDefault(r.TargetConfigMapNamespace, "kubesphere-devops-system")
 	r.TargetConfigMapKey = stringutils.SetOrDefault(r.TargetConfigMapKey, "jenkins_user.yaml")
+	if r.Interval == 0 {
+		r.Interval = 5 * time.Minute
+	}
 
 	var withLabelPredicate = predicate.NewPredicateFuncs(predicate.NewFilterHasLabel(r.LabelSelector))
 	return ctrl.NewControllerManagedBy(mgr).WithEventFilter(withLabelPredicate).For(&v1.PodTemplate{}).Complete(r)
