@@ -34,48 +34,48 @@ import (
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/informers"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func addControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
-	devopsClient devops.Interface, jenkinsCore core.JenkinsCore, s3Client s3.Interface,
-	s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
+	devopsClient devops.Interface, jenkinsCore core.JenkinsCore,
+	s *options.DevOpsControllerManagerOptions) error {
 	if devopsClient == nil {
 		return errors.New("devopsClient should not be nil")
 	}
 
-	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
-	// add PipelineRun controller
-	if err := (&pipelinerun.Reconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		DevOpsClient: devopsClient,
-		JenkinsCore:  jenkinsCore,
-		TokenIssuer:  tokenIssuer,
-	}).SetupWithManager(mgr); err != nil {
-		klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
-		return err
-	}
-
-	// add PipelineRun Synchronizer
-	if err := (&pipelinerun.SyncReconciler{
-		Client:      mgr.GetClient(),
-		JenkinsCore: jenkinsCore,
-	}).SetupWithManager(mgr); err != nil {
-		klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
-		return err
-	}
-
-	// add Pipeline metadata controller
-	if err := (&jenkinspipeline.Reconciler{
-		Client:      mgr.GetClient(),
-		JenkinsCore: jenkinsCore,
-	}).SetupWithManager(mgr); err != nil {
-		return err
-	}
 	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s, jenkinsCore)
+	reconcilers["pipeline"] = func(mgr manager.Manager) (err error) {
+		tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
+		// add PipelineRun controller
+		if err = (&pipelinerun.Reconciler{
+			Client:       mgr.GetClient(),
+			Scheme:       mgr.GetScheme(),
+			DevOpsClient: devopsClient,
+			JenkinsCore:  jenkinsCore,
+			TokenIssuer:  tokenIssuer,
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
+			return
+		}
+
+		// add PipelineRun Synchronizer
+		if err = (&pipelinerun.SyncReconciler{
+			Client:      mgr.GetClient(),
+			JenkinsCore: jenkinsCore,
+		}).SetupWithManager(mgr); err != nil {
+			klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
+			return
+		}
+
+		// add Pipeline metadata controller
+		err = (&jenkinspipeline.Reconciler{
+			Client:      mgr.GetClient(),
+			JenkinsCore: jenkinsCore,
+		}).SetupWithManager(mgr)
+		return
+	}
 
 	// Add all controllers into manager.
 	for name, ok := range s.FeatureOptions.GetControllers() {
@@ -124,12 +124,13 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 	jenkinsAgentLabelsReconciler := config.AgentLabelsReconciler{
 		Client:          mgr.GetClient(),
-		TargetNamespace: "kubesphere-devops-system",
+		TargetNamespace: s.FeatureOptions.SystemNamespace,
 		TokenIssuer:     tokenIssuer,
 		JenkinsClient:   jenkinsCore,
 	}
 	jenkinsPodTemplate := config.PodTemplateReconciler{
-		Client: mgr.GetClient(),
+		Client:                   mgr.GetClient(),
+		TargetConfigMapNamespace: s.FeatureOptions.SystemNamespace,
 	}
 
 	return map[string]func(mgr manager.Manager) error{
@@ -146,6 +147,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				}).SetupWithManager(mgr)
 			}
 			return err
+		},
+		"jenkinsagent": func(mgr manager.Manager) error {
+			return jenkinsPodTemplate.SetupWithManager(mgr)
 		},
 		"jenkinsconfig": func(mgr manager.Manager) error {
 			return mgr.Add(config.NewController(&config.ControllerOptions{
@@ -189,9 +193,6 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 			}
 			if err == nil {
 				err = jenkinsAgentLabelsReconciler.SetupWithManager(mgr)
-			}
-			if err == nil {
-				err = jenkinsPodTemplate.SetupWithManager(mgr)
 			}
 			return err
 		},
