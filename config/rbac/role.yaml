@@ -327,9 +327,10 @@ rules:
   - list
   - update
 - apiGroups:
-  - source.toolkit.fluxcd.io/v1beta2
+  - source.toolkit.fluxcd.io
   resources:
   - helmcharts
   verbs:
+  - create
   - get
   - list

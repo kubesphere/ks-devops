@@ -301,24 +301,24 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 	fluxHelmChart := createUnstructuredFluxHelmTemplate(helmApp)
 	fluxHelmChart.SetNamespace(helmApp.GetNamespace())
-	fluxHelmChart.SetName(getHelmTemplateName(helmApp.GetNamespace(), helmApp.GetName()))
-	fluxHelmChart.SetLabels(map[string]string{
-		v1alpha1.HelmTemplateName: getHelmTemplateName(helmApp.GetNamespace(), helmApp.GetName()),
+	fluxHelmChart.SetName(helmApp.GetName())
+	fluxHelmChart.SetAnnotations(map[string]string{
+		v1alpha1.HelmTemplateName: helmApp.GetName(),
 	})
 
 	fluxHR := createBareFluxHelmReleaseObject()
 	helmDeploy := helmApp.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0]
 	setFluxHelmReleaseFields(fluxHR, fluxHelmChart, helmDeploy)
 	fluxHR.SetNamespace(helmApp.GetNamespace())
-	fluxHR.SetName(getHelmReleaseName(helmDeploy.Destination.TargetNamespace))
+	fluxHR.SetName(getHelmReleaseName(helmDeploy))
 	fluxHR.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": getHelmTemplateName(helmApp.GetNamespace(), helmApp.GetName()),
+		"app.kubernetes.io/managed-by": helmApp.GetName(),
 	})
 
 	helmAppWithTemplate := helmApp.DeepCopy()
 	helmAppWithTemplate.Spec.FluxApp.Spec.Source = nil
 	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Chart = nil
-	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Template = "fake-ns-fake-app"
+	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Template = "fake-app"
 
 	kusApp := &v1alpha1.Application{
 		Spec: v1alpha1.ApplicationSpec{
@@ -372,9 +372,9 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	KusDeploy := kusApp.Spec.FluxApp.Spec.Config.Kustomization[0]
 	setFluxKustomizationFields(fluxKus, kusApp, KusDeploy)
 	fluxKus.SetNamespace(kusApp.GetNamespace())
-	fluxKus.SetName(getKustomizationName(KusDeploy.Destination.TargetNamespace))
+	fluxKus.SetName(getKustomizationName(KusDeploy))
 	fluxKus.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": getKusGroupName(kusApp.GetNamespace(), kusApp.GetName()),
+		"app.kubernetes.io/managed-by": kusApp.GetName(),
 	})
 
 	kusAppWithUpdate := kusApp.DeepCopy()
@@ -443,7 +443,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getHelmTemplateName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(fluxHRList.Items))
@@ -476,7 +476,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				}
 
 				fluxChart := createBareFluxHelmTemplateObject()
-				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: getHelmTemplateName(appNS, appName)}, fluxChart)
+				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.True(t, apierrors.IsNotFound(err))
 			},
 		},
@@ -496,7 +496,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getHelmTemplateName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(fluxHRList.Items))
@@ -537,7 +537,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				}
 
 				fluxChart := createBareFluxHelmTemplateObject()
-				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: getHelmTemplateName(appNS, appName)}, fluxChart)
+				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.Nil(t, err)
 
 				sourceAPIVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "apiVersion")
@@ -577,7 +577,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getHelmTemplateName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(fluxHRList.Items))
@@ -613,7 +613,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getHelmTemplateName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(fluxHRList.Items))
@@ -654,7 +654,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				}
 
 				fluxChart := createBareFluxHelmTemplateObject()
-				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: getHelmTemplateName(appNS, appName)}, fluxChart)
+				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.Nil(t, err)
 
 				sourceAPIVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "apiVersion")
@@ -679,6 +679,18 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 			},
 		},
 		{
+			name: "create a Multi-Clusters FluxApp(HelmRelease) by using a Template",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema),
+			},
+			args: args{
+				app: helmAppWithTemplate.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.NotNil(t, err)
+			},
+		},
+		{
 			name: "create a  Multi-Clusters FluxApp(Kustomization)",
 			fields: fields{
 				Client: fake.NewFakeClientWithScheme(schema),
@@ -693,7 +705,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				kusList := createBareFluxKustomizationListObject()
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(kusList.Items))
@@ -743,7 +755,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				kusList := createBareFluxKustomizationListObject()
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
-					"app.kubernetes.io/managed-by": getKusGroupName(appNS, appName),
+					"app.kubernetes.io/managed-by": appName,
 				})
 				assert.Nil(t, err)
 				assert.Equal(t, 2, len(kusList.Items))
