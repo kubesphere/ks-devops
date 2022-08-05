@@ -31,3 +31,7 @@ const (
 	// FormulaLow is a formula name - low
 	FormulaLow = "low"
 )
+
+const reconcilerGroupName = "jenkins"
+
+const podTemplateFinalizer = "podtemplate.devops.kubesphere.io/finalizer"

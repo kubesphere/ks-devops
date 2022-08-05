@@ -24,7 +24,8 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.4
-	github.com/jenkins-zh/jenkins-client v0.0.11
+	github.com/jenkins-zh/jenkins-client v0.0.12
+	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220803063034-4f2584fd4a90
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0

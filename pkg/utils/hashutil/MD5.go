@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The KubeSphere Authors.
+Copyright 2019-2022 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,28 +21,24 @@ import (
 	"io"
 
 	"code.cloudfoundry.org/bytefmt"
-	"k8s.io/klog"
-
 	"kubesphere.io/devops/pkg/utils/readerutils"
 )
 
-func GetMD5(reader io.ReadCloser) (string, error) {
+// GetMD5 returns the md5 value from a reader
+func GetMD5(reader io.ReadCloser) (result string, err error) {
 	md5reader := readerutils.NewMD5Reader(reader)
 	data := make([]byte, bytefmt.KILOBYTE)
 	for {
-		_, err := md5reader.Read(data)
+		_, err = md5reader.Read(data)
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			klog.Error(err)
-			return "", err
+			return
 		}
 	}
-	err := reader.Close()
-	if err != nil {
-		return "", err
+	if err = reader.Close(); err == nil {
+		result = hex.EncodeToString(md5reader.MD5())
 	}
-
-	return hex.EncodeToString(md5reader.MD5()), nil
+	return
 }

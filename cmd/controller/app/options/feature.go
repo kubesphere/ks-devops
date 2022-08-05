@@ -26,7 +26,8 @@ import (
 
 // FeatureOptions provide some feature options, such as specifying the controller to be enabled.
 type FeatureOptions struct {
-	Controllers map[string]bool
+	Controllers     map[string]bool
+	SystemNamespace string
 }
 
 // GetControllers returns the controllers map
@@ -35,7 +36,9 @@ func (o *FeatureOptions) GetControllers() map[string]bool {
 	defaultMap := map[string]bool{
 		"jenkins":       true,
 		"jenkinsconfig": true,
+		"jenkinsagent":  true,
 		"gitrepository": true,
+		"pipeline":      true,
 	}
 
 	// support to only enable the specific controllers
@@ -72,6 +75,8 @@ func (o *FeatureOptions) ApplyTo(options *FeatureOptions) {
 func (o *FeatureOptions) AddFlags(fs *pflag.FlagSet, c *FeatureOptions) {
 	fs.Var(cliflag.NewMapStringBool(&o.Controllers), "enabled-controllers", "A set of key=value pairs that describe feature options for controllers. "+
 		"Options are:\n"+strings.Join(c.knownControllers(), "\n"))
+	fs.StringVarP(&o.SystemNamespace, "system-namespace", "", "kubesphere-devops-system",
+		"The system namespace that contains ConfigMap, Secrets e.g.")
 }
 
 func (o *FeatureOptions) knownControllers() []string {

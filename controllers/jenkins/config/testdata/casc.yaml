@@ -1,0 +1,86 @@
+jenkins:
+  clouds:
+    - kubernetes:
+        connectTimeout: "60"
+        containerCapStr: "4"
+        credentialsId: k8s-service-account
+        jenkinsTunnel: devops-jenkins-agent.kubesphere-devops-system:50000
+        jenkinsUrl: http://devops-jenkins.kubesphere-devops-system:80
+        maxRequestsPerHostStr: "32"
+        name: kubernetes
+        namespace: kubesphere-devops-worker
+        readTimeout: "60"
+        serverUrl: https://kubernetes.default
+        skipTlsVerify: true
+        templates:
+          - containers:
+              - args: ""
+                command: cat
+                image: kubesphere/builder-go:v3.2.0
+                name: go
+                privileged: false
+                resourceLimitCpu: 4000m
+                resourceLimitMemory: 8192Mi
+                resourceRequestCpu: 100m
+                resourceRequestMemory: 100Mi
+                ttyEnabled: true
+              - args: ^${computer.jnlpmac} ^${computer.name}
+                command: jenkins-slave
+                image: jenkins/jnlp-slave:3.27-1
+                name: jnlp
+                resourceLimitCpu: 500m
+                resourceLimitMemory: 1536Mi
+                resourceRequestCpu: 50m
+                resourceRequestMemory: 400Mi
+            idleMinutes: 0
+            label: go
+            name: go
+            namespace: kubesphere-devops-worker
+            nodeUsageMode: EXCLUSIVE
+            volumes:
+              - hostPathVolume:
+                  hostPath: /var/run/docker.sock
+                  mountPath: /var/run/docker.sock
+              - hostPathVolume:
+                  hostPath: /var/data/jenkins_go_cache
+                  mountPath: /home/jenkins/go/pkg
+              - hostPathVolume:
+                  hostPath: /var/data/jenkins_sonar_cache
+                  mountPath: /root/.sonar/cache
+            workspaceVolume:
+              emptyDirWorkspaceVolume:
+                memory: false
+            yaml: ""
+  disableRememberMe: true
+  mode: EXCLUSIVE
+  numExecutors: 0
+  scmCheckoutRetryCount: 2
+  securityRealm:
+    ldap:
+      configurations:
+        - displayNameAttributeName: uid
+          groupSearchBase: ou=Groups
+          groupSearchFilter: (&(objectClass=posixGroup)(cn={0}))
+          inhibitInferRootDN: false
+          mailAddressAttributeName: mail
+          managerDN: cn=admin,dc=kubesphere,dc=io
+          managerPasswordSecret: admin
+          rootDN: dc=kubesphere,dc=io
+          server: ldap://openldap.kubesphere-system.svc:389
+          userSearch: (&(objectClass=inetOrgPerson)(|(uid={0})(mail={0})))
+          userSearchBase: ou=Users
+      disableMailAddressResolver: false
+      disableRolePrefixing: true
+unclassified:
+  gitLabServers:
+    servers:
+      - name: https://gitlab.com
+        serverUrl: https://gitlab.com
+  kubespheretokenauthglobalconfiguration:
+    cacheConfiguration:
+      size: 20
+      ttl: 300
+    enabled: true
+    server: http://devops-apiserver.kubesphere-devops-system:9090/
+  location:
+    url: jenkins.devops.kubesphere.local

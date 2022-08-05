@@ -33,8 +33,8 @@ func TestGetUuid36(t *testing.T) {
 func TestGetManyUuid(t *testing.T) {
 	var strSlice []string
 	for i := 0; i < 10000; i++ {
-		testId := GetUuid("")
-		strSlice = append(strSlice, testId)
+		testID := GetUuid("")
+		strSlice = append(strSlice, testID)
 	}
 	sort.Strings(strSlice)
 }

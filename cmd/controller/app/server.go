@@ -26,7 +26,6 @@ import (
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jclient"
 	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/indexers"
 	"kubesphere.io/devops/pkg/informers"
@@ -177,15 +176,6 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 	apis.AddToScheme(mgr.GetScheme())
 	_ = apiextensions.AddToScheme(mgr.GetScheme())
 
-	// Init s3 client
-	var s3Client s3.Interface
-	if s.S3Options != nil && len(s.S3Options.Endpoint) != 0 {
-		s3Client, err = s3.NewS3Client(s.S3Options)
-		if err != nil {
-			return fmt.Errorf("failed to connect to s3, please check s3 service status, error: %v", err)
-		}
-	}
-
 	// register common meta types into schemas.
 	metav1.AddToGroupVersion(mgr.GetScheme(), metav1.SchemeGroupVersion)
 
@@ -194,13 +184,11 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 		informerFactory,
 		devopsClient,
 		jenkinsCore,
-		s3Client,
-		s,
-		stopCh); err != nil {
+		s); err != nil {
 		return fmt.Errorf("unable to register controllers to the manager: %v", err)
 	}
 
-	if err := indexers.CreatePipelineRunSCMRefNameIndexer(mgr.GetCache()); err != nil {
+	if err = indexers.CreatePipelineRunSCMRefNameIndexer(mgr.GetCache()); err != nil {
 		return err
 	}
 
