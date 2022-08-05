@@ -133,7 +133,7 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 
 // Install all KubeSphere api groups
 // Installation happens before all informers start to cache objects, so
-//   any attempt to list objects using listers will get empty results.
+// any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
 	jenkinsCore := core.JenkinsCore{
 		URL:      s.Config.JenkinsOptions.Host,

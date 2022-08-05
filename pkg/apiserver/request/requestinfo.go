@@ -116,7 +116,7 @@ type RequestInfoFactory struct {
 // With workspaces:
 // /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}
 // /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}/{resourceName}
-//
+
 func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
 	requestInfo := RequestInfo{
 		IsKubernetesRequest: false,
