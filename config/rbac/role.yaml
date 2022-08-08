@@ -252,6 +252,17 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - steptemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - webhooks
   verbs:
   - get

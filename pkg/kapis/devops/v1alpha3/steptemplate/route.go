@@ -35,6 +35,9 @@ var (
 	SecretNamespaceQueryParameter = restful.QueryParameter("secretNamespace", "The namespace of a secret")
 )
 
+// TODO perhaps we can find a better way to declaim the permission needs of the apiserver
+//+kubebuilder:rbac:groups=devops.kubesphere.io,resources=clustersteptemplates,verbs=get;list;update;delete;create;watch
+
 // RegisterRoutes registry the handlers of the stepTemplates
 func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	h := &handler{options.GenericClient}
@@ -45,7 +48,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 		To(h.getClusterStepTemplate).
 		Param(ClusterStepTemplate).
 		Doc("Return a specific ClusterStepTemplate"))
-	service.Route(service.GET("/clustersteptemplates/{clustersteptemplate}/render").
+	service.Route(service.POST("/clustersteptemplates/{clustersteptemplate}/render").
 		To(h.renderClusterStepTemplate).
 		Param(ClusterStepTemplate).
 		Param(SecretNameQueryParameter).

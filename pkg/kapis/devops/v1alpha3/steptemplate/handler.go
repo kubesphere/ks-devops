@@ -60,7 +60,7 @@ func (h *handler) renderClusterStepTemplate(req *restful.Request, resp *restful.
 		fmt.Printf("something goes wrong when getting secret, error: %v\n", err)
 	}
 
-	param := make(map[string]string)
+	param := map[string]string{}
 	// get the parameters from request
 	if err = req.ReadEntity(&param); err != nil {
 		// TODO considering have logger output instead of the std output

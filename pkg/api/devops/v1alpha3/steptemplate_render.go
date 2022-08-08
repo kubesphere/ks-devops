@@ -104,9 +104,18 @@ func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (outpu
 
 func shellRender(shellTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
 	if output, err = dslRender(shellTpl, param, secret); err == nil {
-		output = fmt.Sprintf(`sh '''
-%s
-'''`, addIndent(output))
+		output = fmt.Sprintf(`{
+"arguments": [
+  {
+	"key": "script",
+	"value": {
+	  "isLiteral": true,
+	  "value": "%s"
+	}
+  }
+],
+"name": "sh"
+}`, addIndent(output))
 	}
 	return
 }

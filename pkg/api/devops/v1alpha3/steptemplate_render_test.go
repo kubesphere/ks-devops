@@ -63,9 +63,18 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 		args: args{
 			stepTemplate: stepTemplate,
 		},
-		wantOutput: `sh '''
-	echo 1
-'''`,
+		wantOutput: `{
+"arguments": [
+  {
+	"key": "script",
+	"value": {
+	  "isLiteral": true,
+	  "value": "	echo 1"
+	}
+  }
+],
+"name": "sh"
+}`,
 		wantErr: false,
 	}, {
 		name: "docker build command with parameters",
@@ -88,10 +97,19 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 		},
 		wantOutput: `container("base") {
 	withCredential[usernamePassword(credentialsId : "docker" ,passwordVariable : 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
-		sh '''
-			docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
-			docker build dir -t image:tag
-		'''
+		{
+		"arguments": [
+		  {
+			"key": "script",
+			"value": {
+			  "isLiteral": true,
+			  "value": "	docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
+			docker build dir -t image:tag"
+			}
+		  }
+		],
+		"name": "sh"
+		}
 	}
 }`,
 		wantErr: false,
