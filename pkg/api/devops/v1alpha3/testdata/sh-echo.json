@@ -1,0 +1,12 @@
+{
+  "arguments": [
+    {
+      "key": "script",
+      "value": {
+        "isLiteral": true,
+        "value": "echo 1"
+      }
+    }
+  ],
+  "name": "sh"
+}

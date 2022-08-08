@@ -43,6 +43,7 @@ type ParameterInStep struct {
 	Required     bool          `json:"required,omitempty"`
 	Display      string        `json:"display,omitempty"`
 	DefaultValue string        `json:"defaultValue,omitempty" yaml:"defaultValue"`
+	Options      string        `json:"options,omitempty"`
 }
 
 // ParameterType represents the type of parameter
@@ -53,12 +54,16 @@ const (
 	ParameterTypeString ParameterType = "string"
 	// ParameterTypeText represents a parameter in string format, expect this is multi-line
 	ParameterTypeText ParameterType = "text"
+	// ParameterTypeNumber represents a parameter in number format
+	ParameterTypeNumber ParameterType = "number"
 	// ParameterTypeCode represents a parameter in string format that contains some code lines
 	ParameterTypeCode ParameterType = "code"
 	// ParameterTypeBool represents a parameter in boolean format
 	ParameterTypeBool ParameterType = "bool"
 	// ParameterTypeEnum represents a parameter in enum format
 	ParameterTypeEnum ParameterType = "enum"
+	// ParameterTypeSecret represents a parameter in secret format
+	ParameterTypeSecret ParameterType = "secret"
 )
 
 // StepTemplateStatus defines the observed state of ClusterStepTemplate

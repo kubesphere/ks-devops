@@ -22,7 +22,7 @@ endif
 all: test lint
 
 # Run tests
-test: fmt vet # generate manifests
+test: fmt vet generate manifests
 	go test ./... -coverprofile coverage.out
 
 # Build manager binary

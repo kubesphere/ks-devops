@@ -339,10 +339,10 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
-github.com/jenkins-zh/jenkins-client v0.0.12 h1:rtFhug88U2TSedgX6gUFkODid/E6qnfJxj7OwjLjBU4=
-github.com/jenkins-zh/jenkins-client v0.0.12/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
-github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220803063034-4f2584fd4a90 h1:QMUbSp4/FSA0rGcWu85wOJ4FHQHFbxNpQArgdE90N+k=
-github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220803063034-4f2584fd4a90/go.mod h1:zetE8JfNmxkot7OCNXJyS/QwxFnfcUFzrs/jg4U2gAw=
+github.com/jenkins-zh/jenkins-client v0.0.13 h1:MIBq36M9RYaJTVOE9sHmD/NOXzf4el9qZ4RRr/1/Lxw=
+github.com/jenkins-zh/jenkins-client v0.0.13/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
+github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866 h1:MQwSe0z1hju5X9c5BEfQAvkb4Fub1ZoHLo+ZLJ7mAyo=
+github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866/go.mod h1:zetE8JfNmxkot7OCNXJyS/QwxFnfcUFzrs/jg4U2gAw=
 github.com/jenkins-zh/jenkins-formulas v0.0.5/go.mod h1:zS8fm8u5L6FcjZM0QznXsLV9T2UtSVK+hT6Sm76iUZ4=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=

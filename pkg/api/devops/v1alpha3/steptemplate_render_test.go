@@ -17,7 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
@@ -44,7 +45,7 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 		}},
 	}
 	stepTemplateWithDSL := &StepTemplateSpec{
-		Template: `echo "1"`,
+		Template: readFile("testdata/dsl-echo.json"),
 		Runtime:  "dsl",
 	}
 
@@ -64,16 +65,16 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 			stepTemplate: stepTemplate,
 		},
 		wantOutput: `{
-"arguments": [
-  {
-	"key": "script",
-	"value": {
-	  "isLiteral": true,
-	  "value": "	echo 1"
-	}
-  }
-],
-"name": "sh"
+  "arguments": [
+    {
+      "key": "script",
+      "value": {
+        "isLiteral": true,
+        "value": "echo 1"
+      }
+    }
+  ],
+  "name": "sh"
 }`,
 		wantErr: false,
 	}, {
@@ -95,30 +96,14 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 				},
 			},
 		},
-		wantOutput: `container("base") {
-	withCredential[usernamePassword(credentialsId : "docker" ,passwordVariable : 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
-		{
-		"arguments": [
-		  {
-			"key": "script",
-			"value": {
-			  "isLiteral": true,
-			  "value": "	docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
-			docker build dir -t image:tag"
-			}
-		  }
-		],
-		"name": "sh"
-		}
-	}
-}`,
-		wantErr: false,
+		wantOutput: readFile("testdata/docker-login.json"),
+		wantErr:    false,
 	}, {
 		name: "a simple dsl without any parameters",
 		args: args{
 			stepTemplate: stepTemplateWithDSL,
 		},
-		wantOutput: `echo "1"`,
+		wantOutput: readFile("testdata/dsl-echo.json"),
 		wantErr:    false,
 	}}
 	for _, tt := range tests {
@@ -130,6 +115,10 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 			}
 			if gotOutput != tt.wantOutput {
 				t.Errorf("stepTemplateRender() gotOutput = %v, want %v", gotOutput, tt.wantOutput)
+			}
+
+			if diff := cmp.Diff(gotOutput, tt.wantOutput); len(diff) != 0 {
+				t.Errorf("%T differ (-got, +expected) %v", tt.wantOutput, diff)
 			}
 		})
 	}
@@ -159,9 +148,7 @@ func Test_wrapWithCredential(t *testing.T) {
 			secretName: "config",
 			target:     "echo 1",
 		},
-		want: `withCredential[kubeconfigContent(credentialsId : "config" ,variable : 'VARIABLE')]) {
-	echo 1
-}`,
+		want: readFile("testdata/credential-kubeconfig.json"),
 	}, {
 		name: "secret as secret text type",
 		args: args{
@@ -169,9 +156,7 @@ func Test_wrapWithCredential(t *testing.T) {
 			secretName: "config",
 			target:     "echo 1",
 		},
-		want: `withCredential[string(credentialsId : "config" ,variable : 'VARIABLE')]) {
-	echo 1
-}`,
+		want: readFile("testdata/credential-string.json"),
 	}, {
 		name: "secret as ssh auth type",
 		args: args{
@@ -179,9 +164,7 @@ func Test_wrapWithCredential(t *testing.T) {
 			secretName: "config",
 			target:     "echo 1",
 		},
-		want: `withCredential[sshUserPrivateKey(credentialsId : "config" ,keyFileVariable : 'KEYFILEVARIABLE' ,passphraseVariable : 'PASSPHRASEVARIABLE' ,usernameVariable : 'SSHUSERPRIVATEKEY')]) {
-	echo 1
-}`,
+		want: readFile("testdata/credential-ssh.json"),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -192,34 +175,9 @@ func Test_wrapWithCredential(t *testing.T) {
 	}
 }
 
-func Test_addIndent(t *testing.T) {
-	type args struct {
-		txt string
+func readFile(file string) string {
+	if data, err := ioutil.ReadFile(file); err == nil {
+		return string(data)
 	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{{
-		name: "one line",
-		args: args{
-			txt: "one line",
-		},
-		want: "\tone line",
-	}, {
-		name: "three lines",
-		args: args{
-			txt: `one line
-two line
-three line`,
-		},
-		want: `	one line
-	two line
-	three line`,
-	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, addIndent(tt.args.txt), "addIndent(%v)", tt.args.txt)
-		})
-	}
+	return ""
 }

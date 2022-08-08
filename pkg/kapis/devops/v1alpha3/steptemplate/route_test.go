@@ -119,7 +119,7 @@ func TestAPIs(t *testing.T) {
 		},
 		verify: func(bytes []byte, t *testing.T) {
 			assert.Equal(t, `{
- "data": "{\n\"arguments\": [\n  {\n\t\"key\": \"script\",\n\t\"value\": {\n\t  \"isLiteral\": true,\n\t  \"value\": \"\techo 2\"\n\t}\n  }\n],\n\"name\": \"sh\"\n}"
+ "data": "{\n  \"arguments\": [\n    {\n      \"key\": \"script\",\n      \"value\": {\n        \"isLiteral\": true,\n        \"value\": \"echo 2\"\n      }\n    }\n  ],\n  \"name\": \"sh\"\n}"
 }`, string(bytes))
 		},
 		wantCode: http.StatusOK,
@@ -158,7 +158,7 @@ func TestAPIs(t *testing.T) {
 		},
 		verify: func(bytes []byte, t *testing.T) {
 			assert.Equal(t, `{
- "data": "{\n\"arguments\": [\n  {\n\t\"key\": \"script\",\n\t\"value\": {\n\t  \"isLiteral\": true,\n\t  \"value\": \"\techo 3\"\n\t}\n  }\n],\n\"name\": \"sh\"\n}"
+ "data": "{\n  \"arguments\": [\n    {\n      \"key\": \"script\",\n      \"value\": {\n        \"isLiteral\": true,\n        \"value\": \"echo 3\"\n      }\n    }\n  ],\n  \"name\": \"sh\"\n}"
 }`, string(bytes))
 		},
 		wantCode: http.StatusOK,
