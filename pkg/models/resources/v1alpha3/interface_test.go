@@ -21,9 +21,10 @@ package v1alpha3
 import (
 	assert2 "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
-	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
@@ -157,50 +158,50 @@ func TestLabelsMatch(t *testing.T) {
 }
 
 func TestDefaultObjectMetaCompare(t *testing.T) {
-	now := v1.Now()
+	now := metav1.Now()
 	tables := []struct {
 		name              string
-		left              v1.ObjectMeta
-		right             v1.ObjectMeta
+		left              metav1.ObjectMeta
+		right             metav1.ObjectMeta
 		field             query.Field
 		expectedCmpResult bool
 	}{{
 		name: "compare name with descending order",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			Name: "b",
 		},
-		right: v1.ObjectMeta{
+		right: metav1.ObjectMeta{
 			Name: "a",
 		},
 		field:             query.FieldName,
 		expectedCmpResult: true,
 	}, {
 		name: "compare same name",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			Name: "a",
 		},
-		right: v1.ObjectMeta{
+		right: metav1.ObjectMeta{
 			Name: "a",
 		},
 		field:             query.FieldName,
 		expectedCmpResult: false,
 	}, {
 		name: "compare name with ascending order",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			Name: "a",
 		},
-		right: v1.ObjectMeta{
+		right: metav1.ObjectMeta{
 			Name: "b",
 		},
 		field:             query.FieldName,
 		expectedCmpResult: false,
 	}, {
 		name: "compare same creation timestamp",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			Name:              "a",
 			CreationTimestamp: now,
 		},
-		right: v1.ObjectMeta{
+		right: metav1.ObjectMeta{
 			Name:              "b",
 			CreationTimestamp: now,
 		},
@@ -208,31 +209,31 @@ func TestDefaultObjectMetaCompare(t *testing.T) {
 		expectedCmpResult: false,
 	}, {
 		name: "compare creation timestamp with descending order",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			CreationTimestamp: now,
 		},
-		right: v1.ObjectMeta{
-			CreationTimestamp: v1.NewTime(now.Truncate(time.Second)),
+		right: metav1.ObjectMeta{
+			CreationTimestamp: metav1.NewTime(now.Truncate(time.Second)),
 		},
 		field:             query.FieldCreationTimeStamp,
 		expectedCmpResult: true,
 	}, {
 		name: "compare creation timestamp with ascending order",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			CreationTimestamp: now,
 		},
-		right: v1.ObjectMeta{
-			CreationTimestamp: v1.NewTime(now.Add(time.Second)),
+		right: metav1.ObjectMeta{
+			CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
 		},
 		field:             query.FieldCreationTimeStamp,
 		expectedCmpResult: false,
 	}, {
 		name: "compare others",
-		left: v1.ObjectMeta{
+		left: metav1.ObjectMeta{
 			CreationTimestamp: now,
 		},
-		right: v1.ObjectMeta{
-			CreationTimestamp: v1.NewTime(now.Add(time.Second)),
+		right: metav1.ObjectMeta{
+			CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
 		},
 		field:             query.FieldUID,
 		expectedCmpResult: false,
@@ -269,12 +270,12 @@ func TestDefaultList(t *testing.T) {
 		name: "nil compareFunc, filterFunc and transform",
 		items: []runtime.Object{
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-a",
 				},
 			},
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-b",
 				},
 			},
@@ -285,12 +286,12 @@ func TestDefaultList(t *testing.T) {
 			TotalItems: 2,
 			Items: []interface{}{
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-a",
 					},
 				},
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-b",
 					},
 				},
@@ -300,12 +301,12 @@ func TestDefaultList(t *testing.T) {
 		name: "filter name",
 		items: []runtime.Object{
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-abcd",
 				},
 			},
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-efgh",
 				},
 			},
@@ -321,7 +322,7 @@ func TestDefaultList(t *testing.T) {
 			TotalItems: 1,
 			Items: []interface{}{
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-abcd",
 					},
 				},
@@ -331,12 +332,12 @@ func TestDefaultList(t *testing.T) {
 		name: "filter name",
 		items: []runtime.Object{
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-abcd",
 				},
 			},
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-efgh",
 				},
 			},
@@ -351,12 +352,12 @@ func TestDefaultList(t *testing.T) {
 			TotalItems: 2,
 			Items: []interface{}{
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-efgh",
 					},
 				},
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-abcd",
 					},
 				},
@@ -366,17 +367,17 @@ func TestDefaultList(t *testing.T) {
 		name: "filter and compare name",
 		items: []runtime.Object{
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-cdef",
 				},
 			},
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-abcd",
 				},
 			},
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-efgh",
 				},
 			},
@@ -394,12 +395,12 @@ func TestDefaultList(t *testing.T) {
 			TotalItems: 2,
 			Items: []interface{}{
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-abcd",
 					},
 				},
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-cdef",
 					},
 				},
@@ -409,13 +410,13 @@ func TestDefaultList(t *testing.T) {
 		name: "Filter nil items",
 		items: []runtime.Object{
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-abcd",
 				},
 			},
 			nil,
 			&v1alpha3.Pipeline{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "pipeline-cdef",
 				},
 			},
@@ -427,12 +428,12 @@ func TestDefaultList(t *testing.T) {
 			TotalItems: 2,
 			Items: []interface{}{
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-abcd",
 					},
 				},
 				&v1alpha3.Pipeline{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipeline-cdef",
 					},
 				},
@@ -457,7 +458,7 @@ func Test_noTransformFunc(t *testing.T) {
 		arg:  nil,
 	}, {
 		name: "Non-nil object",
-		arg:  &v12.Pod{},
+		arg:  &v1.Pod{},
 	},
 	}
 	for _, tt := range tests {
@@ -679,6 +680,253 @@ func TestFilterFunc_Or(t *testing.T) {
 			if got := tt.ff.Or(tt.args.anotherFf)(nil, query.Filter{}); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Or() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestDefaultObjectMetaFilter(t *testing.T) {
+	obj := &v1.ConfigMap{}
+	obj.SetUID(types.UID("uid"))
+	obj.SetName("test")
+	obj.SetNamespace("ns")
+	obj.SetOwnerReferences([]metav1.OwnerReference{{
+		UID:  "uid",
+		Kind: "kind",
+	}})
+	obj.SetAnnotations(map[string]string{
+		"anno-key": "anno-value",
+	})
+	obj.SetLabels(map[string]string{
+		"label-key": "label-value",
+	})
+
+	type args struct {
+		item   metav1.Object
+		filter query.Filter
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{{
+		name: "filter by names",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "names",
+				Value: "test,fake",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by names, not have name",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "names",
+				Value: "good,fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by name",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "name",
+				Value: "test",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by name, not match name",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "name",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by uid",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "uid",
+				Value: "uid",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by uid, not match with uid",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "uid",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by namespace",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "namespace",
+				Value: "ns",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by namespace, not match with namespace",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "namespace",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by ownerReference",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "ownerReference",
+				Value: "uid",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by ownerReference, not match",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "ownerReference",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by ownerReference kind",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "ownerKind",
+				Value: "kind",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by ownerReference kind, not match",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "ownerKind",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by annotation",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "annotation",
+				Value: "anno-key=anno-value",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by annotation, not match",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "annotation",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "filter by label",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "label",
+				Value: "label-key=label-value",
+			},
+		},
+		want: true,
+	}, {
+		name: "filter by label, not match",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "label",
+				Value: "fake",
+			},
+		},
+		want: false,
+	}, {
+		name: "fake filter",
+		args: args{
+			item: obj.DeepCopy(),
+			filter: query.Filter{
+				Field: "fake",
+				Value: "fake",
+			},
+		},
+		want: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert2.Equalf(t, tt.want, DefaultObjectMetaFilter(tt.args.item, tt.args.filter), "DefaultObjectMetaFilter(%v, %v)", tt.args.item, tt.args.filter)
+		})
+	}
+}
+
+func TestToListResult(t *testing.T) {
+	cm1 := &v1.ConfigMap{}
+	cm1.SetName("cm1")
+	cm2 := &v1.ConfigMap{}
+	cm2.SetName("cm2")
+
+	type args struct {
+		objects []runtime.Object
+		q       *query.Query
+		handler ListHandler
+	}
+	tests := []struct {
+		name string
+		args args
+		want *api.ListResult
+	}{{
+		name: "normal",
+		args: args{
+			objects: []runtime.Object{cm1, cm2},
+			q:       &query.Query{},
+			handler: nil,
+		},
+		want: &api.ListResult{
+			Items:      []interface{}{cm2, cm1},
+			TotalItems: 2,
+		},
+	}, {
+		name: "sort by name",
+		args: args{
+			objects: []runtime.Object{cm1, cm2},
+			q:       &query.Query{},
+			handler: NamedHandler{},
+		},
+		want: &api.ListResult{
+			Items:      []interface{}{cm2, cm1},
+			TotalItems: 2,
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert2.Equalf(t, tt.want, ToListResult(tt.args.objects, tt.args.q, tt.args.handler), "ToListResult(%v, %v, %v)", tt.args.objects, tt.args.q, tt.args.handler)
 		})
 	}
 }
