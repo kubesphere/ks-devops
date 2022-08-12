@@ -35,8 +35,8 @@ func TestDefaultFunc(t *testing.T) {
 	objB.SetName("bbb")
 
 	result := h.Comparator()(objA.DeepCopy(), objB.DeepCopy(), "name")
-	assert.False(t, result)
+	assert.True(t, result)
 
 	result = h.Comparator()(objB.DeepCopy(), objA.DeepCopy(), "name")
-	assert.True(t, result)
+	assert.False(t, result)
 }

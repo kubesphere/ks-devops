@@ -20,7 +20,7 @@ package v1alpha3
 type NamedHandler struct {
 }
 
-// Comparator compare the list by name
+// Comparator compare the list by name with ascending
 func (h NamedHandler) Comparator() CompareFunc {
 	return NameCompare()
 }

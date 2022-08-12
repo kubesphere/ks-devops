@@ -177,6 +177,7 @@ func NameCompare() CompareFunc {
 		if !ok {
 			return false
 		}
+		field = "!" + query.FieldName
 		return DefaultObjectMetaCompare(leftOma.GetObjectMeta(), rightOma.GetObjectMeta(), field)
 	}
 }
@@ -197,8 +198,11 @@ func DefaultObjectMetaCompare(left, right metav1.Object, sortBy query.Field) boo
 	switch sortBy {
 	// ?sortBy=name
 	case query.FieldName:
-		// sort the name in ascending order
+		// sort the name in descending order
 		return strings.Compare(left.GetName(), right.GetName()) > 0
+	case "!" + query.FieldName:
+		// sort the name in ascending order
+		return strings.Compare(left.GetName(), right.GetName()) < 0
 	//	?sortBy=creationTimestamp
 	default:
 		fallthrough

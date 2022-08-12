@@ -920,7 +920,7 @@ func TestToListResult(t *testing.T) {
 			handler: NamedHandler{},
 		},
 		want: &api.ListResult{
-			Items:      []interface{}{cm2, cm1},
+			Items:      []interface{}{cm1, cm2},
 			TotalItems: 2,
 		},
 	}}
