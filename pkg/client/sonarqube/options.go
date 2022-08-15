@@ -20,11 +20,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// Options represents the flags for the CLI
 type Options struct {
 	Host  string `json:",omitempty" yaml:"host" description:"SonarQube service host address"`
 	Token string `json:",omitempty" yaml:"token" description:"SonarQube service token"`
 }
 
+// NewSonarQubeOptions creates an empty Option instance
 func NewSonarQubeOptions() *Options {
 	return &Options{
 		Host:  "",
@@ -32,12 +34,14 @@ func NewSonarQubeOptions() *Options {
 	}
 }
 
+// Validate runs the validation of the options
 func (s *Options) Validate() []error {
 	var errors []error
 
 	return errors
 }
 
+// ApplyTo applies the current values to target one
 func (s *Options) ApplyTo(options *Options) {
 	if s.Host != "" {
 		options.Host = s.Host
@@ -45,6 +49,7 @@ func (s *Options) ApplyTo(options *Options) {
 	}
 }
 
+// AddFlags adds flags to a flag set
 func (s *Options) AddFlags(fs *pflag.FlagSet, c *Options) {
 	fs.StringVar(&s.Host, "sonarqube-host", c.Host, ""+
 		"Sonarqube service address, if left empty, following sonarqube options will be ignored.")

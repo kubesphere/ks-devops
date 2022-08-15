@@ -83,6 +83,10 @@ func TestNewKubernetesClientWithToken(t *testing.T) {
 			}
 		})
 	}
+
+	client, err := NewKubernetesClientWithToken("token", "master")
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
 }
 
 func TestNewKubernetesClient(t *testing.T) {

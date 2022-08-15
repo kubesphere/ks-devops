@@ -17,6 +17,7 @@ limitations under the License.
 package devops
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -47,11 +48,11 @@ func (g *pipelineSonarGetter) GetPipelineSonar(projectId, pipelineId string) ([]
 
 	build, err := g.GetProjectPipelineBuildByType(projectId, pipelineId, devops.LastBuild)
 	if err != nil && errors.GetServiceErrorCode(err) != http.StatusNotFound {
-		klog.Errorf("%+v", err)
 		return nil, err
 	} else if err != nil {
-		klog.Errorf("%+v", err)
-		return nil, nil
+		return nil, err
+	} else if build == nil {
+		return nil, fmt.Errorf("cannot find build, %s/%s", projectId, pipelineId)
 	}
 	var taskIds []string
 	for _, action := range build.Actions {
@@ -98,8 +99,9 @@ func (g *pipelineSonarGetter) GetMultiBranchPipelineSonar(projectId, pipelineId,
 		klog.Errorf("%+v", err)
 		return nil, restful.NewError(errors.GetServiceErrorCode(err), err.Error())
 	} else if err != nil {
-		klog.Errorf("%+v", err)
-		return nil, nil
+		return nil, err
+	} else if build == nil {
+		return nil, fmt.Errorf("cannot find build, %s/%s", projectId, pipelineId)
 	}
 	var taskIds []string
 	for _, action := range build.Actions {

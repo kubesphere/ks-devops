@@ -24,10 +24,12 @@ import (
 	"k8s.io/klog"
 )
 
+// Client represents the client of SonarQube
 type Client struct {
 	client *sonargo.Client
 }
 
+// NewSonarQubeClient creates a client with options
 func NewSonarQubeClient(options *Options) (*Client, error) {
 	var endpoint string
 
@@ -46,25 +48,7 @@ func NewSonarQubeClient(options *Options) (*Client, error) {
 	return &Client{client: sonar}, err
 }
 
-func NewSonarQubeClientOrDie(options *Options) *Client {
-	var endpoint string
-
-	if strings.HasSuffix(options.Host, "/") {
-		endpoint = fmt.Sprintf("%sapi/", options.Host)
-	} else {
-		endpoint = fmt.Sprintf("%s/api/", options.Host)
-	}
-
-	sonar, err := sonargo.NewClientWithToken(endpoint, options.Token)
-	if err != nil {
-		klog.Errorf("failed to connect to sonarqube service, %+v", err)
-		panic(err)
-	}
-
-	return &Client{client: sonar}
-}
-
-// return sonarqube client
+// SonarQube returns sonarqube client
 // Also we can wrap some methods to avoid direct use sonar client
 func (s *Client) SonarQube() *sonargo.Client {
 	return s.client

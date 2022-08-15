@@ -18,8 +18,6 @@ package k8s
 
 import (
 	"errors"
-	"strings"
-
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
@@ -48,36 +46,6 @@ type kubernetesClient struct {
 	apiextensions apiextensionsclient.Interface
 	master        string
 	config        *rest.Config
-}
-
-// NewKubernetesClientOrDie creates KubernetesClient and panic if there is an error
-func NewKubernetesClientOrDie(options *KubernetesOptions) (client Client) {
-	config, err := clientcmd.BuildConfigFromFlags("", options.KubeConfig)
-	if err != nil {
-		panic(err)
-	}
-
-	config.QPS = options.QPS
-	config.Burst = options.Burst
-
-	k := &kubernetesClient{
-		k8s:             kubernetes.NewForConfigOrDie(config),
-		discoveryClient: discovery.NewDiscoveryClientForConfigOrDie(config),
-		apiextensions:   apiextensionsclient.NewForConfigOrDie(config),
-		master:          config.Host,
-		config:          config,
-	}
-
-	if options.Master != "" {
-		k.master = options.Master
-	}
-	// The https prefix is automatically added when using sa.
-	// But it will not be set automatically when reading from kubeconfig
-	// which may cause some problems in the client of other languages.
-	if !strings.HasPrefix(k.master, "http://") && !strings.HasPrefix(k.master, "https://") {
-		k.master = "https://" + k.master
-	}
-	return k
 }
 
 // NewKubernetesClientWithConfig creates a k8s client with the rest config
