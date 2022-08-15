@@ -1,0 +1,30 @@
+{
+  "arguments": {
+    "isLiteral": true,
+    "value": "base"
+  },
+  "children": [
+    {
+      "arguments": {
+        "isLiteral": false,
+        "value": "${[usernamePassword(credentialsId: 'docker', passwordVariable: 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]}"
+      },
+      "children": [
+        {
+          "arguments": [
+            {
+              "key": "script",
+              "value": {
+                "isLiteral": true,
+                "value": "docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE\ndocker build dir -t image:tag"
+              }
+            }
+          ],
+          "name": "sh"
+        }
+      ],
+      "name": "withCredentials"
+    }
+  ],
+  "name": "container"
+}

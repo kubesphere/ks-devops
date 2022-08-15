@@ -48,8 +48,13 @@ spec:
                       type: string
                     name:
                       type: string
+                    options:
+                      type: string
                     required:
                       type: boolean
+                    type:
+                      description: ParameterType represents the type of parameter
+                      type: string
                   required:
                   - name
                   type: object

@@ -17,6 +17,7 @@ limitations under the License.
 package steptemplate
 
 import (
+	"bytes"
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -43,6 +44,7 @@ func TestAPIs(t *testing.T) {
 
 	type args struct {
 		api     string
+		method  string
 		getBody func() io.Reader
 	}
 	tests := []struct {
@@ -54,13 +56,15 @@ func TestAPIs(t *testing.T) {
 	}{{
 		name: "an empty list of the clusterStepTemplate",
 		args: args{
-			api: "/clustersteptemplates",
+			api:    "/clustersteptemplates",
+			method: http.MethodGet,
 		},
 		wantCode: http.StatusOK,
 	}, {
 		name: "the whole list of the clusterStepTemplate",
 		args: args{
-			api: "/clustersteptemplates",
+			api:    "/clustersteptemplates",
+			method: http.MethodGet,
 		},
 		getInstances: func() []runtime.Object {
 			return []runtime.Object{&v1alpha3.ClusterStepTemplate{}}
@@ -69,7 +73,8 @@ func TestAPIs(t *testing.T) {
 	}, {
 		name: "get a clusterStepTemplate by name",
 		args: args{
-			api: "/clustersteptemplates/fake",
+			api:    "/clustersteptemplates/fake",
+			method: http.MethodGet,
 		},
 		getInstances: func() []runtime.Object {
 			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
@@ -82,7 +87,11 @@ func TestAPIs(t *testing.T) {
 	}, {
 		name: "render a clusterStepTemplate by name",
 		args: args{
-			api: "/clustersteptemplates/fake/render?secret=secret&secretNamespace=ns",
+			api:    "/clustersteptemplates/fake/render?secret=secret&secretNamespace=ns",
+			method: http.MethodPost,
+			getBody: func() io.Reader {
+				return bytes.NewBufferString(`{}`)
+			},
 		},
 		getInstances: func() []runtime.Object {
 			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
@@ -110,7 +119,46 @@ func TestAPIs(t *testing.T) {
 		},
 		verify: func(bytes []byte, t *testing.T) {
 			assert.Equal(t, `{
- "data": "sh '''\n\techo 2\n'''"
+ "data": "{\n  \"arguments\": [\n    {\n      \"key\": \"script\",\n      \"value\": {\n        \"isLiteral\": true,\n        \"value\": \"echo 2\"\n      }\n    }\n  ],\n  \"name\": \"sh\"\n}"
+}`, string(bytes))
+		},
+		wantCode: http.StatusOK,
+	}, {
+		name: "render a clusterStepTemplate by namewith parameter body ",
+		args: args{
+			api:    "/clustersteptemplates/fake/render?secret=secret&secretNamespace=ns",
+			method: http.MethodPost,
+			getBody: func() io.Reader {
+				return bytes.NewBufferString(`{"number":"3"}`)
+			},
+		},
+		getInstances: func() []runtime.Object {
+			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fake",
+				},
+				Spec: v1alpha3.StepTemplateSpec{
+					Parameters: []v1alpha3.ParameterInStep{{
+						Name:         "number",
+						DefaultValue: "2",
+					}},
+					Template: `echo {{.param.number}}`,
+				},
+			}, &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "ns",
+					Name:      "secret",
+				},
+				Type: v1.SecretTypeBasicAuth,
+				Data: map[string][]byte{
+					v1.BasicAuthUsernameKey: []byte("username"),
+					v1.BasicAuthPasswordKey: []byte("password"),
+				},
+			}}
+		},
+		verify: func(bytes []byte, t *testing.T) {
+			assert.Equal(t, `{
+ "data": "{\n  \"arguments\": [\n    {\n      \"key\": \"script\",\n      \"value\": {\n        \"isLiteral\": true,\n        \"value\": \"echo 3\"\n      }\n    }\n  ],\n  \"name\": \"sh\"\n}"
 }`, string(bytes))
 		},
 		wantCode: http.StatusOK,
@@ -135,8 +183,9 @@ func TestAPIs(t *testing.T) {
 				requestBody = tt.args.getBody()
 			}
 
-			httpRequest, _ := http.NewRequest(http.MethodGet,
+			httpRequest, _ := http.NewRequest(tt.args.method,
 				"http://fake.com/kapis/devops.kubesphere.io/v1alpha3"+tt.args.api, requestBody)
+			httpRequest.Header.Set("Content-Type", "application/json")
 			httpWriter := httptest.NewRecorder()
 			container.Dispatch(httpWriter, httpRequest)
 			assert.Equal(t, tt.wantCode, httpWriter.Code)

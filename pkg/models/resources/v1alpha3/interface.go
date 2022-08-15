@@ -166,6 +166,22 @@ func DefaultCompare() CompareFunc {
 	}
 }
 
+// NameCompare returns a compare function that compare by name
+func NameCompare() CompareFunc {
+	return func(left runtime.Object, right runtime.Object, field query.Field) bool {
+		leftOma, ok := left.(metav1.ObjectMetaAccessor)
+		if !ok {
+			return false
+		}
+		rightOma, ok := right.(metav1.ObjectMetaAccessor)
+		if !ok {
+			return false
+		}
+		field = "!" + query.FieldName
+		return DefaultObjectMetaCompare(leftOma.GetObjectMeta(), rightOma.GetObjectMeta(), field)
+	}
+}
+
 // DefaultFilter creates a default ObjectMeta filter function.
 func DefaultFilter() FilterFunc {
 	return func(obj runtime.Object, filter query.Filter) bool {
@@ -182,8 +198,11 @@ func DefaultObjectMetaCompare(left, right metav1.Object, sortBy query.Field) boo
 	switch sortBy {
 	// ?sortBy=name
 	case query.FieldName:
-		// sort the name in ascending order
+		// sort the name in descending order
 		return strings.Compare(left.GetName(), right.GetName()) > 0
+	case "!" + query.FieldName:
+		// sort the name in ascending order
+		return strings.Compare(left.GetName(), right.GetName()) < 0
 	//	?sortBy=creationTimestamp
 	default:
 		fallthrough

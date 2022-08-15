@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
 	"strings"
@@ -43,43 +44,74 @@ func (t *StepTemplateSpec) Render(param map[string]string, secret *v1.Secret) (o
 		output, err = shellRender(t.Template, param, secret)
 	}
 
-	if t.Secret.Wrap {
+	if t.Secret.Wrap && secret != nil {
 		output = wrapWithCredential(t.Secret.Type, secret.Name, output)
 	}
 
 	if err == nil && t.Container != "" {
-		output = fmt.Sprintf(`container("%s") {
-%s
-}`, t.Container, addIndent(output))
+		output = fmt.Sprintf(`
+{
+  "arguments": {
+	"isLiteral": true,
+	"value": "%s"
+  },
+  "children": [%s],
+  "name": "container"
+}`, t.Container, output)
 	}
+
+	output = jsonFormat(output)
 	return
 }
 
-func addIndent(txt string) string {
-	items := strings.Split(txt, "\n")
-	return "\t" + strings.Join(items, "\n\t")
+func jsonFormat(content string) string {
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, []byte(content), "", "  "); err == nil {
+		return strings.TrimSpace(buf.String())
+	}
+	return strings.TrimSpace(content)
 }
 
 func wrapWithCredential(secretType, secretName, target string) string {
 	switch secretType {
 	case string(v1.SecretTypeBasicAuth), string(SecretTypeBasicAuth):
-		return fmt.Sprintf(`withCredential[usernamePassword(credentialsId : "%s" ,passwordVariable : 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
-%s
-}`, secretName, addIndent(target))
+		target = fmt.Sprintf(`{
+      "arguments": {
+        "isLiteral": false,
+        "value": "${[usernamePassword(credentialsId: '%s', passwordVariable: 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]}"
+      },
+      "children": [%s],
+      "name": "withCredentials"
+    }`, secretName, target)
 	case string(v1.SecretTypeBootstrapToken), string(SecretTypeSecretText):
-		return fmt.Sprintf(`withCredential[string(credentialsId : "%s" ,variable : 'VARIABLE')]) {
-%s
-}`, secretName, addIndent(target))
+		target = fmt.Sprintf(`{
+  "arguments": {
+    "isLiteral": false,
+    "value": "${[string(credentialsId: '%s', variable: 'VARIABLE')]}"
+  },
+  "children": [%s],
+  "name": "withCredentials"
+}`, secretName, target)
 	case string(SecretTypeKubeConfig):
-		return fmt.Sprintf(`withCredential[kubeconfigContent(credentialsId : "%s" ,variable : 'VARIABLE')]) {
-%s
-}`, secretName, addIndent(target))
+		target = fmt.Sprintf(`{
+  "arguments": {
+    "isLiteral": false,
+    "value": "${[kubeconfigContent(credentialsId: '%s', variable: 'VARIABLE')]}"
+  },
+  "children": [%s],
+  "name": "withCredentials"
+}`, secretName, target)
 	case string(SecretTypeSSHAuth):
-		return fmt.Sprintf(`withCredential[sshUserPrivateKey(credentialsId : "%s" ,keyFileVariable : 'KEYFILEVARIABLE' ,passphraseVariable : 'PASSPHRASEVARIABLE' ,usernameVariable : 'SSHUSERPRIVATEKEY')]) {
-%s
-}`, secretName, addIndent(target))
+		target = fmt.Sprintf(`{
+  "arguments": {
+    "isLiteral": false,
+    "value": "${[sshUserPrivateKey(credentialsId: '%s', keyFileVariable : 'KEYFILEVARIABLE' ,passphraseVariable : 'PASSPHRASEVARIABLE' ,usernameVariable : 'SSHUSERPRIVATEKEY')]}"
+  },
+  "children": [%s],
+  "name": "withCredentials"
+}`, secretName, target)
 	}
-	return target
+	return jsonFormat(target)
 }
 
 func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
@@ -104,9 +136,18 @@ func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (outpu
 
 func shellRender(shellTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
 	if output, err = dslRender(shellTpl, param, secret); err == nil {
-		output = fmt.Sprintf(`sh '''
-%s
-'''`, addIndent(output))
+		output = fmt.Sprintf(`{
+"arguments": [
+  {
+	"key": "script",
+	"value": {
+	  "isLiteral": true,
+	  "value": "%s"
+	}
+  }
+],
+"name": "sh"
+}`, strings.ReplaceAll(output, "\n", "\\n"))
 	}
 	return
 }

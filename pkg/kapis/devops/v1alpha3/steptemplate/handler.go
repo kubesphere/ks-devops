@@ -21,8 +21,11 @@ import (
 	"fmt"
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"kubesphere.io/devops/pkg/apiserver/query"
+	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"net/http"
 )
 
@@ -31,7 +34,19 @@ func (h *handler) clusterStepTemplates(req *restful.Request, resp *restful.Respo
 
 	clusterStepTemplateList := &v1alpha3.ClusterStepTemplateList{}
 	err := h.List(ctx, clusterStepTemplateList)
-	writeResponse(clusterStepTemplateList, err, resp)
+
+	queryParam := query.ParseQueryParameter(req)
+	apiResult := resourcesV1alpha3.ToListResult(convertToObject(clusterStepTemplateList.Items), queryParam, resourcesV1alpha3.NamedHandler{})
+
+	writeResponse(apiResult, err, resp)
+}
+
+func convertToObject(prs []v1alpha3.ClusterStepTemplate) []runtime.Object {
+	var result []runtime.Object
+	for i := range prs {
+		result = append(result, &prs[i])
+	}
+	return result
 }
 
 func (h *handler) getClusterStepTemplate(req *restful.Request, resp *restful.Response) {
@@ -60,7 +75,7 @@ func (h *handler) renderClusterStepTemplate(req *restful.Request, resp *restful.
 		fmt.Printf("something goes wrong when getting secret, error: %v\n", err)
 	}
 
-	param := make(map[string]string)
+	param := map[string]string{}
 	// get the parameters from request
 	if err = req.ReadEntity(&param); err != nil {
 		// TODO considering have logger output instead of the std output

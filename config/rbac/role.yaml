@@ -133,6 +133,17 @@ rules:
 - apiGroups:
   - devops.kubesphere.io
   resources:
+  - clustersteptemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - devops.kubesphere.io
+  resources:
   - devopsprojects
   verbs:
   - create
