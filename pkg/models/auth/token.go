@@ -32,6 +32,7 @@ import (
 	"kubesphere.io/devops/pkg/jwt/token"
 )
 
+// TokenManagementInterface is the interface for the token management
 type TokenManagementInterface interface {
 	// Verify verifies a token, and return a User if it's a valid token, otherwise return error
 	Verify(token string) (user.Info, error)
@@ -47,6 +48,7 @@ type tokenOperator struct {
 	cache   cache.Interface
 }
 
+// NewTokenOperator creates an instance of the token operator
 func NewTokenOperator(cache cache.Interface, options *authoptions.AuthenticationOptions) TokenManagementInterface {
 	operator := &tokenOperator{
 		issuer:  token.NewTokenIssuer(options.JwtSecret, options.MaximumClockSkew),
@@ -56,6 +58,7 @@ func NewTokenOperator(cache cache.Interface, options *authoptions.Authentication
 	return operator
 }
 
+// Verify verifies the token
 func (t tokenOperator) Verify(tokenStr string) (user.Info, error) {
 	authenticated, tokenType, err := t.issuer.Verify(tokenStr)
 	if err != nil {
@@ -71,6 +74,7 @@ func (t tokenOperator) Verify(tokenStr string) (user.Info, error) {
 	return authenticated, nil
 }
 
+// IssueTo creates a new token for a user
 func (t tokenOperator) IssueTo(user user.Info) (*oauth.Token, error) {
 	accessTokenExpiresIn := t.options.OAuthOptions.AccessTokenMaxAge
 	refreshTokenExpiresIn := accessTokenExpiresIn + t.options.OAuthOptions.AccessTokenInactivityTimeout
@@ -115,6 +119,7 @@ func (t tokenOperator) IssueTo(user user.Info) (*oauth.Token, error) {
 	return result, nil
 }
 
+// RevokeAllUserTokens revokes all tokens of a user
 func (t tokenOperator) RevokeAllUserTokens(username string) error {
 	pattern := fmt.Sprintf("kubesphere:user:%s:token:*", username)
 	if keys, err := t.cache.Keys(pattern); err != nil {

@@ -29,26 +29,33 @@ func CreatePipelineRunSCMRefNameIndexer(runtimeCache cache.Cache) error {
 	return runtimeCache.IndexField(context.Background(),
 		&v1alpha3.PipelineRun{},
 		v1alpha3.PipelineRunSCMRefNameField,
-		func(o runtime.Object) []string {
-			pipelineRun, ok := o.(*v1alpha3.PipelineRun)
-			if !ok || pipelineRun == nil {
-				return []string{}
-			}
-			if pipelineRun.Spec.SCM == nil {
-				return []string{}
-			}
-			return []string{pipelineRun.Spec.SCM.RefName}
-		})
+		extractSCMFunc)
+}
+
+func extractSCMFunc(o runtime.Object) []string {
+	pipelineRun, ok := o.(*v1alpha3.PipelineRun)
+	if !ok || pipelineRun == nil {
+		return []string{}
+	}
+	if pipelineRun.Spec.SCM == nil {
+		return []string{}
+	}
+	return []string{pipelineRun.Spec.SCM.RefName}
 }
 
 // CreatePipelineRunIdentityIndexer creates an indexer which aims for locating a PipelineRun with an identifier, like Pipeline name, SCM reference name and run ID.
 func CreatePipelineRunIdentityIndexer(runtimeCache cache.Cache) error {
 	// TODO Make the definition of index name in only one place
-	return runtimeCache.IndexField(context.Background(), &v1alpha3.PipelineRun{}, v1alpha3.PipelineRunIdentifierIndexerName, func(o runtime.Object) []string {
-		pipelineRun, ok := o.(*v1alpha3.PipelineRun)
-		if !ok || pipelineRun == nil {
-			return []string{}
-		}
-		return []string{pipelineRun.GetPipelineRunIdentifier()}
-	})
+	return runtimeCache.IndexField(context.Background(),
+		&v1alpha3.PipelineRun{},
+		v1alpha3.PipelineRunIdentifierIndexerName,
+		extractPipelineRunIdentifier)
+}
+
+func extractPipelineRunIdentifier(o runtime.Object) []string {
+	pipelineRun, ok := o.(*v1alpha3.PipelineRun)
+	if !ok || pipelineRun == nil {
+		return []string{}
+	}
+	return []string{pipelineRun.GetPipelineRunIdentifier()}
 }

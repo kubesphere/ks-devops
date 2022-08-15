@@ -18,6 +18,10 @@ package v1alpha2
 
 import (
 	"context"
+	sonargo "github.com/kubesphere/sonargo/sonar"
+	"kubesphere.io/devops/pkg/client/s3/fake"
+	"kubesphere.io/devops/pkg/client/sonarqube"
+	"kubesphere.io/devops/pkg/informers"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,8 +40,11 @@ import (
 
 func TestAPIsExist(t *testing.T) {
 	httpWriter := httptest.NewRecorder()
+	container := restful.NewContainer()
+	assert.NotNil(t, container)
 
-	_, err := AddToContainer(restful.DefaultContainer, nil, fakedevops.NewFakeDevops(nil),
+	// case 1, sonarqube client is nil
+	_, err := AddToContainer(container, nil, fakedevops.NewFakeDevops(nil),
 		nil,
 		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
 			ObjectMeta: metav1.ObjectMeta{Name: "fake"},
@@ -45,6 +52,25 @@ func TestAPIsExist(t *testing.T) {
 			fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fake"},
 			})), core.JenkinsCore{})
+	assert.Nil(t, err)
+
+	// case 2, sonarqube client is valid
+	container = restful.NewContainer()
+	assert.NotNil(t, container)
+
+	k8sclient := k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(), nil, nil, "", nil,
+		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+			ObjectMeta: metav1.ObjectMeta{Name: "fake"},
+		}))
+	ksclient := fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+		ObjectMeta: metav1.ObjectMeta{Name: "fake"},
+	})
+	informerFactory := informers.NewInformerFactories(k8sclient.Kubernetes(), ksclient,
+		k8sclient.ApiExtensions())
+
+	_, err = AddToContainer(container, informerFactory.KubeSphereSharedInformerFactory(), fakedevops.NewFakeDevops(nil),
+		sonarqube.NewSonar(&sonargo.Client{}),
+		ksclient, fake.NewFakeS3(), "", k8sclient, core.JenkinsCore{})
 	assert.Nil(t, err)
 
 	type args struct {
@@ -210,13 +236,25 @@ func TestAPIsExist(t *testing.T) {
 			method: http.MethodPost,
 			uri:    "/tojenkinsfile",
 		},
+	}, {
+		name: "/devops/{devops}/pipelines/{pipeline}/sonarstatus",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/ns/pipelines/fake/sonarstatus",
+		},
+	}, {
+		name: "/devops/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/ns/pipelines/fake/branches/master/sonarstatus",
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			httpRequest, _ := http.NewRequest(tt.args.method,
 				"http://fake.com/kapis/devops.kubesphere.io/v1alpha2"+tt.args.uri, nil)
 			httpRequest = httpRequest.WithContext(context.WithValue(context.TODO(), constants.K8SToken, constants.ContextKeyK8SToken("")))
-			restful.DefaultContainer.Dispatch(httpWriter, httpRequest)
+			container.Dispatch(httpWriter, httpRequest)
 			assert.NotEqual(t, httpWriter.Code, 404)
 		})
 	}
