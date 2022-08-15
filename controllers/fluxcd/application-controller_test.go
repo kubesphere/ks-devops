@@ -310,9 +310,12 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	helmDeploy := helmApp.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0]
 	setFluxHelmReleaseFields(fluxHR, fluxHelmChart, helmDeploy)
 	fluxHR.SetNamespace(helmApp.GetNamespace())
-	fluxHR.SetName(getHelmReleaseName(helmDeploy))
+	fluxHR.SetName(helmApp.GetName() + "abcde")
 	fluxHR.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": helmApp.GetName(),
+	})
+	fluxHR.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": getHelmReleaseName(helmDeploy),
 	})
 
 	helmAppWithTemplate := helmApp.DeepCopy()
@@ -321,6 +324,10 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Template = "fake-app"
 
 	kusApp := &v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "fake-ns",
+			Name:      "fake-app",
+		},
 		Spec: v1alpha1.ApplicationSpec{
 			Kind: "fluxcd",
 			FluxApp: &v1alpha1.FluxApplication{
@@ -372,9 +379,12 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	KusDeploy := kusApp.Spec.FluxApp.Spec.Config.Kustomization[0]
 	setFluxKustomizationFields(fluxKus, kusApp, KusDeploy)
 	fluxKus.SetNamespace(kusApp.GetNamespace())
-	fluxKus.SetName(getKustomizationName(KusDeploy))
+	fluxKus.SetName(kusApp.GetName() + "abcde")
 	fluxKus.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": kusApp.GetName(),
+	})
+	fluxKus.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": getKustomizationName(KusDeploy),
 	})
 
 	kusAppWithUpdate := kusApp.DeepCopy()
@@ -583,13 +593,14 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Equal(t, 2, len(fluxHRList.Items))
 
 				for _, hr := range fluxHRList.Items {
-					if hr.GetName() == "fake-targetNamespace" {
+					name := hr.GetAnnotations()["app.kubernetes.io/name"]
+					if name == "fake-targetNamespace" {
 						valuesFromSlice, _, _ := unstructured.NestedSlice(hr.Object, "spec", "valuesFrom")
 						valuesFrom := valuesFromSlice[0].(map[string]interface{})
 						assert.Equal(t, "ConfigMap", valuesFrom["kind"].(string))
 						assert.Equal(t, "fake-cm", valuesFrom["name"].(string))
 						assert.Equal(t, "fake-key", valuesFrom["valuesKey"].(string))
-					} else if hr.GetName() == "another-fake-targetNamespace" {
+					} else if name == "another-fake-targetNamespace" {
 						valuesFromSlice, _, _ := unstructured.NestedSlice(hr.Object, "spec", "valuesFrom")
 						assert.Nil(t, valuesFromSlice)
 					}
@@ -725,7 +736,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 					prune, _, _ := unstructured.NestedBool(kus.Object, "spec", "prune")
 					assert.True(t, prune)
 
-					switch kus.GetName() {
+					switch kus.GetAnnotations()["app.kubernetes.io/name"] {
 					case "fake-targetNamespace":
 						kubeconfigName, _, _ := unstructured.NestedString(kus.Object, "spec", "kubeConfig", "secretRef", "name")
 						assert.Equal(t, "aliyun-kubeconfig", kubeconfigName)
@@ -761,7 +772,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Equal(t, 2, len(kusList.Items))
 
 				for _, kus := range kusList.Items {
-					if kus.GetName() == "fake-targetNamespace" {
+					if kus.GetAnnotations()["app.kubernetes.io/name"] == "fake-targetNamespace" {
 						path, _, _ := unstructured.NestedString(kus.Object, "spec", "path")
 						assert.Equal(t, "another-kustomization", path)
 					}

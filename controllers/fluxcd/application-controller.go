@@ -126,7 +126,8 @@ func (r *ApplicationReconciler) reconcileHelmReleaseList(app *v1alpha1.Applicati
 
 	hrMap := make(map[string]*unstructured.Unstructured, len(fluxHelmReleaseList.Items))
 	for _, fluxHelmRelease := range fluxHelmReleaseList.Items {
-		hrMap[fluxHelmRelease.GetName()] = fluxHelmRelease.DeepCopy()
+		name := fluxHelmRelease.GetAnnotations()["app.kubernetes.io/name"]
+		hrMap[name] = fluxHelmRelease.DeepCopy()
 	}
 
 	helmReleaseNum := len(fluxApp.Spec.Config.HelmRelease.Deploy)
@@ -157,9 +158,15 @@ func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1al
 	newFluxHelmRelease := createBareFluxHelmReleaseObject()
 	setFluxHelmReleaseFields(newFluxHelmRelease, helmChart, deploy)
 	newFluxHelmRelease.SetNamespace(hrNS)
-	newFluxHelmRelease.SetName(hrName)
+	newFluxHelmRelease.SetGenerateName(appName)
+	newFluxHelmRelease.SetName("")
 	newFluxHelmRelease.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": appName,
+	})
+	// put the name that can uniquely identifies the HelmRelease in annotations
+	// and use generateName to avoid naming conflict
+	newFluxHelmRelease.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": hrName,
 	})
 	newFluxHelmRelease.SetOwnerReferences([]metav1.OwnerReference{
 		{
@@ -215,7 +222,8 @@ func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application
 
 	kusMap := make(map[string]*unstructured.Unstructured, len(kusList.Items))
 	for _, kus := range kusList.Items {
-		kusMap[kus.GetName()] = kus.DeepCopy()
+		name := kus.GetAnnotations()["app.kubernetes.io/name"]
+		kusMap[name] = kus.DeepCopy()
 	}
 
 	kusNum := len(app.Spec.FluxApp.Spec.Config.Kustomization)
@@ -243,7 +251,8 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 	kus := createBareFluxKustomizationObject()
 	setFluxKustomizationFields(kus, app, deploy)
 	kus.SetNamespace(kusNS)
-	kus.SetName(kusName)
+	kus.SetGenerateName(appName)
+	kus.SetName("")
 	kus.SetOwnerReferences([]metav1.OwnerReference{
 		{
 			APIVersion: "gitops.kubesphere.io/v1alpha1",
@@ -254,6 +263,9 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 	})
 	kus.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": appName,
+	})
+	kus.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": kusName,
 	})
 	err = r.Create(ctx, kus)
 	return
