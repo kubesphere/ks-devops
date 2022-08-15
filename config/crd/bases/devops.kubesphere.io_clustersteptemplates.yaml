@@ -36,6 +36,8 @@ spec:
           spec:
             description: StepTemplateSpec defines the desired state of ClusterStepTemplate
             properties:
+              agent:
+                type: string
               container:
                 type: string
               parameters:
