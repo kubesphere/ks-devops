@@ -824,7 +824,8 @@ func interanlErrorMessage() *devops.CheckCronRes {
 }
 
 func parseCronJobTime(msg string) (string, string, error) {
-
+	msg = strings.ReplaceAll(msg, "Coordinated Universal Time", "UTC")
+	msg = strings.ReplaceAll(msg, " at ", " ")
 	times := strings.Split(msg, ";")
 
 	lastTmp := strings.Split(times[0], " ")
