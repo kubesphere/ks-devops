@@ -24,6 +24,7 @@ import (
 type StepTemplateSpec struct {
 	Secret     SecretInStep      `json:"secret,omitempty"`
 	Container  string            `json:"container,omitempty"`
+	Agent      string            `json:"agent,omitempty"`
 	Runtime    string            `json:"runtime,omitempty"`
 	Template   string            `json:"template,omitempty"`
 	Parameters []ParameterInStep `json:"parameters,omitempty"`
