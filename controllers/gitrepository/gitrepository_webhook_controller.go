@@ -92,7 +92,7 @@ func (r *Reconciler) createOrUpdateWebhook(repo *v1alpha3.GitRepository) (err er
 	}
 
 	var hooks []*scm.Hook
-	if hooks, _, err = gitClient.Repositories.ListHooks(context.TODO(), repoAddress, scm.ListOptions{
+	if hooks, _, err = gitClient.Repositories.ListHooks(context.TODO(), repoAddress, &scm.ListOptions{
 		Page: 1,
 		Size: 30,
 	}); err != nil {

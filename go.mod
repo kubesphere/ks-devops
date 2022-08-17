@@ -23,7 +23,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/h2non/gock v1.0.9
-	github.com/jenkins-x/go-scm v1.11.4
+	github.com/jenkins-x/go-scm v1.11.19
 	github.com/jenkins-zh/jenkins-client v0.0.13
 	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866
 	github.com/kubesphere/sonargo v0.0.2
@@ -35,7 +35,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63
@@ -69,5 +69,3 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.18.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 )
-
-replace github.com/jenkins-x/go-scm v1.11.4 => github.com/kubesphere-sigs/go-scm v1.5.1-0.20220516023517-090ddb380729

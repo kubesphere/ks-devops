@@ -67,7 +67,7 @@ func (h *handler) getOrganizations(scm, server, secret, namespace string, page, 
 	if c, err = factory.GetClient(); err == nil {
 		var resp *goscm.Response
 
-		if orgs, resp, err = c.Organizations.List(ctx, goscm.ListOptions{Size: size, Page: page}); err == nil {
+		if orgs, resp, err = c.Organizations.List(ctx, &goscm.ListOptions{Size: size, Page: page}); err == nil {
 			code = resp.Status
 		} else {
 			code = 101
@@ -101,7 +101,7 @@ func (h *handler) getRepositories(scm, server, org, secret, namespace string, pa
 		var listRepositoryFunc listRepository
 		if user, err = h.getCurrentUsername(c); err == nil {
 			if user == org && !strings.HasPrefix(scm, "bitbucket") {
-				listRepositoryFunc = func(ctx context.Context, s string, options goscm.ListOptions) ([]*goscm.Repository, *goscm.Response, error) {
+				listRepositoryFunc = func(ctx context.Context, s string, options *goscm.ListOptions) ([]*goscm.Repository, *goscm.Response, error) {
 					return c.Repositories.List(ctx, options)
 				}
 			} else {
@@ -112,7 +112,7 @@ func (h *handler) getRepositories(scm, server, org, secret, namespace string, pa
 		}
 
 		ctx := context.Background()
-		if repos, _, err = listRepositoryFunc(ctx, org, goscm.ListOptions{
+		if repos, _, err = listRepositoryFunc(ctx, org, &goscm.ListOptions{
 			Page: page,
 			Size: size,
 		}); err != nil {
@@ -124,7 +124,7 @@ func (h *handler) getRepositories(scm, server, org, secret, namespace string, pa
 	return
 }
 
-type listRepository func(context.Context, string, goscm.ListOptions) ([]*goscm.Repository, *goscm.Response, error)
+type listRepository func(context.Context, string, *goscm.ListOptions) ([]*goscm.Repository, *goscm.Response, error)
 
 func (h *handler) listOrganizations(req *restful.Request, rsp *restful.Response) {
 	scm := req.PathParameter("scm")
