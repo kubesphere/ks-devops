@@ -69,7 +69,6 @@ func (cb *ContainerBuilder) Register(funcs ...func(*restful.Container) error) {
 	}
 }
 
-//
 func NewContainerBuilder(funcs ...func(*restful.Container) error) ContainerBuilder {
 	var cb ContainerBuilder
 	cb.Register(funcs...)

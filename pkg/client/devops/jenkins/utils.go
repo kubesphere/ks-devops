@@ -28,7 +28,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func makeJson(data interface{}) string {

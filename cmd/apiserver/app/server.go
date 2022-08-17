@@ -17,16 +17,17 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/cmd/apiserver/app/options"
 	"kubesphere.io/devops/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 func NewAPIServerCommand() (cmd *cobra.Command) {
@@ -85,13 +86,13 @@ cluster's shared state through which all other components interact.`,
 	return
 }
 
-func Run(s *options.ServerRunOptions, stopCh <-chan struct{}) error {
-	apiserver, err := s.NewAPIServer(stopCh)
+func Run(s *options.ServerRunOptions, stopCh context.Context) error {
+	apiserver, err := s.NewAPIServer(stopCh.Done())
 	if err != nil {
 		return err
 	}
 
-	err = apiserver.PrepareRun(stopCh)
+	err = apiserver.PrepareRun(stopCh.Done())
 	if err != nil {
 		return nil
 	}

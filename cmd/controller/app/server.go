@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -29,13 +30,13 @@ import (
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/indexers"
 	"kubesphere.io/devops/pkg/informers"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cliflag "k8s.io/component-base/cli/flag"
-	"k8s.io/klog"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -111,7 +112,7 @@ func NewControllerManagerCommand() *cobra.Command {
 	return cmd
 }
 
-func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) error {
+func Run(s *options.DevOpsControllerManagerOptions, ctx context.Context) error {
 	// Init k8s client
 	kubernetesClient, err := k8s.NewKubernetesClient(s.KubernetesOptions)
 	if err != nil {
@@ -194,10 +195,10 @@ func Run(s *options.DevOpsControllerManagerOptions, stopCh <-chan struct{}) erro
 
 	// Start cache data after all informer is registered
 	klog.V(0).Info("Starting cache resource from apiserver...")
-	informerFactory.Start(stopCh)
+	informerFactory.Start(ctx.Done())
 
 	klog.V(0).Info("Starting the controllers.")
-	if err = mgr.Start(stopCh); err != nil {
+	if err = mgr.Start(ctx); err != nil {
 		klog.Fatalf("unable to run the manager: %v", err)
 	}
 

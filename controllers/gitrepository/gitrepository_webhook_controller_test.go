@@ -19,6 +19,11 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/h2non/gock"
 	"github.com/jenkins-x/go-scm/scm"
@@ -29,14 +34,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	mgrcore "kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
-	"testing"
-	"time"
 )
 
 func Test_getRepo(t *testing.T) {
@@ -390,7 +391,7 @@ func TestReconciler_linkToWebhooks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Reconciler{
 				Client: tt.fields.Client,
-				log:    log.NullLogger{},
+				log:    logr.New(log.NullLogSink{}),
 			}
 			if err := r.linkToWebhooks(tt.args.repo); (err != nil) != tt.wantErr {
 				t.Errorf("linkToWebhooks() error = %v, wantErr %v", err, tt.wantErr)
@@ -877,12 +878,12 @@ func TestReconciler_Reconcile(t *testing.T) {
 
 			r := &Reconciler{
 				Client: tt.fields.Client,
-				log:    log.NullLogger{},
+				log:    logr.New(log.NullLogSink{}),
 			}
 			if tt.prepare != nil {
 				tt.prepare()
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}

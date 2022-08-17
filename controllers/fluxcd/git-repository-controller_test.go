@@ -18,6 +18,9 @@ package fluxcd
 
 import (
 	"context"
+	"testing"
+
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
@@ -45,6 +47,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 			Labels: map[string]string{
 				v1alpha1.ArtifactRepoLabelKey: "false",
 			},
+			ResourceVersion: "999",
 		},
 		Spec: v1alpha3.GitRepositorySpec{
 			Provider: "git",
@@ -212,7 +215,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &GitRepositoryReconciler{
 				Client:   tt.fields.Client,
-				log:      log.NullLogger{},
+				log:      logr.New(log.NullLogSink{}),
 				recorder: &record.FakeRecorder{},
 			}
 			err := r.reconcileFluxGitRepo(tt.args.repo)
@@ -306,7 +309,7 @@ func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 				Client:   tt.fields.Client,
 				recorder: &record.FakeRecorder{},
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if tt.wantErr(t, err) {
 				assert.Equal(t, tt.wantResult, gotResult)
 			}

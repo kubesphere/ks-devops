@@ -19,9 +19,11 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func Test_getArgoCDApplication(t *testing.T) {
@@ -257,10 +258,10 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &ApplicationStatusReconciler{
 				Client:   tt.fields.Client,
-				log:      log.NullLogger{},
+				log:      logr.New(log.NullLogSink{}),
 				recorder: &record.FakeRecorder{},
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req), tt.fields.Client) {
 				return
 			}

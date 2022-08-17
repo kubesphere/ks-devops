@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
 ARG GOPROXY
 WORKDIR /workspace
@@ -17,7 +17,7 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GO111MODULE=on go build -a -o jwt cmd/tools/jwt/jwt_cmd.go
 
-FROM golang:1.16 as downloader
+FROM golang:1.17 as downloader
 RUN go install github.com/linuxsuren/http-downloader@v0.0.49
 RUN http-downloader install kubesphere-sigs/ks@v0.0.60
 

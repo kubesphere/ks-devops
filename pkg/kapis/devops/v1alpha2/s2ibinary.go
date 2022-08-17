@@ -23,7 +23,7 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/emicklei/go-restful"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/pkg/models/devops"
 	"kubesphere.io/devops/pkg/utils/hashutil"

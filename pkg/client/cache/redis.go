@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type Client struct {

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"k8s.io/apiserver/pkg/authentication/user"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/pkg/apiserver/authentication/oauth"
 	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"

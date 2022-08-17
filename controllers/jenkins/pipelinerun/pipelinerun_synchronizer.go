@@ -52,8 +52,7 @@ type SyncReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *SyncReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *SyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.log.WithValues("Pipeline", req.NamespacedName)
 	pipeline := &v1alpha3.Pipeline{}
 	if err := r.Client.Get(ctx, req.NamespacedName, pipeline); err != nil {
@@ -219,11 +218,11 @@ func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func requestSyncPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
-			_, ok := e.Meta.GetAnnotations()[v1alpha3.PipelineRequestToSyncRunsAnnoKey]
+			_, ok := e.Object.GetAnnotations()[v1alpha3.PipelineRequestToSyncRunsAnnoKey]
 			return ok
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			_, ok := e.MetaNew.GetAnnotations()[v1alpha3.PipelineRequestToSyncRunsAnnoKey]
+			_, ok := e.ObjectNew.GetAnnotations()[v1alpha3.PipelineRequestToSyncRunsAnnoKey]
 			return ok
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {

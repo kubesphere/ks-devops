@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
 	"html/template"
+
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -49,8 +50,7 @@ type Reconciler struct {
 const defaultNamespace = "default"
 
 // Reconcile responsible for addon lifecycle
-func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to reconcile addon: %s", req.String()))
 
 	addon := &v1alpha3.Addon{}

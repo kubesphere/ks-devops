@@ -31,7 +31,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/informers"
@@ -132,8 +132,8 @@ func (c *Controller) worker() {
 }
 
 // Start implements for Runnable interface.
-func (c *Controller) Start(stopCh <-chan struct{}) error {
-	return c.run(1, stopCh)
+func (c *Controller) Start(ctx context.Context) error {
+	return c.run(1, ctx.Done())
 }
 
 func (c *Controller) run(workers int, stopCh <-chan struct{}) error {

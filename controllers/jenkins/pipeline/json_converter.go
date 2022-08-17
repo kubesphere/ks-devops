@@ -19,6 +19,8 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -27,7 +29,6 @@ import (
 	"kubesphere.io/devops/pkg/jwt/token"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 // tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
@@ -47,9 +48,7 @@ type JenkinsfileReconciler struct {
 }
 
 // Reconcile is the main entrypoint of this controller
-func (r *JenkinsfileReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
-
+func (r *JenkinsfileReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	pip := &v1alpha3.Pipeline{}
 	if err = r.Get(ctx, req.NamespacedName, pip); err != nil {
 		err = client.IgnoreNotFound(err)

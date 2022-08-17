@@ -40,7 +40,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
@@ -174,8 +174,8 @@ func (c *Controller) worker() {
 }
 
 // Start starts the controller
-func (c *Controller) Start(stopCh <-chan struct{}) error {
-	return c.Run(1, stopCh)
+func (c *Controller) Start(ctx context.Context) error {
+	return c.Run(1, ctx.Done())
 }
 
 // Run runs the controller

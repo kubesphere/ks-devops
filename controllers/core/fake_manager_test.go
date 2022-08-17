@@ -17,13 +17,16 @@ limitations under the License.
 package core
 
 import (
+	"context"
+	"testing"
+
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	clientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func TestFakeManager(t *testing.T) {
@@ -43,7 +46,7 @@ func TestFakeManager(t *testing.T) {
 	assert.Nil(t, fake.AddMetricsExtraHandler("", nil))
 	assert.Nil(t, fake.AddHealthzCheck("", nil))
 	assert.Nil(t, fake.AddReadyzCheck("", nil))
-	assert.Nil(t, fake.Start(nil))
+	assert.Nil(t, fake.Start(context.Background()))
 	assert.Nil(t, fake.GetConfig())
 	assert.Equal(t, schema, fake.GetScheme())
 	assert.Equal(t, client, fake.GetClient())
@@ -53,5 +56,6 @@ func TestFakeManager(t *testing.T) {
 	assert.Equal(t, meta.FirstHitRESTMapper{}, fake.GetRESTMapper())
 	assert.Equal(t, client, fake.GetAPIReader())
 	assert.Nil(t, fake.GetWebhookServer())
-	assert.Equal(t, log.NullLogger{}, fake.GetLogger())
+	assert.Equal(t, logr.New(log.NullLogSink{}), fake.GetLogger())
+	assert.NotNil(t, fake.GetControllerOptions())
 }

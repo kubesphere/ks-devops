@@ -14,7 +14,11 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
@@ -31,9 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
-	"time"
 )
 
 func Test_setLabelsToConfigMap(t *testing.T) {
@@ -112,7 +113,6 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 		TokenIssuer     token.Issuer
 		targetName      string
 		Client          client.Client
-		log             logr.Logger
 		recorder        record.EventRecorder
 	}
 	type args struct {
@@ -132,7 +132,6 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 			JenkinsClient: core.JenkinsCore{
 				URL: "http://localhost",
 			},
-			log:             log.NullLogger{},
 			TokenIssuer:     &token.FakeIssuer{},
 			targetName:      "fake",
 			TargetNamespace: "ns",
@@ -156,7 +155,6 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 			JenkinsClient: core.JenkinsCore{
 				URL: "http://localhost",
 			},
-			log:             log.NullLogger{},
 			TokenIssuer:     &token.FakeIssuer{},
 			targetName:      "fake",
 			TargetNamespace: "ns",
@@ -186,7 +184,7 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 				TokenIssuer:     tt.fields.TokenIssuer,
 				targetName:      tt.fields.targetName,
 				Client:          tt.fields.Client,
-				log:             tt.fields.log,
+				log:             logr.Logger{},
 				recorder:        tt.fields.recorder,
 			}
 			err = r.SetupWithManager(&mgrcore.FakeManager{
@@ -194,7 +192,7 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 				Client: tt.fields.Client,
 			})
 			assert.Nil(t, err)
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}
@@ -307,7 +305,7 @@ func Test_getSpecificConfigMapPredicate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			funcs := getSpecificConfigMapPredicate(tt.args.name, tt.args.namespace)
 			result := funcs.Generic(event.GenericEvent{
-				Meta: &v1.ConfigMap{
+				Object: &v1.ConfigMap{
 					ObjectMeta: v12.ObjectMeta{
 						Name:      tt.args.targetName,
 						Namespace: tt.args.targetNamespace,

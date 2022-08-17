@@ -33,7 +33,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/jwt/token"
@@ -60,8 +60,7 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.log.WithValues("PipelineRun", req.NamespacedName)
 
 	// get PipelineRun

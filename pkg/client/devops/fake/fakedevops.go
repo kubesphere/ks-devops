@@ -216,7 +216,7 @@ func (d *Devops) SubmitInputStep(projectName, pipelineName, runId, nodeId, stepI
 	return nil, nil
 }
 
-//BranchPipelinne operator interface
+// BranchPipelinne operator interface
 func (d *Devops) GetBranchPipeline(projectName, pipelineName, branchName string, httpParameters *devops.HttpParameters) (*devops.BranchPipeline, error) {
 	return nil, nil
 }
@@ -288,7 +288,7 @@ func (d *Devops) Validate(scmId string, httpParameters *devops.HttpParameters) (
 	return nil, nil
 }
 
-//Webhook operator interface
+// Webhook operator interface
 func (d *Devops) GetNotifyCommit(httpParameters *devops.HttpParameters) ([]byte, error) {
 	return nil, nil
 }

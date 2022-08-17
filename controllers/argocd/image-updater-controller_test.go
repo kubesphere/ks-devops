@@ -19,6 +19,9 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -32,8 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
-	"time"
 )
 
 func Test_updateImageList(t *testing.T) {
@@ -294,10 +295,10 @@ func TestReconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &ImageUpdaterReconciler{
 				Client:   tt.fields.Client,
-				log:      log.NullLogger{},
+				log:      logr.New(log.NullLogSink{}),
 				recorder: &record.FakeRecorder{},
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req), tt.fields.Client) {
 				return
 			}

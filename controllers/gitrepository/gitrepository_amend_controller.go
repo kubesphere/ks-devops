@@ -16,13 +16,14 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strings"
 )
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update
@@ -35,8 +36,7 @@ type AmendReconciler struct {
 	recorder record.EventRecorder
 }
 
-func (r *AmendReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *AmendReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to AmendReconciler: %s", req.String()))
 
 	repo := &v1alpha3.GitRepository{}

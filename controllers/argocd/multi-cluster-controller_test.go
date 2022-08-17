@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -33,7 +35,6 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func Test_ignore(t *testing.T) {
@@ -138,6 +139,7 @@ func Test_getCluster(t *testing.T) {
 
 	cluster := &unstructured.Unstructured{}
 	cluster.SetKind("Cluster")
+	cluster.SetResourceVersion("999")
 	cluster.SetAPIVersion("cluster.kubesphere.io/v1alpha1")
 	cluster.SetName("name")
 	cluster.SetNamespace("namespace")
@@ -393,7 +395,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 				log:      tt.fields.log,
 				recorder: tt.fields.recorder,
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}

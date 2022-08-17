@@ -19,6 +19,8 @@ package addon
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -26,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -46,9 +47,7 @@ type OperatorCRDReconciler struct {
 var supportedOperators = []string{"ReleaserController", "ArgoCD"}
 
 // Reconcile manages addonStrategy according to the CRDs of operators
-func (r *OperatorCRDReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
-
+func (r *OperatorCRDReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	crd := &apiextensions.CustomResourceDefinition{}
 	if err = r.Client.Get(ctx, req.NamespacedName, crd); err != nil {
 		err = client.IgnoreNotFound(err)

@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/api/devops"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	tmpl "text/template"

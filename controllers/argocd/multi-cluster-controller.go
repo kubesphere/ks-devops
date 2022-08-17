@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,7 +47,7 @@ type MultiClusterReconciler struct {
 }
 
 // Reconcile is the entrypoint of the controller
-func (r *MultiClusterReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
+func (r *MultiClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	var cluster *unstructured.Unstructured
 	if cluster, err = getCluster(r.Client, req.NamespacedName); err != nil {
 		err = client.IgnoreNotFound(err)

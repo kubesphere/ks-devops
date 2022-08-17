@@ -17,10 +17,12 @@ limitations under the License.
 package core
 
 import (
+	"context"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestGroupedReconcilers_SetupWithManager(t *testing.T) {
@@ -57,7 +59,7 @@ func TestGroupedReconcilers_SetupWithManager(t *testing.T) {
 func TestGroupedFakeReconciler(t *testing.T) {
 	fakeReconciler := &FakeGroupedReconciler{}
 	assert.Equal(t, "fake", fakeReconciler.GetName())
-	result, err := fakeReconciler.Reconcile(reconcile.Request{})
+	result, err := fakeReconciler.Reconcile(context.Background(), reconcile.Request{})
 	assert.True(t, result.IsZero())
 	assert.Nil(t, err)
 

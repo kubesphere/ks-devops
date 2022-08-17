@@ -25,7 +25,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"

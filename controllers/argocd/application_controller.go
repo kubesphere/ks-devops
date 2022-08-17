@@ -19,6 +19,9 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,12 +32,10 @@ import (
 	"k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strings"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
@@ -53,8 +54,7 @@ type ApplicationReconciler struct {
 // In order to avoid the naming conflict, we will check if the name existing the target namespace. Take the original name
 // as the generatedName of the ArgoCD application if there is a potential conflict. In the most cases, we can keep the original name
 // same to the ArgoCD Application name.
-func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to reconcile application: %s", req.String()))
 
 	app := &v1alpha1.Application{}
@@ -74,7 +74,7 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 
 	argoApp := createBareArgoCDApplicationObject()
 	argoCDNamespace, ok := app.Labels[v1alpha1.ArgoCDLocationLabelKey]
-	if !ok || "" == argoCDNamespace {
+	if !ok || argoCDNamespace == "" {
 		r.recorder.Eventf(app, corev1.EventTypeWarning, "Invalid",
 			"Cannot find the namespace of the Argo CD instance from key: %s", v1alpha1.ArgoCDLocationLabelKey)
 		return
@@ -323,7 +323,7 @@ type finalizersChangedPredicate struct {
 
 // Update implements default UpdateEvent filter for validating finalizers change
 func (finalizersChangedPredicate) Update(e event.UpdateEvent) bool {
-	if e.MetaOld == nil {
+	if e.ObjectOld == nil {
 		return false
 	}
 	if e.ObjectOld == nil {
@@ -332,10 +332,10 @@ func (finalizersChangedPredicate) Update(e event.UpdateEvent) bool {
 	if e.ObjectNew == nil {
 		return false
 	}
-	if e.MetaNew == nil {
+	if e.ObjectNew == nil {
 		return false
 	}
-	return !reflect.DeepEqual(e.MetaNew.GetFinalizers(), e.MetaOld.GetFinalizers())
+	return !reflect.DeepEqual(e.ObjectNew.GetFinalizers(), e.ObjectOld.GetFinalizers())
 }
 
 type specificAnnotationsOrLabelsChangedPredicate struct {
@@ -344,13 +344,13 @@ type specificAnnotationsOrLabelsChangedPredicate struct {
 }
 
 func (p specificAnnotationsOrLabelsChangedPredicate) Update(e event.UpdateEvent) (changed bool) {
-	changed = !reflect.DeepEqual(e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+	changed = !reflect.DeepEqual(e.ObjectNew.GetAnnotations(), e.ObjectOld.GetAnnotations())
 	if !changed {
-		if changed = !reflect.DeepEqual(e.MetaNew.GetLabels(), e.MetaOld.GetLabels()); changed {
-			changed = mapKeysContains(p.filter, e.MetaNew.GetLabels(), e.MetaOld.GetLabels())
+		if changed = !reflect.DeepEqual(e.ObjectNew.GetLabels(), e.ObjectOld.GetLabels()); changed {
+			changed = mapKeysContains(p.filter, e.ObjectNew.GetLabels(), e.ObjectOld.GetLabels())
 		}
 	} else {
-		changed = mapKeysContains(p.filter, e.MetaNew.GetAnnotations(), e.MetaOld.GetAnnotations())
+		changed = mapKeysContains(p.filter, e.ObjectNew.GetAnnotations(), e.ObjectOld.GetAnnotations())
 	}
 	return
 }

@@ -16,8 +16,12 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"testing"
+	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,8 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
-	"time"
 )
 
 func TestPodTemplateReconciler_SetupWithManager(t *testing.T) {
@@ -79,8 +81,9 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 	now := metav1.Now()
 	podT := v1.PodTemplate{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: req.Namespace,
-			Name:      req.Name,
+			Namespace:       req.Namespace,
+			Name:            req.Name,
+			ResourceVersion: "999",
 		},
 	}
 	deletingPodT := podT.DeepCopy()
@@ -91,8 +94,9 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 
 	cm := v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "kubesphere-devops-system",
-			Name:      "jenkins-casc-config",
+			Namespace:       "kubesphere-devops-system",
+			Name:            "jenkins-casc-config",
+			ResourceVersion: "999",
 		},
 		Data: map[string]string{
 			"jenkins_user.yaml": string(cascData),
@@ -171,22 +175,21 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 				Namespace: "ns",
 				Name:      "pod-template",
 			}, &podT)
-			assert.Nil(t, err)
-			assert.Empty(t, podT.Finalizers)
+			assert.Nil(t, client.IgnoreNotFound(err))
 		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &PodTemplateReconciler{
 				Client: tt.fields.Client,
-				log:    log.NullLogger{},
+				log:    logr.New(log.NullLogSink{}),
 			}
 			mgr := &mgrcore.FakeManager{
 				Scheme: schema,
 			}
 			err = r.SetupWithManager(mgr)
 			assert.Nil(t, err)
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}

@@ -17,7 +17,10 @@ limitations under the License.
 package argocd
 
 import (
+	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -31,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func Test_getSecretName(t *testing.T) {
@@ -194,11 +196,11 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &GitRepositoryController{
 				Client:        tt.fields.Client,
-				log:           log.NullLogger{},
+				log:           logr.New(log.NullLogSink{}),
 				recorder:      &record.FakeRecorder{},
 				ArgoNamespace: "argocd",
 			}
-			gotResult, err := c.Reconcile(tt.args.req)
+			gotResult, err := c.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}

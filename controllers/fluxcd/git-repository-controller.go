@@ -19,6 +19,7 @@ package fluxcd
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,8 +47,7 @@ type GitRepositoryReconciler struct {
 }
 
 // Reconcile maintains the FluxCDGitRepository against to the GitRepository
-func (r *GitRepositoryReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	repo := &v1alpha3.GitRepository{}
 
 	if err = r.Get(ctx, req.NamespacedName, repo); err != nil {

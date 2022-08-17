@@ -19,12 +19,13 @@ package git
 import (
 	"context"
 	"fmt"
+
 	goscm "github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClientFactory responsible for creating a git client
@@ -105,5 +106,5 @@ func (c *ClientFactory) getSecret(ref *v1.SecretReference) (secret *v1.Secret, e
 
 // ResourceGetter represent the interface for getting Kubernetes resource
 type ResourceGetter interface {
-	Get(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
+	Get(ctx context.Context, key types.NamespacedName, obj client.Object) error
 }

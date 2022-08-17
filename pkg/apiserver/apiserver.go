@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	rt "runtime"
+	"time"
+
 	"kubesphere.io/devops/pkg/jwt/token"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/kapis/doc"
 	gitops "kubesphere.io/devops/pkg/kapis/gitops/v1alpha1"
-	"net/http"
-	rt "runtime"
-	"time"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
@@ -48,7 +49,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"kubesphere.io/devops/pkg/client/cache"
@@ -133,7 +134,8 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 
 // Install all KubeSphere api groups
 // Installation happens before all informers start to cache objects, so
-//   any attempt to list objects using listers will get empty results.
+//
+//	any attempt to list objects using listers will get empty results.
 func (s *APIServer) installKubeSphereAPIs() {
 	jenkinsCore := core.JenkinsCore{
 		URL:      s.Config.JenkinsOptions.Host,
@@ -171,7 +173,7 @@ func getTokenIssue(config *apiserverconfig.Config) token.Issuer {
 	return token.NewTokenIssuer(config.AuthenticationOptions.JwtSecret, config.AuthenticationOptions.MaximumClockSkew)
 }
 
-func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
+func (s *APIServer) Run(stopCh context.Context) (err error) {
 	if err := indexers.CreatePipelineRunSCMRefNameIndexer(s.RuntimeCache); err != nil {
 		return err
 	}
@@ -188,7 +190,7 @@ func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
 	defer cancel()
 
 	go func() {
-		<-stopCh
+		<-stopCh.Done()
 		_ = s.Server.Shutdown(ctx)
 	}()
 
@@ -228,7 +230,7 @@ func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) {
 	s.Server.Handler = handler
 }
 
-func (s *APIServer) waitForResourceSync(stopCh <-chan struct{}) error {
+func (s *APIServer) waitForResourceSync(stopCh context.Context) error {
 	klog.V(0).Info("Start cache objects")
 
 	discoveryClient := s.KubernetesClient.Kubernetes().Discovery()
@@ -250,8 +252,8 @@ func (s *APIServer) waitForResourceSync(stopCh <-chan struct{}) error {
 		return false
 	}
 
-	s.InformerFactory.KubernetesSharedInformerFactory().Start(stopCh)
-	s.InformerFactory.KubernetesSharedInformerFactory().WaitForCacheSync(stopCh)
+	s.InformerFactory.KubernetesSharedInformerFactory().Start(stopCh.Done())
+	s.InformerFactory.KubernetesSharedInformerFactory().WaitForCacheSync(stopCh.Done())
 
 	ksInformerFactory := s.InformerFactory.KubeSphereSharedInformerFactory()
 
@@ -275,8 +277,8 @@ func (s *APIServer) waitForResourceSync(stopCh <-chan struct{}) error {
 		}
 	}
 
-	ksInformerFactory.Start(stopCh)
-	ksInformerFactory.WaitForCacheSync(stopCh)
+	ksInformerFactory.Start(stopCh.Done())
+	ksInformerFactory.WaitForCacheSync(stopCh.Done())
 
 	// controller runtime cache for resources
 	go func() {

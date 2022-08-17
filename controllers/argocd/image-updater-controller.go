@@ -19,6 +19,9 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,8 +29,6 @@ import (
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;list;update
@@ -42,8 +43,7 @@ type ImageUpdaterReconciler struct {
 }
 
 // Reconcile makes sure the Application has the expected annotations
-func (r *ImageUpdaterReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *ImageUpdaterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to reconcile imageUpdater: %s", req.String()))
 
 	updater := &v1alpha1.ImageUpdater{}

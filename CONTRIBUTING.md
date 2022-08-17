@@ -4,7 +4,7 @@ Welcome to go through the contribution guide!
 
 Before you get started to contribute. Please the following requirements:
 
-* [Golang](https://golang.org/) 1.16
+* [Golang](https://golang.org/) 1.17
 
 | Technical area | Level requires | Links |
 |---|---|---|
