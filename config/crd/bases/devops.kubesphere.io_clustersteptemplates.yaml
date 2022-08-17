@@ -44,6 +44,10 @@ spec:
                 items:
                   description: ParameterInStep is the parameter which used in a step
                   properties:
+                    condition:
+                      description: Condition is an expression about if this variable
+                        is necessary for users
+                      type: string
                     defaultValue:
                       type: string
                     display:
