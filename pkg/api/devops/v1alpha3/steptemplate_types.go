@@ -45,6 +45,8 @@ type ParameterInStep struct {
 	Display      string        `json:"display,omitempty"`
 	DefaultValue string        `json:"defaultValue,omitempty" yaml:"defaultValue"`
 	Options      string        `json:"options,omitempty"`
+	// Condition is an expression about if this variable is necessary for users
+	Condition string `json:"condition,omitempty"`
 }
 
 // ParameterType represents the type of parameter
@@ -65,6 +67,8 @@ const (
 	ParameterTypeEnum ParameterType = "enum"
 	// ParameterTypeSecret represents a parameter in secret format
 	ParameterTypeSecret ParameterType = "secret"
+	// ParameterTypeHidden represents a parameter that is hidden
+	ParameterTypeHidden ParameterType = "hidden"
 )
 
 // StepTemplateStatus defines the observed state of ClusterStepTemplate
