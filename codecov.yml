@@ -3,6 +3,8 @@ ignore:
   - "*generated*.go"
   - "**/*generated*.go"         # glob accepted
   - "pkg/client/clientset/versioned"
+  - "pkg/client/listers"
+  - "pkg/client/informers"
 
 # https://docs.codecov.com/docs/commit-status
 # it's hard to have a coverage for some code lines

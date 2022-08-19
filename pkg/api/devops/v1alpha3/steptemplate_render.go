@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"strings"
 	"text/template"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 // Render renders the template and returns the result
-func (t *StepTemplateSpec) Render(param map[string]string, secret *v1.Secret) (output string, err error) {
+func (t *StepTemplateSpec) Render(param map[string]interface{}, secret *v1.Secret) (output string, err error) {
 	// taking the default parameter values
 	for i := range t.Parameters {
 		item := t.Parameters[i]
@@ -114,7 +115,7 @@ func wrapWithCredential(secretType, secretName, target string) string {
 	return jsonFormat(target)
 }
 
-func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
+func dslRender(dslTpl string, param map[string]interface{}, secret *v1.Secret) (output string, err error) {
 	output = dslTpl
 
 	var tpl *template.Template
@@ -134,7 +135,7 @@ func dslRender(dslTpl string, param map[string]string, secret *v1.Secret) (outpu
 	return
 }
 
-func shellRender(shellTpl string, param map[string]string, secret *v1.Secret) (output string, err error) {
+func shellRender(shellTpl string, param map[string]interface{}, secret *v1.Secret) (output string, err error) {
 	if output, err = dslRender(shellTpl, param, secret); err == nil {
 		output = fmt.Sprintf(`{
 "arguments": [

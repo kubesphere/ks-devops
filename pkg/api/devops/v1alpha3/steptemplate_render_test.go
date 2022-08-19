@@ -17,11 +17,13 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"io/ioutil"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func Test_handler_stepTemplateRender(t *testing.T) {
@@ -31,7 +33,7 @@ func Test_handler_stepTemplateRender(t *testing.T) {
 	}
 	stepTemplateWithParameters := &StepTemplateSpec{
 		Template: `docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
-docker build {{.param.context}} -t {{.param.tag}}`,
+docker build {{.param.context}} -t {{.param.tag}} -f {{.param.dockerfile.path}}`,
 		Runtime:   "shell",
 		Container: "base",
 		Secret: SecretInStep{
@@ -42,6 +44,8 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 			Name: "context",
 		}, {
 			Name: "tag",
+		}, {
+			Name: "dockerfile",
 		}},
 	}
 	stepTemplateWithDSL := &StepTemplateSpec{
@@ -51,7 +55,7 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 
 	type args struct {
 		stepTemplate *StepTemplateSpec
-		param        map[string]string
+		param        map[string]interface{}
 		secret       *v1.Secret
 	}
 	tests := []struct {
@@ -81,9 +85,12 @@ docker build {{.param.context}} -t {{.param.tag}}`,
 		name: "docker build command with parameters",
 		args: args{
 			stepTemplate: stepTemplateWithParameters,
-			param: map[string]string{
+			param: map[string]interface{}{
 				"context": "dir",
 				"tag":     "image:tag",
+				"dockerfile": map[string]string{
+					"path": "Dockerfile",
+				},
 			},
 			secret: &v1.Secret{
 				ObjectMeta: v12.ObjectMeta{
@@ -173,6 +180,11 @@ func Test_wrapWithCredential(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestJSONFormat(t *testing.T) {
+	assert.Equal(t, "abc", jsonFormat("abc"))
+	assert.Equal(t, "abc", jsonFormat(" abc "))
 }
 
 func readFile(file string) string {

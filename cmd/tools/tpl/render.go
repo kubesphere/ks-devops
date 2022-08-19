@@ -18,12 +18,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"path/filepath"
 )
 
 type renderOption struct {
@@ -68,7 +69,7 @@ func (o *renderOption) runE(cmd *cobra.Command, args []string) (err error) {
 		}
 
 		var output string
-		if output, err = stepTemplate.Spec.Render(map[string]string{}, &v1.Secret{}); err != nil {
+		if output, err = stepTemplate.Spec.Render(map[string]interface{}{}, &v1.Secret{}); err != nil {
 			err = fmt.Errorf("failed to render ClusterStepTemplate from file: %s, error %v", item, err)
 			return
 		}

@@ -16,7 +16,7 @@
               "key": "script",
               "value": {
                 "isLiteral": true,
-                "value": "docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE\ndocker build dir -t image:tag"
+                "value": "docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE\ndocker build dir -t image:tag -f Dockerfile"
               }
             }
           ],
