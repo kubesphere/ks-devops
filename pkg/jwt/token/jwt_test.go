@@ -17,8 +17,10 @@ limitations under the License.
 package token
 
 import (
-	"github.com/form3tech-oss/jwt-go"
 	"testing"
+
+	"github.com/form3tech-oss/jwt-go"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -38,7 +40,6 @@ func TestTokenVerifyWithoutCacheValidate(t *testing.T) {
 	}
 
 	got, _, err := issuer.Verify(tokenString)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,6 +47,11 @@ func TestTokenVerifyWithoutCacheValidate(t *testing.T) {
 	if diff := cmp.Diff(got, admin); diff != "" {
 		t.Error("token validate failed")
 	}
+
+	var usr user.Info
+	usr, _, err = issuer.VerifyWithoutClaimsValidation(tokenString)
+	assert.Nil(t, err)
+	assert.Equal(t, "admin", usr.GetName())
 }
 
 func Test_getUserFromClaims(t *testing.T) {

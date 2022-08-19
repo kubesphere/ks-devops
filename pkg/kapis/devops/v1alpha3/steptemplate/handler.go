@@ -19,6 +19,8 @@ package steptemplate
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,7 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
-	"net/http"
 )
 
 func (h *handler) clusterStepTemplates(req *restful.Request, resp *restful.Response) {
@@ -75,7 +76,7 @@ func (h *handler) renderClusterStepTemplate(req *restful.Request, resp *restful.
 		fmt.Printf("something goes wrong when getting secret, error: %v\n", err)
 	}
 
-	param := map[string]string{}
+	param := map[string]interface{}{}
 	// get the parameters from request
 	if err = req.ReadEntity(&param); err != nil {
 		// TODO considering have logger output instead of the std output
