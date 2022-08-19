@@ -17,7 +17,9 @@ limitations under the License.
 package core
 
 import (
+	"context"
 	"errors"
+
 	"github.com/stretchr/testify/assert"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -39,7 +41,7 @@ func (f *FakeGroupedReconciler) GetGroupName() string {
 }
 
 // Reconcile is fake reconcile process
-func (f *FakeGroupedReconciler) Reconcile(reconcile.Request) (result reconcile.Result, err error) {
+func (f *FakeGroupedReconciler) Reconcile(context.Context, reconcile.Request) (result reconcile.Result, err error) {
 	return
 }
 

@@ -21,7 +21,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apimachinery/pkg/util/proxy"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"net/http"
 	"strings"
 )

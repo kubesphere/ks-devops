@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/proxy"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/server/errors"

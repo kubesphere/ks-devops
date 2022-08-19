@@ -85,9 +85,10 @@ func Test_handler_applicationList(t *testing.T) {
 	createApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
 		return &v1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-				Labels:    labels,
+				Name:            name,
+				Namespace:       namespace,
+				Labels:          labels,
+				ResourceVersion: "999",
 			},
 		}
 	}
@@ -97,6 +98,7 @@ func Test_handler_applicationList(t *testing.T) {
 				Name:              name,
 				Namespace:         namespace,
 				CreationTimestamp: metav1.NewTime(creationTimestamp),
+				ResourceVersion:   "999",
 			},
 		}
 	}

@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
 	"html/template"
+
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,8 +48,7 @@ type Reconciler struct {
 }
 
 // Reconcile makes sure the ArgoAppProject can be maintained which comes from the DevOpsProject
-func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to reconcile project: %s", req.String()))
 
 	project := &v1alpha3.DevOpsProject{}

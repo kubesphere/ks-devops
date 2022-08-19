@@ -20,6 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,10 +30,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/controllers/predicate"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;update
@@ -45,7 +46,7 @@ type ApplicationStatusReconciler struct {
 }
 
 // Reconcile is the entrypoint of the controller
-func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
+func (r *ApplicationStatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	var argoCDApp *unstructured.Unstructured
 	r.log.Info(fmt.Sprintf("start to reconcile ArgoCD application: %s", req.String()))
 
@@ -60,7 +61,6 @@ func (r *ApplicationStatusReconciler) Reconcile(req ctrl.Request) (result ctrl.R
 		return
 	}
 
-	ctx := context.Background()
 	app := &v1alpha1.Application{}
 	if err = r.Get(ctx, types.NamespacedName{
 		Namespace: appNs,

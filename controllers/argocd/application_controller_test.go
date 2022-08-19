@@ -19,6 +19,8 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -33,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"testing"
 )
 
 func Test_createUnstructuredApplication(t *testing.T) {
@@ -318,14 +319,16 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		name: "different finalizers",
 		args: args{
 			e: event.UpdateEvent{
-				MetaOld: &metav1.ObjectMeta{
-					Finalizers: []string{"b"},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"b"},
+					},
 				},
-				ObjectOld: &v1alpha1.Application{},
-				MetaNew: &metav1.ObjectMeta{
-					Finalizers: []string{"a"},
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"a"},
+					},
 				},
-				ObjectNew: &v1alpha1.Application{},
 			},
 		},
 		want: true,
@@ -333,14 +336,16 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		name: "different order with the finalizers",
 		args: args{
 			e: event.UpdateEvent{
-				MetaOld: &metav1.ObjectMeta{
-					Finalizers: []string{"b", "a"},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"b", "a"},
+					},
 				},
-				ObjectOld: &v1alpha1.Application{},
-				MetaNew: &metav1.ObjectMeta{
-					Finalizers: []string{"a", "b"},
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"a", "b"},
+					},
 				},
-				ObjectNew: &v1alpha1.Application{},
 			},
 		},
 		want: true,
@@ -348,9 +353,12 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		name: "ObjectOld is nil",
 		args: args{
 			e: event.UpdateEvent{
-				MetaOld:   &metav1.ObjectMeta{},
-				MetaNew:   &metav1.ObjectMeta{},
-				ObjectNew: &v1alpha1.Application{},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{},
+				},
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{},
+				},
 			},
 		},
 		want: false,
@@ -359,7 +367,6 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		args: args{
 			e: event.UpdateEvent{
 				ObjectOld: &v1alpha1.Application{},
-				MetaOld:   &metav1.ObjectMeta{},
 				ObjectNew: &v1alpha1.Application{},
 			},
 		},
@@ -368,9 +375,8 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		name: "ObjectNew is nil",
 		args: args{
 			e: event.UpdateEvent{
-				MetaOld:   &metav1.ObjectMeta{},
 				ObjectOld: &v1alpha1.Application{},
-				MetaNew:   &metav1.ObjectMeta{},
+				ObjectNew: &v1alpha1.Application{},
 			},
 		},
 		want: false,
@@ -379,7 +385,6 @@ func Test_finalizersChangedPredicate_Update(t *testing.T) {
 		args: args{
 			e: event.UpdateEvent{
 				ObjectOld: &v1alpha1.Application{},
-				MetaNew:   &metav1.ObjectMeta{},
 				ObjectNew: &v1alpha1.Application{},
 			},
 		},
@@ -508,8 +513,8 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{},
-				MetaOld: &metav1.ObjectMeta{},
+				ObjectNew: &v1alpha1.Application{},
+				ObjectOld: &v1alpha1.Application{},
 			},
 		},
 		wantChanged: false,
@@ -518,14 +523,18 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"name": "fake",
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"name": "fake",
+						},
 					},
 				},
-				MetaOld: &metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"name": "linuxsuren",
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"name": "linuxsuren",
+						},
 					},
 				},
 			},
@@ -536,16 +545,20 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{
-					Labels: map[string]string{
-						"name": "fake",
+				ObjectNew: &v1alpha1.Application{
+
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"name": "fake",
+						},
 					},
 				},
-				MetaOld: &metav1.ObjectMeta{
-					Labels: map[string]string{
-						"name": "linuxsuren",
-					},
-				},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"name": "linuxsuren",
+						},
+					}},
 			},
 		},
 		wantChanged: false,
@@ -554,10 +567,14 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{},
-				MetaOld: &metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"this.is.fake": "",
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{},
+				},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"this.is.fake": "",
+						},
 					},
 				},
 			},
@@ -568,12 +585,14 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"this.is.fake": "",
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"this.is.fake": "",
+						},
 					},
 				},
-				MetaOld: &metav1.ObjectMeta{},
+				ObjectOld: &v1alpha1.Application{},
 			},
 		},
 		wantChanged: true,
@@ -582,10 +601,12 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{},
-				MetaOld: &metav1.ObjectMeta{
-					Labels: map[string]string{
-						"this.is.fake": "",
+				ObjectNew: &v1alpha1.Application{},
+				ObjectOld: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"this.is.fake": "",
+						},
 					},
 				},
 			},
@@ -596,12 +617,14 @@ func Test_specificAnnotationsOrLabelsChangedPredicate_Update(t *testing.T) {
 		fields: defaultPredicate,
 		args: args{
 			e: event.UpdateEvent{
-				MetaNew: &metav1.ObjectMeta{
-					Labels: map[string]string{
-						"this.is.fake": "",
+				ObjectNew: &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"this.is.fake": "",
+						},
 					},
 				},
-				MetaOld: &metav1.ObjectMeta{},
+				ObjectOld: &v1alpha1.Application{},
 			},
 		},
 		wantChanged: true,
@@ -628,7 +651,6 @@ func TestApplicationReconciler_SetupWithManager(t *testing.T) {
 
 	type fields struct {
 		Client   client.Client
-		log      logr.Logger
 		recorder record.EventRecorder
 	}
 	type args struct {
@@ -653,7 +675,7 @@ func TestApplicationReconciler_SetupWithManager(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &ApplicationReconciler{
 				Client:   tt.fields.Client,
-				log:      tt.fields.log,
+				log:      logr.Logger{},
 				recorder: tt.fields.recorder,
 			}
 			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))

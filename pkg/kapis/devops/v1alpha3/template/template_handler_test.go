@@ -89,8 +89,9 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 	createTemplate := func(name string) *v1alpha3.Template {
 		return &v1alpha3.Template{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: "fake-devops",
+				Name:            name,
+				Namespace:       "fake-devops",
+				ResourceVersion: "999",
 			},
 		}
 	}

@@ -17,14 +17,17 @@ limitations under the License.
 package core
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -68,7 +71,7 @@ func (f *FakeManager) AddReadyzCheck(string, healthz.Checker) error {
 }
 
 // Start is a fake method
-func (f *FakeManager) Start(<-chan struct{}) error {
+func (f *FakeManager) Start(ctx context.Context) error {
 	return nil
 }
 
@@ -119,5 +122,10 @@ func (f *FakeManager) GetWebhookServer() *webhook.Server {
 
 // GetLogger is a fake method
 func (f *FakeManager) GetLogger() logr.Logger {
-	return log.NullLogger{}
+	return logr.New(log.NullLogSink{})
+}
+
+// GetControllerOptions is a fake method
+func (f *FakeManager) GetControllerOptions() (spec v1alpha1.ControllerConfigurationSpec) {
+	return
 }

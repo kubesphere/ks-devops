@@ -18,7 +18,7 @@ package v1alpha2
 
 import (
 	"github.com/emicklei/go-restful"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/kapis"
 )
 

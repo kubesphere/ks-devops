@@ -18,8 +18,8 @@ package indexers
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
@@ -32,7 +32,7 @@ func CreatePipelineRunSCMRefNameIndexer(runtimeCache cache.Cache) error {
 		extractSCMFunc)
 }
 
-func extractSCMFunc(o runtime.Object) []string {
+func extractSCMFunc(o client.Object) []string {
 	pipelineRun, ok := o.(*v1alpha3.PipelineRun)
 	if !ok || pipelineRun == nil {
 		return []string{}
@@ -52,7 +52,7 @@ func CreatePipelineRunIdentityIndexer(runtimeCache cache.Cache) error {
 		extractPipelineRunIdentifier)
 }
 
-func extractPipelineRunIdentifier(o runtime.Object) []string {
+func extractPipelineRunIdentifier(o client.Object) []string {
 	pipelineRun, ok := o.(*v1alpha3.PipelineRun)
 	if !ok || pipelineRun == nil {
 		return []string{}

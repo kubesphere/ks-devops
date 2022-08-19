@@ -14,19 +14,18 @@ limitations under the License.
 package predicate
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	k8spredicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // Filter is a reconciler filter function
-type Filter func(meta metav1.Object, object runtime.Object) (ok bool)
+type Filter func(object client.Object) (ok bool)
 
 // NewFilterHasLabel creats a filter that contains the specific label
 func NewFilterHasLabel(label string) Filter {
-	return func(meta metav1.Object, object runtime.Object) (ok bool) {
-		_, ok = meta.GetLabels()[label]
+	return func(object client.Object) (ok bool) {
+		_, ok = object.GetLabels()[label]
 		return
 	}
 }

@@ -16,13 +16,14 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/jenkins-x/go-scm/scm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/git"
-	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
@@ -43,8 +44,7 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.log.WithValues("GitRepository", req.NamespacedName)
 
 	repo := &v1alpha3.GitRepository{}

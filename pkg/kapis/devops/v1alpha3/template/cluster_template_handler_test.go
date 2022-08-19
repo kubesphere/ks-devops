@@ -87,7 +87,8 @@ func Test_handler_handleQueryClusterTemplates(t *testing.T) {
 	createTemplate := func(name string) *v1alpha3.ClusterTemplate {
 		return &v1alpha3.ClusterTemplate{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
+				Name:            name,
+				ResourceVersion: "999",
 			},
 		}
 	}

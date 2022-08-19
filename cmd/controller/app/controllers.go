@@ -27,7 +27,7 @@ import (
 	"kubesphere.io/devops/pkg/server/errors"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/jenkins/config"
 	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"

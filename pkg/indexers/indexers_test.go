@@ -19,11 +19,11 @@ package indexers
 import (
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 )
 
@@ -75,7 +75,7 @@ func TestCreatePipelineRunIdentityIndexer(t *testing.T) {
 
 func Test_extractSCMFunc(t *testing.T) {
 	type args struct {
-		o runtime.Object
+		o client.Object
 	}
 	tests := []struct {
 		name string
@@ -117,7 +117,7 @@ func Test_extractSCMFunc(t *testing.T) {
 
 func Test_extractPipelineRunIdentifier(t *testing.T) {
 	type args struct {
-		o runtime.Object
+		o client.Object
 	}
 	tests := []struct {
 		name string

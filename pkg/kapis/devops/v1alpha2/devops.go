@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/klog"
 	"net/http"
 	"strings"
 
@@ -29,9 +30,6 @@ import (
 	"kubesphere.io/devops/pkg/apiserver/request"
 
 	"github.com/emicklei/go-restful"
-	log "k8s.io/klog"
-	"k8s.io/klog/v2"
-
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 
 	"kubesphere.io/devops/pkg/api"
@@ -154,7 +152,7 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 	}
 	res, err := h.devopsOperator.ListPipelines(req.Request)
 	if err != nil {
-		log.Error(err)
+		klog.Error(err)
 	} else {
 		for i, _ := range res.Items {
 			if index, ok := pipelineMap[res.Items[i].Name]; ok {
@@ -360,7 +358,7 @@ func (h *ProjectPipelineHandler) createdBy(projectName string, pipelineName stri
 			return creator == currentUserName
 		}
 	} else {
-		log.V(4).Infof("cannot get pipeline %s/%s, error %#v", projectName, pipelineName, err)
+		klog.V(4).Infof("cannot get pipeline %s/%s, error %#v", projectName, pipelineName, err)
 	}
 	return false
 }
@@ -409,7 +407,7 @@ func (h *ProjectPipelineHandler) hasSubmitPermission(req *restful.Request) (hasP
 			break
 		}
 	} else {
-		log.V(4).Infof("cannot get nodes detail, error: %v", err)
+		klog.V(4).Infof("cannot get nodes detail, error: %v", err)
 		err = errors.New("cannot get the submitters of current step")
 		return
 	}
@@ -786,7 +784,7 @@ func (h *ProjectPipelineHandler) Validate(req *restful.Request, resp *restful.Re
 
 	res, err := h.devopsOperator.Validate(scmId, req.Request)
 	if err != nil {
-		log.Error(err)
+		klog.Error(err)
 		if jErr, ok := err.(*devops.JkError); ok {
 			if jErr.Code != http.StatusUnauthorized {
 				resp.WriteError(jErr.Code, err)
@@ -890,7 +888,7 @@ func (h *ProjectPipelineHandler) GetProjectCredentialUsage(req *restful.Request,
 	credentialId := req.PathParameter("credential")
 	response, err := h.projectCredentialGetter.GetProjectCredentialUsage(projectId, credentialId)
 	if err != nil {
-		log.Errorf("%+v", err)
+		klog.Errorf("%+v", err)
 		kapis.HandleInternalError(resp, nil, err)
 		return
 	}
@@ -900,7 +898,7 @@ func (h *ProjectPipelineHandler) GetProjectCredentialUsage(req *restful.Request,
 }
 
 func parseErr(err error, resp *restful.Response) {
-	log.Error(err)
+	klog.Error(err)
 	if jErr, ok := err.(*devops.JkError); ok {
 		resp.WriteError(jErr.Code, err)
 	} else {

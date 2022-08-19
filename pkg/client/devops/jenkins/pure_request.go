@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/pkg/client/devops"
 )

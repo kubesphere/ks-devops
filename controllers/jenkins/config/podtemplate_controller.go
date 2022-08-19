@@ -15,6 +15,9 @@ package config
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	k8s "github.com/jenkins-zh/jenkins-client/pkg/k8s"
 	v1 "k8s.io/api/core/v1"
@@ -25,8 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/utils/stringutils"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;update
@@ -46,9 +47,8 @@ type PodTemplateReconciler struct {
 }
 
 // Reconcile is the entrypoint of this reconciler
-func (r *PodTemplateReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
+func (r *PodTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info("start to reconcile PodTemplate", "resource", req)
-	ctx := context.Background()
 
 	podTemplate := &v1.PodTemplate{}
 	if err = r.Get(ctx, req.NamespacedName, podTemplate); err != nil {

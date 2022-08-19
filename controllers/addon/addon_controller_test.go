@@ -19,6 +19,8 @@ package addon
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -29,7 +31,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestReconciler_supportedStrategy(t *testing.T) {
@@ -130,7 +131,11 @@ spec:
 		},
 	}
 	addon := &v1alpha3.Addon{
-		ObjectMeta: metav1.ObjectMeta{Name: "ks-releaser", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "ks-releaser",
+			Namespace:       "default",
+			ResourceVersion: "999",
+		},
 		Spec: v1alpha3.AddonSpec{
 			Version: "v0.0.1",
 			Strategy: v1.LocalObjectReference{
@@ -155,7 +160,7 @@ spec:
 	}{{
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, strategy.DeepCopy(), addon.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(strategy.DeepCopy(), addon.DeepCopy()).Build(),
 		},
 		args: args{
 			ctx:   context.TODO(),
@@ -192,14 +197,14 @@ spec:
 	}, {
 		name: "update existing addon",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, strategy.DeepCopy(), &unstructured.Unstructured{Object: map[string]interface{}{
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(strategy.DeepCopy(), &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "devops.kubesphere.io/v1alpha1",
 				"kind":       "ReleaserController",
 				"metadata": map[string]interface{}{
 					"name":      "ks-releaser",
 					"namespace": "default",
 				},
-			}}),
+			}}).Build(),
 		},
 		args: args{
 			ctx: context.TODO(),
@@ -244,7 +249,7 @@ spec:
 			}
 			tt.wantErr(t, r.addonHandle(tt.args.ctx, tt.args.addon), fmt.Sprintf("addonHandle(%v, %v)", tt.args.ctx, tt.args.addon))
 			if tt.verify != nil {
-				tt.verify(t, r.Client)
+				tt.verify(t, tt.fields.Client)
 			}
 		})
 	}

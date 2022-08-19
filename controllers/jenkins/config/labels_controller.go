@@ -17,12 +17,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
@@ -32,8 +33,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strings"
-	"time"
 )
 
 // tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
@@ -53,7 +52,7 @@ type AgentLabelsReconciler struct {
 }
 
 // Reconcile makes sure the target ConfigMap has all the Jenkins agent labels
-func (r *AgentLabelsReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
+func (r *AgentLabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	var cm *v1.ConfigMap
 	if cm, err = r.getConfigMap(); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -165,8 +164,8 @@ func (r *AgentLabelsReconciler) GetGroupName() string {
 }
 
 func getSpecificConfigMapPredicate(name, namespace string) predicate.Funcs {
-	return predicate.NewPredicateFuncs(func(meta metav1.Object, object runtime.Object) (ok bool) {
-		ok = meta.GetName() == name && meta.GetNamespace() == namespace
+	return predicate.NewPredicateFuncs(func(object client.Object) (ok bool) {
+		ok = object.GetName() == name && object.GetNamespace() == namespace
 		return
 	})
 }

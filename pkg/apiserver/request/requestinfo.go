@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	k8srequest "k8s.io/apiserver/pkg/endpoints/request"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"kubesphere.io/devops/pkg/constants"
 	netutils "kubesphere.io/devops/pkg/utils/net"
@@ -116,7 +116,6 @@ type RequestInfoFactory struct {
 // With workspaces:
 // /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}
 // /kapis/clusters/{cluster}/{api-group}/{version}/namespaces/{namespace}/{resource}/{resourceName}
-//
 func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
 	requestInfo := RequestInfo{
 		IsKubernetesRequest: false,

@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	cliflag "k8s.io/component-base/cli/flag"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/apis"
 	"kubesphere.io/devops/pkg/apiserver"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"

@@ -71,9 +71,11 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Request to sync while creating",
 		want: func(p predicate.Predicate) {
 			createEvent := event.CreateEvent{
-				Meta: &v1.ObjectMeta{
-					Annotations: map[string]string{
-						v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+				Object: &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: map[string]string{
+							v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+						},
 					},
 				},
 			}
@@ -83,7 +85,7 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Request to nothing while creating",
 		want: func(p predicate.Predicate) {
 			createEvent := event.CreateEvent{
-				Meta: &v1.ObjectMeta{},
+				Object: &corev1.ConfigMap{},
 			}
 			assert.False(t, p.Create(createEvent))
 		},
@@ -91,9 +93,11 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Request to sync while updating",
 		want: func(p predicate.Predicate) {
 			updateEvent := event.UpdateEvent{
-				MetaNew: &v1.ObjectMeta{
-					Annotations: map[string]string{
-						v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+				ObjectNew: &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: map[string]string{
+							v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+						},
 					},
 				},
 			}
@@ -103,7 +107,7 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Request to nothing while updating",
 		want: func(p predicate.Predicate) {
 			updateEvent := event.UpdateEvent{
-				MetaNew: &v1.ObjectMeta{},
+				ObjectNew: &corev1.ConfigMap{},
 			}
 			assert.False(t, p.Update(updateEvent))
 		},
@@ -111,8 +115,10 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Nothing to do while deleting",
 		want: func(p predicate.Predicate) {
 			deleteEvent := event.DeleteEvent{
-				Meta: &v1.ObjectMeta{
-					Annotations: map[string]string{},
+				Object: &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: map[string]string{},
+					},
 				},
 			}
 			assert.False(t, p.Delete(deleteEvent))
@@ -121,9 +127,11 @@ func Test_requestSyncPredicate(t *testing.T) {
 		name: "Nothing to do while genericing",
 		want: func(p predicate.Predicate) {
 			genericEvent := event.GenericEvent{
-				Meta: &v1.ObjectMeta{
-					Annotations: map[string]string{
-						v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+				Object: &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: map[string]string{
+							v1alpha3.PipelineRequestToSyncRunsAnnoKey: "true",
+						},
 					},
 				},
 			}

@@ -24,7 +24,7 @@ import (
 
 	"github.com/form3tech-oss/jwt-go"
 	"k8s.io/apiserver/pkg/authentication/user"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

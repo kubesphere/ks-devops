@@ -19,6 +19,8 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
@@ -26,7 +28,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 // WebhookReconciler notifies the GitRepositories if there are corresponding webhooks changed
@@ -40,8 +41,7 @@ type WebhookReconciler struct {
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;update
 
 // Reconcile handles the update events of Webhook, then send the notification to a GitRepository
-func (r *WebhookReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *WebhookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.log.WithValues("webhook", req.NamespacedName)
 
 	webhook := &v1alpha3.Webhook{}

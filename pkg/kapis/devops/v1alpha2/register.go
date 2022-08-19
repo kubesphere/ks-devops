@@ -30,7 +30,7 @@ import (
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/proxy"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
 

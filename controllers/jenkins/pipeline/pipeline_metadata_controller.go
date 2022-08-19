@@ -56,8 +56,7 @@ type Reconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.log.WithValues("Pipeline", req.NamespacedName)
 	pipeline := &v1alpha3.Pipeline{}
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {

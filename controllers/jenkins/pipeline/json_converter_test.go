@@ -19,6 +19,8 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
@@ -33,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
@@ -106,7 +107,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 		fields: fields{
 			Client:      fake.NewFakeClientWithScheme(schema, invalidEditMode),
 			JenkinsCore: core.JenkinsCore{},
-			log:         log.NullLogger{},
+			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
 		},
 		args: args{
@@ -121,7 +122,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 		fields: fields{
 			Client:      fake.NewFakeClientWithScheme(schema, emptyEditMode),
 			JenkinsCore: core.JenkinsCore{},
-			log:         log.NullLogger{},
+			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
 		},
 		args: args{
@@ -136,7 +137,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 		fields: fields{
 			Client:      fake.NewFakeClientWithScheme(schema, irregularPip),
 			JenkinsCore: core.JenkinsCore{},
-			log:         log.NullLogger{},
+			log:         logr.Logger{},
 		},
 		args: args{
 			req: defaultReq,
@@ -152,7 +153,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 			JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
 			},
-			log:         log.NullLogger{},
+			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
 		},
 		args: args{
@@ -185,7 +186,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 			JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
 			},
-			log:         log.NullLogger{},
+			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
 		},
 		args: args{
@@ -221,12 +222,12 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 			}
 			r := &JenkinsfileReconciler{
 				Client:      tt.fields.Client,
-				log:         tt.fields.log,
+				log:         logr.New(log.NullLogSink{}),
 				recorder:    tt.fields.recorder,
 				JenkinsCore: tt.fields.JenkinsCore,
 				TokenIssuer: tt.fields.TokenIssuer,
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {
 				return
 			}

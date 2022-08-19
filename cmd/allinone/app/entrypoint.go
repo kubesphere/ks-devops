@@ -17,14 +17,15 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	apiserverApp "kubesphere.io/devops/cmd/apiserver/app"
 	"kubesphere.io/devops/cmd/apiserver/app/options"
 	controllerApp "kubesphere.io/devops/cmd/controller/app"
 	controllerOpt "kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
@@ -33,19 +34,19 @@ func NewCommand() *cobra.Command {
 	return &cobra.Command{
 		Use: "ks-devops",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			stopChain := signals.SetupSignalHandler()
-			go func(stopCh <-chan struct{}) {
+			ctx := signals.SetupSignalHandler()
+			go func(stopCh context.Context) {
 				if err := runControllerManager(stopCh); err != nil {
 					panic(err)
 				}
-			}(stopChain)
-			err = runAPIServer(stopChain)
+			}(ctx)
+			err = runAPIServer(ctx)
 			return
 		},
 	}
 }
 
-func runAPIServer(stopCh <-chan struct{}) error {
+func runAPIServer(stopCh context.Context) error {
 	s := options.NewServerRunOptions()
 
 	// Load configuration from file
@@ -66,7 +67,7 @@ func runAPIServer(stopCh <-chan struct{}) error {
 	return apiserverApp.Run(s, stopCh)
 }
 
-func runControllerManager(stopCh <-chan struct{}) (err error) {
+func runControllerManager(stopCh context.Context) (err error) {
 	var conf *config.Config
 	s := controllerOpt.NewDevOpsControllerManagerOptions()
 	conf, err = config.TryLoadFromDisk()

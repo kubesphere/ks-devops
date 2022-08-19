@@ -19,6 +19,7 @@ package argocd
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -45,8 +46,7 @@ type GitRepositoryController struct {
 }
 
 // Reconcile maintains the Argo CD git repository secrets against to the GitRepository
-func (c *GitRepositoryController) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (c *GitRepositoryController) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	c.log.Info(fmt.Sprintf("start to git repository: %s", req.String()))
 
 	repo := &v1alpha3.GitRepository{}
