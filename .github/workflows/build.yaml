@@ -56,10 +56,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-controller
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -69,10 +68,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-controller
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -98,10 +96,12 @@ jobs:
               echo "::set-output name=platforms::linux/amd64"
               echo "::set-output name=push::false"
               echo "::set-output name=load::true"
+              echo "::set-output name=ref::pr-$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")"
           else
               echo "::set-output name=platforms::linux/amd64,linux/arm64"
               echo "::set-output name=push::true"
               echo "::set-output name=load::false"
+              echo "::set-output name=ref::${{github.ref_name}}"
           fi
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
@@ -128,7 +128,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/kubesphere/devops-controller:sha-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-controller:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -150,10 +150,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-apiserver
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -163,10 +162,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-apiserver
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -192,10 +190,12 @@ jobs:
               echo "::set-output name=platforms::linux/amd64"
               echo "::set-output name=push::false"
               echo "::set-output name=load::true"
+              echo "::set-output name=ref::pr-$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")"
           else
               echo "::set-output name=platforms::linux/amd64,linux/arm64"
               echo "::set-output name=push::true"
               echo "::set-output name=load::false"
+              echo "::set-output name=ref::${{github.ref_name}}"
           fi
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
@@ -222,7 +222,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/kubesphere/devops-apiserver:sha-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-apiserver:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -244,10 +244,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-tools
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -257,10 +256,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/devops-tools
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr,suffix=-{{sha}}
             type=semver,pattern={{version}},prefix=v
-            type=sha
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -286,10 +284,12 @@ jobs:
               echo "::set-output name=platforms::linux/amd64"
               echo "::set-output name=push::false"
               echo "::set-output name=load::true"
+              echo "::set-output name=ref::pr-$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")"
           else
               echo "::set-output name=platforms::linux/amd64,linux/arm64"
               echo "::set-output name=push::true"
               echo "::set-output name=load::false"
+              echo "::set-output name=ref::${{github.ref_name}}"
           fi
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
@@ -316,7 +316,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.5.1
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/kubesphere/devops-tools:sha-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-tools:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
