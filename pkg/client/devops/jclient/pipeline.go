@@ -23,7 +23,6 @@ import (
 	"strconv"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/artifact"
-
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
@@ -225,14 +224,4 @@ func (j *JenkinsClient) CheckScriptCompile(projectName, pipelineName string, htt
 // CheckCron does the cron check
 func (j *JenkinsClient) CheckCron(projectName string, httpParameters *devops.HttpParameters) (*devops.CheckCronRes, error) {
 	return j.jenkins.CheckCron(projectName, httpParameters)
-}
-
-// ToJenkinsfile sends a request to turn to jenkinsfile
-func (j *JenkinsClient) ToJenkinsfile(httpParameters *devops.HttpParameters) (*devops.ResJenkinsfile, error) {
-	return j.jenkins.ToJenkinsfile(httpParameters)
-}
-
-// ToJSON sends a request to turn JSOn
-func (j *JenkinsClient) ToJSON(httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
-	return j.jenkins.ToJSON(httpParameters)
 }

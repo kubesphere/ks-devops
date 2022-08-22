@@ -620,26 +620,6 @@ func (j *Jenkins) CheckCron(projectName string, httpParameters *devops.HttpParam
 	return res, err
 }
 
-func (j *Jenkins) ToJenkinsfile(httpParameters *devops.HttpParameters) (*devops.ResJenkinsfile, error) {
-	PipelineOjb := &Pipeline{
-		HttpParameters: httpParameters,
-		Jenkins:        j,
-		Path:           ToJenkinsfileUrl,
-	}
-	res, err := PipelineOjb.ToJenkinsfile()
-	return res, err
-}
-
-func (j *Jenkins) ToJSON(httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
-	PipelineOjb := &Pipeline{
-		HttpParameters: httpParameters,
-		Jenkins:        j,
-		Path:           ToJsonUrl,
-	}
-	res, err := PipelineOjb.ToJSON()
-	return res, err
-}
-
 // Creates a new Jenkins Instance
 // Optional parameters are: client, username, password
 // After creating an instance call init method.

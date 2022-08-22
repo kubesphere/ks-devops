@@ -82,8 +82,6 @@ const (
 
 	CheckPipelienCronUrl = "/job/%s/job/%s/descriptorByName/hudson.triggers.TimerTrigger/checkSpec?%s"
 	CheckCronUrl         = "/job/%s/descriptorByName/hudson.triggers.TimerTrigger/checkSpec?%s"
-	ToJenkinsfileUrl     = "/pipeline-model-converter/toJenkinsfile"
-	ToJsonUrl            = "/pipeline-model-converter/toJson"
 
 	cronJobLayout = "Monday, January 2, 2006 15:04:05 PM"
 )

@@ -17,18 +17,28 @@ limitations under the License.
 package jclient
 
 import (
+	jcredential "github.com/jenkins-zh/jenkins-client/pkg/credential"
 	v1 "k8s.io/api/core/v1"
 	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/devops/pkg/client/devops/util"
 )
 
 // CreateCredentialInProject creates a credential, then returns the ID
-func (j *JenkinsClient) CreateCredentialInProject(projectID string, credential *v1.Secret) (string, error) {
-	return j.jenkins.CreateCredentialInProject(projectID, credential)
+func (j *JenkinsClient) CreateCredentialInProject(projectID string, credential *v1.Secret) (id string, err error) {
+	client := j.getClient()
+
+	var cre interface{}
+	if cre, err = util.ConvertSecretToCredential(credential); err != nil {
+		return "", err
+	}
+	return "", client.CreateInFolder(projectID, cre)
 }
 
 // UpdateCredentialInProject updates a credential
-func (j *JenkinsClient) UpdateCredentialInProject(projectID string, credential *v1.Secret) (string, error) {
-	return j.jenkins.UpdateCredentialInProject(projectID, credential)
+func (j *JenkinsClient) UpdateCredentialInProject(projectID string, credential *v1.Secret) (id string, err error) {
+	client := j.getClient()
+	err = client.UpdateInFolder(projectID, credential.GetName(), credential)
+	return
 }
 
 // GetCredentialInProject returns a credential
@@ -38,5 +48,10 @@ func (j *JenkinsClient) GetCredentialInProject(projectID, id string) (*devops.Cr
 
 // DeleteCredentialInProject deletes a credential
 func (j *JenkinsClient) DeleteCredentialInProject(projectID, id string) (string, error) {
-	return j.jenkins.DeleteCredentialInProject(projectID, id)
+	client := j.getClient()
+	return id, client.DeleteInFolder(projectID, id)
+}
+
+func (j *JenkinsClient) getClient() *jcredential.CredentialsManager {
+	return &jcredential.CredentialsManager{JenkinsCore: j.Core}
 }

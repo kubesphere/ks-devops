@@ -139,3 +139,5 @@ replace (
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	golang.org/x/text => golang.org/x/text v0.3.7
 )
+
+replace github.com/jenkins-zh/jenkins-client => github.com/linuxsuren/jenkins-client v0.0.0-20220823083928-d2b2288b88d8

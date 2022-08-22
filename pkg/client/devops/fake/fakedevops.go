@@ -305,12 +305,6 @@ func (d *Devops) CheckScriptCompile(projectName, pipelineName string, httpParame
 func (d *Devops) CheckCron(projectName string, httpParameters *devops.HttpParameters) (*devops.CheckCronRes, error) {
 	return nil, nil
 }
-func (d *Devops) ToJenkinsfile(httpParameters *devops.HttpParameters) (*devops.ResJenkinsfile, error) {
-	return nil, nil
-}
-func (d *Devops) ToJSON(httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
-	return nil, nil
-}
 
 // CredentialOperator
 func (d *Devops) CreateCredentialInProject(projectId string, credential *v1.Secret) (string, error) {
@@ -395,9 +389,6 @@ func (d *Devops) GetCredentialInProject(projectId, id string) (*devops.Credentia
 	}
 	return &devops.Credential{Id: id}, nil
 }
-func (d *Devops) GetCredentialsInProject(projectId string) ([]*devops.Credential, error) {
-	return nil, nil
-}
 func (d *Devops) DeleteCredentialInProject(projectId, id string) (string, error) {
 	if _, ok := d.Credentials[projectId][id]; !ok {
 		err := &devops.ErrorResponse{
@@ -450,7 +441,9 @@ func (d *Devops) CreateProjectPipeline(projectId string, pipeline *devopsv1alpha
 		err := fmt.Errorf("pipeline name [%s] has been used", pipeline.Name)
 		return "", restful.NewError(http.StatusConflict, err.Error())
 	}
-	d.Pipelines[projectId][pipeline.Name] = pipeline
+	if d.Pipelines[projectId] != nil {
+		d.Pipelines[projectId][pipeline.Name] = pipeline
+	}
 	return "", nil
 }
 
