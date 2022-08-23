@@ -946,23 +946,16 @@ spec:
                                         of the helmrelease
                                       properties:
                                         kubeConfig:
-                                          description: The KubeConfig for reconciling
-                                            the Kustomization on a remote cluster.
-                                            When used in combination with KustomizationSpec.ServiceAccountName,
-                                            forces the controller to act on behalf
-                                            of that Service Account at the target
-                                            cluster. If the --default-service-account
-                                            flag is set, its value will be used as
-                                            a controller level fallback for when KustomizationSpec.ServiceAccountName
-                                            is empty.
+                                          description: KubeConfig references a Kubernetes
+                                            secret that contains a kubeconfig file.
                                           properties:
                                             secretRef:
                                               description: SecretRef holds the name
-                                                of a secret that contains a key with
+                                                to a secret that contains a key with
                                                 the kubeconfig file as the value.
-                                                If no key is set, the key will default
-                                                to 'value'. The secret must be in
-                                                the same namespace as the Kustomization.
+                                                If no key is specified the key will
+                                                default to 'value'. The secret must
+                                                be in the same namespace as the HelmRelease.
                                                 It is recommended that the kubeconfig
                                                 is self-contained, and the secret
                                                 is regularly updated if credentials
@@ -970,7 +963,7 @@ spec:
                                                 Cloud specific `cmd-path` auth helpers
                                                 will not function without adding binaries
                                                 and credentials to the Pod that is
-                                                responsible for reconciling the Kustomization.
+                                                responsible for reconciling the HelmRelease.
                                               properties:
                                                 key:
                                                   description: Key in the Secret,
@@ -1012,6 +1005,10 @@ spec:
                                             to CRD replace existing CRDs on Helm install
                                             actions, which is not (yet) natively supported
                                             by Helm. https://helm.sh/docs/chart_best_practices/custom_resource_definitions."
+                                          enum:
+                                          - Skip
+                                          - Create
+                                          - CreateReplace
                                           type: string
                                         createNamespace:
                                           description: CreateNamespace tells the Helm
@@ -1074,9 +1071,11 @@ spec:
                                             which remains in the history.
                                           type: boolean
                                         skipCRDs:
-                                          description: SkipCRDs tells the Helm install
+                                          description: "SkipCRDs tells the Helm install
                                             action to not install any CRDs. By default,
                                             CRDs are installed if not already present.
+                                            \n Deprecated use CRD policy (`crds`)
+                                            attribute with value `Skip` instead."
                                           type: boolean
                                         timeout:
                                           description: Timeout is the time to wait
@@ -1101,6 +1100,8 @@ spec:
                                         Helm PostRenderers, which will be applied
                                         in order of their definition.
                                       items:
+                                        description: PostRenderer contains a Helm
+                                          PostRenderer specification.
                                         properties:
                                           kustomize:
                                             description: Kustomization to apply as
@@ -1220,6 +1221,138 @@ spec:
                                                             resources. https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
                                                           type: string
                                                       type: object
+                                                  type: object
+                                                type: array
+                                              patchesJson6902:
+                                                description: JSON 6902 patches, defined
+                                                  as inline YAML objects.
+                                                items:
+                                                  description: JSON6902Patch contains
+                                                    a JSON6902 patch and the target
+                                                    the patch should be applied to.
+                                                  properties:
+                                                    patch:
+                                                      description: Patch contains
+                                                        the JSON6902 patch document
+                                                        with an array of operation
+                                                        objects.
+                                                      items:
+                                                        description: JSON6902 is a
+                                                          JSON6902 operation object.
+                                                          https://datatracker.ietf.org/doc/html/rfc6902#section-4
+                                                        properties:
+                                                          from:
+                                                            description: From contains
+                                                              a JSON-pointer value
+                                                              that references a location
+                                                              within the target document
+                                                              where the operation
+                                                              is performed. The meaning
+                                                              of the value depends
+                                                              on the value of Op,
+                                                              and is NOT taken into
+                                                              account by all operations.
+                                                            type: string
+                                                          op:
+                                                            description: Op indicates
+                                                              the operation to perform.
+                                                              Its value MUST be one
+                                                              of "add", "remove",
+                                                              "replace", "move", "copy",
+                                                              or "test". https://datatracker.ietf.org/doc/html/rfc6902#section-4
+                                                            enum:
+                                                            - test
+                                                            - remove
+                                                            - add
+                                                            - replace
+                                                            - move
+                                                            - copy
+                                                            type: string
+                                                          path:
+                                                            description: Path contains
+                                                              the JSON-pointer value
+                                                              that references a location
+                                                              within the target document
+                                                              where the operation
+                                                              is performed. The meaning
+                                                              of the value depends
+                                                              on the value of Op.
+                                                            type: string
+                                                          value:
+                                                            description: Value contains
+                                                              a valid JSON structure.
+                                                              The meaning of the value
+                                                              depends on the value
+                                                              of Op, and is NOT taken
+                                                              into account by all
+                                                              operations.
+                                                            x-kubernetes-preserve-unknown-fields: true
+                                                        required:
+                                                        - op
+                                                        - path
+                                                        type: object
+                                                      type: array
+                                                    target:
+                                                      description: Target points to
+                                                        the resources that the patch
+                                                        document should be applied
+                                                        to.
+                                                      properties:
+                                                        annotationSelector:
+                                                          description: AnnotationSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            annotations.
+                                                          type: string
+                                                        group:
+                                                          description: Group is the
+                                                            API group to select resources
+                                                            from. Together with Version
+                                                            and Kind it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        kind:
+                                                          description: Kind of the
+                                                            API Group to select resources
+                                                            from. Together with Group
+                                                            and Version it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        labelSelector:
+                                                          description: LabelSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            labels.
+                                                          type: string
+                                                        name:
+                                                          description: Name to match
+                                                            resources with.
+                                                          type: string
+                                                        namespace:
+                                                          description: Namespace to
+                                                            select resources from.
+                                                          type: string
+                                                        version:
+                                                          description: Version of
+                                                            the API Group to select
+                                                            resources from. Together
+                                                            with Group and Kind it
+                                                            is capable of unambiguously
+                                                            identifying and/or selecting
+                                                            resources. https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                      type: object
+                                                  required:
+                                                  - patch
+                                                  - target
                                                   type: object
                                                 type: array
                                               patchesStrategicMerge:
@@ -1374,6 +1507,10 @@ spec:
                                             With this option users can opt-in to CRD
                                             upgrade, which is not (yet) natively supported
                                             by Helm. https://helm.sh/docs/chart_best_practices/custom_resource_definitions."
+                                          enum:
+                                          - Skip
+                                          - Create
+                                          - CreateReplace
                                           type: string
                                         disableHooks:
                                           description: DisableHooks prevents hooks
@@ -1436,6 +1573,9 @@ spec:
                                             strategy:
                                               description: Strategy to use for failure
                                                 remediation. Defaults to 'rollback'.
+                                              enum:
+                                              - rollback
+                                              - uninstall
                                               type: string
                                           type: object
                                         timeout:
@@ -1456,15 +1596,23 @@ spec:
                                         HelmRelease, and information about how they
                                         should be merged.
                                       items:
+                                        description: ValuesReference contains a reference
+                                          to a resource containing Helm values, and
+                                          optionally the key they can be found at.
                                         properties:
                                           kind:
                                             description: Kind of the values referent,
                                               valid values are ('Secret', 'ConfigMap').
+                                            enum:
+                                            - Secret
+                                            - ConfigMap
                                             type: string
                                           name:
                                             description: Name of the values referent.
                                               Should reside in the same namespace
                                               as the referring resource.
+                                            maxLength: 253
+                                            minLength: 1
                                             type: string
                                           optional:
                                             description: Optional marks this ValuesReference
@@ -1518,6 +1666,8 @@ spec:
                                     provider:
                                       description: Provider is the name of the decryption
                                         engine.
+                                      enum:
+                                      - sops
                                       type: string
                                     secretRef:
                                       description: The secret name containing the
@@ -1558,30 +1708,23 @@ spec:
                                     of the kustomization
                                   properties:
                                     kubeConfig:
-                                      description: The KubeConfig for reconciling
-                                        the Kustomization on a remote cluster. When
-                                        used in combination with KustomizationSpec.ServiceAccountName,
-                                        forces the controller to act on behalf of
-                                        that Service Account at the target cluster.
-                                        If the --default-service-account flag is set,
-                                        its value will be used as a controller level
-                                        fallback for when KustomizationSpec.ServiceAccountName
-                                        is empty.
+                                      description: KubeConfig references a Kubernetes
+                                        secret that contains a kubeconfig file.
                                       properties:
                                         secretRef:
-                                          description: SecretRef holds the name of
+                                          description: SecretRef holds the name to
                                             a secret that contains a key with the
                                             kubeconfig file as the value. If no key
-                                            is set, the key will default to 'value'.
+                                            is specified the key will default to 'value'.
                                             The secret must be in the same namespace
-                                            as the Kustomization. It is recommended
+                                            as the HelmRelease. It is recommended
                                             that the kubeconfig is self-contained,
                                             and the secret is regularly updated if
                                             credentials such as a cloud-access-token
                                             expire. Cloud specific `cmd-path` auth
                                             helpers will not function without adding
                                             binaries and credentials to the Pod that
-                                            is responsible for reconciling the Kustomization.
+                                            is responsible for reconciling the HelmRelease.
                                           properties:
                                             key:
                                               description: Key in the Secret, when
@@ -1769,13 +1912,19 @@ spec:
                                           kind:
                                             description: Kind of the values referent,
                                               valid values are ('Secret', 'ConfigMap').
+                                            enum:
+                                            - Secret
+                                            - ConfigMap
                                             type: string
                                           name:
                                             description: Name of the values referent.
                                               Should reside in the same namespace
                                               as the referring resource.
+                                            maxLength: 253
+                                            minLength: 1
                                             type: string
                                           optional:
+                                            default: false
                                             description: Optional indicates whether
                                               the referenced resource must exist,
                                               or whether to tolerate its absence.
@@ -1836,13 +1985,21 @@ spec:
                                 description: APIVersion of the referent.
                                 type: string
                               kind:
-                                description: Kind of the referent. Enum=HelmRepository;GitRepository;Bucket
+                                description: Kind of the referent.
+                                enum:
+                                - HelmRepository
+                                - GitRepository
+                                - Bucket
                                 type: string
                               name:
                                 description: Name of the referent.
+                                maxLength: 253
+                                minLength: 1
                                 type: string
                               namespace:
                                 description: Namespace of the referent.
+                                maxLength: 63
+                                minLength: 1
                                 type: string
                             required:
                             - name

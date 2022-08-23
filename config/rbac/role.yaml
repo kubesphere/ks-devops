@@ -306,6 +306,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - kustomize.toolkit.fluxcd.io
   resources:
@@ -316,6 +317,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - source.toolkit.fluxcd.io
   resources:
@@ -334,3 +336,4 @@ rules:
   - create
   - get
   - list
+  - watch

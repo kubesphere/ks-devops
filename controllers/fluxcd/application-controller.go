@@ -23,12 +23,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/argocd"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
+	sourcev1 "kubesphere.io/devops/pkg/external/fluxcd/source/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -36,9 +36,9 @@ import (
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=watch;get;list
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
-//+kubebuilder:rbac:groups="kustomize.toolkit.fluxcd.io",resources=kustomizations,verbs=get;list;create;update;delete
-//+kubebuilder:rbac:groups="helm.toolkit.fluxcd.io",resources=helmreleases,verbs=get;list;create;update;delete
-//+kubebuilder:rbac:groups="source.toolkit.fluxcd.io",resources=helmcharts,verbs=get;list;create
+//+kubebuilder:rbac:groups="kustomize.toolkit.fluxcd.io",resources=kustomizations,verbs=watch;get;list;create;update;delete
+//+kubebuilder:rbac:groups="helm.toolkit.fluxcd.io",resources=helmreleases,verbs=watch;get;list;create;update;delete
+//+kubebuilder:rbac:groups="source.toolkit.fluxcd.io",resources=helmcharts,verbs=watch;get;list;create
 
 // ApplicationReconciler is the reconciler of the FluxCD HelmRelease and FluxCD Kustomization
 type ApplicationReconciler struct {
@@ -48,8 +48,7 @@ type ApplicationReconciler struct {
 }
 
 // Reconcile sync the Application with underlying FluxCD HelmRelease and FluxCD Kustomization CRD
-func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (result ctrl.Result, err error) {
-	ctx := context.Background()
+func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	r.log.Info(fmt.Sprintf("start to reconcile application: %s", req.String()))
 
 	app := &v1alpha1.Application{}
@@ -85,56 +84,53 @@ func (r *ApplicationReconciler) reconcileFluxApp(app *v1alpha1.Application) (err
 func (r *ApplicationReconciler) reconcileHelm(app *v1alpha1.Application) (err error) {
 	ctx := context.Background()
 
-	if wantSaveHelmTemplate(app) && app.Spec.FluxApp.Spec.Config.HelmRelease.Chart != nil {
-		if err = r.saveTemplate(ctx, app); err != nil {
-			return
-		}
-	}
-
-	var helmChart *unstructured.Unstructured
+	var helmChart *sourcev1.HelmChart
+	// 1. get helmChart by searching existed helm template
 	if helmTemplateName := app.Spec.FluxApp.Spec.Config.HelmRelease.Template; helmTemplateName != "" {
-		// use template
 		helmTemplateNS := app.GetNamespace()
 
-		helmChart = createBareFluxHelmTemplateObject()
+		helmChart = &sourcev1.HelmChart{}
 		if err = r.Get(ctx, types.NamespacedName{Namespace: helmTemplateNS, Name: helmTemplateName}, helmChart); err != nil {
 			return
 		}
 	} else {
-		helmChart = createUnstructuredFluxHelmTemplate(app)
+		// 2. get helmChart by building from app
+		helmChart = buildTemplateFromApp(app)
+
+		if wantSaveHelmTemplate(app) {
+			if err = r.saveTemplate(ctx, helmChart); err != nil {
+				return
+			}
+		}
 	}
 
-	if err = r.reconcileHelmReleaseList(app, helmChart); err != nil {
+	if err = r.reconcileHelmReleaseList(ctx, app, helmChart); err != nil {
 		return
 	}
 
 	return
 }
 
-func (r *ApplicationReconciler) reconcileHelmReleaseList(app *v1alpha1.Application, helmChart *unstructured.Unstructured) (err error) {
-	ctx := context.Background()
-
+func (r *ApplicationReconciler) reconcileHelmReleaseList(ctx context.Context, app *v1alpha1.Application, helmChart *sourcev1.HelmChart) (err error) {
 	fluxApp := app.Spec.FluxApp.DeepCopy()
 	appNS, appName := app.GetNamespace(), app.GetName()
 
-	fluxHelmReleaseList := createBareFluxHelmReleaseListObject()
+	fluxHelmReleaseList := &helmv2.HelmReleaseList{}
 	if err = r.List(ctx, fluxHelmReleaseList, client.InNamespace(appNS), client.MatchingLabels{
 		"app.kubernetes.io/managed-by": appName,
 	}); err != nil {
 		return
 	}
 
-	hrMap := make(map[string]*unstructured.Unstructured, len(fluxHelmReleaseList.Items))
+	hrMap := make(map[string]*helmv2.HelmRelease, len(fluxHelmReleaseList.Items))
 	for _, fluxHelmRelease := range fluxHelmReleaseList.Items {
 		name := fluxHelmRelease.GetAnnotations()["app.kubernetes.io/name"]
 		hrMap[name] = fluxHelmRelease.DeepCopy()
 	}
 
-	helmReleaseNum := len(fluxApp.Spec.Config.HelmRelease.Deploy)
-	for i := 0; i < helmReleaseNum; i++ {
-		deploy := fluxApp.Spec.Config.HelmRelease.Deploy[i]
-		helmReleaseName := getHelmReleaseName(deploy)
-		if hr, ok := hrMap[helmReleaseName]; !ok {
+	for _, deploy := range fluxApp.Spec.Config.HelmRelease.Deploy {
+		name := getHelmReleaseName(deploy)
+		if hr, ok := hrMap[name]; !ok {
 			// there is no matching helmRelease
 			// create
 			if err = r.createHelmRelease(ctx, app, helmChart, deploy); err != nil {
@@ -143,32 +139,33 @@ func (r *ApplicationReconciler) reconcileHelmReleaseList(app *v1alpha1.Applicati
 		} else {
 			// there is a matching helmRelease
 			// update the helmRelease
+			// TODO: determine whether this helmrelease should update by ResourceVersion
 			if err = r.updateHelmRelease(ctx, hr, helmChart, deploy); err != nil {
 				return
 			}
 		}
+
 	}
 	return
 }
 
-func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1alpha1.Application, helmChart *unstructured.Unstructured, deploy *v1alpha1.Deploy) (err error) {
+func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1alpha1.Application, helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) (err error) {
 	appNS, appName := app.GetNamespace(), app.GetName()
-	hrNS, hrName := appNS, getHelmReleaseName(deploy)
+	hrNS := appNS
 
-	newFluxHelmRelease := createBareFluxHelmReleaseObject()
-	setFluxHelmReleaseFields(newFluxHelmRelease, helmChart, deploy)
-	newFluxHelmRelease.SetNamespace(hrNS)
-	newFluxHelmRelease.SetGenerateName(appName)
-	newFluxHelmRelease.SetName("")
-	newFluxHelmRelease.SetLabels(map[string]string{
+	hr := buildHelmRelease(helmChart, deploy)
+	hr.SetNamespace(hrNS)
+	hr.SetGenerateName(appName)
+	hr.SetName("")
+	hr.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": appName,
 	})
 	// put the name that can uniquely identifies the HelmRelease in annotations
 	// and use generateName to avoid naming conflict
-	newFluxHelmRelease.SetAnnotations(map[string]string{
-		"app.kubernetes.io/name": hrName,
+	hr.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": getHelmReleaseName(deploy),
 	})
-	newFluxHelmRelease.SetOwnerReferences([]metav1.OwnerReference{
+	hr.SetOwnerReferences([]metav1.OwnerReference{
 		{
 			APIVersion: "gitops.kubesphere.io/v1alpha1",
 			Kind:       "Application",
@@ -176,69 +173,53 @@ func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1al
 			UID:        app.GetUID(),
 		},
 	})
-	if err = r.Create(ctx, newFluxHelmRelease); err != nil {
+	if err = r.Create(ctx, hr); err != nil {
 		return
 	}
-	r.log.Info("Create FluxCD HelmRelease", "name", newFluxHelmRelease.GetName())
-	r.recorder.Eventf(app, corev1.EventTypeNormal, "Created", "Created HelmRelease %s", newFluxHelmRelease.GetName())
+	r.log.Info("Create FluxCD HelmRelease", "name", hr.GetAnnotations()["app.kubernetes.io/name"])
+	r.recorder.Eventf(hr, corev1.EventTypeNormal, "Created", "Created FluxCD HelmRelease %s", hr.GetAnnotations()["app.kubernetes.io/name"])
 	return
 }
 
-func (r *ApplicationReconciler) updateHelmRelease(ctx context.Context, hr, helmChart *unstructured.Unstructured, deploy *v1alpha1.Deploy) (err error) {
-	setFluxHelmReleaseFields(hr, helmChart, deploy)
+func (r *ApplicationReconciler) updateHelmRelease(ctx context.Context, hr *helmv2.HelmRelease, helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) (err error) {
+	newHR := buildHelmRelease(helmChart, deploy)
+	hr.Spec = newHR.Spec
 	if err = r.Update(ctx, hr); err != nil {
 		return
 	}
+	r.log.Info("Update FluxCD HelmRelease", "name", hr.GetAnnotations()["app.kubernetes.io/name"])
+	r.recorder.Eventf(hr, corev1.EventTypeNormal, "Updated", "Update FluxCD HelmRelease %s", hr.GetAnnotations()["app.kubernetes.io/name"])
 	return
-}
-
-func setFluxHelmReleaseFields(hr, helmTemplate *unstructured.Unstructured, deploy *v1alpha1.Deploy) {
-	helmTemplateSpec, _, _ := unstructured.NestedFieldNoCopy(helmTemplate.Object, "spec")
-	_ = argocd.SetNestedField(hr.Object, helmTemplateSpec, "spec", "chart", "spec")
-
-	configs, _ := argocd.InterfaceToMap(*deploy)
-	for k, config := range configs {
-		if k != "destination" {
-			_ = unstructured.SetNestedField(hr.Object, config, "spec", k)
-		}
-	}
-
-	_ = argocd.SetNestedField(hr.Object, deploy.Destination.KubeConfig, "spec", "kubeConfig")
-	_ = unstructured.SetNestedField(hr.Object, deploy.Destination.TargetNamespace, "spec", "targetNamespace")
 }
 
 func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application) (err error) {
 	ctx := context.Background()
-
-	fluxApp := app.Spec.FluxApp.DeepCopy()
 	appNS, appName := app.GetNamespace(), app.GetName()
 
-	kusList := createBareFluxKustomizationListObject()
+	kusList := &kusv1.KustomizationList{}
 	if err = r.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
 		"app.kubernetes.io/managed-by": appName,
 	}); err != nil {
 		return
 	}
 
-	kusMap := make(map[string]*unstructured.Unstructured, len(kusList.Items))
+	kusMap := make(map[string]*kusv1.Kustomization, len(kusList.Items))
 	for _, kus := range kusList.Items {
 		name := kus.GetAnnotations()["app.kubernetes.io/name"]
 		kusMap[name] = kus.DeepCopy()
 	}
 
-	kusNum := len(app.Spec.FluxApp.Spec.Config.Kustomization)
-	for i := 0; i < kusNum; i++ {
-		kusDeploy := fluxApp.Spec.Config.Kustomization[i]
-		kusName := getKustomizationName(kusDeploy)
+	for _, kusDeploy := range app.Spec.FluxApp.Spec.Config.Kustomization {
+		name := getKustomizationName(kusDeploy)
 
-		if kus, ok := kusMap[kusName]; !ok {
+		if kus, ok := kusMap[name]; !ok {
 			// not found
 			// create
 			err = r.createKustomization(ctx, app, kusDeploy)
 		} else {
 			// found
 			// update this kus
-			err = r.updateKustomization(ctx, kus, app, kusDeploy)
+			err = r.updateKustomization(ctx, app, kus, kusDeploy)
 		}
 	}
 	return
@@ -246,13 +227,19 @@ func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application
 
 func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1alpha1.Application, deploy *v1alpha1.KustomizationSpec) (err error) {
 	appNS, appName := app.GetNamespace(), app.GetName()
-	kusNS, kusName := appNS, getKustomizationName(deploy)
+	kusNS := appNS
 
-	kus := createBareFluxKustomizationObject()
-	setFluxKustomizationFields(kus, app, deploy)
+	kus := buildKustomization(app, deploy)
 	kus.SetNamespace(kusNS)
 	kus.SetGenerateName(appName)
 	kus.SetName("")
+
+	kus.SetLabels(map[string]string{
+		"app.kubernetes.io/managed-by": appName,
+	})
+	kus.SetAnnotations(map[string]string{
+		"app.kubernetes.io/name": getKustomizationName(deploy),
+	})
 	kus.SetOwnerReferences([]metav1.OwnerReference{
 		{
 			APIVersion: "gitops.kubesphere.io/v1alpha1",
@@ -261,33 +248,23 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 			UID:        app.GetUID(),
 		},
 	})
-	kus.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": appName,
-	})
-	kus.SetAnnotations(map[string]string{
-		"app.kubernetes.io/name": kusName,
-	})
-	err = r.Create(ctx, kus)
-	return
-}
 
-func (r *ApplicationReconciler) updateKustomization(ctx context.Context, kus *unstructured.Unstructured, app *v1alpha1.Application, deploy *v1alpha1.KustomizationSpec) (err error) {
-	setFluxKustomizationFields(kus, app, deploy)
-	err = r.Update(ctx, kus)
-	return
-}
-
-func setFluxKustomizationFields(kus *unstructured.Unstructured, app *v1alpha1.Application, deploy *v1alpha1.KustomizationSpec) {
-	_ = argocd.SetNestedField(kus.Object, app.Spec.FluxApp.Spec.Source.SourceRef, "spec", "sourceRef")
-
-	configs, _ := argocd.InterfaceToMap(*deploy)
-	for k, config := range configs {
-		if k != "destination" {
-			_ = unstructured.SetNestedField(kus.Object, config, "spec", k)
-		}
+	if err = r.Create(ctx, kus); err != nil {
+		return
 	}
-	_ = argocd.SetNestedField(kus.Object, deploy.Destination.KubeConfig, "spec", "kubeConfig")
-	_ = unstructured.SetNestedField(kus.Object, deploy.Destination.TargetNamespace, "spec", "targetNamespace")
+	r.log.Info("Create FluxCD Kustomization", "name", kus.GetAnnotations()["app.kubernetes.io/name"])
+	r.recorder.Eventf(kus, corev1.EventTypeNormal, "Created", "Created FluxCD Kustomization %s", kus.GetAnnotations()["app.kubernetes.io/name"])
+	return
+}
+func (r *ApplicationReconciler) updateKustomization(ctx context.Context, app *v1alpha1.Application, kus *kusv1.Kustomization, deploy *v1alpha1.KustomizationSpec) (err error) {
+	newKus := buildKustomization(app, deploy)
+	kus.Spec = newKus.Spec
+	if err = r.Update(ctx, kus); err != nil {
+		return
+	}
+	r.log.Info("Update FluxCD HelmRelease", "name", kus.GetAnnotations()["app.kubernetes.io/name"])
+	r.recorder.Eventf(kus, corev1.EventTypeNormal, "Updated", "Update FluxCD HelmRelease %s", kus.GetAnnotations()["app.kubernetes.io/name"])
+	return
 }
 
 func isHelmOrKustomize(app *v1alpha1.Application) (AppType, error) {
@@ -330,29 +307,20 @@ func getKustomizationName(deploy *v1alpha1.KustomizationSpec) string {
 	return deploy.Destination.KubeConfig.SecretRef.Name + "-" + deploy.Destination.TargetNamespace
 }
 
-func (r *ApplicationReconciler) saveTemplate(ctx context.Context, app *v1alpha1.Application) (err error) {
-	helmTemplate := createBareFluxHelmTemplateObject()
+func (r *ApplicationReconciler) saveTemplate(ctx context.Context, helmChart *sourcev1.HelmChart) (err error) {
+	ns, name := helmChart.GetNamespace(), helmChart.GetName()
 
-	appNS, appName := app.GetNamespace(), app.GetName()
-	helmTemplateNS, helmTemplateName := appNS, appName
-
-	if err = r.Get(ctx, types.NamespacedName{Namespace: helmTemplateNS, Name: helmTemplateName}, helmTemplate); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, helmChart); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return
 		}
 		// not found
 		// create
-		newFluxHelmTemplate := createUnstructuredFluxHelmTemplate(app)
-		newFluxHelmTemplate.SetName(helmTemplateName)
-		newFluxHelmTemplate.SetNamespace(helmTemplateNS)
-		newFluxHelmTemplate.SetAnnotations(map[string]string{
-			v1alpha1.HelmTemplateName: helmTemplateName,
-		})
-		if err = r.Create(ctx, newFluxHelmTemplate); err != nil {
+		if err = r.Create(ctx, helmChart); err != nil {
 			return
 		}
-		r.log.Info("Create HelmTemplate", "name", newFluxHelmTemplate.GetName())
-		r.recorder.Eventf(app, corev1.EventTypeNormal, "Created", "Created HelmTemplate %s", newFluxHelmTemplate.GetName())
+		r.log.Info("Create HelmTemplate", "name", helmChart.GetName())
+		r.recorder.Eventf(helmChart, corev1.EventTypeNormal, "Created", "Created HelmTemplate %s", helmChart.GetName())
 	}
 	return
 }
@@ -364,69 +332,117 @@ func wantSaveHelmTemplate(app *v1alpha1.Application) bool {
 	return false
 }
 
-func createUnstructuredFluxHelmTemplate(app *v1alpha1.Application) (newFluxHelmTemplate *unstructured.Unstructured) {
-	newFluxHelmTemplate = createBareFluxHelmTemplateObject()
-	newFluxHelmTemplate.SetLabels(map[string]string{
-		"app.kubernetes.io/managed-by": v1alpha1.GroupName,
-	})
+func buildTemplateFromApp(app *v1alpha1.Application) *sourcev1.HelmChart {
+	s := app.Spec.FluxApp.Spec.Source.SourceRef.DeepCopy()
+	c := app.Spec.FluxApp.Spec.Config.HelmRelease.Chart.DeepCopy()
 
-	_ = argocd.SetNestedField(newFluxHelmTemplate.Object, app.Spec.FluxApp.Spec.Config.HelmRelease.Chart, "spec")
-	_ = argocd.SetNestedField(newFluxHelmTemplate.Object, app.Spec.FluxApp.Spec.Source.SourceRef, "spec", "sourceRef")
-	return
+	return &sourcev1.HelmChart{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      app.GetName(),
+			Namespace: app.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/managed-by": v1alpha1.GroupName,
+			},
+			Annotations: map[string]string{
+				v1alpha1.HelmTemplateName: app.GetName(),
+			},
+		},
+		Spec: sourcev1.HelmChartSpec{
+			SourceRef: sourcev1.LocalHelmChartSourceReference{
+				APIVersion: s.APIVersion,
+				Kind:       s.Kind,
+				Name:       s.Name,
+			},
+			Chart:             c.Chart,
+			Version:           c.Version,
+			Interval:          *c.Interval,
+			ReconcileStrategy: c.ReconcileStrategy,
+			ValuesFiles:       c.ValuesFiles,
+		},
+	}
 }
 
-func createBareFluxHelmTemplateObject() *unstructured.Unstructured {
-	fluxHelmChart := &unstructured.Unstructured{}
-	fluxHelmChart.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "source.toolkit.fluxcd.io",
-		Version: "v1beta2",
-		Kind:    "HelmChart",
-	})
-	return fluxHelmChart
+func buildHelmRelease(helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) *helmv2.HelmRelease {
+	ht := helmChart.DeepCopy()
+	dp := deploy.DeepCopy()
+	return &helmv2.HelmRelease{
+		Spec: helmv2.HelmReleaseSpec{
+			Chart: helmv2.HelmChartTemplate{
+				Spec: helmv2.HelmChartTemplateSpec{
+					SourceRef: helmv2.CrossNamespaceObjectReference{
+						APIVersion: ht.Spec.SourceRef.APIVersion,
+						Kind:       ht.Spec.SourceRef.Kind,
+						Name:       ht.Spec.SourceRef.Name,
+					},
+					Chart:             ht.Spec.Chart,
+					Version:           ht.Spec.Version,
+					Interval:          &ht.Spec.Interval,
+					ReconcileStrategy: ht.Spec.ReconcileStrategy,
+					ValuesFiles:       ht.Spec.ValuesFiles,
+				},
+			},
+			KubeConfig:         dp.Destination.KubeConfig,
+			TargetNamespace:    dp.Destination.TargetNamespace,
+			Interval:           dp.Interval,
+			Suspend:            dp.Suspend,
+			ReleaseName:        dp.ReleaseName,
+			StorageNamespace:   dp.StorageNamespace,
+			DependsOn:          dp.DependsOn,
+			Timeout:            dp.Timeout,
+			MaxHistory:         dp.MaxHistory,
+			ServiceAccountName: dp.ServiceAccountName,
+			Install:            dp.Install,
+			Upgrade:            dp.Upgrade,
+			Test:               dp.Test,
+			Rollback:           dp.Rollback,
+			Uninstall:          dp.Uninstall,
+			ValuesFrom:         dp.ValuesFrom,
+			Values:             dp.Values,
+			PostRenderers:      dp.PostRenderers,
+		},
+	}
+}
+func buildKustomization(app *v1alpha1.Application, deploy *v1alpha1.KustomizationSpec) *kusv1.Kustomization {
+	s := app.Spec.FluxApp.Spec.Source.SourceRef
+	dp := deploy.DeepCopy()
+
+	return &kusv1.Kustomization{
+		Spec: kusv1.KustomizationSpec{
+			SourceRef: kusv1.CrossNamespaceSourceReference{
+				APIVersion: s.APIVersion,
+				Kind:       s.Kind,
+				Name:       s.Name,
+				Namespace:  s.Namespace,
+			},
+			DependsOn:          dp.DependsOn,
+			Decryption:         dp.Decryption,
+			Interval:           dp.Interval,
+			RetryInterval:      dp.RetryInterval,
+			KubeConfig:         convertKubeconfig(dp.Destination.KubeConfig),
+			TargetNamespace:    dp.Destination.TargetNamespace,
+			Path:               dp.Path,
+			PostBuild:          dp.PostBuild,
+			Prune:              dp.Prune,
+			HealthChecks:       dp.HealthChecks,
+			Patches:            dp.Patches,
+			Images:             dp.Images,
+			ServiceAccountName: dp.ServiceAccountName,
+			Suspend:            dp.Suspend,
+			Timeout:            dp.Timeout,
+			Force:              dp.Force,
+			Wait:               dp.Wait,
+		},
+	}
 }
 
-func createBareFluxHelmReleaseObject() *unstructured.Unstructured {
-	fluxHelmRelease := &unstructured.Unstructured{}
-	fluxHelmRelease.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "helm.toolkit.fluxcd.io",
-		Version: "v2beta1",
-		Kind:    "HelmRelease",
-	})
-	return fluxHelmRelease
-}
-
-func createBareFluxHelmReleaseListObject() *unstructured.UnstructuredList {
-	fluxHelmReleaseList := &unstructured.UnstructuredList{}
-	fluxHelmReleaseList.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "helm.toolkit.fluxcd.io",
-		Version: "v2beta1",
-		Kind:    "HelmReleaseList",
-	})
-	return fluxHelmReleaseList
-}
-
-func createBareFluxKustomizationObject() *unstructured.Unstructured {
-	fluxKustomization := &unstructured.Unstructured{}
-	fluxKustomization.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "kustomize.toolkit.fluxcd.io",
-		Version: "v1beta2",
-		Kind:    "Kustomization",
-	})
-	return fluxKustomization
-}
-
-func createBareFluxKustomizationListObject() *unstructured.UnstructuredList {
-	fluxHelmReleaseList := &unstructured.UnstructuredList{}
-	fluxHelmReleaseList.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "kustomize.toolkit.fluxcd.io",
-		Version: "v1beta2",
-		Kind:    "KustomizationList",
-	})
-	return fluxHelmReleaseList
+func convertKubeconfig(kubeconfig *helmv2.KubeConfig) *kusv1.KubeConfig {
+	if kubeconfig == nil {
+		return nil
+	}
+	return &kusv1.KubeConfig{SecretRef: kubeconfig.SecretRef}
 }
 
 // SetupWithManager setups the reconciler with a manager
-// setup the logger, recorder
 func (r *ApplicationReconciler) SetupWithManager(mgr manager.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())

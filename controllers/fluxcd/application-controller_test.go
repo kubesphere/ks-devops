@@ -23,12 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	apischema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/controllers/core"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"kubesphere.io/devops/pkg/external/fluxcd/meta"
+	sourcev1 "kubesphere.io/devops/pkg/external/fluxcd/source/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -41,11 +43,14 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	schema.AddKnownTypeWithName(apischema.GroupVersionKind{
-		Group:   "helm.toolkit.fluxcd.io",
-		Version: "v2beta1",
-		Kind:    "HelmReleaseList",
-	}, &unstructured.UnstructuredList{})
+	err = helmv2.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	err = sourcev1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	err = kusv1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
 
 	argoApp := &v1alpha1.Application{
 		ObjectMeta: metav1.ObjectMeta{
@@ -58,10 +63,6 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 	}
 
 	fluxApp := &v1alpha1.Application{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "gitops.kubesphere.io/v1alpha1",
-			Kind:       "Application",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "fake-ns",
 			Name:      "fake-app",
@@ -71,7 +72,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 			FluxApp: &v1alpha1.FluxApplication{
 				Spec: v1alpha1.FluxApplicationSpec{
 					Source: &v1alpha1.FluxApplicationSource{
-						SourceRef: v1alpha1.CrossNamespaceObjectReference{
+						SourceRef: helmv2.CrossNamespaceObjectReference{
 							APIVersion: "source.toolkit.fluxcd.io/v1beta2",
 							Kind:       "GitRepository",
 							Name:       "fake-repo",
@@ -94,8 +95,8 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 							Deploy: []*v1alpha1.Deploy{
 								{
 									Destination: v1alpha1.FluxApplicationDestination{
-										KubeConfig: &v1alpha1.KubeConfig{
-											SecretRef: v1alpha1.SecretKeyReference{
+										KubeConfig: &helmv2.KubeConfig{
+											SecretRef: meta.SecretKeyReference{
 												Name: "aliyun-kubeconfig",
 												Key:  "kubeconfig",
 											},
@@ -105,8 +106,8 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 								},
 								{
 									Destination: v1alpha1.FluxApplicationDestination{
-										KubeConfig: &v1alpha1.KubeConfig{
-											SecretRef: v1alpha1.SecretKeyReference{
+										KubeConfig: &helmv2.KubeConfig{
+											SecretRef: meta.SecretKeyReference{
 												Name: "tencentcloud-kubeconfig",
 												Key:  "kubeconfig",
 											},
@@ -187,10 +188,10 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &ApplicationReconciler{
 				Client:   tt.fields.Client,
-				log:      log.NullLogger{},
+				log:      logr.New(log.NullLogSink{}),
 				recorder: &record.FakeRecorder{},
 			}
-			gotResult, err := r.Reconcile(tt.args.req)
+			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if tt.wantErr(t, err) {
 				assert.Equal(t, tt.wantResult, gotResult)
 			}
@@ -202,29 +203,16 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	schema.AddKnownTypeWithName(apischema.GroupVersionKind{
-		Group:   "helm.toolkit.fluxcd.io",
-		Version: "v2beta1",
-		Kind:    "HelmReleaseList",
-	}, &unstructured.UnstructuredList{})
+	err = helmv2.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
 
-	schema.AddKnownTypeWithName(apischema.GroupVersionKind{
-		Group:   "kustomize.toolkit.fluxcd.io",
-		Version: "v1beta2",
-		Kind:    "KustomizationList",
-	}, &unstructured.UnstructuredList{})
+	err = sourcev1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
 
-	schema.AddKnownTypeWithName(apischema.GroupVersionKind{
-		Group:   "source.toolkit.fluxcd.io",
-		Version: "v1beta2",
-		Kind:    "HelmChartList",
-	}, &unstructured.UnstructuredList{})
+	err = kusv1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
 
 	helmApp := &v1alpha1.Application{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "gitops.kubesphere.io/v1alpha1",
-			Kind:       "Application",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake-app",
 			Namespace: "fake-ns",
@@ -234,7 +222,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 			FluxApp: &v1alpha1.FluxApplication{
 				Spec: v1alpha1.FluxApplicationSpec{
 					Source: &v1alpha1.FluxApplicationSource{
-						SourceRef: v1alpha1.CrossNamespaceObjectReference{
+						SourceRef: helmv2.CrossNamespaceObjectReference{
 							APIVersion: "source.toolkit.fluxcd.io/v1beta2",
 							Kind:       "GitRepository",
 							Name:       "fake-repo",
@@ -257,8 +245,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 							Deploy: []*v1alpha1.Deploy{
 								{
 									Destination: v1alpha1.FluxApplicationDestination{
-										KubeConfig: &v1alpha1.KubeConfig{
-											SecretRef: v1alpha1.SecretKeyReference{
+										KubeConfig: &helmv2.KubeConfig{
+											SecretRef: meta.SecretKeyReference{
 												Name: "aliyun-kubeconfig",
 												Key:  "kubeconfig",
 											},
@@ -268,8 +256,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 								},
 								{
 									Destination: v1alpha1.FluxApplicationDestination{
-										KubeConfig: &v1alpha1.KubeConfig{
-											SecretRef: v1alpha1.SecretKeyReference{
+										KubeConfig: &helmv2.KubeConfig{
+											SecretRef: meta.SecretKeyReference{
 												Name: "tencentcloud-kubeconfig",
 												Key:  "kubeconfig",
 											},
@@ -291,7 +279,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	})
 
 	helmAppWithUpdate := helmApp.DeepCopy()
-	helmAppWithUpdate.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0].ValuesFrom = []v1alpha1.ValuesReference{
+	helmAppWithUpdate.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0].ValuesFrom = []helmv2.ValuesReference{
 		{
 			Kind:      "ConfigMap",
 			Name:      "fake-cm",
@@ -299,16 +287,15 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		},
 	}
 
-	fluxHelmChart := createUnstructuredFluxHelmTemplate(helmApp)
+	fluxHelmChart := buildTemplateFromApp(helmApp)
 	fluxHelmChart.SetNamespace(helmApp.GetNamespace())
 	fluxHelmChart.SetName(helmApp.GetName())
 	fluxHelmChart.SetAnnotations(map[string]string{
 		v1alpha1.HelmTemplateName: helmApp.GetName(),
 	})
 
-	fluxHR := createBareFluxHelmReleaseObject()
 	helmDeploy := helmApp.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0]
-	setFluxHelmReleaseFields(fluxHR, fluxHelmChart, helmDeploy)
+	fluxHR := buildHelmRelease(fluxHelmChart, helmDeploy)
 	fluxHR.SetNamespace(helmApp.GetNamespace())
 	fluxHR.SetName(helmApp.GetName() + "abcde")
 	fluxHR.SetLabels(map[string]string{
@@ -333,7 +320,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 			FluxApp: &v1alpha1.FluxApplication{
 				Spec: v1alpha1.FluxApplicationSpec{
 					Source: &v1alpha1.FluxApplicationSource{
-						SourceRef: v1alpha1.CrossNamespaceObjectReference{
+						SourceRef: helmv2.CrossNamespaceObjectReference{
 							APIVersion: "source.toolkit.fluxcd.io/v1beta2",
 							Kind:       "GitRepository",
 							Name:       "fake-repo",
@@ -344,8 +331,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 						Kustomization: []*v1alpha1.KustomizationSpec{
 							{
 								Destination: v1alpha1.FluxApplicationDestination{
-									KubeConfig: &v1alpha1.KubeConfig{
-										SecretRef: v1alpha1.SecretKeyReference{
+									KubeConfig: &helmv2.KubeConfig{
+										SecretRef: meta.SecretKeyReference{
 											Name: "aliyun-kubeconfig",
 											Key:  "kubeconfig",
 										},
@@ -357,8 +344,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 							},
 							{
 								Destination: v1alpha1.FluxApplicationDestination{
-									KubeConfig: &v1alpha1.KubeConfig{
-										SecretRef: v1alpha1.SecretKeyReference{
+									KubeConfig: &helmv2.KubeConfig{
+										SecretRef: meta.SecretKeyReference{
 											Name: "tencentcloud-kubeconfig",
 											Key:  "kubeconfig",
 										},
@@ -375,16 +362,15 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		},
 	}
 
-	fluxKus := createBareFluxKustomizationObject()
-	KusDeploy := kusApp.Spec.FluxApp.Spec.Config.Kustomization[0]
-	setFluxKustomizationFields(fluxKus, kusApp, KusDeploy)
+	kusDeploy := kusApp.Spec.FluxApp.Spec.Config.Kustomization[0]
+	fluxKus := buildKustomization(kusApp, kusDeploy)
 	fluxKus.SetNamespace(kusApp.GetNamespace())
 	fluxKus.SetName(kusApp.GetName() + "abcde")
 	fluxKus.SetLabels(map[string]string{
 		"app.kubernetes.io/managed-by": kusApp.GetName(),
 	})
 	fluxKus.SetAnnotations(map[string]string{
-		"app.kubernetes.io/name": getKustomizationName(KusDeploy),
+		"app.kubernetes.io/name": getKustomizationName(kusDeploy),
 	})
 
 	kusAppWithUpdate := kusApp.DeepCopy()
@@ -449,7 +435,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Nil(t, err)
 				ctx := context.Background()
 
-				fluxHRList := createBareFluxHelmReleaseListObject()
+				fluxHRList := &helmv2.HelmReleaseList{}
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
@@ -460,32 +446,24 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				for _, hr := range fluxHRList.Items {
 					// same settings
-					chart, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "chart")
-					assert.Equal(t, "./helm-chart", chart)
-					chartVersion, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "version")
-					assert.Equal(t, "0.1.0", chartVersion)
-					chartInterval, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "interval")
-					assert.Equal(t, "1m0s", chartInterval)
-					chartReconcileStrategy, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "reconcileStrategy")
-					assert.Equal(t, "Revision", chartReconcileStrategy)
-					chartValueFiles, _, _ := unstructured.NestedStringSlice(hr.Object, "spec", "chart", "spec", "valuesFiles")
-					assert.Equal(t, 1, len(chartValueFiles))
+					assert.Equal(t, "./helm-chart", hr.Spec.Chart.Spec.Chart)
+					assert.Equal(t, "0.1.0", hr.Spec.Chart.Spec.Version)
+					assert.Equal(t, time.Minute, hr.Spec.Chart.Spec.Interval.Duration)
+					assert.Equal(t, "Revision", hr.Spec.Chart.Spec.ReconcileStrategy)
+					chartValueFiles := hr.Spec.Chart.Spec.ValuesFiles
+					assert.Equal(t, 1, len(hr.Spec.Chart.Spec.ValuesFiles))
 					assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
 					switch hr.GetName() {
 					case "fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "aliyun-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "aliyun-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					case "another-fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "tencentcloud-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "tencentcloud-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					}
 				}
 
-				fluxChart := createBareFluxHelmTemplateObject()
+				fluxChart := &sourcev1.HelmChart{}
 				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.True(t, apierrors.IsNotFound(err))
 			},
@@ -502,7 +480,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Nil(t, err)
 				ctx := context.Background()
 
-				fluxHRList := createBareFluxHelmReleaseListObject()
+				fluxHRList := &helmv2.HelmReleaseList{}
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
@@ -513,60 +491,38 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				for _, hr := range fluxHRList.Items {
 					// same settings
-					sourceAPIVersion, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "apiVersion")
-					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", sourceAPIVersion)
-					sourceKind, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "kind")
-					assert.Equal(t, "GitRepository", sourceKind)
-					sourceName, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "name")
-					assert.Equal(t, "fake-repo", sourceName)
-					sourceNS, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "namespace")
-					assert.Equal(t, "fake-ns", sourceNS)
-					chart, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "chart")
-					assert.Equal(t, "./helm-chart", chart)
-					chartVersion, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "version")
-					assert.Equal(t, "0.1.0", chartVersion)
-					chartInterval, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "interval")
-					assert.Equal(t, "1m0s", chartInterval)
-					chartReconcileStrategy, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "reconcileStrategy")
-					assert.Equal(t, "Revision", chartReconcileStrategy)
-					chartValueFiles, _, _ := unstructured.NestedStringSlice(hr.Object, "spec", "chart", "spec", "valuesFiles")
+					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", hr.Spec.Chart.Spec.SourceRef.APIVersion)
+					assert.Equal(t, "GitRepository", hr.Spec.Chart.Spec.SourceRef.Kind)
+					assert.Equal(t, "fake-repo", hr.Spec.Chart.Spec.SourceRef.Name)
+					assert.Equal(t, "./helm-chart", hr.Spec.Chart.Spec.Chart)
+					assert.Equal(t, "0.1.0", hr.Spec.Chart.Spec.Version)
+					assert.Equal(t, time.Minute, hr.Spec.Chart.Spec.Interval.Duration)
+					assert.Equal(t, "Revision", hr.Spec.Chart.Spec.ReconcileStrategy)
+					chartValueFiles := hr.Spec.Chart.Spec.ValuesFiles
 					assert.Equal(t, 1, len(chartValueFiles))
 					assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
 					switch hr.GetName() {
 					case "fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "aliyun-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "aliyun-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					case "another-fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "tencentcloud-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "tencentcloud-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					}
 				}
 
-				fluxChart := createBareFluxHelmTemplateObject()
+				fluxChart := &sourcev1.HelmChart{}
 				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.Nil(t, err)
 
-				sourceAPIVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "apiVersion")
-				assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", sourceAPIVersion)
-				sourceKind, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "kind")
-				assert.Equal(t, "GitRepository", sourceKind)
-				sourceName, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "name")
-				assert.Equal(t, "fake-repo", sourceName)
-				sourceNS, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "namespace")
-				assert.Equal(t, "fake-ns", sourceNS)
-				chart, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "chart")
-				assert.Equal(t, "./helm-chart", chart)
-				chartVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "version")
-				assert.Equal(t, "0.1.0", chartVersion)
-				chartInterval, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "interval")
-				assert.Equal(t, "1m0s", chartInterval)
-				chartReconcileStrategy, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "reconcileStrategy")
-				assert.Equal(t, "Revision", chartReconcileStrategy)
-				chartValueFiles, _, _ := unstructured.NestedStringSlice(fluxChart.Object, "spec", "valuesFiles")
+				assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", fluxChart.Spec.SourceRef.APIVersion)
+				assert.Equal(t, "GitRepository", fluxChart.Spec.SourceRef.Kind)
+				assert.Equal(t, "fake-repo", fluxChart.Spec.SourceRef.Name)
+				assert.Equal(t, "./helm-chart", fluxChart.Spec.Chart)
+				assert.Equal(t, "0.1.0", fluxChart.Spec.Version)
+				assert.Equal(t, time.Minute, fluxChart.Spec.Interval.Duration)
+				assert.Equal(t, "Revision", fluxChart.Spec.ReconcileStrategy)
+				chartValueFiles := fluxChart.Spec.ValuesFiles
 				assert.Equal(t, 1, len(chartValueFiles))
 				assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
 			},
@@ -583,7 +539,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Nil(t, err)
 				ctx := context.Background()
 
-				fluxHRList := createBareFluxHelmReleaseListObject()
+				fluxHRList := &helmv2.HelmReleaseList{}
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
@@ -595,13 +551,13 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				for _, hr := range fluxHRList.Items {
 					name := hr.GetAnnotations()["app.kubernetes.io/name"]
 					if name == "fake-targetNamespace" {
-						valuesFromSlice, _, _ := unstructured.NestedSlice(hr.Object, "spec", "valuesFrom")
-						valuesFrom := valuesFromSlice[0].(map[string]interface{})
-						assert.Equal(t, "ConfigMap", valuesFrom["kind"].(string))
-						assert.Equal(t, "fake-cm", valuesFrom["name"].(string))
-						assert.Equal(t, "fake-key", valuesFrom["valuesKey"].(string))
+						valuesFrom := hr.Spec.ValuesFrom[0]
+
+						assert.Equal(t, "ConfigMap", valuesFrom.Kind)
+						assert.Equal(t, "fake-cm", valuesFrom.Name)
+						assert.Equal(t, "fake-key", valuesFrom.ValuesKey)
 					} else if name == "another-fake-targetNamespace" {
-						valuesFromSlice, _, _ := unstructured.NestedSlice(hr.Object, "spec", "valuesFrom")
+						valuesFromSlice := hr.Spec.ValuesFrom
 						assert.Nil(t, valuesFromSlice)
 					}
 				}
@@ -620,7 +576,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				ctx := context.Background()
 
-				fluxHRList := createBareFluxHelmReleaseListObject()
+				fluxHRList := &helmv2.HelmReleaseList{}
 				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
 
 				err = Client.List(ctx, fluxHRList, client.InNamespace(appNS), client.MatchingLabels{
@@ -631,60 +587,38 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				for _, hr := range fluxHRList.Items {
 					// same settings
-					sourceAPIVersion, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "apiVersion")
-					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", sourceAPIVersion)
-					sourceKind, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "kind")
-					assert.Equal(t, "GitRepository", sourceKind)
-					sourceName, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "name")
-					assert.Equal(t, "fake-repo", sourceName)
-					sourceNS, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "sourceRef", "namespace")
-					assert.Equal(t, "fake-ns", sourceNS)
-					chart, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "chart")
-					assert.Equal(t, "./helm-chart", chart)
-					chartVersion, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "version")
-					assert.Equal(t, "0.1.0", chartVersion)
-					chartInterval, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "interval")
-					assert.Equal(t, "1m0s", chartInterval)
-					chartReconcileStrategy, _, _ := unstructured.NestedString(hr.Object, "spec", "chart", "spec", "reconcileStrategy")
-					assert.Equal(t, "Revision", chartReconcileStrategy)
-					chartValueFiles, _, _ := unstructured.NestedStringSlice(hr.Object, "spec", "chart", "spec", "valuesFiles")
+					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", hr.Spec.Chart.Spec.SourceRef.APIVersion)
+					assert.Equal(t, "GitRepository", hr.Spec.Chart.Spec.SourceRef.Kind)
+					assert.Equal(t, "fake-repo", hr.Spec.Chart.Spec.SourceRef.Name)
+					assert.Equal(t, "./helm-chart", hr.Spec.Chart.Spec.Chart)
+					assert.Equal(t, "0.1.0", hr.Spec.Chart.Spec.Version)
+					assert.Equal(t, time.Minute, hr.Spec.Chart.Spec.Interval.Duration)
+					assert.Equal(t, "Revision", hr.Spec.Chart.Spec.ReconcileStrategy)
+					chartValueFiles := hr.Spec.Chart.Spec.ValuesFiles
 					assert.Equal(t, 1, len(chartValueFiles))
 					assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
 					switch hr.GetName() {
 					case "fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "aliyun-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "aliyun-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					case "another-fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "tencentcloud-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(hr.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "tencentcloud-kubeconfig", hr.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", hr.Spec.KubeConfig.SecretRef.Key)
 					}
 				}
 
-				fluxChart := createBareFluxHelmTemplateObject()
+				fluxChart := &sourcev1.HelmChart{}
 				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
 				assert.Nil(t, err)
 
-				sourceAPIVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "apiVersion")
-				assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", sourceAPIVersion)
-				sourceKind, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "kind")
-				assert.Equal(t, "GitRepository", sourceKind)
-				sourceName, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "name")
-				assert.Equal(t, "fake-repo", sourceName)
-				sourceNS, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "sourceRef", "namespace")
-				assert.Equal(t, "fake-ns", sourceNS)
-				chart, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "chart")
-				assert.Equal(t, "./helm-chart", chart)
-				chartVersion, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "version")
-				assert.Equal(t, "0.1.0", chartVersion)
-				chartInterval, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "interval")
-				assert.Equal(t, "1m0s", chartInterval)
-				chartReconcileStrategy, _, _ := unstructured.NestedString(fluxChart.Object, "spec", "reconcileStrategy")
-				assert.Equal(t, "Revision", chartReconcileStrategy)
-				chartValueFiles, _, _ := unstructured.NestedStringSlice(fluxChart.Object, "spec", "valuesFiles")
+				assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", fluxChart.Spec.SourceRef.APIVersion)
+				assert.Equal(t, "GitRepository", fluxChart.Spec.SourceRef.Kind)
+				assert.Equal(t, "fake-repo", fluxChart.Spec.SourceRef.Name)
+				assert.Equal(t, "./helm-chart", fluxChart.Spec.Chart)
+				assert.Equal(t, "0.1.0", fluxChart.Spec.Version)
+				assert.Equal(t, time.Minute, fluxChart.Spec.Interval.Duration)
+				assert.Equal(t, "Revision", fluxChart.Spec.ReconcileStrategy)
+				chartValueFiles := fluxChart.Spec.ValuesFiles
 				assert.Equal(t, 1, len(chartValueFiles))
 				assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
 			},
@@ -713,7 +647,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Nil(t, err)
 				ctx := context.Background()
 
-				kusList := createBareFluxKustomizationListObject()
+				kusList := &kusv1.KustomizationList{}
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
 					"app.kubernetes.io/managed-by": appName,
@@ -723,30 +657,20 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				for _, kus := range kusList.Items {
 					// same settings
-					sourceAPIVersion, _, _ := unstructured.NestedString(kus.Object, "spec", "sourceRef", "apiVersion")
-					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", sourceAPIVersion)
-					sourceKind, _, _ := unstructured.NestedString(kus.Object, "spec", "sourceRef", "kind")
-					assert.Equal(t, "GitRepository", sourceKind)
-					sourceName, _, _ := unstructured.NestedString(kus.Object, "spec", "sourceRef", "name")
-					assert.Equal(t, "fake-repo", sourceName)
-					sourceNS, _, _ := unstructured.NestedString(kus.Object, "spec", "sourceRef", "namespace")
-					assert.Equal(t, "fake-ns", sourceNS)
-					path, _, _ := unstructured.NestedString(kus.Object, "spec", "path")
-					assert.Equal(t, "kustomization", path)
-					prune, _, _ := unstructured.NestedBool(kus.Object, "spec", "prune")
-					assert.True(t, prune)
+					assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", kus.Spec.SourceRef.APIVersion)
+					assert.Equal(t, "GitRepository", kus.Spec.SourceRef.Kind)
+					assert.Equal(t, "fake-repo", kus.Spec.SourceRef.Name)
+					assert.Equal(t, "fake-ns", kus.Spec.SourceRef.Namespace)
+					assert.Equal(t, "kustomization", kus.Spec.Path)
+					assert.True(t, kus.Spec.Prune)
 
 					switch kus.GetAnnotations()["app.kubernetes.io/name"] {
 					case "fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(kus.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "aliyun-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(kus.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "aliyun-kubeconfig", kus.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", kus.Spec.KubeConfig.SecretRef.Key)
 					case "another-fake-targetNamespace":
-						kubeconfigName, _, _ := unstructured.NestedString(kus.Object, "spec", "kubeConfig", "secretRef", "name")
-						assert.Equal(t, "tencentcloud-kubeconfig", kubeconfigName)
-						kubeconfigKey, _, _ := unstructured.NestedString(kus.Object, "spec", "kubeConfig", "secretRef", "key")
-						assert.Equal(t, "kubeconfig", kubeconfigKey)
+						assert.Equal(t, "tencentcloud-kubeconfig", kus.Spec.KubeConfig.SecretRef.Name)
+						assert.Equal(t, "kubeconfig", kus.Spec.KubeConfig.SecretRef.Key)
 					}
 				}
 			},
@@ -763,7 +687,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Nil(t, err)
 				ctx := context.Background()
 
-				kusList := createBareFluxKustomizationListObject()
+				kusList := &kusv1.KustomizationList{}
 				appNS, appName := kusApp.GetNamespace(), kusApp.GetName()
 				err = Client.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
 					"app.kubernetes.io/managed-by": appName,
@@ -773,8 +697,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 				for _, kus := range kusList.Items {
 					if kus.GetAnnotations()["app.kubernetes.io/name"] == "fake-targetNamespace" {
-						path, _, _ := unstructured.NestedString(kus.Object, "spec", "path")
-						assert.Equal(t, "another-kustomization", path)
+						assert.Equal(t, "another-kustomization", kus.Spec.Path)
 					}
 				}
 			},
@@ -786,7 +709,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 
 			r := ApplicationReconciler{
 				Client:   tt.fields.Client,
-				log:      log.NullLogger{},
+				log:      logr.New(log.NullLogSink{}),
 				recorder: &record.FakeRecorder{},
 			}
 			err := r.reconcileFluxApp(tt.args.app)
@@ -808,6 +731,119 @@ func TestApplicationReconciler_GetGroupName(t *testing.T) {
 		r := &ApplicationReconciler{}
 		assert.Equal(t, "fluxcd", r.GetGroupName())
 	})
+}
+
+func TestApplicationReconciler_getHelmReleaseName(t *testing.T) {
+	hostDeploy := &v1alpha1.Deploy{
+		Destination: v1alpha1.FluxApplicationDestination{
+			TargetNamespace: "default",
+		},
+	}
+
+	memberDeploy := &v1alpha1.Deploy{
+		Destination: v1alpha1.FluxApplicationDestination{
+			KubeConfig: &helmv2.KubeConfig{SecretRef: meta.SecretKeyReference{
+				Name: "qingcloud",
+				Key:  "value",
+			}},
+			TargetNamespace: "default",
+		},
+	}
+
+	tests := []struct {
+		name   string
+		args   *v1alpha1.Deploy
+		expect string
+	}{
+		{
+			name:   "in the host cluster (no kubeconfig)",
+			args:   hostDeploy,
+			expect: "default",
+		},
+		{
+			name:   "in the member cluster (have kubeconfig)",
+			args:   memberDeploy,
+			expect: "qingcloud-default",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expect, getHelmReleaseName(tt.args))
+		})
+	}
+}
+
+func TestApplicationReconciler_getKustomizationName(t *testing.T) {
+	hostDeploy := &v1alpha1.KustomizationSpec{
+		Destination: v1alpha1.FluxApplicationDestination{
+			TargetNamespace: "default",
+		},
+	}
+
+	memberDeploy := &v1alpha1.KustomizationSpec{
+		Destination: v1alpha1.FluxApplicationDestination{
+			KubeConfig: &helmv2.KubeConfig{SecretRef: meta.SecretKeyReference{
+				Name: "qingcloud",
+				Key:  "value",
+			}},
+			TargetNamespace: "default",
+		},
+	}
+
+	tests := []struct {
+		name   string
+		args   *v1alpha1.KustomizationSpec
+		expect string
+	}{
+		{
+			name:   "in the host cluster (no kubeconfig)",
+			args:   hostDeploy,
+			expect: "default",
+		},
+		{
+			name:   "in the member cluster (have kubeconfig)",
+			args:   memberDeploy,
+			expect: "qingcloud-default",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expect, getKustomizationName(tt.args))
+		})
+	}
+}
+
+func TestApplicationReconciler_convertKubeconfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   *helmv2.KubeConfig
+		verify func(kubeconfig *kusv1.KubeConfig)
+	}{
+		{
+			name: "host cluster",
+			args: nil,
+			verify: func(kubeconfig *kusv1.KubeConfig) {
+				assert.Nil(t, kubeconfig)
+			},
+		},
+		{
+			name: "member cluster",
+			args: &helmv2.KubeConfig{SecretRef: meta.SecretKeyReference{
+				Name: "qingcloud",
+				Key:  "value",
+			}},
+			verify: func(kubeconfig *kusv1.KubeConfig) {
+				assert.Equal(t, "qingcloud", kubeconfig.SecretRef.Name)
+				assert.Equal(t, "value", kubeconfig.SecretRef.Key)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.verify(convertKubeconfig(tt.args))
+		})
+	}
 }
 
 func TestApplicationReconciler_SetupWithManager(t *testing.T) {

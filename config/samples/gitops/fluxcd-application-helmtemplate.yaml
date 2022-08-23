@@ -11,7 +11,7 @@ spec:
       config:
         helmRelease:
           chart:
-          template: my-devops-projecthmhx2-chengleqi-test-helm
+          template: chengleqi-test-helm
           deploy:
             - destination:
                 kubeConfig:
