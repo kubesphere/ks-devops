@@ -68,25 +68,28 @@ func isFluxApp(app *v1alpha1.Application) bool {
 }
 
 func (r *ApplicationReconciler) reconcileFluxApp(app *v1alpha1.Application) (err error) {
+	ctx := context.Background()
+
 	var at AppType
-	if at, err = isHelmOrKustomize(app); err != nil {
-		return err
-	}
-	if at == HelmRelease {
-		return r.reconcileHelm(app)
-	}
-	if at == Kustomization {
-		return r.reconcileKustomization(app)
+	at, err = isHelmOrKustomize(app)
+	switch at {
+	case HelmRelease:
+		return r.reconcileHelm(ctx, app)
+	case Kustomization:
+		return r.reconcileKustomization(ctx, app)
 	}
 	return
 }
 
-func (r *ApplicationReconciler) reconcileHelm(app *v1alpha1.Application) (err error) {
-	ctx := context.Background()
+func (r *ApplicationReconciler) reconcileHelm(ctx context.Context, app *v1alpha1.Application) (err error) {
+	fluxApp := app.Spec.FluxApp.DeepCopy()
+	if fluxApp.Spec.Config == nil || fluxApp.Spec.Config.HelmRelease == nil {
+		return fmt.Errorf("should provide FluxCD HelmRelease Configuration")
+	}
 
 	var helmChart *sourcev1.HelmChart
 	// 1. get helmChart by searching existed helm template
-	if helmTemplateName := app.Spec.FluxApp.Spec.Config.HelmRelease.Template; helmTemplateName != "" {
+	if helmTemplateName := fluxApp.Spec.Config.HelmRelease.Template; helmTemplateName != "" {
 		helmTemplateNS := app.GetNamespace()
 
 		helmChart = &sourcev1.HelmChart{}
@@ -95,7 +98,17 @@ func (r *ApplicationReconciler) reconcileHelm(app *v1alpha1.Application) (err er
 		}
 	} else {
 		// 2. get helmChart by building from app
-		helmChart = buildTemplateFromApp(app)
+		if helmChart, err = buildTemplateFromApp(fluxApp); err != nil {
+			return
+		}
+		helmChart.SetName(app.GetName())
+		helmChart.SetNamespace(app.GetNamespace())
+		helmChart.SetLabels(map[string]string{
+			"app.kubernetes.io/managed-by": v1alpha1.GroupName,
+		})
+		helmChart.SetAnnotations(map[string]string{
+			v1alpha1.HelmTemplateName: app.GetName(),
+		})
 
 		if wantSaveHelmTemplate(app) {
 			if err = r.saveTemplate(ctx, helmChart); err != nil {
@@ -107,7 +120,6 @@ func (r *ApplicationReconciler) reconcileHelm(app *v1alpha1.Application) (err er
 	if err = r.reconcileHelmReleaseList(ctx, app, helmChart); err != nil {
 		return
 	}
-
 	return
 }
 
@@ -153,7 +165,10 @@ func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1al
 	appNS, appName := app.GetNamespace(), app.GetName()
 	hrNS := appNS
 
-	hr := buildHelmRelease(helmChart, deploy)
+	var hr *helmv2.HelmRelease
+	if hr, err = buildHelmRelease(helmChart, deploy); err != nil {
+		return
+	}
 	hr.SetNamespace(hrNS)
 	hr.SetGenerateName(appName)
 	hr.SetName("")
@@ -182,7 +197,10 @@ func (r *ApplicationReconciler) createHelmRelease(ctx context.Context, app *v1al
 }
 
 func (r *ApplicationReconciler) updateHelmRelease(ctx context.Context, hr *helmv2.HelmRelease, helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) (err error) {
-	newHR := buildHelmRelease(helmChart, deploy)
+	var newHR *helmv2.HelmRelease
+	if newHR, err = buildHelmRelease(helmChart, deploy); err != nil {
+		return
+	}
 	hr.Spec = newHR.Spec
 	if err = r.Update(ctx, hr); err != nil {
 		return
@@ -192,10 +210,12 @@ func (r *ApplicationReconciler) updateHelmRelease(ctx context.Context, hr *helmv
 	return
 }
 
-func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application) (err error) {
-	ctx := context.Background()
-	appNS, appName := app.GetNamespace(), app.GetName()
+func (r *ApplicationReconciler) reconcileKustomization(ctx context.Context, app *v1alpha1.Application) (err error) {
+	if app.Spec.FluxApp.Spec.Config == nil {
+		return fmt.Errorf("should provide FluxCD Kustomization Configuration")
+	}
 
+	appNS, appName := app.GetNamespace(), app.GetName()
 	kusList := &kusv1.KustomizationList{}
 	if err = r.List(ctx, kusList, client.InNamespace(appNS), client.MatchingLabels{
 		"app.kubernetes.io/managed-by": appName,
@@ -211,7 +231,6 @@ func (r *ApplicationReconciler) reconcileKustomization(app *v1alpha1.Application
 
 	for _, kusDeploy := range app.Spec.FluxApp.Spec.Config.Kustomization {
 		name := getKustomizationName(kusDeploy)
-
 		if kus, ok := kusMap[name]; !ok {
 			// not found
 			// create
@@ -229,7 +248,11 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 	appNS, appName := app.GetNamespace(), app.GetName()
 	kusNS := appNS
 
-	kus := buildKustomization(app, deploy)
+	fluxApp := app.Spec.FluxApp.DeepCopy()
+	var kus *kusv1.Kustomization
+	if kus, err = buildKustomization(fluxApp, deploy); err != nil {
+		return
+	}
 	kus.SetNamespace(kusNS)
 	kus.SetGenerateName(appName)
 	kus.SetName("")
@@ -257,7 +280,11 @@ func (r *ApplicationReconciler) createKustomization(ctx context.Context, app *v1
 	return
 }
 func (r *ApplicationReconciler) updateKustomization(ctx context.Context, app *v1alpha1.Application, kus *kusv1.Kustomization, deploy *v1alpha1.KustomizationSpec) (err error) {
-	newKus := buildKustomization(app, deploy)
+	fluxApp := app.Spec.FluxApp.DeepCopy()
+	var newKus *kusv1.Kustomization
+	if newKus, err = buildKustomization(fluxApp, deploy); err != nil {
+		return
+	}
 	kus.Spec = newKus.Spec
 	if err = r.Update(ctx, kus); err != nil {
 		return
@@ -268,12 +295,14 @@ func (r *ApplicationReconciler) updateKustomization(ctx context.Context, app *v1
 }
 
 func isHelmOrKustomize(app *v1alpha1.Application) (AppType, error) {
-	conf := app.Spec.FluxApp.Spec.Config.DeepCopy()
-	helm, kus := conf.HelmRelease != nil, conf.Kustomization != nil
-	if helm && !kus {
+	if app.Spec.FluxApp.Spec.Config == nil {
+		return "", fmt.Errorf("should provide FluxCD Application")
+	}
+	isHelm, isKus := app.Spec.FluxApp.Spec.Config.HelmRelease != nil, app.Spec.FluxApp.Spec.Config.Kustomization != nil
+	if isHelm && !isKus {
 		return HelmRelease, nil
 	}
-	if !helm && kus {
+	if isKus && !isHelm {
 		return Kustomization, nil
 	}
 	return "", fmt.Errorf("should has one and only one FluxApplicationConfig (HelmRelease or Kustomization)")
@@ -332,21 +361,17 @@ func wantSaveHelmTemplate(app *v1alpha1.Application) bool {
 	return false
 }
 
-func buildTemplateFromApp(app *v1alpha1.Application) *sourcev1.HelmChart {
-	s := app.Spec.FluxApp.Spec.Source.SourceRef.DeepCopy()
-	c := app.Spec.FluxApp.Spec.Config.HelmRelease.Chart.DeepCopy()
+func buildTemplateFromApp(fluxApp *v1alpha1.FluxApplication) (*sourcev1.HelmChart, error) {
+	if fluxApp.Spec.Source == nil {
+		return nil, fmt.Errorf("should provide a Source for the FluxCD HelmRelease")
+	}
+	if fluxApp.Spec.Config.HelmRelease.Chart == nil {
+		return nil, fmt.Errorf("should provide a chart for the FluxCD HelmRelease")
+	}
+	s := fluxApp.Spec.Source.SourceRef
+	c := fluxApp.Spec.Config.HelmRelease.Chart
 
 	return &sourcev1.HelmChart{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      app.GetName(),
-			Namespace: app.GetNamespace(),
-			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": v1alpha1.GroupName,
-			},
-			Annotations: map[string]string{
-				v1alpha1.HelmTemplateName: app.GetName(),
-			},
-		},
 		Spec: sourcev1.HelmChartSpec{
 			SourceRef: sourcev1.LocalHelmChartSourceReference{
 				APIVersion: s.APIVersion,
@@ -359,53 +384,61 @@ func buildTemplateFromApp(app *v1alpha1.Application) *sourcev1.HelmChart {
 			ReconcileStrategy: c.ReconcileStrategy,
 			ValuesFiles:       c.ValuesFiles,
 		},
-	}
+	}, nil
 }
 
-func buildHelmRelease(helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) *helmv2.HelmRelease {
-	ht := helmChart.DeepCopy()
-	dp := deploy.DeepCopy()
+func buildHelmRelease(helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) (*helmv2.HelmRelease, error) {
+	if helmChart == nil {
+		return nil, fmt.Errorf("should provide a chart for the FluxCD HelmRelease")
+	}
+	if deploy == nil {
+		return nil, fmt.Errorf("should provide Deploy struct to indicate how to deploy the HelmRelease")
+	}
 	return &helmv2.HelmRelease{
 		Spec: helmv2.HelmReleaseSpec{
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
 					SourceRef: helmv2.CrossNamespaceObjectReference{
-						APIVersion: ht.Spec.SourceRef.APIVersion,
-						Kind:       ht.Spec.SourceRef.Kind,
-						Name:       ht.Spec.SourceRef.Name,
+						APIVersion: helmChart.Spec.SourceRef.APIVersion,
+						Kind:       helmChart.Spec.SourceRef.Kind,
+						Name:       helmChart.Spec.SourceRef.Name,
 					},
-					Chart:             ht.Spec.Chart,
-					Version:           ht.Spec.Version,
-					Interval:          &ht.Spec.Interval,
-					ReconcileStrategy: ht.Spec.ReconcileStrategy,
-					ValuesFiles:       ht.Spec.ValuesFiles,
+					Chart:             helmChart.Spec.Chart,
+					Version:           helmChart.Spec.Version,
+					Interval:          &helmChart.Spec.Interval,
+					ReconcileStrategy: helmChart.Spec.ReconcileStrategy,
+					ValuesFiles:       helmChart.Spec.ValuesFiles,
 				},
 			},
-			KubeConfig:         dp.Destination.KubeConfig,
-			TargetNamespace:    dp.Destination.TargetNamespace,
-			Interval:           dp.Interval,
-			Suspend:            dp.Suspend,
-			ReleaseName:        dp.ReleaseName,
-			StorageNamespace:   dp.StorageNamespace,
-			DependsOn:          dp.DependsOn,
-			Timeout:            dp.Timeout,
-			MaxHistory:         dp.MaxHistory,
-			ServiceAccountName: dp.ServiceAccountName,
-			Install:            dp.Install,
-			Upgrade:            dp.Upgrade,
-			Test:               dp.Test,
-			Rollback:           dp.Rollback,
-			Uninstall:          dp.Uninstall,
-			ValuesFrom:         dp.ValuesFrom,
-			Values:             dp.Values,
-			PostRenderers:      dp.PostRenderers,
+			KubeConfig:         deploy.Destination.KubeConfig,
+			TargetNamespace:    deploy.Destination.TargetNamespace,
+			Interval:           deploy.Interval,
+			Suspend:            deploy.Suspend,
+			ReleaseName:        deploy.ReleaseName,
+			StorageNamespace:   deploy.StorageNamespace,
+			DependsOn:          deploy.DependsOn,
+			Timeout:            deploy.Timeout,
+			MaxHistory:         deploy.MaxHistory,
+			ServiceAccountName: deploy.ServiceAccountName,
+			Install:            deploy.Install,
+			Upgrade:            deploy.Upgrade,
+			Test:               deploy.Test,
+			Rollback:           deploy.Rollback,
+			Uninstall:          deploy.Uninstall,
+			ValuesFrom:         deploy.ValuesFrom,
+			Values:             deploy.Values,
+			PostRenderers:      deploy.PostRenderers,
 		},
-	}
+	}, nil
 }
-func buildKustomization(app *v1alpha1.Application, deploy *v1alpha1.KustomizationSpec) *kusv1.Kustomization {
-	s := app.Spec.FluxApp.Spec.Source.SourceRef
-	dp := deploy.DeepCopy()
-
+func buildKustomization(fluxApp *v1alpha1.FluxApplication, deploy *v1alpha1.KustomizationSpec) (*kusv1.Kustomization, error) {
+	if fluxApp.Spec.Source == nil {
+		return nil, fmt.Errorf("should provide a Source for FluxCD Kustomization")
+	}
+	if deploy == nil {
+		return nil, fmt.Errorf("should provide Deploy struct to indicate how to deploy the Kustomization")
+	}
+	s := fluxApp.Spec.Source.SourceRef
 	return &kusv1.Kustomization{
 		Spec: kusv1.KustomizationSpec{
 			SourceRef: kusv1.CrossNamespaceSourceReference{
@@ -414,25 +447,25 @@ func buildKustomization(app *v1alpha1.Application, deploy *v1alpha1.Kustomizatio
 				Name:       s.Name,
 				Namespace:  s.Namespace,
 			},
-			DependsOn:          dp.DependsOn,
-			Decryption:         dp.Decryption,
-			Interval:           dp.Interval,
-			RetryInterval:      dp.RetryInterval,
-			KubeConfig:         convertKubeconfig(dp.Destination.KubeConfig),
-			TargetNamespace:    dp.Destination.TargetNamespace,
-			Path:               dp.Path,
-			PostBuild:          dp.PostBuild,
-			Prune:              dp.Prune,
-			HealthChecks:       dp.HealthChecks,
-			Patches:            dp.Patches,
-			Images:             dp.Images,
-			ServiceAccountName: dp.ServiceAccountName,
-			Suspend:            dp.Suspend,
-			Timeout:            dp.Timeout,
-			Force:              dp.Force,
-			Wait:               dp.Wait,
+			DependsOn:          deploy.DependsOn,
+			Decryption:         deploy.Decryption,
+			Interval:           deploy.Interval,
+			RetryInterval:      deploy.RetryInterval,
+			KubeConfig:         convertKubeconfig(deploy.Destination.KubeConfig),
+			TargetNamespace:    deploy.Destination.TargetNamespace,
+			Path:               deploy.Path,
+			PostBuild:          deploy.PostBuild,
+			Prune:              deploy.Prune,
+			HealthChecks:       deploy.HealthChecks,
+			Patches:            deploy.Patches,
+			Images:             deploy.Images,
+			ServiceAccountName: deploy.ServiceAccountName,
+			Suspend:            deploy.Suspend,
+			Timeout:            deploy.Timeout,
+			Force:              deploy.Force,
+			Wait:               deploy.Wait,
 		},
-	}
+	}, nil
 }
 
 func convertKubeconfig(kubeconfig *helmv2.KubeConfig) *kusv1.KubeConfig {

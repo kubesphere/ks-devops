@@ -869,10 +869,19 @@ spec:
                     type: object
                 type: object
               fluxApp:
+                description: FluxApplication is an abstraction of FluxCD HelmRelease
+                  and FluxCD Kustomization
                 properties:
                   spec:
+                    description: FluxApplicationSpec contains three important elements
+                      that a GitOps Application needs. 1. Source (the ground truth)
+                      2. Application Config 3. Destinations (where the Application
+                      should be deployed) Destinations are in the Config field cause
+                      the FluxApplication is designed to be a Multi-Clusters Application
+                      that each Destination has its own Config https://github.com/kubesphere/ks-devops/issues/767
                     properties:
                       config:
+                        description: Config represents the Config of the FluxCD Application
                         properties:
                           helmRelease:
                             description: HelmRelease for FluxCD HelmRelease
@@ -1975,11 +1984,11 @@ spec:
                             type: array
                         type: object
                       source:
+                        description: Source represents the ground truth of the FluxCD
+                          Application
                         properties:
                           sourceRef:
-                            description: CrossNamespaceObjectReference contains enough
-                              information to let you locate the typed referenced object
-                              at cluster level.
+                            description: SourceRef is the reference to the Source
                             properties:
                               apiVersion:
                                 description: APIVersion of the referent.
@@ -2012,6 +2021,7 @@ spec:
                     type: object
                 type: object
               kind:
+                description: Engine is the backend GitOps Solutions type
                 type: string
             required:
             - kind
@@ -2024,6 +2034,7 @@ spec:
               fluxApp:
                 type: string
               kind:
+                description: Engine is the backend GitOps Solutions type
                 type: string
             required:
             - kind

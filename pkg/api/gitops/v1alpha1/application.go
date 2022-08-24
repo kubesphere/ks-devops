@@ -24,26 +24,41 @@ import (
 	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
 
+// FluxApplication is an abstraction of FluxCD HelmRelease and FluxCD Kustomization
 type FluxApplication struct {
 	Spec FluxApplicationSpec `json:"spec,omitempty"`
 }
 
+// FluxApplicationSpec contains three important elements that a GitOps Application needs.
+// 1. Source (the ground truth)
+// 2. Application Config
+// 3. Destinations (where the Application should be deployed)
+// Destinations are in the Config field cause the FluxApplication
+// is designed to be a Multi-Clusters Application that each Destination has its own Config
+// https://github.com/kubesphere/ks-devops/issues/767
 type FluxApplicationSpec struct {
+	// Source represents the ground truth of the FluxCD Application
 	Source *FluxApplicationSource `json:"source,omitempty"`
+	// Config represents the Config of the FluxCD Application
 	Config *FluxApplicationConfig `json:"config"`
 }
 
+// FluxApplicationSource is the definition of FluxCD Application Source
 type FluxApplicationSource struct {
+	// SourceRef is the reference to the Source
 	SourceRef helmv2.CrossNamespaceObjectReference `json:"sourceRef"`
 }
 
+// FluxApplicationDestination indicates where the Application should be deployed
 type FluxApplicationDestination struct {
+	// KubeConfig references a Kubernetes secret that contains a kubeconfig file.
 	KubeConfig *helmv2.KubeConfig `json:"kubeConfig,omitempty"`
 	// TargetNamespace to target when performing operations for the HelmRelease.
 	// Defaults to the namespace of the HelmRelease.
 	TargetNamespace string `json:"targetNamespace,omitempty"`
 }
 
+// FluxApplicationConfig contains the definitions of HelmRelease and Kustomization
 type FluxApplicationConfig struct {
 	// HelmRelease for FluxCD HelmRelease
 	HelmRelease *HelmReleaseSpec `json:"helmRelease,omitempty"`
@@ -550,6 +565,7 @@ type SyncStrategyApply struct {
 // If no hook annotation is specified falls back to `kubectl apply`.
 type SyncStrategyHook struct {
 	// Embed SyncStrategyApply type to inherit any `apply` options
+	// +optional
 	SyncStrategyApply `json:",inline"`
 }
 

@@ -287,7 +287,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		},
 	}
 
-	fluxHelmChart := buildTemplateFromApp(helmApp)
+	fluxHelmChart, err := buildTemplateFromApp(helmApp.Spec.FluxApp.DeepCopy())
+	assert.Nil(t, err)
 	fluxHelmChart.SetNamespace(helmApp.GetNamespace())
 	fluxHelmChart.SetName(helmApp.GetName())
 	fluxHelmChart.SetAnnotations(map[string]string{
@@ -295,7 +296,8 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	})
 
 	helmDeploy := helmApp.Spec.FluxApp.Spec.Config.HelmRelease.Deploy[0]
-	fluxHR := buildHelmRelease(fluxHelmChart, helmDeploy)
+	fluxHR, err := buildHelmRelease(fluxHelmChart, helmDeploy.DeepCopy())
+	assert.Nil(t, err)
 	fluxHR.SetNamespace(helmApp.GetNamespace())
 	fluxHR.SetName(helmApp.GetName() + "abcde")
 	fluxHR.SetLabels(map[string]string{
@@ -363,7 +365,9 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	}
 
 	kusDeploy := kusApp.Spec.FluxApp.Spec.Config.Kustomization[0]
-	fluxKus := buildKustomization(kusApp, kusDeploy)
+	fluxKus, err := buildKustomization(kusApp.Spec.FluxApp.DeepCopy(), kusDeploy.DeepCopy())
+	assert.Nil(t, err)
+
 	fluxKus.SetNamespace(kusApp.GetNamespace())
 	fluxKus.SetName(kusApp.GetName() + "abcde")
 	fluxKus.SetLabels(map[string]string{

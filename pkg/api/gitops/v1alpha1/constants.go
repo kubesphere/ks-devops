@@ -37,12 +37,20 @@ const ApplicationFinalizerName = "application." + GroupName
 // ArgoCDResourcesFinalizer is the name of Argo CD resource finalizer
 const ArgoCDResourcesFinalizer = "resources-finalizer.argocd.argoproj.io"
 
+// ArtifactRepoLabelKey is the annotation key that indicate whether
+// the Repository is a ArtifactRepository
 const ArtifactRepoLabelKey = GroupName + "/is-artifact-repository"
 
+// Engine is the backend GitOps Solutions type
 type Engine string
 
 const (
+	// ArgoCD is a declarative, GitOps continuous delivery tool for Kubernetes.
+	// https://argo-cd.readthedocs.io/en/stable/
 	ArgoCD Engine = "argocd"
+	// FluxCD is a set of continuous and progressive delivery solutions
+	// for Kubernetes that are open and extensible.
+	// https://fluxcd.io/
 	FluxCD Engine = "fluxcd"
 )
 
