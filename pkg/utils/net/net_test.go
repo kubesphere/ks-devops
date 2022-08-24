@@ -19,6 +19,8 @@ package net
 import (
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsValidPort(t *testing.T) {
@@ -93,6 +95,32 @@ func TestGetRequestIP(t *testing.T) {
 			if got := GetRequestIP(tt.args.req); got != tt.want {
 				t.Errorf("GetRequestIP() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestParseURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		wantURL string
+	}{{
+		name:    "ip and port",
+		address: "192.168.1.1:8080",
+		wantURL: "https://192.168.1.1:8080",
+	}, {
+		name:    "start with http",
+		address: "http://localhost/",
+		wantURL: "http://localhost",
+	}, {
+		name:    "start with https",
+		address: "https://localhost/",
+		wantURL: "https://localhost",
+	}}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseURL(tt.address)
+			assert.Equal(t, tt.wantURL, result, "failed in case [%d]", i)
 		})
 	}
 }

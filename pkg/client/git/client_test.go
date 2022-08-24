@@ -18,6 +18,9 @@ package git
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -26,8 +29,6 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strings"
-	"testing"
 )
 
 func TestGetClient(t *testing.T) {
@@ -80,6 +81,7 @@ func TestGetClient(t *testing.T) {
 		provider  string
 		secretRef *v1.SecretReference
 		k8sClient client.Client
+		server    string
 	}
 	type args struct {
 		repo *v1alpha3.GitRepository
@@ -162,10 +164,32 @@ func TestGetClient(t *testing.T) {
 			assert.Nil(t, err, i)
 			return false
 		},
+	}, {
+		name: "bitbucket_cloud",
+		fields: fields{
+			provider: "bitbucket_cloud",
+		},
+		wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return false
+		},
+	}, {
+		name: "bitbucket-server",
+		fields: fields{
+			provider: "bitbucket-server",
+			server:   "https://api.bitbucket.org",
+		},
+		wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+			assert.Nil(t, err)
+			return false
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewClientFactory(tt.fields.provider, tt.fields.secretRef, tt.fields.k8sClient)
+			if tt.fields.server != "" {
+				r.Server = tt.fields.server
+			}
 			gotClient, err := r.GetClient()
 			if !tt.wantErr(t, err, fmt.Sprintf("GetClient() %s", tt.name)) {
 				return

@@ -17,9 +17,10 @@ limitations under the License.
 package gitrepository
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"kubesphere.io/devops/controllers/core"
-	"testing"
 )
 
 func TestInterfaceImplement(t *testing.T) {
@@ -48,6 +49,12 @@ func TestInterfaceImplement(t *testing.T) {
 		instance: interInstance{
 			NamedReconciler: &WebhookReconciler{},
 			GroupReconciler: &WebhookReconciler{},
+		},
+	}, {
+		name: "PullRequestStatusReconciler",
+		instance: interInstance{
+			NamedReconciler: &PullRequestStatusReconciler{},
+			GroupReconciler: &PullRequestStatusReconciler{},
 		},
 	}}
 	for i := range tests {

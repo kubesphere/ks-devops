@@ -47,3 +47,13 @@ func GetRequestIP(req *http.Request) string {
 
 	return address
 }
+
+// ParseURL makes sure return a valid URL string
+func ParseURL(address string) string {
+	address = strings.TrimSuffix(address, "/")
+	if strings.HasPrefix(address, "http://") || strings.HasPrefix(address, "https://") {
+		return address
+	}
+	address = "https://" + address
+	return address
+}

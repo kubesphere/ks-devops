@@ -135,6 +135,13 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 
 	return map[string]func(mgr manager.Manager) error{
 		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
+			err := (&gitrepository.PullRequestStatusReconciler{
+				Client:          mgr.GetClient(),
+				ExternalAddress: s.FeatureOptions.ExternalAddress,
+			}).SetupWithManager(mgr)
+			if err != nil {
+				return err
+			}
 			return gitRepoReconcilers.SetupWithManager(mgr)
 		},
 		"addon": func(mgr manager.Manager) error {
