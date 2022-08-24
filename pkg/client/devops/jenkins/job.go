@@ -212,88 +212,6 @@ func (j *Job) GetAllBuildStatus() ([]JobBuildStatus, error) {
 	return buildsResp.Builds, nil
 }
 
-func (j *Job) GetUpstreamJobsMetadata() []InnerJob {
-	return j.Raw.UpstreamProjects
-}
-
-func (j *Job) GetDownstreamJobsMetadata() []InnerJob {
-	return j.Raw.DownstreamProjects
-}
-
-func (j *Job) GetInnerJobsMetadata() []InnerJob {
-	return j.Raw.Jobs
-}
-
-func (j *Job) GetUpstreamJobs() ([]*Job, error) {
-	jobs := make([]*Job, len(j.Raw.UpstreamProjects))
-	for i, job := range j.Raw.UpstreamProjects {
-		ji, err := j.Jenkins.GetJob(job.Name)
-		if err != nil {
-			return nil, err
-		}
-		jobs[i] = ji
-	}
-	return jobs, nil
-}
-
-func (j *Job) GetDownstreamJobs() ([]*Job, error) {
-	jobs := make([]*Job, len(j.Raw.DownstreamProjects))
-	for i, job := range j.Raw.DownstreamProjects {
-		ji, err := j.Jenkins.GetJob(job.Name)
-		if err != nil {
-			return nil, err
-		}
-		jobs[i] = ji
-	}
-	return jobs, nil
-}
-
-func (j *Job) GetInnerJob(id string) (*Job, error) {
-	job := Job{Jenkins: j.Jenkins, Raw: new(JobResponse), Base: j.Base + "/job/" + id}
-	status, err := job.Poll()
-	if err != nil {
-		return nil, err
-	}
-	if status == 200 {
-		return &job, nil
-	}
-	return nil, errors.New(strconv.Itoa(status))
-}
-
-func (j *Job) GetInnerJobs() ([]*Job, error) {
-	jobs := make([]*Job, len(j.Raw.Jobs))
-	for i, job := range j.Raw.Jobs {
-		ji, err := j.GetInnerJob(job.Name)
-		if err != nil {
-			return nil, err
-		}
-		jobs[i] = ji
-	}
-	return jobs, nil
-}
-
-func (j *Job) Enable() (bool, error) {
-	resp, err := j.Jenkins.Requester.Post(j.Base+"/enable", nil, nil, nil)
-	if err != nil {
-		return false, err
-	}
-	if resp.StatusCode != 200 {
-		return false, errors.New(strconv.Itoa(resp.StatusCode))
-	}
-	return true, nil
-}
-
-func (j *Job) Disable() (bool, error) {
-	resp, err := j.Jenkins.Requester.Post(j.Base+"/disable", nil, nil, nil)
-	if err != nil {
-		return false, err
-	}
-	if resp.StatusCode != 200 {
-		return false, errors.New(strconv.Itoa(resp.StatusCode))
-	}
-	return true, nil
-}
-
 func (j *Job) Delete() (bool, error) {
 	resp, err := j.Jenkins.Requester.Post(j.Base+"/doDelete", nil, nil, nil)
 	if err != nil {
@@ -385,13 +303,6 @@ func (j *Job) GetParameters() ([]ParameterDefinition, error) {
 		parameters = append(parameters, property.ParameterDefinitions...)
 	}
 	return parameters, nil
-}
-
-func (j *Job) IsQueued() (bool, error) {
-	if _, err := j.Poll(); err != nil {
-		return false, err
-	}
-	return j.Raw.InQueue, nil
 }
 
 func (j *Job) IsRunning() (bool, error) {

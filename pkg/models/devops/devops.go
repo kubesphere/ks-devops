@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/utils/secretutil"
@@ -119,9 +118,6 @@ type DevopsOperator interface {
 
 	CheckScriptCompile(projectName, pipelineName string, req *http.Request) (*devops.CheckScript, error)
 	CheckCron(projectName string, req *http.Request) (*devops.CheckCronRes, error)
-
-	ToJenkinsfile(req *http.Request) (*devops.ResJenkinsfile, error)
-	ToJSON(req *http.Request) (map[string]interface{}, error)
 
 	GetJenkinsAgentLabels() ([]string, error)
 }
@@ -971,28 +967,6 @@ func (d devopsOperator) CheckCron(projectName string, req *http.Request) (*devop
 
 	res, err := d.devopsClient.CheckCron(projectName, convertToHttpParameters(req))
 
-	if err != nil {
-		klog.Error(err)
-		return nil, err
-	}
-
-	return res, err
-}
-
-func (d devopsOperator) ToJenkinsfile(req *http.Request) (*devops.ResJenkinsfile, error) {
-
-	res, err := d.devopsClient.ToJenkinsfile(convertToHttpParameters(req))
-	if err != nil {
-		klog.Error(err)
-		return nil, err
-	}
-
-	return res, err
-}
-
-func (d devopsOperator) ToJSON(req *http.Request) (map[string]interface{}, error) {
-
-	res, err := d.devopsClient.ToJSON(convertToHttpParameters(req))
 	if err != nil {
 		klog.Error(err)
 		return nil, err

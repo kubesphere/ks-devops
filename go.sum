@@ -389,8 +389,6 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i
 github.com/jenkins-x/go-scm v1.11.19 h1:H4CzaM/C/0QcCVLDh603Q6Bv4hqU4G3De2yQntWubqg=
 github.com/jenkins-x/go-scm v1.11.19/go.mod h1:eIcty4+tf6E7ycGOg0cUqnaLP+1LH1Z8zncQFQqRa3E=
 github.com/jenkins-zh/jenkins-cli v0.0.32/go.mod h1:uE1mH9PNITrg0sugv6HXuM/CSddg0zxXoYu3w57I3JY=
-github.com/jenkins-zh/jenkins-client v0.0.13 h1:MIBq36M9RYaJTVOE9sHmD/NOXzf4el9qZ4RRr/1/Lxw=
-github.com/jenkins-zh/jenkins-client v0.0.13/go.mod h1:ICBk7OOoTafVP//f/VfKZ34c0ff8vJwVnOsF9btiMYU=
 github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866 h1:MQwSe0z1hju5X9c5BEfQAvkb4Fub1ZoHLo+ZLJ7mAyo=
 github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866/go.mod h1:zetE8JfNmxkot7OCNXJyS/QwxFnfcUFzrs/jg4U2gAw=
 github.com/jenkins-zh/jenkins-formulas v0.0.5/go.mod h1:zS8fm8u5L6FcjZM0QznXsLV9T2UtSVK+hT6Sm76iUZ4=
@@ -448,6 +446,8 @@ github.com/linuxsuren/http-downloader v0.0.2-0.20201207132639-19888a6beaec/go.mo
 github.com/linuxsuren/http-downloader v0.0.6/go.mod h1:xxgh2OE7WGL9TwDE9L8Gh7Lqq9fFPuHbh5tofUitEfE=
 github.com/linuxsuren/http-downloader v0.0.29 h1:GJUoybR4SViarPfX2xipq0unUssiuB9qrSSoDDW1jao=
 github.com/linuxsuren/http-downloader v0.0.29/go.mod h1:bniEqpLyyydtCTDyjo3nco6LD2F90ruPH87fuqAznQg=
+github.com/linuxsuren/jenkins-client v0.0.0-20220823083928-d2b2288b88d8 h1:9wEvfOXaL0Ip2+I0zUlUGvcUAjqJMueFZWzdRUqaPbs=
+github.com/linuxsuren/jenkins-client v0.0.0-20220823083928-d2b2288b88d8/go.mod h1:T8M/g0p7jjx0NBwN6gNqsAAmT1P3B70GBBJJgsX9kLw=
 github.com/linuxsuren/unstructured v0.0.1 h1:ilUA8MUYbR6l9ebo/YPV2bKqlf62bzQursDSE+j00iU=
 github.com/linuxsuren/unstructured v0.0.1/go.mod h1:KH6aTj+FegzGBzc1vS6mzZx3/duhTUTEVyW5sO7p4as=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=

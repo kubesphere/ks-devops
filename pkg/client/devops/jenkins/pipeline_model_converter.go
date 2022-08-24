@@ -34,41 +34,6 @@ type ValidatePipelineJsonResponse struct {
 	}
 }
 
-type PipelineJsonToJenkinsfileResponse struct {
-	Status string `json:"status"`
-	Data   struct {
-		Result      string                   `json:"result"`
-		Errors      []map[string]interface{} `json:"errors"`
-		Jenkinsfile string                   `json:"jenkinsfile"`
-	} `json:"data"`
-}
-
-type JenkinsfileToPipelineJsonResponse struct {
-	Status string `json:"status"`
-	Data   struct {
-		Result string                   `json:"result"`
-		Errors []map[string]interface{} `json:"errors"`
-		Json   map[string]interface{}   `json:"json"`
-	} `json:"data"`
-}
-type StepJsonToJenkinsfileResponse struct {
-	Status string `json:"status"`
-	Data   struct {
-		Result      string                   `json:"result"`
-		Errors      []map[string]interface{} `json:"errors"`
-		Jenkinsfile string                   `json:"jenkinsfile"`
-	} `json:"data"`
-}
-
-type StepsJenkinsfileToJsonResponse struct {
-	Status string `json:"status"`
-	Data   struct {
-		Result string                   `json:"result"`
-		Errors []map[string]interface{} `json:"errors"`
-		Json   []map[string]interface{} `json:"json"`
-	} `json:"data"`
-}
-
 func (j *Jenkins) ValidateJenkinsfile(jenkinsfile string) (*ValidateJenkinsfileResponse, error) {
 	responseStrut := &ValidateJenkinsfileResponse{}
 	query := map[string]string{
@@ -99,64 +64,4 @@ func (j *Jenkins) ValidatePipelineJson(json string) (*ValidatePipelineJsonRespon
 		return nil, errors.New(strconv.Itoa(response.StatusCode))
 	}
 	return responseStruct, nil
-}
-
-func (j *Jenkins) PipelineJsonToJenkinsfile(json string) (*PipelineJsonToJenkinsfileResponse, error) {
-	responseStrut := &PipelineJsonToJenkinsfileResponse{}
-	query := map[string]string{
-		"json": json,
-	}
-	response, err := j.Requester.PostForm("/pipeline-model-converter/toJenkinsfile", nil, responseStrut, query)
-	if err != nil {
-		return nil, err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(strconv.Itoa(response.StatusCode))
-	}
-	return responseStrut, nil
-}
-
-func (j *Jenkins) JenkinsfileToPipelineJson(jenkinsfile string) (*JenkinsfileToPipelineJsonResponse, error) {
-	responseStrut := &JenkinsfileToPipelineJsonResponse{}
-	query := map[string]string{
-		"jenkinsfile": jenkinsfile,
-	}
-	response, err := j.Requester.PostForm("/pipeline-model-converter/toJson", nil, responseStrut, query)
-	if err != nil {
-		return nil, err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(strconv.Itoa(response.StatusCode))
-	}
-	return responseStrut, nil
-}
-
-func (j *Jenkins) StepsJsonToJenkinsfile(json string) (*StepJsonToJenkinsfileResponse, error) {
-	responseStrut := &StepJsonToJenkinsfileResponse{}
-	query := map[string]string{
-		"json": json,
-	}
-	response, err := j.Requester.PostForm("/pipeline-model-converter/stepsToJenkinsfile", nil, responseStrut, query)
-	if err != nil {
-		return nil, err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(strconv.Itoa(response.StatusCode))
-	}
-	return responseStrut, nil
-}
-
-func (j *Jenkins) StepsJenkinsfileToJson(jenkinsfile string) (*StepsJenkinsfileToJsonResponse, error) {
-	responseStrut := &StepsJenkinsfileToJsonResponse{}
-	query := map[string]string{
-		"jenkinsfile": jenkinsfile,
-	}
-	response, err := j.Requester.PostForm("/pipeline-model-converter/stepsToJson", nil, responseStrut, query)
-	if err != nil {
-		return nil, err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(strconv.Itoa(response.StatusCode))
-	}
-	return responseStrut, nil
 }

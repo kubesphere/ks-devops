@@ -20,9 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"k8s.io/klog"
 	"net/http"
 	"strings"
+
+	"k8s.io/klog"
 
 	"kubesphere.io/devops/pkg/kapis"
 
@@ -859,26 +860,6 @@ func (h *ProjectPipelineHandler) CheckCron(req *restful.Request, resp *restful.R
 		return
 	}
 
-	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
-	resp.WriteAsJson(res)
-}
-
-func (h *ProjectPipelineHandler) ToJenkinsfile(req *restful.Request, resp *restful.Response) {
-	res, err := h.devopsOperator.ToJenkinsfile(req.Request)
-	if err != nil {
-		parseErr(err, resp)
-		return
-	}
-	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
-	resp.WriteAsJson(res)
-}
-
-func (h *ProjectPipelineHandler) ToJSON(req *restful.Request, resp *restful.Response) {
-	res, err := h.devopsOperator.ToJSON(req.Request)
-	if err != nil {
-		parseErr(err, resp)
-		return
-	}
 	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	resp.WriteAsJson(res)
 }
