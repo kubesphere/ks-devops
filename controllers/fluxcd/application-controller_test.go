@@ -123,6 +123,21 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		},
 	}
 
+	invalidFluxApp1 := fluxApp.DeepCopy()
+	invalidFluxApp1.Spec.FluxApp = nil
+
+	invalidFluxApp2 := fluxApp.DeepCopy()
+	invalidFluxApp2.Spec.FluxApp.Spec.Config = nil
+
+	invalidFluxApp3 := fluxApp.DeepCopy()
+	invalidFluxApp3.Spec.FluxApp.Spec.Source = nil
+
+	invalidFluxApp4 := fluxApp.DeepCopy()
+	invalidFluxApp4.Spec.FluxApp.Spec.Config.HelmRelease = nil
+
+	invalidFluxApp5 := fluxApp.DeepCopy()
+	invalidFluxApp5.Spec.FluxApp.Spec.Config.HelmRelease.Chart = nil
+
 	type fields struct {
 		Client client.Client
 	}
@@ -160,12 +175,87 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 			args: args{
 				req: ctrl.Request{
 					NamespacedName: types.NamespacedName{
-						Namespace: "fake-app",
-						Name:      "fake-ns",
+						Namespace: "fake-ns",
+						Name:      "fake-app",
 					},
 				},
 			},
 			wantErr: assert.NoError,
+		},
+		{
+			name: "found an invalid flux application that have no FluxApplication field",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp1.DeepCopy()),
+			},
+			args: args{
+				req: ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: "fake-ns",
+						Name:      "fake-app",
+					},
+				},
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "found an invalid flux application that have no Config",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp2.DeepCopy()),
+			},
+			args: args{
+				req: ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: "fake-ns",
+						Name:      "fake-app",
+					},
+				},
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "found an invalid flux application that have no Source",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp3.DeepCopy()),
+			},
+			args: args{
+				req: ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: "fake-ns",
+						Name:      "fake-app",
+					},
+				},
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "found an invalid flux application that have no HelmRelease",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp4.DeepCopy()),
+			},
+			args: args{
+				req: ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: "fake-ns",
+						Name:      "fake-app",
+					},
+				},
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "found an invalid flux application (HelmRelease) that have no chart",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp5.DeepCopy()),
+			},
+			args: args{
+				req: ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: "fake-ns",
+						Name:      "fake-app",
+					},
+				},
+			},
+			wantErr: assert.Error,
 		},
 		{
 			name: "found a flux application",

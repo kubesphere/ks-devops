@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
@@ -57,14 +58,32 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return
 	}
 
-	if isFluxApp(app) {
-		err = r.reconcileFluxApp(app)
+	if err = validateFluxApp(app); err != nil {
+		err = client.IgnoreNotFound(err)
+		return
 	}
+
+	if err = r.reconcileFluxApp(app); err != nil {
+		return
+	}
+
 	return
 }
 
-func isFluxApp(app *v1alpha1.Application) bool {
-	return app.Spec.Kind == v1alpha1.FluxCD && app.Spec.FluxApp != nil
+func validateFluxApp(app *v1alpha1.Application) (err error) {
+	if app.Spec.Kind != v1alpha1.FluxCD {
+		return apierrors.NewNotFound(schema.GroupResource{
+			Group:    v1alpha1.GroupName,
+			Resource: "applications",
+		}, app.GetName())
+	}
+	if app.Spec.FluxApp == nil {
+		return fmt.Errorf("should provide FluxApplication")
+	}
+	if err = checkFluxApp(app.Spec.FluxApp); err != nil {
+		return
+	}
+	return
 }
 
 func (r *ApplicationReconciler) reconcileFluxApp(app *v1alpha1.Application) (err error) {
@@ -74,17 +93,17 @@ func (r *ApplicationReconciler) reconcileFluxApp(app *v1alpha1.Application) (err
 	at, err = isHelmOrKustomize(app)
 	switch at {
 	case HelmRelease:
-		return r.reconcileHelm(ctx, app)
+		return r.reconcileHelmRelease(ctx, app)
 	case Kustomization:
 		return r.reconcileKustomization(ctx, app)
 	}
 	return
 }
 
-func (r *ApplicationReconciler) reconcileHelm(ctx context.Context, app *v1alpha1.Application) (err error) {
+func (r *ApplicationReconciler) reconcileHelmRelease(ctx context.Context, app *v1alpha1.Application) (err error) {
 	fluxApp := app.Spec.FluxApp.DeepCopy()
-	if fluxApp.Spec.Config == nil || fluxApp.Spec.Config.HelmRelease == nil {
-		return fmt.Errorf("should provide FluxCD HelmRelease Configuration")
+	if err = checkHelmRelease(fluxApp); err != nil {
+		return
 	}
 
 	var helmChart *sourcev1.HelmChart
@@ -211,8 +230,8 @@ func (r *ApplicationReconciler) updateHelmRelease(ctx context.Context, hr *helmv
 }
 
 func (r *ApplicationReconciler) reconcileKustomization(ctx context.Context, app *v1alpha1.Application) (err error) {
-	if app.Spec.FluxApp.Spec.Config == nil {
-		return fmt.Errorf("should provide FluxCD Kustomization Configuration")
+	if err = checkKustomization(app.Spec.FluxApp); err != nil {
+		return err
 	}
 
 	appNS, appName := app.GetNamespace(), app.GetName()
@@ -294,11 +313,8 @@ func (r *ApplicationReconciler) updateKustomization(ctx context.Context, app *v1
 	return
 }
 
-func isHelmOrKustomize(app *v1alpha1.Application) (AppType, error) {
-	if app.Spec.FluxApp.Spec.Config == nil {
-		return "", fmt.Errorf("should provide FluxCD Application")
-	}
-	isHelm, isKus := app.Spec.FluxApp.Spec.Config.HelmRelease != nil, app.Spec.FluxApp.Spec.Config.Kustomization != nil
+func isHelmOrKustomize(app *v1alpha1.Application) (at AppType, err error) {
+	isHelm, isKus := checkHelmRelease(app.Spec.FluxApp) == nil, checkKustomization(app.Spec.FluxApp) == nil
 	if isHelm && !isKus {
 		return HelmRelease, nil
 	}
@@ -431,6 +447,7 @@ func buildHelmRelease(helmChart *sourcev1.HelmChart, deploy *v1alpha1.Deploy) (*
 		},
 	}, nil
 }
+
 func buildKustomization(fluxApp *v1alpha1.FluxApplication, deploy *v1alpha1.KustomizationSpec) (*kusv1.Kustomization, error) {
 	if fluxApp.Spec.Source == nil {
 		return nil, fmt.Errorf("should provide a Source for FluxCD Kustomization")
@@ -473,6 +490,33 @@ func convertKubeconfig(kubeconfig *helmv2.KubeConfig) *kusv1.KubeConfig {
 		return nil
 	}
 	return &kusv1.KubeConfig{SecretRef: kubeconfig.SecretRef}
+}
+
+func checkFluxApp(fluxApp *v1alpha1.FluxApplication) (err error) {
+	if fluxApp.Spec.Config == nil {
+		return fmt.Errorf("should provide FluxApplication Configuration (HelmRelease or Kustomization)")
+	}
+	return
+}
+
+func checkHelmRelease(fluxApp *v1alpha1.FluxApplication) (err error) {
+	if err = checkFluxApp(fluxApp); err != nil {
+		return
+	}
+	if fluxApp.Spec.Config.HelmRelease == nil {
+		return fmt.Errorf("should provide FluxCD HelmRelease Configuration")
+	}
+	return nil
+}
+
+func checkKustomization(fluxApp *v1alpha1.FluxApplication) (err error) {
+	if err = checkFluxApp(fluxApp); err != nil {
+		return
+	}
+	if fluxApp.Spec.Config.Kustomization == nil {
+		return fmt.Errorf("should provide FluxCD Kustomization Configuration")
+	}
+	return nil
 }
 
 // SetupWithManager setups the reconciler with a manager
