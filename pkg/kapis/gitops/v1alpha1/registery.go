@@ -35,6 +35,7 @@ func AddToContainer(container *restful.Container, options *common.Options, argoO
 		runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion),
 	}
 	for _, service := range services {
+		RegisterRoutes(service, options, argoOption)
 		argocd.RegisterRoutes(service, options, argoOption)
 		container.Add(service)
 	}
