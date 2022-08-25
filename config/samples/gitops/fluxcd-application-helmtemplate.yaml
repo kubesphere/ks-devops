@@ -1,0 +1,25 @@
+apiVersion: gitops.kubesphere.io/v1alpha1
+kind: Application
+metadata:
+  name: chengleqi-test-template
+  namespace: my-devops-projecthmhx2
+spec:
+  kind: fluxcd
+  fluxApp:
+    spec:
+      source:
+      config:
+        helmRelease:
+          chart:
+          template: chengleqi-test-helm
+          deploy:
+            - destination:
+                kubeConfig:
+                targetNamespace: template-app
+              interval: 1m0s
+              upgrade:
+                remediation:
+                  remediateLastFailure: true
+                force: true
+              install:
+                createNamespace: true

@@ -17,12 +17,230 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
+
+// FluxApplication is an abstraction of FluxCD HelmRelease and FluxCD Kustomization
+type FluxApplication struct {
+	Spec FluxApplicationSpec `json:"spec,omitempty"`
+}
+
+// FluxApplicationSpec contains three important elements that a GitOps Application needs.
+// 1. Source (the ground truth)
+// 2. Application Config
+// 3. Destinations (where the Application should be deployed)
+// Destinations are in the Config field cause the FluxApplication
+// is designed to be a Multi-Clusters Application that each Destination has its own Config
+// https://github.com/kubesphere/ks-devops/issues/767
+type FluxApplicationSpec struct {
+	// Source represents the ground truth of the FluxCD Application
+	Source *FluxApplicationSource `json:"source,omitempty"`
+	// Config represents the Config of the FluxCD Application
+	Config *FluxApplicationConfig `json:"config"`
+}
+
+// FluxApplicationSource is the definition of FluxCD Application Source
+type FluxApplicationSource struct {
+	// SourceRef is the reference to the Source
+	SourceRef helmv2.CrossNamespaceObjectReference `json:"sourceRef"`
+}
+
+// FluxApplicationDestination indicates where the Application should be deployed
+type FluxApplicationDestination struct {
+	// KubeConfig references a Kubernetes secret that contains a kubeconfig file.
+	KubeConfig *helmv2.KubeConfig `json:"kubeConfig,omitempty"`
+	// TargetNamespace to target when performing operations for the HelmRelease.
+	// Defaults to the namespace of the HelmRelease.
+	TargetNamespace string `json:"targetNamespace,omitempty"`
+}
+
+// FluxApplicationConfig contains the definitions of HelmRelease and Kustomization
+type FluxApplicationConfig struct {
+	// HelmRelease for FluxCD HelmRelease
+	HelmRelease *HelmReleaseSpec `json:"helmRelease,omitempty"`
+
+	// Kustomization for FluxCD Kustomization
+	Kustomization []*KustomizationSpec `json:"kustomization,omitempty"`
+}
+
+// HelmReleaseSpec defines the desired state of a Helm release.
+type HelmReleaseSpec struct {
+	// Chart defines the template of the v1beta2.HelmChart that should be created
+	// for this HelmRelease.
+	Chart *HelmChartTemplateSpec `json:"chart,omitempty"`
+
+	// Template ref a HelmTemplate that has been saved before
+	Template string `json:"template,omitempty"`
+
+	// HelmReleaseConfig stand for multi-clusters and multi-targetNamespace config
+	Deploy []*Deploy `json:"deploy"`
+}
+
+// HelmChartTemplateSpec is just a simple copy of helm.toolkit.fluxcd.io/HelmRelease's HelmChartTemplateSpec fields
+// exclude sourceRef field because it's in the fluxApp.spec.source field
+type HelmChartTemplateSpec struct {
+	// The name or path the Helm chart is available at in the SourceRef.
+	Chart string `json:"chart"`
+
+	// Version semver expression, ignored for charts from v1beta2.GitRepository and
+	// v1beta2.Bucket sources. Defaults to latest when omitted.
+	// +kubebuilder:default:=*
+	Version string `json:"version,omitempty"`
+
+	// Interval at which to check the v1beta2.Source for updates. Defaults to
+	// 'HelmReleaseSpec.Interval'.
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// Determines what enables the creation of a new artifact. Valid values are
+	// ('ChartVersion', 'Revision').
+	// See the documentation of the values for an explanation on their behavior.
+	// Defaults to ChartVersion when omitted.
+	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
+
+	// Alternative list of values files to use as the chart values (values.yaml
+	// is not included by default), expected to be a relative path in the SourceRef.
+	// Values files are merged in the order of this list with the last file overriding
+	// the first. Ignored when omitted.
+	ValuesFiles []string `json:"valuesFiles,omitempty"`
+}
+
+type Deploy struct {
+	// Destination stand for the destination of the helmrelease
+	Destination FluxApplicationDestination `json:"destination"`
+
+	// The interval at which to reconcile the Kustomization.
+	Interval metav1.Duration `json:"interval"`
+	// Suspend tells the controller to suspend reconciliation for this HelmRelease,
+	// it does not apply to already started reconciliations. Defaults to false.
+	Suspend bool `json:"suspend,omitempty"`
+
+	// Timeout is the time to wait for any individual Kubernetes operation (like Jobs
+	// for hooks) during the performance of a Helm action. Defaults to '5m0s'.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// DependsOn may contain a meta.NamespacedObjectReference slice with
+	// references to HelmRelease resources that must be ready before this HelmRelease
+	// can be reconciled.
+	DependsOn []meta.NamespacedObjectReference `json:"dependsOn,omitempty"`
+
+	// The name of the Kubernetes service account to impersonate
+	// when reconciling this HelmRelease.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// ReleaseName used for the Helm release. Defaults to a composition of
+	// '[TargetNamespace-]Name'.
+	ReleaseName string `json:"releaseName,omitempty"`
+
+	// StorageNamespace used for the Helm storage.
+	// Defaults to the namespace of the HelmRelease.
+	StorageNamespace string `json:"storageNamespace,omitempty"`
+
+	// MaxHistory is the number of revisions saved by Helm for this HelmRelease.
+	// Use '0' for an unlimited number of revisions; defaults to '10'.
+	MaxHistory *int `json:"maxHistory,omitempty"`
+
+	// Install holds the configuration for Helm install actions for this HelmRelease.
+	Install *helmv2.Install `json:"install,omitempty"`
+
+	// Upgrade holds the configuration for Helm upgrade actions for this HelmRelease.
+	Upgrade *helmv2.Upgrade `json:"upgrade,omitempty"`
+
+	// Test holds the configuration for Helm test actions for this HelmRelease.
+	Test *helmv2.Test `json:"test,omitempty"`
+
+	// Rollback holds the configuration for Helm rollback actions for this HelmRelease.
+	Rollback *helmv2.Rollback `json:"rollback,omitempty"`
+
+	// Uninstall holds the configuration for Helm uninstall actions for this HelmRelease.
+	Uninstall *helmv2.Uninstall `json:"uninstall,omitempty"`
+
+	// ValuesFrom holds references to resources containing Helm values for this HelmRelease,
+	// and information about how they should be merged.
+	ValuesFrom []helmv2.ValuesReference `json:"valuesFrom,omitempty"`
+
+	// Values holds the values for this Helm release.
+	Values *apiextensionsv1.JSON `json:"values,omitempty"`
+
+	// PostRenderers holds an array of Helm PostRenderers, which will be applied in order
+	// of their definition.
+	PostRenderers []helmv2.PostRenderer `json:"postRenderers,omitempty"`
+}
+
+// KustomizationSpec defines the configuration to calculate the desired state from a Source using Kustomize.
+type KustomizationSpec struct {
+	// Destination stand for the destination of the kustomization
+	Destination FluxApplicationDestination `json:"destination"`
+
+	// DependsOn may contain a meta.NamespacedObjectReference slice
+	// with references to Kustomization resources that must be ready before this
+	// Kustomization can be reconciled.
+	DependsOn []meta.NamespacedObjectReference `json:"dependsOn,omitempty"`
+
+	// Decrypt Kubernetes secrets before applying them on the cluster.
+	Decryption *kusv1.Decryption `json:"decryption,omitempty"`
+
+	// The interval at which to reconcile the Kustomization.
+	Interval metav1.Duration `json:"interval"`
+
+	// The interval at which to retry a previously failed reconciliation.
+	// When not specified, the controller uses the KustomizationSpec.Interval
+	// value to retry failures.
+	RetryInterval *metav1.Duration `json:"retryInterval,omitempty"`
+
+	// Path to the directory containing the kustomization.yaml file, or the
+	// set of plain YAMLs a kustomization.yaml should be generated for.
+	// Defaults to 'None', which translates to the root path of the SourceRef.
+	Path string `json:"path,omitempty"`
+
+	// PostBuild describes which actions to perform on the YAML manifest
+	// generated by building the kustomize overlay.
+	PostBuild *kusv1.PostBuild `json:"postBuild,omitempty"`
+
+	// Prune enables garbage collection.
+	Prune bool `json:"prune"`
+
+	// A list of resources to be included in the health assessment.
+	HealthChecks []meta.NamespacedObjectKindReference `json:"healthChecks,omitempty"`
+
+	// Strategic merge and JSON patches, defined as inline YAML objects,
+	// capable of targeting objects based on kind, label and annotation selectors.
+	Patches []kusv1.Patch `json:"patches,omitempty"`
+
+	// Images is a list of (image name, new name, new tag or digest)
+	// for changing image names, tags or digests. This can also be achieved with a
+	// patch, but this operator is simpler to specify.
+	Images []kusv1.Image `json:"images,omitempty"`
+
+	// The name of the Kubernetes service account to impersonate
+	// when reconciling this Kustomization.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// This flag tells the controller to suspend subsequent kustomize executions,
+	// it does not apply to already started executions. Defaults to false.
+	Suspend bool `json:"suspend,omitempty"`
+
+	// Timeout for validation, apply and health checking operations.
+	// Defaults to 'Interval' duration.
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Force instructs the controller to recreate resources
+	// when patching fails due to an immutable field change.
+	Force bool `json:"force,omitempty"`
+
+	// Wait instructs the controller to check the health of all the reconciled resources.
+	// When enabled, the HealthChecks are ignored. Defaults to false.
+	Wait bool `json:"wait,omitempty"`
+}
 
 // ApplicationSpec is the specification of the Application
 type ApplicationSpec struct {
+	Kind    Engine           `json:"kind"`
 	ArgoApp *ArgoApplication `json:"argoApp,omitempty"`
+	FluxApp *FluxApplication `json:"fluxApp,omitempty"`
 }
 
 // ArgoApplication is a definition of Argo Application resource.
@@ -368,7 +586,9 @@ type Application struct {
 
 // ApplicationStatus represents the status of the Application
 type ApplicationStatus struct {
+	Kind    Engine `json:"kind"`
 	ArgoApp string `json:"argoApp,omitempty"`
+	FluxApp string `json:"fluxApp,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -868,12 +868,1176 @@ spec:
                     - source
                     type: object
                 type: object
+              fluxApp:
+                description: FluxApplication is an abstraction of FluxCD HelmRelease
+                  and FluxCD Kustomization
+                properties:
+                  spec:
+                    description: FluxApplicationSpec contains three important elements
+                      that a GitOps Application needs. 1. Source (the ground truth)
+                      2. Application Config 3. Destinations (where the Application
+                      should be deployed) Destinations are in the Config field cause
+                      the FluxApplication is designed to be a Multi-Clusters Application
+                      that each Destination has its own Config https://github.com/kubesphere/ks-devops/issues/767
+                    properties:
+                      config:
+                        description: Config represents the Config of the FluxCD Application
+                        properties:
+                          helmRelease:
+                            description: HelmRelease for FluxCD HelmRelease
+                            properties:
+                              chart:
+                                description: Chart defines the template of the v1beta2.HelmChart
+                                  that should be created for this HelmRelease.
+                                properties:
+                                  chart:
+                                    description: The name or path the Helm chart is
+                                      available at in the SourceRef.
+                                    type: string
+                                  interval:
+                                    description: Interval at which to check the v1beta2.Source
+                                      for updates. Defaults to 'HelmReleaseSpec.Interval'.
+                                    type: string
+                                  reconcileStrategy:
+                                    description: Determines what enables the creation
+                                      of a new artifact. Valid values are ('ChartVersion',
+                                      'Revision'). See the documentation of the values
+                                      for an explanation on their behavior. Defaults
+                                      to ChartVersion when omitted.
+                                    type: string
+                                  valuesFiles:
+                                    description: Alternative list of values files
+                                      to use as the chart values (values.yaml is not
+                                      included by default), expected to be a relative
+                                      path in the SourceRef. Values files are merged
+                                      in the order of this list with the last file
+                                      overriding the first. Ignored when omitted.
+                                    items:
+                                      type: string
+                                    type: array
+                                  version:
+                                    default: '*'
+                                    description: Version semver expression, ignored
+                                      for charts from v1beta2.GitRepository and v1beta2.Bucket
+                                      sources. Defaults to latest when omitted.
+                                    type: string
+                                required:
+                                - chart
+                                type: object
+                              deploy:
+                                description: HelmReleaseConfig stand for multi-clusters
+                                  and multi-targetNamespace config
+                                items:
+                                  properties:
+                                    dependsOn:
+                                      description: DependsOn may contain a meta.NamespacedObjectReference
+                                        slice with references to HelmRelease resources
+                                        that must be ready before this HelmRelease
+                                        can be reconciled.
+                                      items:
+                                        description: NamespacedObjectReference contains
+                                          enough information to locate the referenced
+                                          Kubernetes resource object in any namespace.
+                                        properties:
+                                          name:
+                                            description: Name of the referent.
+                                            type: string
+                                          namespace:
+                                            description: Namespace of the referent,
+                                              when not specified it acts as LocalObjectReference.
+                                            type: string
+                                        required:
+                                        - name
+                                        type: object
+                                      type: array
+                                    destination:
+                                      description: Destination stand for the destination
+                                        of the helmrelease
+                                      properties:
+                                        kubeConfig:
+                                          description: KubeConfig references a Kubernetes
+                                            secret that contains a kubeconfig file.
+                                          properties:
+                                            secretRef:
+                                              description: SecretRef holds the name
+                                                to a secret that contains a key with
+                                                the kubeconfig file as the value.
+                                                If no key is specified the key will
+                                                default to 'value'. The secret must
+                                                be in the same namespace as the HelmRelease.
+                                                It is recommended that the kubeconfig
+                                                is self-contained, and the secret
+                                                is regularly updated if credentials
+                                                such as a cloud-access-token expire.
+                                                Cloud specific `cmd-path` auth helpers
+                                                will not function without adding binaries
+                                                and credentials to the Pod that is
+                                                responsible for reconciling the HelmRelease.
+                                              properties:
+                                                key:
+                                                  description: Key in the Secret,
+                                                    when not specified an implementation-specific
+                                                    default key is used.
+                                                  type: string
+                                                name:
+                                                  description: Name of the Secret.
+                                                  type: string
+                                              required:
+                                              - name
+                                              type: object
+                                          type: object
+                                        targetNamespace:
+                                          description: TargetNamespace to target when
+                                            performing operations for the HelmRelease.
+                                            Defaults to the namespace of the HelmRelease.
+                                          type: string
+                                      type: object
+                                    install:
+                                      description: Install holds the configuration
+                                        for Helm install actions for this HelmRelease.
+                                      properties:
+                                        crds:
+                                          description: "CRDs upgrade CRDs from the
+                                            Helm Chart's crds directory according
+                                            to the CRD upgrade policy provided here.
+                                            Valid values are `Skip`, `Create` or `CreateReplace`.
+                                            Default is `Create` and if omitted CRDs
+                                            are installed but not updated. \n Skip:
+                                            do neither install nor replace (update)
+                                            any CRDs. \n Create: new CRDs are created,
+                                            existing CRDs are neither updated nor
+                                            deleted. \n CreateReplace: new CRDs are
+                                            created, existing CRDs are updated (replaced)
+                                            but not deleted. \n By default, CRDs are
+                                            applied (installed) during Helm install
+                                            action. With this option users can opt-in
+                                            to CRD replace existing CRDs on Helm install
+                                            actions, which is not (yet) natively supported
+                                            by Helm. https://helm.sh/docs/chart_best_practices/custom_resource_definitions."
+                                          enum:
+                                          - Skip
+                                          - Create
+                                          - CreateReplace
+                                          type: string
+                                        createNamespace:
+                                          description: CreateNamespace tells the Helm
+                                            install action to create the HelmReleaseSpec.TargetNamespace
+                                            if it does not exist yet. On uninstall,
+                                            the namespace will not be garbage collected.
+                                          type: boolean
+                                        disableHooks:
+                                          description: DisableHooks prevents hooks
+                                            from running during the Helm install action.
+                                          type: boolean
+                                        disableOpenAPIValidation:
+                                          description: DisableOpenAPIValidation prevents
+                                            the Helm install action from validating
+                                            rendered templates against the Kubernetes
+                                            OpenAPI Schema.
+                                          type: boolean
+                                        disableWait:
+                                          description: DisableWait disables the waiting
+                                            for resources to be ready after a Helm
+                                            install has been performed.
+                                          type: boolean
+                                        disableWaitForJobs:
+                                          description: DisableWaitForJobs disables
+                                            waiting for jobs to complete after a Helm
+                                            install has been performed.
+                                          type: boolean
+                                        remediation:
+                                          description: Remediation holds the remediation
+                                            configuration for when the Helm install
+                                            action for the HelmRelease fails. The
+                                            default is to not perform any action.
+                                          properties:
+                                            ignoreTestFailures:
+                                              description: IgnoreTestFailures tells
+                                                the controller to skip remediation
+                                                when the Helm tests are run after
+                                                an install action but fail. Defaults
+                                                to 'Test.IgnoreFailures'.
+                                              type: boolean
+                                            remediateLastFailure:
+                                              description: RemediateLastFailure tells
+                                                the controller to remediate the last
+                                                failure, when no retries remain. Defaults
+                                                to 'false'.
+                                              type: boolean
+                                            retries:
+                                              description: Retries is the number of
+                                                retries that should be attempted on
+                                                failures before bailing. Remediation,
+                                                using an uninstall, is performed between
+                                                each attempt. Defaults to '0', a negative
+                                                integer equals to unlimited retries.
+                                              type: integer
+                                          type: object
+                                        replace:
+                                          description: Replace tells the Helm install
+                                            action to re-use the 'ReleaseName', but
+                                            only if that name is a deleted release
+                                            which remains in the history.
+                                          type: boolean
+                                        skipCRDs:
+                                          description: "SkipCRDs tells the Helm install
+                                            action to not install any CRDs. By default,
+                                            CRDs are installed if not already present.
+                                            \n Deprecated use CRD policy (`crds`)
+                                            attribute with value `Skip` instead."
+                                          type: boolean
+                                        timeout:
+                                          description: Timeout is the time to wait
+                                            for any individual Kubernetes operation
+                                            (like Jobs for hooks) during the performance
+                                            of a Helm install action. Defaults to
+                                            'HelmReleaseSpec.Timeout'.
+                                          type: string
+                                      type: object
+                                    interval:
+                                      description: The interval at which to reconcile
+                                        the Kustomization.
+                                      type: string
+                                    maxHistory:
+                                      description: MaxHistory is the number of revisions
+                                        saved by Helm for this HelmRelease. Use '0'
+                                        for an unlimited number of revisions; defaults
+                                        to '10'.
+                                      type: integer
+                                    postRenderers:
+                                      description: PostRenderers holds an array of
+                                        Helm PostRenderers, which will be applied
+                                        in order of their definition.
+                                      items:
+                                        description: PostRenderer contains a Helm
+                                          PostRenderer specification.
+                                        properties:
+                                          kustomize:
+                                            description: Kustomization to apply as
+                                              PostRenderer.
+                                            properties:
+                                              images:
+                                                description: Images is a list of (image
+                                                  name, new name, new tag or digest)
+                                                  for changing image names, tags or
+                                                  digests. This can also be achieved
+                                                  with a patch, but this operator
+                                                  is simpler to specify.
+                                                items:
+                                                  description: Image contains an image
+                                                    name, a new name, a new tag or
+                                                    digest, which will replace the
+                                                    original name and tag.
+                                                  properties:
+                                                    digest:
+                                                      description: Digest is the value
+                                                        used to replace the original
+                                                        image tag. If digest is present
+                                                        NewTag value is ignored.
+                                                      type: string
+                                                    name:
+                                                      description: Name is a tag-less
+                                                        image name.
+                                                      type: string
+                                                    newName:
+                                                      description: NewName is the
+                                                        value used to replace the
+                                                        original name.
+                                                      type: string
+                                                    newTag:
+                                                      description: NewTag is the value
+                                                        used to replace the original
+                                                        tag.
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  type: object
+                                                type: array
+                                              patches:
+                                                description: Strategic merge and JSON
+                                                  patches, defined as inline YAML
+                                                  objects, capable of targeting objects
+                                                  based on kind, label and annotation
+                                                  selectors.
+                                                items:
+                                                  description: Patch contains an inline
+                                                    StrategicMerge or JSON6902 patch,
+                                                    and the target the patch should
+                                                    be applied to.
+                                                  properties:
+                                                    patch:
+                                                      description: Patch contains
+                                                        an inline StrategicMerge patch
+                                                        or an inline JSON6902 patch
+                                                        with an array of operation
+                                                        objects.
+                                                      type: string
+                                                    target:
+                                                      description: Target points to
+                                                        the resources that the patch
+                                                        document should be applied
+                                                        to.
+                                                      properties:
+                                                        annotationSelector:
+                                                          description: AnnotationSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            annotations.
+                                                          type: string
+                                                        group:
+                                                          description: Group is the
+                                                            API group to select resources
+                                                            from. Together with Version
+                                                            and Kind it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        kind:
+                                                          description: Kind of the
+                                                            API Group to select resources
+                                                            from. Together with Group
+                                                            and Version it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        labelSelector:
+                                                          description: LabelSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            labels.
+                                                          type: string
+                                                        name:
+                                                          description: Name to match
+                                                            resources with.
+                                                          type: string
+                                                        namespace:
+                                                          description: Namespace to
+                                                            select resources from.
+                                                          type: string
+                                                        version:
+                                                          description: Version of
+                                                            the API Group to select
+                                                            resources from. Together
+                                                            with Group and Kind it
+                                                            is capable of unambiguously
+                                                            identifying and/or selecting
+                                                            resources. https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                      type: object
+                                                  type: object
+                                                type: array
+                                              patchesJson6902:
+                                                description: JSON 6902 patches, defined
+                                                  as inline YAML objects.
+                                                items:
+                                                  description: JSON6902Patch contains
+                                                    a JSON6902 patch and the target
+                                                    the patch should be applied to.
+                                                  properties:
+                                                    patch:
+                                                      description: Patch contains
+                                                        the JSON6902 patch document
+                                                        with an array of operation
+                                                        objects.
+                                                      items:
+                                                        description: JSON6902 is a
+                                                          JSON6902 operation object.
+                                                          https://datatracker.ietf.org/doc/html/rfc6902#section-4
+                                                        properties:
+                                                          from:
+                                                            description: From contains
+                                                              a JSON-pointer value
+                                                              that references a location
+                                                              within the target document
+                                                              where the operation
+                                                              is performed. The meaning
+                                                              of the value depends
+                                                              on the value of Op,
+                                                              and is NOT taken into
+                                                              account by all operations.
+                                                            type: string
+                                                          op:
+                                                            description: Op indicates
+                                                              the operation to perform.
+                                                              Its value MUST be one
+                                                              of "add", "remove",
+                                                              "replace", "move", "copy",
+                                                              or "test". https://datatracker.ietf.org/doc/html/rfc6902#section-4
+                                                            enum:
+                                                            - test
+                                                            - remove
+                                                            - add
+                                                            - replace
+                                                            - move
+                                                            - copy
+                                                            type: string
+                                                          path:
+                                                            description: Path contains
+                                                              the JSON-pointer value
+                                                              that references a location
+                                                              within the target document
+                                                              where the operation
+                                                              is performed. The meaning
+                                                              of the value depends
+                                                              on the value of Op.
+                                                            type: string
+                                                          value:
+                                                            description: Value contains
+                                                              a valid JSON structure.
+                                                              The meaning of the value
+                                                              depends on the value
+                                                              of Op, and is NOT taken
+                                                              into account by all
+                                                              operations.
+                                                            x-kubernetes-preserve-unknown-fields: true
+                                                        required:
+                                                        - op
+                                                        - path
+                                                        type: object
+                                                      type: array
+                                                    target:
+                                                      description: Target points to
+                                                        the resources that the patch
+                                                        document should be applied
+                                                        to.
+                                                      properties:
+                                                        annotationSelector:
+                                                          description: AnnotationSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            annotations.
+                                                          type: string
+                                                        group:
+                                                          description: Group is the
+                                                            API group to select resources
+                                                            from. Together with Version
+                                                            and Kind it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        kind:
+                                                          description: Kind of the
+                                                            API Group to select resources
+                                                            from. Together with Group
+                                                            and Version it is capable
+                                                            of unambiguously identifying
+                                                            and/or selecting resources.
+                                                            https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                        labelSelector:
+                                                          description: LabelSelector
+                                                            is a string that follows
+                                                            the label selection expression
+                                                            https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                                            It matches with the resource
+                                                            labels.
+                                                          type: string
+                                                        name:
+                                                          description: Name to match
+                                                            resources with.
+                                                          type: string
+                                                        namespace:
+                                                          description: Namespace to
+                                                            select resources from.
+                                                          type: string
+                                                        version:
+                                                          description: Version of
+                                                            the API Group to select
+                                                            resources from. Together
+                                                            with Group and Kind it
+                                                            is capable of unambiguously
+                                                            identifying and/or selecting
+                                                            resources. https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                                          type: string
+                                                      type: object
+                                                  required:
+                                                  - patch
+                                                  - target
+                                                  type: object
+                                                type: array
+                                              patchesStrategicMerge:
+                                                description: Strategic merge patches,
+                                                  defined as inline YAML objects.
+                                                items:
+                                                  x-kubernetes-preserve-unknown-fields: true
+                                                type: array
+                                            type: object
+                                        type: object
+                                      type: array
+                                    releaseName:
+                                      description: ReleaseName used for the Helm release.
+                                        Defaults to a composition of '[TargetNamespace-]Name'.
+                                      type: string
+                                    rollback:
+                                      description: Rollback holds the configuration
+                                        for Helm rollback actions for this HelmRelease.
+                                      properties:
+                                        cleanupOnFail:
+                                          description: CleanupOnFail allows deletion
+                                            of new resources created during the Helm
+                                            rollback action when it fails.
+                                          type: boolean
+                                        disableHooks:
+                                          description: DisableHooks prevents hooks
+                                            from running during the Helm rollback
+                                            action.
+                                          type: boolean
+                                        disableWait:
+                                          description: DisableWait disables the waiting
+                                            for resources to be ready after a Helm
+                                            rollback has been performed.
+                                          type: boolean
+                                        disableWaitForJobs:
+                                          description: DisableWaitForJobs disables
+                                            waiting for jobs to complete after a Helm
+                                            rollback has been performed.
+                                          type: boolean
+                                        force:
+                                          description: Force forces resource updates
+                                            through a replacement strategy.
+                                          type: boolean
+                                        recreate:
+                                          description: Recreate performs pod restarts
+                                            for the resource if applicable.
+                                          type: boolean
+                                        timeout:
+                                          description: Timeout is the time to wait
+                                            for any individual Kubernetes operation
+                                            (like Jobs for hooks) during the performance
+                                            of a Helm rollback action. Defaults to
+                                            'HelmReleaseSpec.Timeout'.
+                                          type: string
+                                      type: object
+                                    serviceAccountName:
+                                      description: The name of the Kubernetes service
+                                        account to impersonate when reconciling this
+                                        HelmRelease.
+                                      type: string
+                                    storageNamespace:
+                                      description: StorageNamespace used for the Helm
+                                        storage. Defaults to the namespace of the
+                                        HelmRelease.
+                                      type: string
+                                    suspend:
+                                      description: Suspend tells the controller to
+                                        suspend reconciliation for this HelmRelease,
+                                        it does not apply to already started reconciliations.
+                                        Defaults to false.
+                                      type: boolean
+                                    test:
+                                      description: Test holds the configuration for
+                                        Helm test actions for this HelmRelease.
+                                      properties:
+                                        enable:
+                                          description: Enable enables Helm test actions
+                                            for this HelmRelease after an Helm install
+                                            or upgrade action has been performed.
+                                          type: boolean
+                                        ignoreFailures:
+                                          description: IgnoreFailures tells the controller
+                                            to skip remediation when the Helm tests
+                                            are run but fail. Can be overwritten for
+                                            tests run after install or upgrade actions
+                                            in 'Install.IgnoreTestFailures' and 'Upgrade.IgnoreTestFailures'.
+                                          type: boolean
+                                        timeout:
+                                          description: Timeout is the time to wait
+                                            for any individual Kubernetes operation
+                                            during the performance of a Helm test
+                                            action. Defaults to 'HelmReleaseSpec.Timeout'.
+                                          type: string
+                                      type: object
+                                    timeout:
+                                      description: Timeout is the time to wait for
+                                        any individual Kubernetes operation (like
+                                        Jobs for hooks) during the performance of
+                                        a Helm action. Defaults to '5m0s'.
+                                      type: string
+                                    uninstall:
+                                      description: Uninstall holds the configuration
+                                        for Helm uninstall actions for this HelmRelease.
+                                      properties:
+                                        disableHooks:
+                                          description: DisableHooks prevents hooks
+                                            from running during the Helm rollback
+                                            action.
+                                          type: boolean
+                                        disableWait:
+                                          description: DisableWait disables waiting
+                                            for all the resources to be deleted after
+                                            a Helm uninstall is performed.
+                                          type: boolean
+                                        keepHistory:
+                                          description: KeepHistory tells Helm to remove
+                                            all associated resources and mark the
+                                            release as deleted, but retain the release
+                                            history.
+                                          type: boolean
+                                        timeout:
+                                          description: Timeout is the time to wait
+                                            for any individual Kubernetes operation
+                                            (like Jobs for hooks) during the performance
+                                            of a Helm uninstall action. Defaults to
+                                            'HelmReleaseSpec.Timeout'.
+                                          type: string
+                                      type: object
+                                    upgrade:
+                                      description: Upgrade holds the configuration
+                                        for Helm upgrade actions for this HelmRelease.
+                                      properties:
+                                        cleanupOnFail:
+                                          description: CleanupOnFail allows deletion
+                                            of new resources created during the Helm
+                                            upgrade action when it fails.
+                                          type: boolean
+                                        crds:
+                                          description: "CRDs upgrade CRDs from the
+                                            Helm Chart's crds directory according
+                                            to the CRD upgrade policy provided here.
+                                            Valid values are `Skip`, `Create` or `CreateReplace`.
+                                            Default is `Skip` and if omitted CRDs
+                                            are neither installed nor upgraded. \n
+                                            Skip: do neither install nor replace (update)
+                                            any CRDs. \n Create: new CRDs are created,
+                                            existing CRDs are neither updated nor
+                                            deleted. \n CreateReplace: new CRDs are
+                                            created, existing CRDs are updated (replaced)
+                                            but not deleted. \n By default, CRDs are
+                                            not applied during Helm upgrade action.
+                                            With this option users can opt-in to CRD
+                                            upgrade, which is not (yet) natively supported
+                                            by Helm. https://helm.sh/docs/chart_best_practices/custom_resource_definitions."
+                                          enum:
+                                          - Skip
+                                          - Create
+                                          - CreateReplace
+                                          type: string
+                                        disableHooks:
+                                          description: DisableHooks prevents hooks
+                                            from running during the Helm upgrade action.
+                                          type: boolean
+                                        disableOpenAPIValidation:
+                                          description: DisableOpenAPIValidation prevents
+                                            the Helm upgrade action from validating
+                                            rendered templates against the Kubernetes
+                                            OpenAPI Schema.
+                                          type: boolean
+                                        disableWait:
+                                          description: DisableWait disables the waiting
+                                            for resources to be ready after a Helm
+                                            upgrade has been performed.
+                                          type: boolean
+                                        disableWaitForJobs:
+                                          description: DisableWaitForJobs disables
+                                            waiting for jobs to complete after a Helm
+                                            upgrade has been performed.
+                                          type: boolean
+                                        force:
+                                          description: Force forces resource updates
+                                            through a replacement strategy.
+                                          type: boolean
+                                        preserveValues:
+                                          description: PreserveValues will make Helm
+                                            reuse the last release's values and merge
+                                            in overrides from 'Values'. Setting this
+                                            flag makes the HelmRelease non-declarative.
+                                          type: boolean
+                                        remediation:
+                                          description: Remediation holds the remediation
+                                            configuration for when the Helm upgrade
+                                            action for the HelmRelease fails. The
+                                            default is to not perform any action.
+                                          properties:
+                                            ignoreTestFailures:
+                                              description: IgnoreTestFailures tells
+                                                the controller to skip remediation
+                                                when the Helm tests are run after
+                                                an upgrade action but fail. Defaults
+                                                to 'Test.IgnoreFailures'.
+                                              type: boolean
+                                            remediateLastFailure:
+                                              description: RemediateLastFailure tells
+                                                the controller to remediate the last
+                                                failure, when no retries remain. Defaults
+                                                to 'false' unless 'Retries' is greater
+                                                than 0.
+                                              type: boolean
+                                            retries:
+                                              description: Retries is the number of
+                                                retries that should be attempted on
+                                                failures before bailing. Remediation,
+                                                using 'Strategy', is performed between
+                                                each attempt. Defaults to '0', a negative
+                                                integer equals to unlimited retries.
+                                              type: integer
+                                            strategy:
+                                              description: Strategy to use for failure
+                                                remediation. Defaults to 'rollback'.
+                                              enum:
+                                              - rollback
+                                              - uninstall
+                                              type: string
+                                          type: object
+                                        timeout:
+                                          description: Timeout is the time to wait
+                                            for any individual Kubernetes operation
+                                            (like Jobs for hooks) during the performance
+                                            of a Helm upgrade action. Defaults to
+                                            'HelmReleaseSpec.Timeout'.
+                                          type: string
+                                      type: object
+                                    values:
+                                      description: Values holds the values for this
+                                        Helm release.
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    valuesFrom:
+                                      description: ValuesFrom holds references to
+                                        resources containing Helm values for this
+                                        HelmRelease, and information about how they
+                                        should be merged.
+                                      items:
+                                        description: ValuesReference contains a reference
+                                          to a resource containing Helm values, and
+                                          optionally the key they can be found at.
+                                        properties:
+                                          kind:
+                                            description: Kind of the values referent,
+                                              valid values are ('Secret', 'ConfigMap').
+                                            enum:
+                                            - Secret
+                                            - ConfigMap
+                                            type: string
+                                          name:
+                                            description: Name of the values referent.
+                                              Should reside in the same namespace
+                                              as the referring resource.
+                                            maxLength: 253
+                                            minLength: 1
+                                            type: string
+                                          optional:
+                                            description: Optional marks this ValuesReference
+                                              as optional. When set, a not found error
+                                              for the values reference is ignored,
+                                              but any ValuesKey, TargetPath or transient
+                                              error will still result in a reconciliation
+                                              failure.
+                                            type: boolean
+                                          targetPath:
+                                            description: TargetPath is the YAML dot
+                                              notation path the value should be merged
+                                              at. When set, the ValuesKey is expected
+                                              to be a single flat value. Defaults
+                                              to 'None', which results in the values
+                                              getting merged at the root.
+                                            type: string
+                                          valuesKey:
+                                            description: ValuesKey is the data key
+                                              where the values.yaml or a specific
+                                              value can be found at. Defaults to 'values.yaml'.
+                                            type: string
+                                        required:
+                                        - kind
+                                        - name
+                                        type: object
+                                      type: array
+                                  required:
+                                  - destination
+                                  - interval
+                                  type: object
+                                type: array
+                              template:
+                                description: Template ref a HelmTemplate that has
+                                  been saved before
+                                type: string
+                            required:
+                            - deploy
+                            type: object
+                          kustomization:
+                            description: Kustomization for FluxCD Kustomization
+                            items:
+                              description: KustomizationSpec defines the configuration
+                                to calculate the desired state from a Source using
+                                Kustomize.
+                              properties:
+                                decryption:
+                                  description: Decrypt Kubernetes secrets before applying
+                                    them on the cluster.
+                                  properties:
+                                    provider:
+                                      description: Provider is the name of the decryption
+                                        engine.
+                                      enum:
+                                      - sops
+                                      type: string
+                                    secretRef:
+                                      description: The secret name containing the
+                                        private OpenPGP keys used for decryption.
+                                      properties:
+                                        name:
+                                          description: Name of the referent.
+                                          type: string
+                                      required:
+                                      - name
+                                      type: object
+                                  required:
+                                  - provider
+                                  type: object
+                                dependsOn:
+                                  description: DependsOn may contain a meta.NamespacedObjectReference
+                                    slice with references to Kustomization resources
+                                    that must be ready before this Kustomization can
+                                    be reconciled.
+                                  items:
+                                    description: NamespacedObjectReference contains
+                                      enough information to locate the referenced
+                                      Kubernetes resource object in any namespace.
+                                    properties:
+                                      name:
+                                        description: Name of the referent.
+                                        type: string
+                                      namespace:
+                                        description: Namespace of the referent, when
+                                          not specified it acts as LocalObjectReference.
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
+                                destination:
+                                  description: Destination stand for the destination
+                                    of the kustomization
+                                  properties:
+                                    kubeConfig:
+                                      description: KubeConfig references a Kubernetes
+                                        secret that contains a kubeconfig file.
+                                      properties:
+                                        secretRef:
+                                          description: SecretRef holds the name to
+                                            a secret that contains a key with the
+                                            kubeconfig file as the value. If no key
+                                            is specified the key will default to 'value'.
+                                            The secret must be in the same namespace
+                                            as the HelmRelease. It is recommended
+                                            that the kubeconfig is self-contained,
+                                            and the secret is regularly updated if
+                                            credentials such as a cloud-access-token
+                                            expire. Cloud specific `cmd-path` auth
+                                            helpers will not function without adding
+                                            binaries and credentials to the Pod that
+                                            is responsible for reconciling the HelmRelease.
+                                          properties:
+                                            key:
+                                              description: Key in the Secret, when
+                                                not specified an implementation-specific
+                                                default key is used.
+                                              type: string
+                                            name:
+                                              description: Name of the Secret.
+                                              type: string
+                                          required:
+                                          - name
+                                          type: object
+                                      type: object
+                                    targetNamespace:
+                                      description: TargetNamespace to target when
+                                        performing operations for the HelmRelease.
+                                        Defaults to the namespace of the HelmRelease.
+                                      type: string
+                                  type: object
+                                force:
+                                  description: Force instructs the controller to recreate
+                                    resources when patching fails due to an immutable
+                                    field change.
+                                  type: boolean
+                                healthChecks:
+                                  description: A list of resources to be included
+                                    in the health assessment.
+                                  items:
+                                    description: NamespacedObjectKindReference contains
+                                      enough information to locate the typed referenced
+                                      Kubernetes resource object in any namespace.
+                                    properties:
+                                      apiVersion:
+                                        description: API version of the referent,
+                                          if not specified the Kubernetes preferred
+                                          version will be used.
+                                        type: string
+                                      kind:
+                                        description: Kind of the referent.
+                                        type: string
+                                      name:
+                                        description: Name of the referent.
+                                        type: string
+                                      namespace:
+                                        description: Namespace of the referent, when
+                                          not specified it acts as LocalObjectReference.
+                                        type: string
+                                    required:
+                                    - kind
+                                    - name
+                                    type: object
+                                  type: array
+                                images:
+                                  description: Images is a list of (image name, new
+                                    name, new tag or digest) for changing image names,
+                                    tags or digests. This can also be achieved with
+                                    a patch, but this operator is simpler to specify.
+                                  items:
+                                    description: Image contains an image name, a new
+                                      name, a new tag or digest, which will replace
+                                      the original name and tag.
+                                    properties:
+                                      digest:
+                                        description: Digest is the value used to replace
+                                          the original image tag. If digest is present
+                                          NewTag value is ignored.
+                                        type: string
+                                      name:
+                                        description: Name is a tag-less image name.
+                                        type: string
+                                      newName:
+                                        description: NewName is the value used to
+                                          replace the original name.
+                                        type: string
+                                      newTag:
+                                        description: NewTag is the value used to replace
+                                          the original tag.
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
+                                interval:
+                                  description: The interval at which to reconcile
+                                    the Kustomization.
+                                  type: string
+                                patches:
+                                  description: Strategic merge and JSON patches, defined
+                                    as inline YAML objects, capable of targeting objects
+                                    based on kind, label and annotation selectors.
+                                  items:
+                                    description: Patch contains an inline StrategicMerge
+                                      or JSON6902 patch, and the target the patch
+                                      should be applied to.
+                                    properties:
+                                      patch:
+                                        description: Patch contains an inline StrategicMerge
+                                          patch or an inline JSON6902 patch with an
+                                          array of operation objects.
+                                        type: string
+                                      target:
+                                        description: Target points to the resources
+                                          that the patch document should be applied
+                                          to.
+                                        properties:
+                                          annotationSelector:
+                                            description: AnnotationSelector is a string
+                                              that follows the label selection expression
+                                              https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                              It matches with the resource annotations.
+                                            type: string
+                                          group:
+                                            description: Group is the API group to
+                                              select resources from. Together with
+                                              Version and Kind it is capable of unambiguously
+                                              identifying and/or selecting resources.
+                                              https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                            type: string
+                                          kind:
+                                            description: Kind of the API Group to
+                                              select resources from. Together with
+                                              Group and Version it is capable of unambiguously
+                                              identifying and/or selecting resources.
+                                              https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                            type: string
+                                          labelSelector:
+                                            description: LabelSelector is a string
+                                              that follows the label selection expression
+                                              https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                              It matches with the resource labels.
+                                            type: string
+                                          name:
+                                            description: Name to match resources with.
+                                            type: string
+                                          namespace:
+                                            description: Namespace to select resources
+                                              from.
+                                            type: string
+                                          version:
+                                            description: Version of the API Group
+                                              to select resources from. Together with
+                                              Group and Kind it is capable of unambiguously
+                                              identifying and/or selecting resources.
+                                              https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                                            type: string
+                                        type: object
+                                    type: object
+                                  type: array
+                                path:
+                                  description: Path to the directory containing the
+                                    kustomization.yaml file, or the set of plain YAMLs
+                                    a kustomization.yaml should be generated for.
+                                    Defaults to 'None', which translates to the root
+                                    path of the SourceRef.
+                                  type: string
+                                postBuild:
+                                  description: PostBuild describes which actions to
+                                    perform on the YAML manifest generated by building
+                                    the kustomize overlay.
+                                  properties:
+                                    substitute:
+                                      additionalProperties:
+                                        type: string
+                                      description: Substitute holds a map of key/value
+                                        pairs. The variables defined in your YAML
+                                        manifests that match any of the keys defined
+                                        in the map will be substituted with the set
+                                        value. Includes support for bash string replacement
+                                        functions e.g. ${var:=default}, ${var:position}
+                                        and ${var/substring/replacement}.
+                                      type: object
+                                    substituteFrom:
+                                      description: SubstituteFrom holds references
+                                        to ConfigMaps and Secrets containing the variables
+                                        and their values to be substituted in the
+                                        YAML manifests. The ConfigMap and the Secret
+                                        data keys represent the var names and they
+                                        must match the vars declared in the manifests
+                                        for the substitution to happen.
+                                      items:
+                                        description: SubstituteReference contains
+                                          a reference to a resource containing the
+                                          variables name and value.
+                                        properties:
+                                          kind:
+                                            description: Kind of the values referent,
+                                              valid values are ('Secret', 'ConfigMap').
+                                            enum:
+                                            - Secret
+                                            - ConfigMap
+                                            type: string
+                                          name:
+                                            description: Name of the values referent.
+                                              Should reside in the same namespace
+                                              as the referring resource.
+                                            maxLength: 253
+                                            minLength: 1
+                                            type: string
+                                          optional:
+                                            default: false
+                                            description: Optional indicates whether
+                                              the referenced resource must exist,
+                                              or whether to tolerate its absence.
+                                              If true and the referenced resource
+                                              is absent, proceed as if the resource
+                                              was present but empty, without any variables
+                                              defined.
+                                            type: boolean
+                                        required:
+                                        - kind
+                                        - name
+                                        type: object
+                                      type: array
+                                  type: object
+                                prune:
+                                  description: Prune enables garbage collection.
+                                  type: boolean
+                                retryInterval:
+                                  description: The interval at which to retry a previously
+                                    failed reconciliation. When not specified, the
+                                    controller uses the KustomizationSpec.Interval
+                                    value to retry failures.
+                                  type: string
+                                serviceAccountName:
+                                  description: The name of the Kubernetes service
+                                    account to impersonate when reconciling this Kustomization.
+                                  type: string
+                                suspend:
+                                  description: This flag tells the controller to suspend
+                                    subsequent kustomize executions, it does not apply
+                                    to already started executions. Defaults to false.
+                                  type: boolean
+                                timeout:
+                                  description: Timeout for validation, apply and health
+                                    checking operations. Defaults to 'Interval' duration.
+                                  type: string
+                                wait:
+                                  description: Wait instructs the controller to check
+                                    the health of all the reconciled resources. When
+                                    enabled, the HealthChecks are ignored. Defaults
+                                    to false.
+                                  type: boolean
+                              required:
+                              - destination
+                              - interval
+                              - prune
+                              type: object
+                            type: array
+                        type: object
+                      source:
+                        description: Source represents the ground truth of the FluxCD
+                          Application
+                        properties:
+                          sourceRef:
+                            description: SourceRef is the reference to the Source
+                            properties:
+                              apiVersion:
+                                description: APIVersion of the referent.
+                                type: string
+                              kind:
+                                description: Kind of the referent.
+                                enum:
+                                - HelmRepository
+                                - GitRepository
+                                - Bucket
+                                type: string
+                              name:
+                                description: Name of the referent.
+                                maxLength: 253
+                                minLength: 1
+                                type: string
+                              namespace:
+                                description: Namespace of the referent.
+                                maxLength: 63
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                        required:
+                        - sourceRef
+                        type: object
+                    required:
+                    - config
+                    type: object
+                type: object
+              kind:
+                description: Engine is the backend GitOps Solutions type
+                type: string
+            required:
+            - kind
             type: object
           status:
             description: ApplicationStatus represents the status of the Application
             properties:
               argoApp:
                 type: string
+              fluxApp:
+                type: string
+              kind:
+                description: Engine is the backend GitOps Solutions type
+                type: string
+            required:
+            - kind
             type: object
         type: object
     served: true

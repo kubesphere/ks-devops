@@ -297,6 +297,28 @@ rules:
   - list
   - watch
 - apiGroups:
+  - helm.toolkit.fluxcd.io
+  resources:
+  - helmreleases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - kustomize.toolkit.fluxcd.io
+  resources:
+  - kustomizations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - source.toolkit.fluxcd.io
   resources:
   - gitrepositories
@@ -306,3 +328,12 @@ rules:
   - get
   - list
   - update
+- apiGroups:
+  - source.toolkit.fluxcd.io
+  resources:
+  - helmcharts
+  verbs:
+  - create
+  - get
+  - list
+  - watch

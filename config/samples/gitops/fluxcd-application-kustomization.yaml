@@ -1,0 +1,22 @@
+apiVersion: gitops.kubesphere.io/v1alpha1
+kind: Application
+metadata:
+  name: chengleqi-test-kus
+  namespace: my-devops-projecthmhx2
+spec:
+  kind: fluxcd
+  fluxApp:
+    spec:
+      source:
+        sourceRef:
+          kind: GitRepository
+          name: fluxcd-gitee-repo
+          namespace: my-devops-projecthmhx2
+      config:
+        kustomization:
+          - destination:
+              kubeConfig:
+              targetNamespace: default
+            interval: 8m0s
+            prune: true
+            path: "nginx"
