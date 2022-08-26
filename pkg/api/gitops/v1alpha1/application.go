@@ -238,7 +238,7 @@ type KustomizationSpec struct {
 
 // ApplicationSpec is the specification of the Application
 type ApplicationSpec struct {
-	Kind    Engine           `json:"kind"`
+	Kind    Engine           `json:"kind,omitempty"`
 	ArgoApp *ArgoApplication `json:"argoApp,omitempty"`
 	FluxApp *FluxApplication `json:"fluxApp,omitempty"`
 }
@@ -586,7 +586,7 @@ type Application struct {
 
 // ApplicationStatus represents the status of the Application
 type ApplicationStatus struct {
-	Kind    Engine `json:"kind"`
+	Kind    Engine `json:"kind,omitempty"`
 	ArgoApp string `json:"argoApp,omitempty"`
 	FluxApp string `json:"fluxApp,omitempty"`
 }
