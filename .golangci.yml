@@ -137,3 +137,12 @@ issues:
 linters:
   enable:
     - revive # replacement for golint
+
+linters-settings:
+  revive:
+    enable-all-rules: false
+    severity: error
+    rules:
+      - name: package-comments
+        severity: warning
+        disabled: true
