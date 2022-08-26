@@ -1,0 +1,72 @@
+pipeline {
+  agent {
+    node {
+      label 'go-builder'
+    }
+  }
+
+  stages {
+    stage('Code check') {
+      parallel {
+        stage('Lint') {
+          agent none
+          steps {
+            container('golangci') {
+              sh 'golangci-lint run ./... -v'
+            }
+          }
+        }
+
+        stage('Test') {
+          agent none
+          steps {
+            container('go') {
+              sh 'make test'
+            }
+          }
+        }
+
+        stage('License') {
+          agent none
+          steps {
+            container('skywalking-eyes') {
+              sh 'license-eye header check'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Build Image') {
+      parallel {
+        stage('Build') {
+          agent none
+          steps {
+            container('base') {
+              sh 'docker build . -f config/dockerfiles/apiserver/Dockerfile -t surenpi/test:latest'
+            }
+          }
+        }
+
+        stage('Build Controller') {
+          agent none
+          steps {
+            container('base') {
+              sh 'docker build . -f config/dockerfiles/controller-manager/Dockerfile -t surenpi/test:latest'
+            }
+          }
+        }
+
+        stage('Build Tool') {
+          agent none
+          steps {
+            container('base') {
+              sh 'docker build . -f config/dockerfiles/tools/Dockerfile -t surenpi/test:latest'
+            }
+          }
+        }
+
+      }
+    }
+  }
+}
