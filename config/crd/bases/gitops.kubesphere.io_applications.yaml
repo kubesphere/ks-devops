@@ -2023,8 +2023,6 @@ spec:
               kind:
                 description: Engine is the backend GitOps Solutions type
                 type: string
-            required:
-            - kind
             type: object
           status:
             description: ApplicationStatus represents the status of the Application
@@ -2036,8 +2034,6 @@ spec:
               kind:
                 description: Engine is the backend GitOps Solutions type
                 type: string
-            required:
-            - kind
             type: object
         type: object
     served: true
