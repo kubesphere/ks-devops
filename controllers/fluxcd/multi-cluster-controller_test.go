@@ -315,7 +315,7 @@ func TestMultiClusterReconciler_reconcileCluster(t *testing.T) {
 				recorder: &record.FakeRecorder{},
 			}
 
-			err := r.reconcileCluster(tt.args.cluster)
+			err := r.reconcileCluster(context.Background(), tt.args.cluster)
 			tt.verify(t, tt.fields.Client, err)
 		})
 	}

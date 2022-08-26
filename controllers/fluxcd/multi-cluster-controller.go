@@ -62,7 +62,7 @@ func (r *MultiClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return
 	}
 
-	if err = r.reconcileCluster(cluster); err != nil {
+	if err = r.reconcileCluster(ctx, cluster); err != nil {
 		return
 	}
 
@@ -77,8 +77,7 @@ func ignore(cluster *unstructured.Unstructured) bool {
 	return true
 }
 
-func (r *MultiClusterReconciler) reconcileCluster(cluster *unstructured.Unstructured) (err error) {
-	ctx := context.Background()
+func (r *MultiClusterReconciler) reconcileCluster(ctx context.Context, cluster *unstructured.Unstructured) (err error) {
 	name := cluster.GetName()
 	nsList := &v1.NamespaceList{}
 	if err = r.getFluxAppNsList(ctx, nsList); err != nil {
