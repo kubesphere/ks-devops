@@ -18,9 +18,10 @@ package options
 
 import (
 	"flag"
-	"kubesphere.io/devops/pkg/config"
 	"strings"
 	"time"
+
+	"kubesphere.io/devops/pkg/config"
 
 	"kubesphere.io/devops/pkg/client/devops/jenkins"
 	"kubesphere.io/devops/pkg/client/k8s"
@@ -67,6 +68,8 @@ func NewDevOpsControllerManagerOptions() *DevOpsControllerManagerOptions {
 		LeaderElect:         false,
 		WebhookCertDir:      "",
 		ApplicationSelector: "",
+		KubernetesOptions:   &k8s.KubernetesOptions{},
+		ArgoCDOption:        &config.ArgoCDOption{},
 	}
 
 	return s

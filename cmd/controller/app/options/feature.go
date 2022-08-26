@@ -28,6 +28,7 @@ import (
 type FeatureOptions struct {
 	Controllers     map[string]bool
 	SystemNamespace string
+	ExternalAddress string
 }
 
 // GetControllers returns the controllers map
@@ -77,6 +78,7 @@ func (o *FeatureOptions) AddFlags(fs *pflag.FlagSet, c *FeatureOptions) {
 		"Options are:\n"+strings.Join(c.knownControllers(), "\n"))
 	fs.StringVarP(&o.SystemNamespace, "system-namespace", "", "kubesphere-devops-system",
 		"The system namespace that contains ConfigMap, Secrets e.g.")
+	fs.StringVarP(&o.ExternalAddress, "external-address", "", "", "The external address for the UI")
 }
 
 func (o *FeatureOptions) knownControllers() []string {

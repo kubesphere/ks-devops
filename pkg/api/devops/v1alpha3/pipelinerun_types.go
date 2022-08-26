@@ -238,18 +238,16 @@ type RunPhase string
 const (
 	// Pending indicates that the PipelineRun is pending.
 	Pending RunPhase = "Pending"
-
 	// Running indicates that the PipelineRun is running.
 	Running RunPhase = "Running"
-
 	// Succeeded indicates that the PipelineRun has succeeded.
 	Succeeded RunPhase = "Succeeded"
-
 	// Failed indicates that the PipelineRun has failed.
 	Failed RunPhase = "Failed"
-
 	// Unknown indicates that the PipelineRun has an unknown status.
 	Unknown RunPhase = "Unknown"
+	// Cancelled indicates that the PipelineRun has been cancelled
+	Cancelled RunPhase = "Cancelled"
 )
 
 // ConditionType is type of PipelineRun condition.
