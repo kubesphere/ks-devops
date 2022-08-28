@@ -14,8 +14,24 @@ spec:
           template: chengleqi-test-helm
           deploy:
             - destination:
+                # host cluster
                 kubeConfig:
                 targetNamespace: template-app
+              interval: 1m0s
+              upgrade:
+                remediation:
+                  remediateLastFailure: true
+                force: true
+              install:
+                createNamespace: true
+            - destination:
+                # member cluster
+                kubeConfig:
+                  secretRef:
+                    name: node-1
+                    key: value
+                targetNamespace: template-app
+              storageNamespace: default
               interval: 1m0s
               upgrade:
                 remediation:

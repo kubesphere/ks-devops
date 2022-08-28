@@ -132,8 +132,10 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		Client:                   mgr.GetClient(),
 		TargetConfigMapNamespace: s.FeatureOptions.SystemNamespace,
 	}
-
 	fluxcdApplicationReconciler := &fluxcd.ApplicationReconciler{
+		Client: mgr.GetClient(),
+	}
+	fluxcdMultiClusterReconciler := &fluxcd.MultiClusterReconciler{
 		Client: mgr.GetClient(),
 	}
 
@@ -227,6 +229,9 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		},
 		fluxcdApplicationReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
 			if err = fluxcdGitRepoReconciler.SetupWithManager(mgr); err != nil {
+				return
+			}
+			if err = fluxcdMultiClusterReconciler.SetupWithManager(mgr); err != nil {
 				return
 			}
 			return fluxcdApplicationReconciler.SetupWithManager(mgr)
