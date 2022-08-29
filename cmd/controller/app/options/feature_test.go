@@ -119,4 +119,5 @@ func TestFeatureOptions(t *testing.T) {
 	assert.NotNil(t, flagSet.Lookup("enabled-controllers"))
 	assert.NotNil(t, flagSet.Lookup("system-namespace"))
 	assert.NotNil(t, flagSet.Lookup("external-address"))
+	assert.NotNil(t, flagSet.Lookup("cluster-name"))
 }

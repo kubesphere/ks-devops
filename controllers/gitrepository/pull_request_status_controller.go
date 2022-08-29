@@ -35,6 +35,7 @@ import (
 type PullRequestStatusReconciler struct {
 	client.Client
 	ExternalAddress string
+	ClusterName     string
 
 	log      logr.Logger
 	recorder record.EventRecorder
@@ -150,8 +151,9 @@ func getRepoInfo(repo *v1alpha3.MultiBranchPipeline) (info repoInfo) {
 func (r *PullRequestStatusReconciler) getExternalPipelineRunAddress(ctx context.Context, pipelineRun *v1alpha3.PipelineRun) (target string, err error) {
 	var ws string
 	if ws, err = r.getWorkspace(ctx, pipelineRun.GetNamespace()); err == nil {
-		target = fmt.Sprintf("%s/%s/clusters/default/devops/%s/pipelines/%s/run/%s/task-status",
-			net.ParseURL(r.ExternalAddress), ws, pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name, pipelineRun.Name)
+		target = fmt.Sprintf("%s/%s/clusters/%s/devops/%s/pipelines/%s/branch/%s/run/%s/task-status",
+			net.ParseURL(r.ExternalAddress), ws, r.ClusterName,
+			pipelineRun.Namespace, pipelineRun.Spec.PipelineRef.Name, pipelineRun.Spec.SCM.RefName, pipelineRun.Name)
 	}
 	return
 }
