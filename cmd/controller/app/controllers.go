@@ -144,6 +144,7 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 			err := (&gitrepository.PullRequestStatusReconciler{
 				Client:          mgr.GetClient(),
 				ExternalAddress: s.FeatureOptions.ExternalAddress,
+				ClusterName:     s.FeatureOptions.ClusterName,
 			}).SetupWithManager(mgr)
 			if err != nil {
 				return err
