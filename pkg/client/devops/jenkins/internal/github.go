@@ -87,6 +87,8 @@ func AppendGithubSourceToEtree(source *etree.Element, githubSource *devopsv1alph
 		regexTraits.CreateAttr("plugin", "scm-api")
 		regexTraits.CreateElement("regex").SetText(githubSource.RegexFilter)
 	}
+	skipNotifications := traits.CreateElement("org.jenkinsci.plugins.github.notifications.NotificationsSkipTrait")
+	skipNotifications.CreateAttr("plugin", "skip-notifications-trait")
 	return
 }
 
