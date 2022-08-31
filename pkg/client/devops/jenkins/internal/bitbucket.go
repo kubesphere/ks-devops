@@ -88,6 +88,10 @@ func AppendBitbucketServerSourceToEtree(source *etree.Element, gitSource *devops
 		regexTraits.CreateAttr("plugin", "scm-api")
 		regexTraits.CreateElement("regex").SetText(gitSource.RegexFilter)
 	}
+	if !gitSource.AcceptJenkinsNotification {
+		skipNotifications := traits.CreateElement("com.cloudbees.jenkins.plugins.bitbucket.notifications.SkipNotificationsTrait")
+		skipNotifications.CreateAttr("plugin", "skip-notifications-trait")
+	}
 	return
 }
 
@@ -159,6 +163,11 @@ func GetBitbucketServerSourceFromEtree(source *etree.Element) *devopsv1alpha3.Bi
 			if regex := regexTrait.SelectElement("regex"); regex != nil {
 				s.RegexFilter = regex.Text()
 			}
+		}
+
+		if skipNotificationTrait := traits.SelectElement(
+			"com.cloudbees.jenkins.plugins.bitbucket.notifications.SkipNotificationsTrait"); skipNotificationTrait == nil {
+			s.AcceptJenkinsNotification = true
 		}
 	}
 	return &s
