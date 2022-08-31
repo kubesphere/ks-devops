@@ -86,6 +86,7 @@ func AppendGitlabSourceToEtree(source *etree.Element, gitSource *devopsv1alpha3.
 		regexTraits.CreateAttr("plugin", "scm-api")
 		regexTraits.CreateElement("regex").SetText(gitSource.RegexFilter)
 	}
+	traits.CreateElement("io.jenkins.plugins.gitlabbranchsource.GitLabSkipNotificationsTrait")
 	return
 }
 
