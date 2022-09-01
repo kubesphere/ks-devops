@@ -86,6 +86,10 @@ func AppendGitlabSourceToEtree(source *etree.Element, gitSource *devopsv1alpha3.
 		regexTraits.CreateAttr("plugin", "scm-api")
 		regexTraits.CreateElement("regex").SetText(gitSource.RegexFilter)
 	}
+	if !gitSource.AcceptJenkinsNotification {
+		traits.CreateElement("io.jenkins.plugins.gitlabbranchsource.GitLabSkipNotificationsTrait")
+	}
+
 	return
 }
 
@@ -155,6 +159,11 @@ func GetGitlabSourceFromEtree(source *etree.Element) (gitSource *devopsv1alpha3.
 			if regex := regexTrait.SelectElement("regex"); regex != nil {
 				gitSource.RegexFilter = regex.Text()
 			}
+		}
+
+		if skipNotificationTrait := traits.SelectElement(
+			"io.jenkins.plugins.gitlabbranchsource.GitLabSkipNotificationsTrait"); skipNotificationTrait == nil {
+			gitSource.AcceptJenkinsNotification = true
 		}
 	}
 	return
