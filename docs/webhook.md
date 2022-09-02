@@ -14,7 +14,7 @@ There are two types of Jenkins based Pipelines: regular or multi-branch Pipeline
 the server will search all Pipelines by the Git URL, then trigger the scan action if it's a multi-branch Pipeline,
 or create a new PipelineRun if there is an annotation key-value likes the following one:
 ```
-scm.devops.kubesphere.io=https=https://github.com/linuxsuren/tools
+scm.devops.kubesphere.io=https://github.com/linuxsuren/tools
 ```
 
 In case you only want some Pipelines to be triggered when specific branches changed. You can add an annotation:
@@ -25,6 +25,11 @@ scm.devops.kubesphere.io/ref='["master","fea-.*"]'
 The webhook address is:
 ```
 http://ip:port/v1alpha3/webhooks/scm
+```
+
+or, please use the following link if you're using ks-devops in KubeSphere:
+```
+http://ip:port/kapis/clusters/{cluster}/devops.kubesphere.io/v1alpha3/webhooks/scm
 ```
 
 ### Using webhook locally
