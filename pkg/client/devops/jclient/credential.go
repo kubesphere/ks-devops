@@ -37,7 +37,13 @@ func (j *JenkinsClient) CreateCredentialInProject(projectID string, credential *
 // UpdateCredentialInProject updates a credential
 func (j *JenkinsClient) UpdateCredentialInProject(projectID string, credential *v1.Secret) (id string, err error) {
 	client := j.getClient()
-	err = client.UpdateInFolder(projectID, credential.GetName(), credential)
+
+	var cre interface{}
+	if cre, err = util.ConvertSecretToCredential(credential); err != nil {
+		return "", err
+	}
+
+	err = client.UpdateInFolder(projectID, credential.GetName(), cre)
 	return
 }
 

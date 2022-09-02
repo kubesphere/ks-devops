@@ -20,7 +20,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.19
-	github.com/jenkins-zh/jenkins-client v0.0.13
+	github.com/jenkins-zh/jenkins-client v0.0.14-0.20220902054515-a6af553a94b4
 	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.5
@@ -139,5 +139,3 @@ replace (
 	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
 	golang.org/x/text => golang.org/x/text v0.3.7
 )
-
-replace github.com/jenkins-zh/jenkins-client => github.com/linuxsuren/jenkins-client v0.0.0-20220823083928-d2b2288b88d8
