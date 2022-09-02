@@ -95,8 +95,6 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 	found := false
 	if webhook.Kind() == scm.WebhookKindPush {
 		repo := webhook.Repository()
-		link := repo.Link
-
 		pushHook := webhook.(*scm.PushHook)
 
 		pipelineList := &v1alpha3.PipelineList{}
@@ -108,15 +106,17 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 				}
 				found = true
 
+				gitURL := pipeline.GetAnnotations()[scmAnnotationKey]
 				if pipeline.IsMultiBranch() {
-					gitURL := pipeline.Spec.MultiBranchPipeline.GetGitURL()
-					if gitURL != "" && gitRepoMatch(gitURL, link) {
+					gitURL = pipeline.Spec.MultiBranchPipeline.GetGitURL()
+					if gitURL != "" && gitRepoMatch(gitURL, repo.Link, repo.Clone, repo.CloneSSH) {
 						err = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
 					}
-				} else {
-					gitURL := pipeline.GetAnnotations()[scmAnnotationKey]
-					if gitRepoMatch(gitURL, link) {
+				} else if gitURL != "" {
+					if gitRepoMatch(gitURL, repo.Link, repo.Clone, repo.CloneSSH) {
 						err = h.createPipelineRun(pipeline, pushHook)
+					} else {
+						err = fmt.Errorf("expect URL: %s, got: %v", gitURL, []string{repo.Link, repo.Clone, repo.CloneSSH})
 					}
 				}
 			}
@@ -185,7 +185,12 @@ func branchMatch(pipeline v1alpha3.Pipeline, branch string) (ok bool) {
 }
 
 // gitRepoMatch if the source matches target
-func gitRepoMatch(source, target string) (ok bool) {
-	ok = source == target
+func gitRepoMatch(source string, targets ...string) (ok bool) {
+	for _, target := range targets {
+		if target == source {
+			ok = true
+			break
+		}
+	}
 	return
 }
