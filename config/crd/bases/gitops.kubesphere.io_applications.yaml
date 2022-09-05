@@ -2030,15 +2030,20 @@ spec:
               argoApp:
                 type: string
               fluxApp:
+                description: FluxApplicationStatus represent the status of a FluxApp
                 properties:
                   helmReleaseStatus:
+                    description: HelmReleaseStatus is a list of HelmRelease status
+                      for each HelmRelease that belongs to this FluxApp
                     items:
+                      description: HelmReleaseStatus contains the Name of a HelmRelease
+                        and its Status
                       properties:
                         name:
+                          description: the name of the HelmRelease
                           type: string
                         status:
-                          description: HelmReleaseStatus defines the observed state
-                            of a HelmRelease.
+                          description: the status of the HelmRelease
                           properties:
                             conditions:
                               description: Conditions holds the conditions for the
@@ -2178,13 +2183,17 @@ spec:
                       type: object
                     type: array
                   kustomizationStatus:
+                    description: KustomizationStatus is a list of Kustomization status
+                      for each Kustomization that belongs to this FluxApp
                     items:
+                      description: KustomizationStatus contains the Name of a Kustomization
+                        and its Status
                       properties:
                         name:
+                          description: the name of the Kustomization
                           type: string
                         status:
-                          description: KustomizationStatus defines the observed state
-                            of a kustomization.
+                          description: the status of the Kustomization
                           properties:
                             conditions:
                               items:

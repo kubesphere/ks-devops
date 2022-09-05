@@ -236,18 +236,29 @@ type KustomizationSpec struct {
 	Wait bool `json:"wait,omitempty"`
 }
 
+// FluxApplicationStatus represent the status of a FluxApp
 type FluxApplicationStatus struct {
-	HelmReleaseStatus   []*HelmReleaseStatus   `json:"helmReleaseStatus,omitempty"`
+	// HelmReleaseStatus is a list of HelmRelease status for each HelmRelease
+	// that belongs to this FluxApp
+	HelmReleaseStatus []*HelmReleaseStatus `json:"helmReleaseStatus,omitempty"`
+	// KustomizationStatus is a list of Kustomization status for each Kustomization
+	// that belongs to this FluxApp
 	KustomizationStatus []*KustomizationStatus `json:"kustomizationStatus,omitempty"`
 }
 
+// HelmReleaseStatus contains the Name of a HelmRelease and its Status
 type HelmReleaseStatus struct {
-	Name   string                   `json:"name"`
+	// the name of the HelmRelease
+	Name string `json:"name"`
+	// the status of the HelmRelease
 	Status helmv2.HelmReleaseStatus `json:"status"`
 }
 
+// KustomizationStatus contains the Name of a Kustomization and its Status
 type KustomizationStatus struct {
-	Name   string                    `json:"name"`
+	// the name of the Kustomization
+	Name string `json:"name"`
+	// the status of the Kustomization
 	Status kusv1.KustomizationStatus `json:"status"`
 }
 
