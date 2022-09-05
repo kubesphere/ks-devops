@@ -20,8 +20,8 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.19
-	github.com/jenkins-zh/jenkins-client v0.0.14-0.20220902054515-a6af553a94b4
-	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220811083317-bb6f87a3f866
+	github.com/jenkins-zh/jenkins-client v0.0.14-0.20220905100332-0c9041a612a1
+	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220905100332-0c9041a612a1
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
@@ -133,9 +133,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace (
-	github.com/golang/example => github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/kubesphere/sonargo => github.com/kubesphere/sonargo v0.0.2
-	golang.org/x/text => golang.org/x/text v0.3.7
-)
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
