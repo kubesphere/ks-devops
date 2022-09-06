@@ -12,6 +12,14 @@ pipeline {
           agent none
           steps {
             container('golangci') {
+              sh '''
+              go mod tidy
+              if [ -n "$(git status --porcelain)" ]; then
+                echo 'To fix this check, run "go mod tidy"'
+                git status # Show the files that failed to pass the check.
+                exit 1
+              fi
+              '''
               sh 'golangci-lint run ./... -v'
             }
           }
