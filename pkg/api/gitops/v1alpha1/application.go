@@ -236,6 +236,16 @@ type KustomizationSpec struct {
 	Wait bool `json:"wait,omitempty"`
 }
 
+// FluxApplicationStatus represent the status of a FluxApp
+type FluxApplicationStatus struct {
+	// HelmReleaseStatus represent the status of each HelmRelease
+	// the key is the HelmRelease's name and the value is the HelmRelease's status
+	HelmReleaseStatus map[string]*helmv2.HelmReleaseStatus `json:"helmReleaseStatus,omitempty"`
+	// KustomizationStatus represent the status of each Kustomization
+	// the key is the Kustomization's name and the value is the Kustomization's status
+	KustomizationStatus map[string]*kusv1.KustomizationStatus `json:"kustomizationStatus,omitempty"`
+}
+
 // ApplicationSpec is the specification of the Application
 type ApplicationSpec struct {
 	Kind    Engine           `json:"kind,omitempty"`
@@ -586,9 +596,9 @@ type Application struct {
 
 // ApplicationStatus represents the status of the Application
 type ApplicationStatus struct {
-	Kind    Engine `json:"kind,omitempty"`
-	ArgoApp string `json:"argoApp,omitempty"`
-	FluxApp string `json:"fluxApp,omitempty"`
+	Kind    Engine                `json:"kind,omitempty"`
+	ArgoApp string                `json:"argoApp,omitempty"`
+	FluxApp FluxApplicationStatus `json:"fluxApp,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
