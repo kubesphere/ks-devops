@@ -238,28 +238,12 @@ type KustomizationSpec struct {
 
 // FluxApplicationStatus represent the status of a FluxApp
 type FluxApplicationStatus struct {
-	// HelmReleaseStatus is a list of HelmRelease status for each HelmRelease
-	// that belongs to this FluxApp
-	HelmReleaseStatus []*HelmReleaseStatus `json:"helmReleaseStatus,omitempty"`
-	// KustomizationStatus is a list of Kustomization status for each Kustomization
-	// that belongs to this FluxApp
-	KustomizationStatus []*KustomizationStatus `json:"kustomizationStatus,omitempty"`
-}
-
-// HelmReleaseStatus contains the Name of a HelmRelease and its Status
-type HelmReleaseStatus struct {
-	// the name of the HelmRelease
-	Name string `json:"name"`
-	// the status of the HelmRelease
-	Status helmv2.HelmReleaseStatus `json:"status"`
-}
-
-// KustomizationStatus contains the Name of a Kustomization and its Status
-type KustomizationStatus struct {
-	// the name of the Kustomization
-	Name string `json:"name"`
-	// the status of the Kustomization
-	Status kusv1.KustomizationStatus `json:"status"`
+	// HelmReleaseStatus represent the status of each HelmRelease
+	// the key is the HelmRelease's name and the value is the HelmRelease's status
+	HelmReleaseStatus map[string]*helmv2.HelmReleaseStatus `json:"helmReleaseStatus,omitempty"`
+	// KustomizationStatus represent the status of each Kustomization
+	// the key is the Kustomization's name and the value is the Kustomization's status
+	KustomizationStatus map[string]*kusv1.KustomizationStatus `json:"kustomizationStatus,omitempty"`
 }
 
 // ApplicationSpec is the specification of the Application
