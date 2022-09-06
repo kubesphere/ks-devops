@@ -16,7 +16,9 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/h2non/gock"
@@ -40,32 +42,107 @@ var mockHeaders = map[string]string{
 	"X-RateLimit-Reset":     "1512076018",
 }
 
+var mockPageHeaders = map[string]string{
+	"Link": `<https://api.github.com/resource?page=2>; rel="next",` +
+		`<https://api.github.com/resource?page=1>; rel="prev",` +
+		`<https://api.github.com/resource?page=1>; rel="first",` +
+		`<https://api.github.com/resource?page=5>; rel="last"`,
+}
+
 func TestCreatePullRequestStatus(t *testing.T) {
-	defer gock.Off()
+	tests := []struct {
+		name              string
+		createStatusMaker func() *StatusMaker
+		wantErr           bool
+	}{{
+		name: "normal case",
+		createStatusMaker: func() *StatusMaker {
+			gock.New("https://api.github.com").
+				Get("/repos/octocat/hello-world/pulls/1347").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/pr.json")
 
-	gock.New("https://api.github.com").
-		Get("/repos/octocat/hello-world/pulls/1347").
-		Reply(200).
-		Type("application/json").
-		SetHeaders(mockHeaders).
-		File("testdata/pr.json")
+			gock.New("https://api.github.com").
+				Post("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
+				Reply(201).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/status.json")
 
-	gock.New("https://api.github.com").
-		Post("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
-		Reply(201).
-		Type("application/json").
-		SetHeaders(mockHeaders).
-		File("testdata/status.json")
+			gock.New("https://api.github.com").
+				Get("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
+				MatchParam("page", "1").
+				MatchParam("per_page", "100").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				SetHeaders(mockPageHeaders).
+				File("testdata/statuses.json")
 
-	maker := NewStatusMaker("octocat/hello-world", "")
-	maker.WithTarget("https://ci.example.com/1000/output").WithPR(1347)
+			maker := NewStatusMaker("octocat/hello-world", "")
+			maker.WithTarget("https://ci.example.com/1000/output").WithPR(1347)
+			return maker
+		},
+		wantErr: false,
+	}, {
+		name: "failed to request the status list API",
+		createStatusMaker: func() *StatusMaker {
+			gock.New("https://api.github.com").
+				Get("/repos/octocat/hello-world/pulls/1347").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/pr.json")
 
-	err := maker.Create(context.Background(), scm.StateSuccess, "continuous-integration/drone", "Build has completed successfully")
-	assert.Nil(t, err)
+			gock.New("https://api.github.com").
+				Post("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
+				Reply(201).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/status.json")
 
-	maker.WithProvider("fake-provider").WithServer("fake-server")
-	err = maker.Create(context.Background(), scm.StateSuccess, "continuous-integration/drone", "Build has completed successfully")
-	assert.NotNil(t, err)
+			maker := NewStatusMaker("octocat/hello-world", "")
+			maker.WithTarget("https://ci.example.com/1000/output").WithPR(1347)
+			return maker
+		},
+		wantErr: true,
+	}, {
+		name: "invalid go scm provider",
+		createStatusMaker: func() *StatusMaker {
+			gock.New("https://api.github.com").
+				Get("/repos/octocat/hello-world/pulls/1347").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/pr.json")
+
+			gock.New("https://api.github.com").
+				Post("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
+				Reply(201).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				File("testdata/status.json")
+
+			maker := NewStatusMaker("octocat/hello-world", "")
+			maker.WithProvider("fake-provider").WithServer("fake-server").WithPR(1347)
+			return maker
+		},
+		wantErr: true,
+	}}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer gock.Off()
+			statusMaker := tt.createStatusMaker()
+			err := statusMaker.Create(context.Background(), scm.StateSuccess, "continuous-integration/drone", "Build has completed successfully")
+			if tt.wantErr {
+				assert.NotNil(t, err, "should have error in case [%d]", i)
+			} else {
+				assert.Nil(t, err, "should not have error in case [%d]", i)
+			}
+		})
+	}
 }
 
 func TestPullRequestStatusReconciler_SetupWithManager(t *testing.T) {
@@ -185,6 +262,16 @@ func TestPullRequestStatusReconciler(t *testing.T) {
 				Type("application/json").
 				SetHeaders(mockHeaders).
 				File("testdata/status.json")
+
+			gock.New("https://api.github.com").
+				Get("/repos/octocat/hello-world/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e").
+				MatchParam("page", "1").
+				MatchParam("per_page", "100").
+				Reply(200).
+				Type("application/json").
+				SetHeaders(mockHeaders).
+				SetHeaders(mockPageHeaders).
+				File("testdata/statuses.json")
 		},
 		k8sClient: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(pipRun.DeepCopy(), secret.DeepCopy(), project.DeepCopy()).Build(),
 		wantErr:   false,
@@ -297,12 +384,12 @@ func TestConvertPipelineRunPhaseToSCMStatus(t *testing.T) {
 }
 
 func TestGetRepoInfo(t *testing.T) {
-	emptyRepoInfo := repoInfo{}
+	emptyRepoInfo := repoInformation{}
 
 	tests := []struct {
 		name     string
 		repo     *v1alpha3.MultiBranchPipeline
-		wantInfo repoInfo
+		wantInfo repoInformation
 	}{{
 		name:     "repo is nil",
 		repo:     nil,
@@ -317,7 +404,7 @@ func TestGetRepoInfo(t *testing.T) {
 				CredentialId: "token",
 			},
 		},
-		wantInfo: repoInfo{owner: "owner", repo: "repo", tokenId: "token", provider: "github"},
+		wantInfo: repoInformation{owner: "owner", repo: "repo", tokenId: "token", provider: "github"},
 	}, {
 		name: "gitlab",
 		repo: &v1alpha3.MultiBranchPipeline{
@@ -328,7 +415,7 @@ func TestGetRepoInfo(t *testing.T) {
 				CredentialId: "token",
 			},
 		},
-		wantInfo: repoInfo{owner: "owner", repo: "repo", tokenId: "token", provider: "gitlab"},
+		wantInfo: repoInformation{owner: "owner", repo: "repo", tokenId: "token", provider: "gitlab"},
 	}, {
 		name: "bitbucket",
 		repo: &v1alpha3.MultiBranchPipeline{
@@ -340,12 +427,95 @@ func TestGetRepoInfo(t *testing.T) {
 				CredentialId: "token",
 			},
 		},
-		wantInfo: repoInfo{owner: "owner", repo: "repo", tokenId: "token", provider: "bitbucketcloud"},
+		wantInfo: repoInformation{owner: "owner", repo: "repo", tokenId: "token", provider: "bitbucketcloud"},
 	}}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info := getRepoInfo(tt.repo)
 			assert.Equal(t, tt.wantInfo, info, "failed in case [%d]", i)
+		})
+	}
+}
+
+func Test_getPipelineRunNameAndNsFromURL(t *testing.T) {
+	type args struct {
+		link string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantName string
+		wantNs   string
+		wantErr  assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			link: "http://ip:port/ks-devops-core/clusters/host/devops/core58fgv/pipelines/ks-devops/branch/PR-816/run/ks-devops-pzdcz/task-status",
+		},
+		wantName: "ks-devops-pzdcz",
+		wantNs:   "core58fgv",
+		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			return true
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotNs, err := getPipelineRunNameAndNsFromURL(tt.args.link)
+			if !tt.wantErr(t, err, fmt.Sprintf("getPipelineRunNameAndNsFromURL(%v)", tt.args.link)) {
+				return
+			}
+			assert.Equalf(t, tt.wantName, gotName, "getPipelineRunNameAndNsFromURL(%v)", tt.args.link)
+			assert.Equalf(t, tt.wantNs, gotNs, "getPipelineRunNameAndNsFromURL(%v)", tt.args.link)
+		})
+	}
+}
+
+func TestCreateExpirationCheckFunc(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	previousStatus := &scm.Status{Target: "http://ip:port/ks-devops-core/clusters/host/devops/core58fgv/pipelines/ks-devops/branch/PR-816/run/ks-devops-pzdcz/task-status"}
+
+	previousPipelineRun := &v1alpha3.PipelineRun{
+		Status: v1alpha3.PipelineRunStatus{
+			StartTime: &metav1.Time{Time: time.Now()},
+		},
+	}
+	previousPipelineRun.SetName("ks-devops-pzdcz")
+	previousPipelineRun.SetNamespace("core58fgv")
+
+	currentPipelineRun := &v1alpha3.PipelineRun{
+		Status: v1alpha3.PipelineRunStatus{
+			StartTime: &metav1.Time{Time: time.Now().Add(time.Minute)},
+		},
+	}
+
+	tests := []struct {
+		name               string
+		k8sClient          client.Client
+		currentPipelineRun *v1alpha3.PipelineRun
+		previousStatus     *scm.Status
+		currentStatus      *scm.StatusInput
+		wantBool           bool
+	}{{
+		name:           "cannot find previous PipelineRun",
+		k8sClient:      fake.NewClientBuilder().WithScheme(schema).Build(),
+		previousStatus: previousStatus,
+		wantBool:       false,
+	}, {
+		name:               "the current PipelineRun is newer",
+		k8sClient:          fake.NewClientBuilder().WithScheme(schema).WithObjects(previousPipelineRun.DeepCopy()).Build(),
+		previousStatus:     previousStatus,
+		currentPipelineRun: currentPipelineRun.DeepCopy(),
+		wantBool:           false,
+	}}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			checkFunc := createExpirationCheckFunc(context.TODO(), tt.k8sClient, tt.currentPipelineRun)
+			result := checkFunc(tt.previousStatus, tt.currentStatus)
+			assert.Equal(t, tt.wantBool, result, "failed in case [%d]", i)
 		})
 	}
 }

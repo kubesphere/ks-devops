@@ -16,6 +16,8 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"kubesphere.io/devops/pkg/utils/stringutils"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -91,6 +93,7 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	maker := NewStatusMaker(repo, token)
 	maker.WithTarget(target).WithPR(prNumber).WithProvider(repoInfo.provider).WithUsername(username)
+	maker.WithExpirationCheck(createExpirationCheckFunc(ctx, r, pipelinerun.DeepCopy()))
 
 	err = maker.CreateWithPipelinePhase(ctx, pipelinerun.Status.Phase, "KubeSphere DevOps", string(pipelinerun.Status.Phase))
 	if err != nil {
@@ -99,22 +102,61 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return
 }
 
-type repoInfo struct {
+// createExpirationCheckFunc checks the start time of the PipelineRun
+func createExpirationCheckFunc(ctx context.Context, k8sClient client.Client, currentPipelineRun *v1alpha3.PipelineRun) expirationCheckFunc {
+	return func(previousStatus *scm.Status, currentStatus *scm.StatusInput) bool {
+		if previousStatus == nil {
+			// consider this is the first build status
+			return false
+		}
+
+		name, ns, err := getPipelineRunNameAndNsFromURL(previousStatus.Target)
+		if err == nil {
+			previousPipelineRun := &v1alpha3.PipelineRun{}
+			if err = k8sClient.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, previousPipelineRun); err == nil &&
+				previousPipelineRun.Status.StartTime != nil &&
+				currentPipelineRun.Status.StartTime != nil {
+				return !previousPipelineRun.Status.StartTime.Before(currentPipelineRun.Status.StartTime)
+			}
+		}
+		return false
+	}
+}
+
+// getPipelineRunNameAndNsFromURL parse a URL and returns the name and namespace of a PipelineRun
+//
+// http://ip:port/ks-devops-core/clusters/host/devops/core58fgv/pipelines/ks-devops/branch/PR-816/run/ks-devops-pzdcz/task-status
+func getPipelineRunNameAndNsFromURL(link string) (name, ns string, err error) {
+	var reg *regexp.Regexp
+	if reg, err = regexp.Compile("run/.*/task-status"); err == nil {
+		name = reg.FindString(link)
+		name = strings.TrimPrefix(name, "run/")
+		name = strings.TrimSuffix(name, "/task-status")
+	}
+	if reg, err = regexp.Compile("devops/core58fgv/pipelines"); err == nil {
+		ns = reg.FindString(link)
+		ns = strings.TrimPrefix(ns, "devops/")
+		ns = strings.TrimSuffix(ns, "/pipelines")
+	}
+	return
+}
+
+type repoInformation struct {
 	provider string
 	owner    string
 	repo     string
 	tokenId  string
 }
 
-func (r repoInfo) getRepoPath() string {
+func (r repoInformation) getRepoPath() string {
 	return fmt.Sprintf("%s/%s", r.owner, r.repo)
 }
 
-func (r repoInfo) isInvalid() bool {
+func (r repoInformation) isInvalid() bool {
 	return r.provider == "" || r.owner == "" || r.repo == "" || r.tokenId == ""
 }
 
-func getRepoInfo(repo *v1alpha3.MultiBranchPipeline) (info repoInfo) {
+func getRepoInfo(repo *v1alpha3.MultiBranchPipeline) (info repoInformation) {
 	if repo == nil {
 		return
 	}
@@ -184,16 +226,11 @@ func (r *PullRequestStatusReconciler) getTokenFromSecret(secretRef *v1.SecretRef
 
 func (r *PullRequestStatusReconciler) getSecret(ref *v1.SecretReference, defaultNamespace string) (secret *v1.Secret, err error) {
 	secret = &v1.Secret{}
-	ns := ref.Namespace
-	if ns == "" {
-		ns = defaultNamespace
-	}
-
-	if err = r.Client.Get(context.TODO(), types.NamespacedName{
+	ns := stringutils.SetOrDefault(ref.Namespace, defaultNamespace)
+	err = r.Client.Get(context.TODO(), types.NamespacedName{
 		Namespace: ns, Name: ref.Name,
-	}, secret); err != nil {
-		err = fmt.Errorf("cannot get secret %v, error is: %v", secret, err)
-	}
+	}, secret)
+	err = stringutils.ErrorOverride(err, "cannot get secret %v, error is: %v", secret, err)
 	return
 }
 
@@ -232,6 +269,9 @@ type StatusMaker struct {
 	token    string
 	username string
 	target   string
+
+	// expirationCheck checks if the current status is expiration that compared to the previous one
+	expirationCheck expirationCheckFunc
 }
 
 // NewStatusMaker creates an instance of statusMaker
@@ -239,7 +279,18 @@ func NewStatusMaker(repo, token string) *StatusMaker {
 	return &StatusMaker{
 		repo:  repo,
 		token: token,
+		expirationCheck: func(previousStatus *scm.Status, currentStatus *scm.StatusInput) bool {
+			return false
+		},
 	}
+}
+
+type expirationCheckFunc func(previousStatus *scm.Status, currentStatus *scm.StatusInput) bool
+
+// WithExpirationCheck set the expiration check function
+func (s *StatusMaker) WithExpirationCheck(check expirationCheckFunc) *StatusMaker {
+	s.expirationCheck = check
+	return s
 }
 
 // WithUsername sets the username
@@ -254,7 +305,7 @@ func (s *StatusMaker) WithProvider(provider string) *StatusMaker {
 	return s
 }
 
-// WithProvider sets the server
+// WithServer sets the server
 func (s *StatusMaker) WithServer(server string) *StatusMaker {
 	s.server = server
 	return s
@@ -274,8 +325,8 @@ func (s *StatusMaker) WithPR(pr int) *StatusMaker {
 
 // Create creates a generic status
 func (s *StatusMaker) Create(ctx context.Context, status scm.State, label, desc string) (err error) {
-	var client *scm.Client
-	client, err = factory.NewClient(s.provider, s.server, s.token, func(c *scm.Client) {
+	var scmClient *scm.Client
+	scmClient, err = factory.NewClient(s.provider, s.server, s.token, func(c *scm.Client) {
 		c.Username = s.username
 	})
 	if err != nil {
@@ -283,13 +334,42 @@ func (s *StatusMaker) Create(ctx context.Context, status scm.State, label, desc 
 	}
 
 	var pullRequest *scm.PullRequest
-	if pullRequest, _, err = client.PullRequests.Find(ctx, s.repo, s.pr); err == nil {
-		_, _, err = client.Repositories.CreateStatus(ctx, s.repo, pullRequest.Sha, &scm.StatusInput{
+	if pullRequest, _, err = scmClient.PullRequests.Find(ctx, s.repo, s.pr); err == nil {
+		var previousStatus *scm.Status
+		if previousStatus, err = s.FindPreviousStatus(ctx, scmClient, pullRequest.Sha, label); err != nil {
+			return
+		}
+
+		currentStatus := &scm.StatusInput{
 			Desc:   desc,
 			Label:  label,
 			State:  status,
 			Target: s.target,
-		})
+		}
+		// avoid the previous building status override newer one
+		if !s.expirationCheck(previousStatus, currentStatus) {
+			_, _, err = scmClient.Repositories.CreateStatus(ctx, s.repo, pullRequest.Sha, currentStatus)
+		}
+	}
+	return
+}
+
+// FindPreviousStatus finds the existing status by sha and label
+func (s *StatusMaker) FindPreviousStatus(ctx context.Context, scmClient *scm.Client, sha, label string) (target *scm.Status, err error) {
+	var exists []*scm.Status
+	if exists, _, err = scmClient.Repositories.ListStatus(ctx, s.repo, sha, &scm.ListOptions{
+		Page: 1,
+		Size: 100, // assume this list has not too many items
+	}); err != nil {
+		err = fmt.Errorf("failed to list the existing status, error: %v", err)
+		return
+	}
+
+	for _, item := range exists {
+		if item.Label == label {
+			target = item
+			break
+		}
 	}
 	return
 }
@@ -314,5 +394,5 @@ func convertPipelineRunPhaseToSCMStatus(phase v1alpha3.RunPhase) (status scm.Sta
 	default:
 		status = scm.StateUnknown
 	}
-	return status
+	return
 }
