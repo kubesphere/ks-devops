@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"time"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=watch;get;list
@@ -396,7 +397,7 @@ func buildTemplateFromApp(fluxApp *v1alpha1.FluxApplication) (*sourcev1.HelmChar
 			},
 			Chart:             c.Chart,
 			Version:           c.Version,
-			Interval:          *c.Interval,
+			Interval:          convertInterval(c.Interval),
 			ReconcileStrategy: c.ReconcileStrategy,
 			ValuesFiles:       c.ValuesFiles,
 		},
@@ -490,6 +491,13 @@ func convertKubeconfig(kubeconfig *helmv2.KubeConfig) *kusv1.KubeConfig {
 		return nil
 	}
 	return &kusv1.KubeConfig{SecretRef: kubeconfig.SecretRef}
+}
+
+func convertInterval(interval *metav1.Duration) metav1.Duration {
+	if interval == nil {
+		return metav1.Duration{Duration: 10 * time.Minute}
+	}
+	return *interval
 }
 
 func checkFluxApp(fluxApp *v1alpha1.FluxApplication) (err error) {
