@@ -112,6 +112,11 @@ func createExpirationCheckFunc(ctx context.Context, k8sClient client.Client, cur
 
 		name, ns, err := getPipelineRunNameAndNsFromURL(previousStatus.Target)
 		if err == nil {
+			if name == currentPipelineRun.Name && ns == currentPipelineRun.Namespace {
+				// allow it pass if they belong to the same PipelineRun
+				return false
+			}
+
 			previousPipelineRun := &v1alpha3.PipelineRun{}
 			if err = k8sClient.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, previousPipelineRun); err == nil &&
 				previousPipelineRun.Status.StartTime != nil &&

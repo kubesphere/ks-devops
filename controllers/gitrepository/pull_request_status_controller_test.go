@@ -500,15 +500,22 @@ func TestCreateExpirationCheckFunc(t *testing.T) {
 		currentStatus      *scm.StatusInput
 		wantBool           bool
 	}{{
-		name:           "cannot find previous PipelineRun",
-		k8sClient:      fake.NewClientBuilder().WithScheme(schema).Build(),
-		previousStatus: previousStatus,
-		wantBool:       false,
+		name:               "cannot find previous PipelineRun",
+		k8sClient:          fake.NewClientBuilder().WithScheme(schema).Build(),
+		currentPipelineRun: currentPipelineRun.DeepCopy(),
+		previousStatus:     previousStatus,
+		wantBool:           false,
 	}, {
 		name:               "the current PipelineRun is newer",
 		k8sClient:          fake.NewClientBuilder().WithScheme(schema).WithObjects(previousPipelineRun.DeepCopy()).Build(),
 		previousStatus:     previousStatus,
 		currentPipelineRun: currentPipelineRun.DeepCopy(),
+		wantBool:           false,
+	}, {
+		name:               "previous and the current one belong to the same PipelineRun",
+		k8sClient:          fake.NewClientBuilder().WithScheme(schema).WithObjects(previousPipelineRun.DeepCopy()).Build(),
+		previousStatus:     previousStatus,
+		currentPipelineRun: previousPipelineRun.DeepCopy(),
 		wantBool:           false,
 	}}
 	for i, tt := range tests {
