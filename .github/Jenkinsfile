@@ -5,6 +5,10 @@ pipeline {
     }
   }
 
+  options {
+      parallelsAlwaysFailFast()
+  }
+
   stages {
     stage('Code check') {
       parallel {
@@ -30,6 +34,14 @@ pipeline {
           steps {
             container('go') {
               sh 'make test'
+
+              withCredentials([string(credentialsId: 'codecov', variable: 'VARIABLE')]) {
+                sh '''
+                curl -Os https://uploader.codecov.io/v0.3.1/linux/codecov
+                chmod +x codecov
+                ./codecov -t ${VARIABLE} --flags unittests --name codecov-umbrella --nonZero --pr $CHANGE_ID --file coverage.out
+                '''
+              }
             }
           }
         }
@@ -45,13 +57,26 @@ pipeline {
       }
     }
 
+    stage('Docker Login') {
+      when {
+        changeRequest target: 'master'
+      }
+      steps {
+        container('base') {
+          withCredentials([usernamePassword(credentialsId: 'gh', passwordVariable: 'PASSWORDVARIABLE' ,usernameVariable : 'USERNAMEVARIABLE')]) {
+            sh 'docker login ghcr.io -u$USERNAMEVARIABLE -p$PASSWORDVARIABLE'
+          }
+        }
+      }
+    }
+
     stage('Build Image') {
       parallel {
         stage('Build') {
           agent none
           steps {
             container('base') {
-              sh 'docker build . -f config/dockerfiles/apiserver/Dockerfile -t surenpi/test:latest'
+              sh 'docker build . -f config/dockerfiles/apiserver/Dockerfile -t ghcr.io/kubesphere-sigs/devops-apiserver:pr-$CHANGE_ID'
             }
           }
         }
@@ -60,7 +85,7 @@ pipeline {
           agent none
           steps {
             container('base') {
-              sh 'docker build . -f config/dockerfiles/controller-manager/Dockerfile -t surenpi/test:latest'
+              sh 'docker build . -f config/dockerfiles/controller-manager/Dockerfile -t ghcr.io/kubesphere-sigs/devops-controller:pr-$CHANGE_ID'
             }
           }
         }
@@ -69,11 +94,25 @@ pipeline {
           agent none
           steps {
             container('base') {
-              sh 'docker build . -f config/dockerfiles/tools/Dockerfile -t surenpi/test:latest'
+              sh 'docker build . -f config/dockerfiles/tools/Dockerfile -t ghcr.io/kubesphere-sigs/devops-tools:pr-$CHANGE_ID'
             }
           }
         }
+      }
+    }
 
+    stage('Push Image') {
+      when {
+        changeRequest target: 'master'
+      }
+      steps {
+        container('base') {
+          sh 'docker push ghcr.io/kubesphere-sigs/devops-apiserver:pr-$CHANGE_ID'
+
+          sh 'docker push ghcr.io/kubesphere-sigs/devops-controller:pr-$CHANGE_ID'
+
+          sh 'docker push ghcr.io/kubesphere-sigs/devops-tools:pr-$CHANGE_ID'
+        }
       }
     }
   }

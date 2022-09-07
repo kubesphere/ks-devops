@@ -62,20 +62,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ct
 	}
 
 	// make links between the webhook and git repositories
-	if err = r.linkToWebhooks(repo); err != nil {
-		return
-	}
-
-	secret := repo.Spec.Secret
-	if secret == nil {
-		result = ctrl.Result{
-			Requeue:      true,
-			RequeueAfter: time.Minute,
+	if err = r.linkToWebhooks(repo); err == nil {
+		secret := repo.Spec.Secret
+		if secret == nil {
+			result = ctrl.Result{
+				Requeue:      true,
+				RequeueAfter: time.Minute,
+			}
+			return
 		}
-		return
-	}
 
-	err = r.createOrUpdateWebhook(repo)
+		err = r.createOrUpdateWebhook(repo)
+	}
 	return
 }
 
