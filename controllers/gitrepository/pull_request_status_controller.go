@@ -55,7 +55,7 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return
 	}
 
-	if !pipelinerun.Spec.IsMultiBranchPipeline() || pipelinerun.Spec.SCM == nil {
+	if !pipelinerun.Spec.IsMultiBranchPipeline() || pipelinerun.Spec.SCM == nil || pipelinerun.Status.Phase == "" {
 		return
 	}
 
