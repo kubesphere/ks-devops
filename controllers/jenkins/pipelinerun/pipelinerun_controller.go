@@ -20,11 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-logr/logr"
+	cmstore "kubesphere.io/devops/pkg/store/configmap"
+	storeInter "kubesphere.io/devops/pkg/store/store"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"reflect"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	corev1 "k8s.io/api/core/v1"
@@ -47,12 +49,15 @@ const tokenExpireIn time.Duration = 5 * time.Minute
 // Reconciler reconciles a PipelineRun object
 type Reconciler struct {
 	client.Client
-	log          logr.Logger
-	Scheme       *runtime.Scheme
-	DevOpsClient devopsClient.Interface
-	JenkinsCore  core.JenkinsCore
-	TokenIssuer  token.Issuer
-	recorder     record.EventRecorder
+	req                  ctrl.Request
+	ctx                  context.Context
+	log                  logr.Logger
+	Scheme               *runtime.Scheme
+	DevOpsClient         devopsClient.Interface
+	JenkinsCore          core.JenkinsCore
+	TokenIssuer          token.Issuer
+	recorder             record.EventRecorder
+	pipelineRunDataStore string
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -62,6 +67,8 @@ type Reconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.log.WithValues("PipelineRun", req.NamespacedName)
+	r.ctx = ctx
+	r.req = req
 
 	// get PipelineRun
 	pipelineRun := &v1alpha3.PipelineRun{}
@@ -151,15 +158,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			log.Error(err, "unable to marshal nodes details to JSON")
 			nodeDetailsJSON = []byte("[]")
 		}
-		if pipelineRunCopied.Annotations == nil {
-			pipelineRunCopied.Annotations = make(map[string]string)
-		}
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = string(nodeDetailsJSON)
 
-		// update labels and annotations
-		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
-			log.Error(err, "unable to update PipelineRun labels and annotations.")
+		if err = r.storePipelineRunData(string(runResultJSON), string(nodeDetailsJSON), pipelineRunCopied); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -225,6 +225,37 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
+func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
+	if r.pipelineRunDataStore == "" {
+		if pipelineRunCopied.Annotations == nil {
+			pipelineRunCopied.Annotations = make(map[string]string)
+		}
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = runResultJSON
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = nodeDetailsJSON
+
+		// update labels and annotations
+		if err = r.updateLabelsAndAnnotations(r.ctx, pipelineRunCopied); err != nil {
+			r.log.Error(err, "unable to update PipelineRun labels and annotations.")
+		}
+	} else if r.pipelineRunDataStore == "configmap" {
+		var cmStore storeInter.ConfigMapStore
+		if cmStore, err = cmstore.NewConfigMapStore(r.ctx, r.req.NamespacedName, r.Client); err == nil {
+			cmStore.SetStages(nodeDetailsJSON)
+			cmStore.SetStatus(runResultJSON)
+			cmStore.SetOwnerReference(v1.OwnerReference{
+				APIVersion: pipelineRunCopied.APIVersion,
+				Kind:       pipelineRunCopied.Kind,
+				Name:       pipelineRunCopied.Name,
+				UID:        pipelineRunCopied.UID,
+			})
+			err = cmStore.Save()
+		}
+	} else {
+		err = fmt.Errorf("unknown pipelineRun data store type: %s", r.pipelineRunDataStore)
+	}
+	return
+}
+
 func (r *Reconciler) hasSamePipelineRun(jobRun *job.PipelineRun, pipeline *v1alpha3.Pipeline) (exists bool, err error) {
 	// check if the run ID exists in the PipelineRun
 	pipelineRuns := &v1alpha3.PipelineRunList{}
@@ -255,22 +286,20 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 	return branch, nil
 }
 
-func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *v1alpha3.PipelineRun) error {
+func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *v1alpha3.PipelineRun) (err error) {
 	// get pipeline
 	prToUpdate := v1alpha3.PipelineRun{}
-	err := r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate)
-	if err != nil {
-		return err
+	if err = r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate); err == nil {
+		if !reflect.DeepEqual(pr.Labels, prToUpdate.Labels) || !reflect.DeepEqual(pr.Annotations, prToUpdate.Annotations) {
+			prToUpdate = *prToUpdate.DeepCopy()
+			prToUpdate.Labels = pr.Labels
+			prToUpdate.Annotations = pr.Annotations
+			// make sure all PipelineRuns have the finalizer
+			k8sutil.AddFinalizer(&prToUpdate.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
+			err = r.Update(ctx, &prToUpdate)
+		}
 	}
-	if reflect.DeepEqual(pr.Labels, prToUpdate.Labels) && reflect.DeepEqual(pr.Annotations, prToUpdate.Annotations) {
-		return nil
-	}
-	prToUpdate = *prToUpdate.DeepCopy()
-	prToUpdate.Labels = pr.Labels
-	prToUpdate.Annotations = pr.Annotations
-	// make sure all PipelineRuns have the finalizer
-	k8sutil.AddFinalizer(&prToUpdate.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
-	return r.Update(ctx, &prToUpdate)
+	return
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *v1alpha3.PipelineRunStatus, prKey client.ObjectKey) error {
@@ -289,24 +318,25 @@ func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *v1alpha3.P
 	})
 }
 
-func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *v1alpha3.PipelineRun) error {
+func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *v1alpha3.PipelineRun) (err error) {
 	// make the PipelineRun as orphan
 	prToUpdate := pr.DeepCopy()
 	prToUpdate.LabelAsAnOrphan()
-	if err := r.updateLabelsAndAnnotations(ctx, prToUpdate); err != nil {
-		return err
+	now := v1.Now()
+	if err = r.updateLabelsAndAnnotations(ctx, prToUpdate); err == nil {
+		condition := v1alpha3.Condition{
+			Type:               v1alpha3.ConditionSucceeded,
+			Status:             v1alpha3.ConditionUnknown,
+			Reason:             "SKIPPED",
+			Message:            "skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.",
+			LastTransitionTime: now,
+			LastProbeTime:      now,
+		}
+		prToUpdate.Status.AddCondition(&condition)
+		prToUpdate.Status.Phase = v1alpha3.Unknown
+		err = r.updateStatus(ctx, &pr.Status, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name})
 	}
-	condition := v1alpha3.Condition{
-		Type:               v1alpha3.ConditionSucceeded,
-		Status:             v1alpha3.ConditionUnknown,
-		Reason:             "SKIPPED",
-		Message:            "skipped to reconcile this PipelineRun due to not found Pipeline reference in PipelineRun.",
-		LastTransitionTime: v1.Now(),
-		LastProbeTime:      v1.Now(),
-	}
-	prToUpdate.Status.AddCondition(&condition)
-	prToUpdate.Status.Phase = v1alpha3.Unknown
-	return r.updateStatus(ctx, &pr.Status, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name})
+	return
 }
 
 func (r *Reconciler) getOrCreateJenkinsCore(annotations map[string]string) (*core.JenkinsCore, error) {
