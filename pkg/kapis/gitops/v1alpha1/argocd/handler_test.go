@@ -149,7 +149,24 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 		name: "Should update operation field if app has no operation field",
 		fields: fields{
 			apps: []v1alpha1.Application{
-				*createApp("fake-app", nil),
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "fake-app",
+						Namespace: "fake-namespace",
+					},
+					Spec: v1alpha1.ApplicationSpec{
+						ArgoApp: &v1alpha1.ArgoApplication{
+							Operation: nil,
+							Spec: v1alpha1.ArgoApplicationSpec{
+								SyncPolicy: &v1alpha1.SyncPolicy{
+									Automated: &v1alpha1.SyncPolicyAutomated{
+										Prune: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 		args: args{
