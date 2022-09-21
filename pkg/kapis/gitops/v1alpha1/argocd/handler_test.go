@@ -217,6 +217,93 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 	}
 }
 
+func Test_handler_updateOperation(t *testing.T) {
+	app := &v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-app",
+			Namespace: "fake-namespace",
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			ArgoApp: &v1alpha1.ArgoApplication{
+				Operation: &v1alpha1.Operation{
+					Retry: v1alpha1.RetryStrategy{
+						Limit: 3,
+					},
+				},
+			},
+		},
+	}
+
+	invalidApp := app.DeepCopy()
+	invalidApp.Spec.ArgoApp = nil
+	type fields struct {
+		app *v1alpha1.Application
+	}
+	type args struct {
+		namespace string
+		name      string
+		operation *v1alpha1.Operation
+	}
+
+	tests := []struct {
+		name string
+		fields
+		args
+		wantErrMessage string
+	}{
+		{
+			name: "not found a argo app",
+			fields: fields{
+				app: app.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "another-app",
+			},
+			wantErrMessage: `applications.gitops.kubesphere.io "another-app" not found`,
+		},
+		{
+			name: "argoApp is not Configured",
+			fields: fields{
+				app: invalidApp.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "fake-app",
+			},
+			wantErrMessage: "[ServiceError:400] application is not initialized, please confirm you have already configured it",
+		},
+		{
+			name: "argoApp's Operation is not nil",
+			fields: fields{
+				app: app.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "fake-app",
+				operation: &v1alpha1.Operation{
+					Retry: v1alpha1.RetryStrategy{
+						Limit: 10,
+					},
+				},
+			},
+			wantErrMessage: "[ServiceError:400] another operation is already in progress",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.fields.app.DeepCopy())
+			h := &handler{
+				Client: fakeClient,
+			}
+			_, err := h.updateOperation(tt.args.namespace, tt.args.name, tt.operation)
+			assert.Equal(t, tt.wantErrMessage, err.Error())
+		})
+	}
+}
+
 func toObjects(apps []v1alpha1.Application) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
