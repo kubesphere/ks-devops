@@ -17,21 +17,30 @@ limitations under the License.
 package pipelinerun
 
 import (
-	"reflect"
-	"testing"
-
+	"context"
+	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/client-go/tools/record"
+	ctrlCore "kubesphere.io/devops/controllers/core"
+	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 	"kubesphere.io/devops/pkg/jwt/token"
+	"reflect"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"testing"
 	// nolint
 	// The fakeclient will undeprecated starting with v0.7.0
 	// Reference:
@@ -136,7 +145,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 
 	BeforeEach(func() {
 		genernalPipeline = &v1alpha3.Pipeline{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "general-pipeline",
 				Namespace: "default",
 			},
@@ -145,7 +154,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 			},
 		}
 		multiBranchPipeline = &v1alpha3.Pipeline{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "multi-branch-pipeline",
 				Namespace: "default",
 			},
@@ -155,7 +164,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		}
 
 		generalPipelineRun = &v1alpha3.PipelineRun{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pipeline-run-2",
 				Namespace: "default",
 				Annotations: map[string]string{
@@ -168,7 +177,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		}
 
 		multiBranchPipelineRun = &v1alpha3.PipelineRun{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pipeline-run-1",
 				Namespace: "default",
 				Annotations: map[string]string{
@@ -357,4 +366,153 @@ func TestReconciler_getOrCreateJenkinsCoreIfHasCreator(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPipelineRunReconciler_SetupWithManager(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+	err = v1alpha1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	type fields struct {
+		Client   client.Client
+		recorder record.EventRecorder
+	}
+	type args struct {
+		mgr controllerruntime.Manager
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name: "normal",
+		args: args{
+			mgr: &ctrlCore.FakeManager{
+				Client: fake.NewFakeClientWithScheme(schema),
+				Scheme: schema,
+			},
+		},
+		wantErr: ctrlCore.NoErrors,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Client:   tt.fields.Client,
+				log:      logr.Logger{},
+				recorder: tt.fields.recorder,
+			}
+			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
+		})
+	}
+}
+
+func TestPipelineRunReconcile(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+	err = v1alpha1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	pipelineRun := v1alpha3.PipelineRun{}
+	pipelineRun.SetName("name")
+	pipelineRun.SetNamespace("ns")
+
+	now := metav1.Now()
+	completedPipelineRun := pipelineRun.DeepCopy()
+	completedPipelineRun.Status.CompletionTime = &now
+
+	normalPipeline := pipelineRun.DeepCopy()
+	normalPipeline.Spec.PipelineRef = &v1.ObjectReference{
+		Namespace: "ns",
+		Name:      "pipeline",
+	}
+
+	defaultReq := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: "ns", Name: "name",
+		},
+	}
+
+	tests := []struct {
+		name      string
+		k8sclient client.Client
+		request   ctrl.Request
+		wantErr   bool
+	}{{
+		name:      "not found",
+		k8sclient: fake.NewClientBuilder().WithScheme(schema).Build(),
+		request:   defaultReq,
+		wantErr:   false,
+	}, {
+		name:      "orphan",
+		k8sclient: fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
+		request:   defaultReq,
+		wantErr:   false,
+	}, {
+		name:      "completed PipelineRun",
+		k8sclient: fake.NewClientBuilder().WithScheme(schema).WithObjects(completedPipelineRun.DeepCopy()).Build(),
+		request:   defaultReq,
+		wantErr:   false,
+	}, {
+		name:      "no corresponding Pipeline",
+		k8sclient: fake.NewClientBuilder().WithScheme(schema).WithObjects(normalPipeline.DeepCopy()).Build(),
+		request:   defaultReq,
+		wantErr:   false,
+	}}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Client: tt.k8sclient,
+				log:    logr.New(log.NullLogSink{}),
+			}
+			_, err = r.Reconcile(context.Background(), tt.request)
+			if tt.wantErr {
+				assert.NotNil(t, err, "failed in [%d]", i)
+			} else {
+				assert.Nil(t, err, "failed in [%d]", i)
+			}
+		})
+	}
+}
+
+func TestStorePipelineRunData(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+	err = v1alpha1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	pipelineRun := v1alpha3.PipelineRun{}
+	pipelineRun.SetName("name")
+	pipelineRun.SetNamespace("ns")
+
+	r := &Reconciler{
+		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
+		log:                  logr.New(log.NullLogSink{}),
+		pipelineRunDataStore: "fake",
+	}
+	assert.NotNil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
+
+	r = &Reconciler{
+		Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
+		log:    logr.New(log.NullLogSink{}),
+		req: ctrl.Request{
+			NamespacedName: types.NamespacedName{Name: "name", Namespace: "ns"},
+		},
+		pipelineRunDataStore: "configmap",
+	}
+	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
+
+	r = &Reconciler{
+		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
+		log:                  logr.New(log.NullLogSink{}),
+		pipelineRunDataStore: "",
+	}
+	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 }
