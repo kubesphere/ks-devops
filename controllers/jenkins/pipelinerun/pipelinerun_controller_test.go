@@ -17,21 +17,19 @@ limitations under the License.
 package pipelinerun
 
 import (
-	"reflect"
-	"testing"
-
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 	"kubesphere.io/devops/pkg/jwt/token"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"testing"
 	// nolint
 	// The fakeclient will undeprecated starting with v0.7.0
 	// Reference:
@@ -136,7 +134,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 
 	BeforeEach(func() {
 		genernalPipeline = &v1alpha3.Pipeline{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "general-pipeline",
 				Namespace: "default",
 			},
@@ -145,7 +143,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 			},
 		}
 		multiBranchPipeline = &v1alpha3.Pipeline{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "multi-branch-pipeline",
 				Namespace: "default",
 			},
@@ -155,7 +153,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		}
 
 		generalPipelineRun = &v1alpha3.PipelineRun{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pipeline-run-2",
 				Namespace: "default",
 				Annotations: map[string]string{
@@ -168,7 +166,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		}
 
 		multiBranchPipelineRun = &v1alpha3.PipelineRun{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pipeline-run-1",
 				Namespace: "default",
 				Annotations: map[string]string{

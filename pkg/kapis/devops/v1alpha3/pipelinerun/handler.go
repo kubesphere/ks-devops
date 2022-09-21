@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/types"
+	cmstore "kubesphere.io/devops/pkg/store/configmap"
 	"net/url"
 	"strconv"
 
@@ -165,10 +167,11 @@ func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.
 func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.Response) {
 	namespaceName := request.PathParameter("namespace")
 	pipelineRunName := request.PathParameter("pipelinerun")
+	ctx := request.Request.Context()
 
 	// get pipelinerun
 	pr := &v1alpha3.PipelineRun{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespaceName, Name: pipelineRunName}, pr); err != nil {
+	if err := h.client.Get(ctx, client.ObjectKey{Namespace: namespaceName, Name: pipelineRunName}, pr); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
@@ -176,10 +179,18 @@ func (h *apiHandler) getNodeDetails(request *restful.Request, response *restful.
 	// get stage status
 	stagesJSON, ok := pr.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey]
 	if !ok {
-		// If the stages status dose not exist, set it as an empty array
-		stagesJSON = "[]"
+		if pipelineRunStore, err := cmstore.NewConfigMapStore(ctx, types.NamespacedName{
+			Namespace: namespaceName,
+			Name:      pipelineRunName,
+		}, h.client); err != nil {
+			// If the stages status does not exist, set it as an empty array
+			stagesJSON = "[]"
+		} else {
+			stagesJSON = pipelineRunStore.GetStages()
+		}
 	}
-	stages := []pipelinerun.NodeDetail{}
+
+	var stages []pipelinerun.NodeDetail
 	if err := json.Unmarshal([]byte(stagesJSON), &stages); err != nil {
 		kapis.HandleError(request, response, err)
 		return

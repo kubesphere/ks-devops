@@ -17,6 +17,8 @@ limitations under the License.
 package options
 
 import (
+	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -84,4 +86,32 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFeatureOptions(t *testing.T) {
+	opt := NewFeatureOptions()
+	assert.NotNil(t, opt)
+	assert.Equal(t, []error{}, opt.Validate())
+
+	opt.Controllers = map[string]bool{
+		"fake": true,
+	}
+	assert.Equal(t, []string{"fake"}, opt.knownControllers())
+
+	opt.ExternalAddress = "fake-address"
+	assert.Equal(t, "fake-address", opt.ExternalAddress)
+
+	newOpt := NewFeatureOptions()
+	assert.Empty(t, newOpt.ExternalAddress)
+	opt.ApplyTo(newOpt)
+	assert.Equal(t, "fake-address", newOpt.ExternalAddress)
+
+	flagSet := &pflag.FlagSet{}
+	opt.AddFlags(flagSet, opt)
+	assert.True(t, flagSet.HasFlags())
+	assert.NotNil(t, flagSet.Lookup("enabled-controllers"))
+	assert.NotNil(t, flagSet.Lookup("system-namespace"))
+	assert.NotNil(t, flagSet.Lookup("external-address"))
+	assert.NotNil(t, flagSet.Lookup("cluster-name"))
+	assert.NotNil(t, flagSet.Lookup("pipelinerun-data-store"))
 }
