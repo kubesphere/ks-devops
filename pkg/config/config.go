@@ -98,6 +98,7 @@ func New() *Config {
 		KubernetesOptions: k8s.NewKubernetesOptions(),
 		S3Options:         s3.NewS3Options(),
 		AuthMode:          AuthModeToken,
+		ArgoCDOption:      &ArgoCDOption{},
 	}
 }
 
