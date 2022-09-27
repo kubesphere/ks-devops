@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package v1alpha1
+package fluxcd
 
 import (
 	"github.com/emicklei/go-restful"
@@ -40,10 +40,13 @@ type ApplicationPageResult struct {
 	TotalItems int                    `json:"totalItems"`
 }
 
-func RegisterRoutes(service *restful.WebService, options *common.Options, argoOption *config.ArgoCDOption) {
-	handler := newHandler(options, argoOption)
+// RegisterRoutes is for registering Argo CD Application routes into WebService.
+func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOption *config.FluxCDOption) {
+	handler := newHandler(options, fluxOption)
+
+	// public
 	service.Route(service.GET("/namespaces/{namespace}/applications").
-		To(handler.applicationList).
+		To(handler.ApplicationList).
 		Param(common.NamespacePathParameter).
 		Param(common.PageQueryParameter).
 		Param(common.LimitQueryParameter).
@@ -55,22 +58,15 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, argoOp
 		Doc("Search applications").
 		Returns(http.StatusOK, api.StatusOK, ApplicationPageResult{}))
 
-	service.Route(service.POST("/namespaces/{namespace}/applications").
-		To(handler.createApplication).
-		Param(common.NamespacePathParameter).
-		Reads(v1alpha1.Application{}).
-		Doc("Create an application").
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
-
 	service.Route(service.GET("/namespaces/{namespace}/applications/{application}").
-		To(handler.getApplication).
+		To(handler.GetApplication).
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
 		Doc("Get a particular application").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.DELETE("/namespaces/{namespace}/applications/{application}").
-		To(handler.delApplication).
+		To(handler.DelApplication).
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
 		Param(cascadeQueryParam).
@@ -78,10 +74,23 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, argoOp
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.PUT("/namespaces/{namespace}/applications/{application}").
-		To(handler.updateApplication).
+		To(handler.UpdateApplication).
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
 		Reads(v1alpha1.Application{}).
 		Doc("Update a particular application").
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
+
+	// fluxcd
+	service.Route(service.POST("/namespaces/{namespace}/applications").
+		To(handler.createApplication).
+		Param(common.NamespacePathParameter).
+		Reads(v1alpha1.Application{}).
+		Doc("Create an application").
+		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
+
+	service.Route(service.GET("/clusters").
+		To(handler.getClusters).
+		Doc("Get the clusters list").
+		Returns(http.StatusOK, api.StatusOK, []v1alpha1.ApplicationDestination{}))
 }

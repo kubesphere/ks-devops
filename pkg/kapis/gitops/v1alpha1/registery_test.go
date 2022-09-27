@@ -22,6 +22,7 @@ import (
 	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -29,18 +30,18 @@ import (
 	"testing"
 )
 
-func TestAPIsExist(t *testing.T) {
+func TestArgoAPIsExist(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 	container := restful.NewContainer()
 	opt := &common.Options{
-		GenericClient: handler{
-			Client:          fake.NewFakeClientWithScheme(schema),
-			ArgoCDNamespace: "argocd",
+		GenericClient: gitops.Handler{
+			Client: fake.NewFakeClientWithScheme(schema),
 		},
 	}
-	argoOpt := &config.ArgoCDOption{Namespace: "argocd"}
-	AddToContainer(restful.DefaultContainer, opt, argoOpt)
+	argoOption := &config.ArgoCDOption{Enabled: true, Namespace: "argocd"}
+	fluxOption := &config.FluxCDOption{Enabled: false}
+	AddToContainer(container, opt, argoOption, fluxOption)
 	type args struct {
 		method string
 		uri    string
@@ -72,4 +73,64 @@ func TestAPIsExist(t *testing.T) {
 			assert.Equal(t, tt.expectCode, httpWriter.Code)
 		})
 	}
+}
+
+func TestFluxAPIsExist(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	container := restful.NewContainer()
+	opt := &common.Options{
+		GenericClient: gitops.Handler{
+			Client: fake.NewFakeClientWithScheme(schema),
+		},
+	}
+	argoOption := &config.ArgoCDOption{Enabled: false, Namespace: "argocd"}
+	fluxOption := &config.FluxCDOption{Enabled: true}
+	AddToContainer(container, opt, argoOption, fluxOption)
+	type args struct {
+		method string
+		uri    string
+	}
+
+	tests := []struct {
+		name string
+		args
+		body       string
+		expectCode int
+	}{
+		{
+			name: "not found an application",
+			args: args{
+				method: http.MethodGet,
+				uri:    "/namespaces/fake-ns/applications",
+			},
+			expectCode: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			httpRequest, _ := http.NewRequest(tt.args.method, "http://fake.com/kapis/gitops.kubesphere.io/v1alpha3"+tt.args.uri, strings.NewReader(tt.body))
+			httpRequest.Header.Set("Content-Type", "application/json")
+
+			httpWriter := httptest.NewRecorder()
+			container.Dispatch(httpWriter, httpRequest)
+			assert.Equal(t, tt.expectCode, httpWriter.Code)
+		})
+	}
+}
+
+func Test_NonAPIsExist(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	container := restful.NewContainer()
+	opt := &common.Options{
+		GenericClient: gitops.Handler{
+			Client: fake.NewFakeClientWithScheme(schema),
+		},
+	}
+	argoOption := &config.ArgoCDOption{Enabled: false, Namespace: "argocd"}
+	fluxOption := &config.FluxCDOption{Enabled: false}
+	wss := AddToContainer(container, opt, argoOption, fluxOption)
+	assert.Nil(t, wss)
 }

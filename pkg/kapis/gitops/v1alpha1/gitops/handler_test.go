@@ -13,9 +13,10 @@
 // limitations under the License.
 //
 
-package v1alpha1
+package gitops
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,7 @@ import (
 	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
 	"net/http/httptest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 	"time"
@@ -297,19 +299,261 @@ func Test_handler_applicationList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, toObjects(tt.args.apps)...)
-			h := &handler{
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			h := &Handler{
 				Client: fakeClient,
 			}
 			req := tt.args.req
 			recorder := httptest.NewRecorder()
 			resp := restful.NewResponse(recorder)
 			resp.SetRequestAccepts(restful.MIME_JSON)
-			h.applicationList(req, resp)
+			h.ApplicationList(req, resp)
 			assert.Equal(t, 200, recorder.Code)
 			wantResponseBytes, err := json.Marshal(tt.wantResponse)
 			assert.Nil(t, err)
 			assert.JSONEq(t, string(wantResponseBytes), recorder.Body.String())
+		})
+	}
+}
+
+func Test_handler_applicationGet(t *testing.T) {
+	createRequest := func(uri, name, namespace string) *restful.Request {
+		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
+		request := restful.NewRequest(fakeRequest)
+		request.PathParameters()[common.NamespacePathParameter.Data().Name] = namespace
+		request.PathParameters()[pathParameterApplication.Data().Name] = name
+		return request
+	}
+
+	createApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
+		return &v1alpha1.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            name,
+				Namespace:       namespace,
+				Labels:          labels,
+				ResourceVersion: "999",
+			},
+		}
+	}
+
+	type fields struct {
+		Client client.Client
+	}
+	type args struct {
+		req  *restful.Request
+		apps []v1alpha1.Application
+	}
+
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantResponse v1alpha1.Application
+	}{
+		{
+			name: "get a normal argo application",
+			args: args{
+				req: createRequest("/applications", "fake-app", "fake-ns"),
+				apps: []v1alpha1.Application{
+					*createApp("fake-app", "fake-ns", nil),
+				},
+			},
+			wantResponse: *createApp("fake-app", "fake-ns", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			h := NewHandler(&common.Options{GenericClient: Handler{
+				Client: fakeClient,
+			}})
+			req := tt.args.req
+			recorder := httptest.NewRecorder()
+			resp := restful.NewResponse(recorder)
+			resp.SetRequestAccepts(restful.MIME_JSON)
+			h.GetApplication(req, resp)
+			assert.Equal(t, 200, recorder.Code)
+		})
+	}
+}
+
+func Test_handler_applicationDel(t *testing.T) {
+	createRequest := func(uri, name, namespace string) *restful.Request {
+		fakeRequest := httptest.NewRequest(http.MethodDelete, uri, nil)
+		request := restful.NewRequest(fakeRequest)
+		request.PathParameters()[common.NamespacePathParameter.Data().Name] = namespace
+		request.PathParameters()[pathParameterApplication.Data().Name] = name
+		return request
+	}
+
+	createArgoApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
+		return &v1alpha1.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            name,
+				Namespace:       namespace,
+				Labels:          labels,
+				ResourceVersion: "999",
+			},
+			Spec: v1alpha1.ApplicationSpec{
+				Kind: v1alpha1.ArgoCD,
+			},
+		}
+	}
+
+	createFluxApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
+		return &v1alpha1.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            name,
+				Namespace:       namespace,
+				Labels:          labels,
+				ResourceVersion: "999",
+			},
+			Spec: v1alpha1.ApplicationSpec{
+				Kind: v1alpha1.FluxCD,
+			},
+		}
+	}
+
+	type fields struct {
+		Client client.Client
+	}
+	type args struct {
+		req  *restful.Request
+		apps []v1alpha1.Application
+	}
+
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantResponse v1alpha1.Application
+	}{
+		{
+			name: "delete a normal argo application",
+			args: args{
+				req: createRequest("/applications", "fake-argo-app", "fake-ns"),
+				apps: []v1alpha1.Application{
+					*createArgoApp("fake-argo-app", "fake-ns", nil),
+				},
+			},
+			wantResponse: *createArgoApp("fake-argo-app", "fake-ns", nil),
+		},
+		{
+			name: "delete a normal argo application with cascade delete",
+			args: args{
+				req: createRequest("/applications", "fake-argo-app", "fake-ns"),
+				apps: []v1alpha1.Application{
+					*createArgoApp("fake-argo-app", "fake-ns", nil),
+				},
+			},
+			wantResponse: *createArgoApp("fake-argo-app", "fake-ns", nil),
+		},
+		{
+			name: "delete a normal flux application",
+			args: args{
+				req: createRequest("/applications", "fake-flux-app", "fake-ns"),
+				apps: []v1alpha1.Application{
+					*createFluxApp("fake-flux-app", "fake-ns", nil),
+				},
+			},
+			wantResponse: *createFluxApp("fake-flux-app", "fake-ns", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			h := NewHandler(&common.Options{GenericClient: Handler{
+				Client: fakeClient,
+			}})
+			req := tt.args.req
+			recorder := httptest.NewRecorder()
+			resp := restful.NewResponse(recorder)
+			resp.SetRequestAccepts(restful.MIME_JSON)
+			h.DelApplication(req, resp)
+			assert.Equal(t, 200, recorder.Code)
+		})
+	}
+}
+
+func Test_handler_applicationUpdate(t *testing.T) {
+
+	createRequest := func(uri, name, namespace string) *restful.Request {
+		fakeRequest := httptest.NewRequest(http.MethodPut, uri, bytes.NewBuffer([]byte(`{
+  "apiVersion": "devops.kubesphere.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+ 	"namespace": "fake-ns",
+    "name": "fake-app"
+  },
+  "spec": {
+	"kind": "argocd",
+    "argoApp": {
+      "spec": {
+        "project": "good"
+      }
+    }
+  }
+}`)))
+		request := restful.NewRequest(fakeRequest)
+		request.PathParameters()[common.NamespacePathParameter.Data().Name] = namespace
+		request.PathParameters()[pathParameterApplication.Data().Name] = name
+		request.Request.Header.Set("Content-Type", "application/json")
+		return request
+	}
+
+	createApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
+		return &v1alpha1.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+				Labels:    labels,
+			},
+		}
+	}
+
+	type fields struct {
+		Client client.Client
+	}
+	type args struct {
+		req  *restful.Request
+		apps []v1alpha1.Application
+	}
+
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantResponse v1alpha1.Application
+	}{
+		{
+			name: "update a normal argo application",
+			args: args{
+				req: createRequest("/applications", "fake-app", "fake-ns"),
+				apps: []v1alpha1.Application{
+					*createApp("fake-app", "fake-ns", nil),
+				},
+			},
+			wantResponse: *createApp("fake-app", "fake-ns", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			h := NewHandler(&common.Options{GenericClient: Handler{
+				Client: fakeClient,
+			}})
+			req := tt.args.req
+			recorder := httptest.NewRecorder()
+			resp := restful.NewResponse(recorder)
+			resp.SetRequestAccepts(restful.MIME_JSON)
+			h.UpdateApplication(req, resp)
+			assert.Equal(t, 200, recorder.Code)
 		})
 	}
 }

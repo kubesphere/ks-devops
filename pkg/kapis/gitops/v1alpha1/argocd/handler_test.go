@@ -22,13 +22,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes/scheme"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -201,9 +201,9 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, toObjects(tt.fields.apps)...)
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, gitops.ToObjects(tt.fields.apps)...)
 			h := &handler{
-				Client: fakeClient,
+				Handler: &gitops.Handler{Client: fakeClient},
 			}
 
 			recorder := httptest.NewRecorder()
@@ -296,18 +296,10 @@ func Test_handler_updateOperation(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.fields.app.DeepCopy())
 			h := &handler{
-				Client: fakeClient,
+				Handler: &gitops.Handler{Client: fakeClient},
 			}
 			_, err := h.updateOperation(tt.args.namespace, tt.args.name, tt.operation)
 			assert.Equal(t, tt.wantErrMessage, err.Error())
 		})
 	}
-}
-
-func toObjects(apps []v1alpha1.Application) []runtime.Object {
-	objs := make([]runtime.Object, len(apps))
-	for i := range apps {
-		objs[i] = &apps[i]
-	}
-	return objs
 }

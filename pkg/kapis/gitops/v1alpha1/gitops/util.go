@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 
-package v1alpha1
+package gitops
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 )
 
-func toObjects(apps []v1alpha1.Application) []runtime.Object {
+func ToObjects(apps []v1alpha1.Application) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]

@@ -16,12 +16,15 @@
 package argocd
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/stretchr/testify/assert"
 	"io"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"kubesphere.io/devops/pkg/config"
@@ -30,6 +33,7 @@ import (
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/yaml"
 	"testing"
 )
 
@@ -63,7 +67,7 @@ func TestRegisterRoutes(t *testing.T) {
 	}
 }
 
-func TestAPIs(t *testing.T) {
+func TestArgoAPIs(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 	err = v1.SchemeBuilder.AddToScheme(schema)
@@ -191,6 +195,235 @@ func TestAPIs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wsWithGroup := runtime.NewWebService(v1alpha1.GroupVersion)
 			RegisterRoutes(wsWithGroup, &common.Options{GenericClient: tt.k8sclient}, &config.ArgoCDOption{})
+
+			container := restful.NewContainer()
+			container.Add(wsWithGroup)
+
+			api := fmt.Sprintf("http://fake.com/kapis/gitops.kubesphere.io/%s%s", v1alpha1.GroupVersion.Version, tt.request.uri)
+			var body io.Reader
+			if tt.request.body != nil {
+				body = tt.request.body()
+			}
+			req, err := http.NewRequest(tt.request.method, api, body)
+			req.Header.Set("Content-Type", "application/json")
+			assert.Nil(t, err)
+
+			httpWriter := httptest.NewRecorder()
+			container.Dispatch(httpWriter, req)
+			assert.Equal(t, tt.responseCode, httpWriter.Code)
+
+			if tt.verify != nil {
+				tt.verify(t, httpWriter.Body.Bytes())
+			}
+		})
+	}
+}
+
+func TestPublicAPIs(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	argoApp := v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "app",
+			Labels: map[string]string{
+				v1alpha1.HealthStatusLabelKey: "Healthy",
+				v1alpha1.SyncStatusLabelKey:   "Synced",
+			},
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			Kind: v1alpha1.ArgoCD,
+		},
+	}
+
+	type request struct {
+		method string
+		uri    string
+		body   func() io.Reader
+	}
+	tests := []struct {
+		name         string
+		request      request
+		responseCode int
+		k8sclient    client.Client
+		verify       func(t *testing.T, body []byte)
+	}{{
+		name: "get an empty list of the applications",
+		request: request{
+			method: http.MethodGet,
+			uri:    "/namespaces/fake/applications",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &api.ListResult{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			assert.Equal(t, 0, len(list.Items))
+		},
+	}, {
+		name: "get a normal list of the argo applications",
+		request: request{
+			method: http.MethodGet,
+			uri:    "/namespaces/ns/applications",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &api.ListResult{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			assert.Equal(t, 1, len(list.Items))
+			assert.Nil(t, err)
+		},
+	}, {
+		name: "get a normal argo application",
+		request: request{
+			method: http.MethodGet,
+			uri:    "/namespaces/ns/applications/app",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &unstructured.Unstructured{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			name, _, err := unstructured.NestedString(list.Object, "metadata", "name")
+			assert.Equal(t, "app", name)
+			assert.Nil(t, err)
+		},
+	}, {
+		name: "delete an argo application",
+		request: request{
+			method: http.MethodDelete,
+			uri:    "/namespaces/ns/applications/app",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &unstructured.Unstructured{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			name, _, err := unstructured.NestedString(list.Object, "metadata", "name")
+			assert.Equal(t, "app", name)
+			assert.Nil(t, err)
+		},
+	}, {
+		name: "delete an argo application by cascade",
+		request: request{
+			method: http.MethodDelete,
+			uri:    "/namespaces/ns/applications/app?cascade=true",
+		},
+		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		responseCode: http.StatusOK,
+		verify: func(t *testing.T, body []byte) {
+			list := &unstructured.Unstructured{}
+			err := yaml.Unmarshal(body, list)
+			assert.Nil(t, err)
+
+			name, _, err := unstructured.NestedString(list.Object, "metadata", "name")
+			assert.Equal(t, "app", name)
+			finalizers, _, err := unstructured.NestedSlice(list.Object, "metadata", "finalizers")
+			assert.Equal(t, []interface{}{"resources-finalizer.argocd.argoproj.io"}, finalizers)
+			assert.Nil(t, err)
+		},
+	},
+		{
+			name: "create an argo application",
+			request: request{
+				method: http.MethodPost,
+				uri:    "/namespaces/ns/applications",
+				body: func() io.Reader {
+					return bytes.NewBuffer([]byte(`{
+  "apiVersion": "devops.kubesphere.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "fake"
+  },
+  "spec": {
+	"kind": "argocd",
+    "argoApp": {
+      "spec": {
+        "project": "default"
+      }
+    }
+  }
+}`))
+				},
+			},
+			k8sclient:    fake.NewFakeClientWithScheme(schema),
+			responseCode: http.StatusOK,
+			verify: func(t *testing.T, body []byte) {
+				list := &unstructured.Unstructured{}
+				err := yaml.Unmarshal(body, list)
+				assert.Nil(t, err)
+
+				name, _, err := unstructured.NestedString(list.Object, "metadata", "name")
+				assert.Equal(t, "fake", name)
+				assert.Nil(t, err)
+			},
+		},
+		{
+			name: "create an argo application, invalid payload",
+			request: request{
+				method: http.MethodPost,
+				uri:    "/namespaces/ns/applications",
+				body: func() io.Reader {
+					return bytes.NewBuffer([]byte(`fake`))
+				},
+			},
+			k8sclient:    fake.NewFakeClientWithScheme(schema),
+			responseCode: http.StatusInternalServerError,
+		}, {
+			name: "update an argo application",
+			request: request{
+				method: http.MethodPut,
+				uri:    "/namespaces/ns/applications/app",
+				body: func() io.Reader {
+					return bytes.NewBuffer([]byte(`{
+  "apiVersion": "devops.kubesphere.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "app",
+    "namespace": "ns"
+  },
+  "spec": {
+	"kind": "argocd",
+    "argoApp": {
+      "spec": {
+        "project": "good"
+      }
+    }
+  }
+}`))
+				},
+			},
+			k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+			responseCode: http.StatusOK,
+			verify: func(t *testing.T, body []byte) {
+				list := &unstructured.Unstructured{}
+				err := yaml.Unmarshal(body, list)
+				assert.Nil(t, err)
+
+				project, _, err := unstructured.NestedString(list.Object, "spec", "argoApp", "spec", "project")
+				assert.Equal(t, "good", project)
+				assert.Nil(t, err)
+			},
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wsWithGroup := runtime.NewWebService(v1alpha1.GroupVersion)
+			RegisterRoutes(wsWithGroup, &common.Options{GenericClient: tt.k8sclient}, &config.ArgoCDOption{
+				Enabled:   true,
+				Namespace: "argocd",
+			})
 
 			container := restful.NewContainer()
 			container.Add(wsWithGroup)

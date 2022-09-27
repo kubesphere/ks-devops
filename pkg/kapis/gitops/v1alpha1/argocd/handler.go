@@ -26,6 +26,7 @@ import (
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -38,6 +39,22 @@ var invalidRequestBodyError = restful.NewError(http.StatusBadRequest,
 	"invalid application sync request")
 var unauthenticatedError = restful.NewError(http.StatusUnauthorized,
 	"unauthenticated request")
+
+func (h *handler) createApplication(req *restful.Request, res *restful.Response) {
+	var err error
+	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
+
+	application := &v1alpha1.Application{}
+	if err = req.ReadEntity(application); err == nil {
+		application.Namespace = namespace
+		if application.Labels == nil {
+			application.Labels = make(map[string]string)
+		}
+		application.Labels[v1alpha1.ArgoCDLocationLabelKey] = h.ArgoCDNamespace
+		err = h.Create(context.Background(), application)
+	}
+	common.Response(req, res, application, err)
+}
 
 func (h *handler) applicationSummary(request *restful.Request, response *restful.Response) {
 	namespace := common.GetPathParameter(request, common.NamespacePathParameter)
@@ -196,13 +213,13 @@ func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 }
 
 type handler struct {
-	client.Client
+	*gitops.Handler
 	ArgoCDNamespace string
 }
 
 func newHandler(options *common.Options, argoOption *config.ArgoCDOption) *handler {
 	return &handler{
-		Client:          options.GenericClient,
+		Handler:         gitops.NewHandler(options),
 		ArgoCDNamespace: argoOption.Namespace,
 	}
 }

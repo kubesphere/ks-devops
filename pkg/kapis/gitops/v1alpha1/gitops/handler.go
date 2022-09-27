@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package v1alpha1
+package gitops
 
 import (
 	"context"
@@ -21,14 +21,23 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
 	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
+var (
+	// pathParameterApplication is a path parameter definition for application.
+	pathParameterApplication = restful.PathParameter("application", "The application name")
+	syncStatusQueryParam     = restful.QueryParameter("syncStatus", `Filter by sync status. Available values: "Unknown", "Synced" and "OutOfSync"`)
+	healthStatusQueryParam   = restful.QueryParameter("healthStatus", `Filter by health status. Available values: "Unknown", "Progressing", "Healthy", "Suspended", "Degraded" and "Missing"`)
+	cascadeQueryParam        = restful.QueryParameter("cascade",
+		"Delete both the app and its resources, rather than only the application if cascade is true").
+		DefaultValue("false").DataType("bool")
+)
+
+func (h *Handler) ApplicationList(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	healthStatus := common.GetQueryParameter(req, healthStatusQueryParam)
 	syncStatus := common.GetQueryParameter(req, syncStatusQueryParam)
@@ -47,12 +56,12 @@ func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
 	}
 
 	queryParam := query.ParseQueryParameter(req)
-	list := v1alpha3.DefaultList(toObjects(applicationList.Items), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
+	list := v1alpha3.DefaultList(ToObjects(applicationList.Items), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
 
 	common.Response(req, res, list, nil)
 }
 
-func (h *handler) getApplication(req *restful.Request, res *restful.Response) {
+func (h *Handler) GetApplication(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	name := common.GetPathParameter(req, pathParameterApplication)
 
@@ -64,7 +73,7 @@ func (h *handler) getApplication(req *restful.Request, res *restful.Response) {
 	common.Response(req, res, application, err)
 }
 
-func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
+func (h *Handler) DelApplication(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	name := common.GetPathParameter(req, pathParameterApplication)
 	cascade := common.GetQueryParameter(req, cascadeQueryParam)
@@ -100,28 +109,7 @@ func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
 	common.Response(req, res, application, err)
 }
 
-func (h *handler) createApplication(req *restful.Request, res *restful.Response) {
-	var err error
-	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-
-	application := &v1alpha1.Application{}
-	if err = req.ReadEntity(application); err == nil {
-		application.Namespace = namespace
-		switch application.Spec.Kind {
-		case v1alpha1.ArgoCD:
-			if application.Labels == nil {
-				application.Labels = make(map[string]string)
-			}
-			application.Labels[v1alpha1.ArgoCDLocationLabelKey] = h.ArgoCDNamespace
-		case v1alpha1.FluxCD:
-		}
-		err = h.Create(context.Background(), application)
-	}
-
-	common.Response(req, res, application, err)
-}
-
-func (h *handler) updateApplication(req *restful.Request, res *restful.Response) {
+func (h *Handler) UpdateApplication(req *restful.Request, res *restful.Response) {
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	name := common.GetPathParameter(req, pathParameterApplication)
 
@@ -141,14 +129,12 @@ func (h *handler) updateApplication(req *restful.Request, res *restful.Response)
 	common.Response(req, res, application, err)
 }
 
-type handler struct {
+type Handler struct {
 	client.Client
-	ArgoCDNamespace string
 }
 
-func newHandler(options *common.Options, argoOption *config.ArgoCDOption) *handler {
-	return &handler{
-		Client:          options.GenericClient,
-		ArgoCDNamespace: argoOption.Namespace,
+func NewHandler(options *common.Options) *Handler {
+	return &Handler{
+		Client: options.GenericClient,
 	}
 }
