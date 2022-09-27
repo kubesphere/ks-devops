@@ -6,6 +6,7 @@
 | [pipeline-templates](https://github.com/kubesphere-sigs/pipeline-templates) | A collection of useful Pipeline Templates |
 | [devops-agent](https://github.com/kubesphere/devops-agent) | Jenkins agent based images |
 | [ks-devops-helm-chart](https://github.com/kubesphere-sigs/ks-devops-helm-chart) | Helm chart for KubeSphere DevOps |
+| [kubesphere-token-auth-plugin](https://github.com/jenkinsci/kubesphere-token-auth-plugin) | KubeSphere Auth plugin for Jenkins |
 | [ks-releaser](https://github.com/kubesphere-sigs/ks-releaser) | A helper for project release |
 | [ks-versions](https://github.com/kubesphere-sigs/ks-versions) | GitOps based project for release |
 | [ks-infra](https://github.com/kubesphere-sigs/ks-infra) | GitOps based project for [the product environment](http://103.61.37.25:30880/login) |
