@@ -25,298 +25,15 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/kapis/common"
+	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
-	"time"
 )
-
-func Test_getPathParameter(t *testing.T) {
-	type args struct {
-		req   func() *restful.Request
-		param *restful.Parameter
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{{
-		name: "normal case",
-		args: args{
-			req: func() *restful.Request {
-				request := restful.NewRequest(&http.Request{})
-				request.PathParameters()["name"] = "good"
-				return request
-			},
-			param: restful.PathParameter("name", "desc"),
-		},
-		want: "good",
-	}, {
-		name: "wrong param name",
-		args: args{
-			req: func() *restful.Request {
-				request := restful.NewRequest(&http.Request{})
-				request.PathParameters()["name"] = "good"
-				return request
-			},
-			param: restful.PathParameter("fake", "desc"),
-		},
-		want: "",
-	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, common.GetPathParameter(tt.args.req(), tt.args.param), "getPathParameter(%v, %v)", tt.args.req, tt.args.param)
-		})
-	}
-}
-
-func Test_handler_applicationList(t *testing.T) {
-	createRequest := func(uri, namespace string) *restful.Request {
-		fakeRequest := httptest.NewRequest(http.MethodGet, uri, nil)
-		request := restful.NewRequest(fakeRequest)
-		request.PathParameters()[common.NamespacePathParameter.Data().Name] = namespace
-		return request
-	}
-	createApp := func(name string, namespace string, labels map[string]string) *v1alpha1.Application {
-		return &v1alpha1.Application{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            name,
-				Namespace:       namespace,
-				Labels:          labels,
-				ResourceVersion: "999",
-			},
-		}
-	}
-	createAppWithCreationTime := func(name string, namespace string, creationTimestamp time.Time) *v1alpha1.Application {
-		return &v1alpha1.Application{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				Namespace:         namespace,
-				CreationTimestamp: metav1.NewTime(creationTimestamp),
-				ResourceVersion:   "999",
-			},
-		}
-	}
-	current := time.Now()
-	yesterday := current.Add(-24 * time.Hour)
-	tomorrow := current.Add(24 * time.Hour)
-	type args struct {
-		req  *restful.Request
-		apps []v1alpha1.Application
-	}
-	tests := []struct {
-		name         string
-		args         args
-		wantResponse api.ListResult
-	}{{
-		name: "Should return empty list when namespaces mismatch",
-		args: args{
-			req: createRequest("/applications", "default"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", nil),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items:      []interface{}{},
-			TotalItems: 0,
-		},
-	}, {
-		name: "Should return correct list when namespaces match",
-		args: args{
-			req: createRequest("/applications", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", nil),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				createApp("fake-app-1", "fake-namespace", nil),
-			},
-			TotalItems: 1,
-		},
-	}, {
-		name: "Should return empty list when healthStatus is set but no status matches",
-		args: args{
-			req: createRequest("/applications?healthStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Healthy",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items:      []interface{}{},
-			TotalItems: 0,
-		},
-	}, {
-		name: "Should return partial list when healthStatus is set but no status matches",
-		args: args{
-			req: createRequest("/applications?healthStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Healthy",
-				}),
-				*createApp("fake-app-2", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Unknown",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				*createApp("fake-app-2", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Unknown",
-				}),
-			},
-			TotalItems: 1,
-		},
-	}, {
-		name: "Should return empty list when syncStatus is set but no status matches",
-		args: args{
-			req: createRequest("/applications?syncStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.SyncStatusLabelKey: "Synced",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items:      []interface{}{},
-			TotalItems: 0,
-		},
-	}, {
-		name: "Should return partial list when syncStatus is set but no status matches",
-		args: args{
-			req: createRequest("/applications?syncStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.SyncStatusLabelKey: "Synced",
-				}),
-				*createApp("fake-app-2", "fake-namespace", map[string]string{
-					v1alpha1.SyncStatusLabelKey: "Unknown",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				*createApp("fake-app-2", "fake-namespace", map[string]string{
-					v1alpha1.SyncStatusLabelKey: "Unknown",
-				}),
-			},
-			TotalItems: 1,
-		},
-	}, {
-		name: "Should return empty list when healthStatus and syncStatus are set but no status matches",
-		args: args{
-			req: createRequest("/applications?healthStatus=Unknown&syncStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Healthy",
-					v1alpha1.SyncStatusLabelKey:   "Synced",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items:      []interface{}{},
-			TotalItems: 0,
-		},
-	}, {
-		name: "Should return applications when both healthStatus and syncStatus match at the same time",
-		args: args{
-			req: createRequest("/applications?healthStatus=Unknown&syncStatus=Unknown", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Unknown",
-					v1alpha1.SyncStatusLabelKey:   "Synced",
-				}),
-				*createApp("fake-app-2", "fake-namespace", map[string]string{
-					v1alpha1.HealthStatusLabelKey: "Unknown",
-					v1alpha1.SyncStatusLabelKey:   "Unknown",
-				}),
-			},
-		},
-		wantResponse: api.ListResult{Items: []interface{}{
-			*createApp("fake-app-2", "fake-namespace", map[string]string{
-				v1alpha1.HealthStatusLabelKey: "Unknown",
-				v1alpha1.SyncStatusLabelKey:   "Unknown",
-			}),
-		}, TotalItems: 1},
-	}, {
-		name: "Should filter with name",
-		args: args{
-			req: createRequest("/applications?name=app", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-1", "fake-namespace", nil),
-				*createApp("fake-bpp-1", "fake-namespace", nil),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				*createApp("fake-app-1", "fake-namespace", nil),
-			},
-			TotalItems: 1,
-		},
-	}, {
-		name: "Should sort by name in ascending order",
-		args: args{
-			req: createRequest("/applications?orderBy=name&ascending=true", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createApp("fake-app-2", "fake-namespace", nil),
-				*createApp("fake-app-1", "fake-namespace", nil),
-				*createApp("fake-app-3", "fake-namespace", nil),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				*createApp("fake-app-1", "fake-namespace", nil),
-				*createApp("fake-app-2", "fake-namespace", nil),
-				*createApp("fake-app-3", "fake-namespace", nil),
-			},
-			TotalItems: 3,
-		},
-	}, {
-		name: "Should sort by creationTimestamp in ascending order",
-		args: args{
-			req: createRequest("/applications?orderBy=creationTimestamp&ascending=true", "fake-namespace"),
-			apps: []v1alpha1.Application{
-				*createAppWithCreationTime("fake-app-2", "fake-namespace", current),
-				*createAppWithCreationTime("fake-app-1", "fake-namespace", yesterday),
-				*createAppWithCreationTime("fake-app-3", "fake-namespace", tomorrow),
-			},
-		},
-		wantResponse: api.ListResult{
-			Items: []interface{}{
-				*createAppWithCreationTime("fake-app-1", "fake-namespace", yesterday),
-				*createAppWithCreationTime("fake-app-2", "fake-namespace", current),
-				*createAppWithCreationTime("fake-app-3", "fake-namespace", tomorrow),
-			},
-			TotalItems: 3,
-		},
-	},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, toObjects(tt.args.apps)...)
-			h := &handler{
-				Client: fakeClient,
-			}
-			req := tt.args.req
-			recorder := httptest.NewRecorder()
-			resp := restful.NewResponse(recorder)
-			resp.SetRequestAccepts(restful.MIME_JSON)
-			h.applicationList(req, resp)
-			assert.Equal(t, 200, recorder.Code)
-			wantResponseBytes, err := json.Marshal(tt.wantResponse)
-			assert.Nil(t, err)
-			assert.JSONEq(t, string(wantResponseBytes), recorder.Body.String())
-		})
-	}
-}
 
 func Test_handler_handleSyncApplication(t *testing.T) {
 	createApp := func(name string, op *v1alpha1.Operation) *v1alpha1.Application {
@@ -432,7 +149,24 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 		name: "Should update operation field if app has no operation field",
 		fields: fields{
 			apps: []v1alpha1.Application{
-				*createApp("fake-app", nil),
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "fake-app",
+						Namespace: "fake-namespace",
+					},
+					Spec: v1alpha1.ApplicationSpec{
+						ArgoApp: &v1alpha1.ArgoApplication{
+							Operation: nil,
+							Spec: v1alpha1.ArgoApplicationSpec{
+								SyncPolicy: &v1alpha1.SyncPolicy{
+									Automated: &v1alpha1.SyncPolicyAutomated{
+										Prune: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 		args: args{
@@ -467,9 +201,9 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, toObjects(tt.fields.apps)...)
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, gitops.ToObjects(tt.fields.apps)...)
 			h := &handler{
-				Client: fakeClient,
+				Handler: &gitops.Handler{Client: fakeClient},
 			}
 
 			recorder := httptest.NewRecorder()
@@ -479,6 +213,93 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 			h.handleSyncApplication(tt.args.req, resp)
 			assert.Equal(t, tt.wantResponseCode, recorder.Code)
 			tt.verifyResponse(t, recorder.Body.String())
+		})
+	}
+}
+
+func Test_handler_updateOperation(t *testing.T) {
+	app := &v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-app",
+			Namespace: "fake-namespace",
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			ArgoApp: &v1alpha1.ArgoApplication{
+				Operation: &v1alpha1.Operation{
+					Retry: v1alpha1.RetryStrategy{
+						Limit: 3,
+					},
+				},
+			},
+		},
+	}
+
+	invalidApp := app.DeepCopy()
+	invalidApp.Spec.ArgoApp = nil
+	type fields struct {
+		app *v1alpha1.Application
+	}
+	type args struct {
+		namespace string
+		name      string
+		operation *v1alpha1.Operation
+	}
+
+	tests := []struct {
+		name string
+		fields
+		args
+		wantErrMessage string
+	}{
+		{
+			name: "not found a argo app",
+			fields: fields{
+				app: app.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "another-app",
+			},
+			wantErrMessage: `applications.gitops.kubesphere.io "another-app" not found`,
+		},
+		{
+			name: "argoApp is not Configured",
+			fields: fields{
+				app: invalidApp.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "fake-app",
+			},
+			wantErrMessage: "[ServiceError:400] application is not initialized, please confirm you have already configured it",
+		},
+		{
+			name: "argoApp's Operation is not nil",
+			fields: fields{
+				app: app.DeepCopy(),
+			},
+			args: args{
+				namespace: "fake-namespace",
+				name:      "fake-app",
+				operation: &v1alpha1.Operation{
+					Retry: v1alpha1.RetryStrategy{
+						Limit: 10,
+					},
+				},
+			},
+			wantErrMessage: "[ServiceError:400] another operation is already in progress",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
+			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.fields.app.DeepCopy())
+			h := &handler{
+				Handler: &gitops.Handler{Client: fakeClient},
+			}
+			_, err := h.updateOperation(tt.args.namespace, tt.args.name, tt.operation)
+			assert.Equal(t, tt.wantErrMessage, err.Error())
 		})
 	}
 }

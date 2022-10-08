@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package argocd
+package gitops
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func Test_toObjects(t *testing.T) {
+func Test_ToObjects(t *testing.T) {
 	createApplication := func(name, namespaces string) *v1alpha1.Application {
 		return &v1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
@@ -66,7 +66,7 @@ func Test_toObjects(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, toObjects(tt.args.apps), "toObjects(%v)", tt.args.apps)
+			assert.Equalf(t, tt.want, ToObjects(tt.args.apps), "toObjects(%v)", tt.args.apps)
 		})
 	}
 }
