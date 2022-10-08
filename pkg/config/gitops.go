@@ -29,7 +29,7 @@ type ArgoCDOption struct {
 
 // AddFlags adds the flags which related to argocd
 func (o *ArgoCDOption) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.Enabled, "argocd", false, "enable ArgoCD APIs")
+	fs.BoolVar(&o.Enabled, "argocd-enabled", false, "Enable ArgoCD APIs")
 	// see also https://argo-cd.readthedocs.io/en/stable/getting_started/
 	fs.StringVarP(&o.Namespace, "argocd-namespace", o.Namespace, "argocd", "Which namespace the ArgoCD located")
 }
@@ -41,7 +41,7 @@ type FluxCDOption struct {
 
 // AddFlags adds the flags which related to fluxcd
 func (o *FluxCDOption) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.Enabled, "fluxcd", false, "enable FluxCD APIs")
+	fs.BoolVar(&o.Enabled, "fluxcd-enabled", false, "Enable FluxCD APIs")
 }
 
 // GetGitOpsEngine return gitops engine type
