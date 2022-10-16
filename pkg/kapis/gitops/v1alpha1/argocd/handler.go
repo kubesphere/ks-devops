@@ -23,12 +23,10 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	utilretry "k8s.io/client-go/util/retry"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
 	"kubesphere.io/devops/pkg/config"
 	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
+	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,40 +40,54 @@ var invalidRequestBodyError = restful.NewError(http.StatusBadRequest,
 var unauthenticatedError = restful.NewError(http.StatusUnauthorized,
 	"unauthenticated request")
 
-func (h *handler) applicationList(req *restful.Request, res *restful.Response) {
+func (h *handler) createApplication(req *restful.Request, res *restful.Response) {
+	var err error
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-	healthStatus := common.GetQueryParameter(req, healthStatusQueryParam)
-	syncStatus := common.GetQueryParameter(req, syncStatusQueryParam)
-
-	applicationList := &v1alpha1.ApplicationList{}
-	matchingLabels := client.MatchingLabels{}
-	if syncStatus != "" {
-		matchingLabels[v1alpha1.SyncStatusLabelKey] = syncStatus
-	}
-	if healthStatus != "" {
-		matchingLabels[v1alpha1.HealthStatusLabelKey] = healthStatus
-	}
-	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace), matchingLabels); err != nil {
-		common.Response(req, res, applicationList, err)
-		return
-	}
-
-	queryParam := query.ParseQueryParameter(req)
-	list := v1alpha3.DefaultList(toObjects(applicationList.Items), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
-
-	common.Response(req, res, list, nil)
-}
-
-func (h *handler) getApplication(req *restful.Request, res *restful.Response) {
-	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-	name := common.GetPathParameter(req, pathParameterApplication)
 
 	application := &v1alpha1.Application{}
-	err := h.Get(context.Background(), types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, application)
+	if err = req.ReadEntity(application); err == nil {
+		application.Namespace = namespace
+		if application.Labels == nil {
+			application.Labels = make(map[string]string)
+		}
+		application.Labels[v1alpha1.ArgoCDLocationLabelKey] = h.ArgoCDNamespace
+		err = h.Create(context.Background(), application)
+	}
 	common.Response(req, res, application, err)
+}
+
+func (h *handler) applicationSummary(request *restful.Request, response *restful.Response) {
+	namespace := common.GetPathParameter(request, common.NamespacePathParameter)
+
+	summary, err := h.populateApplicationSummary(namespace)
+	common.Response(request, response, summary, err)
+}
+
+func (h *handler) populateApplicationSummary(namespace string) (*ApplicationsSummary, error) {
+	applicationList := &v1alpha1.ApplicationList{}
+	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace)); err != nil {
+		return nil, err
+	}
+	summary := &ApplicationsSummary{
+		HealthStatus: map[string]int{},
+		SyncStatus:   map[string]int{},
+	}
+	summary.Total = len(applicationList.Items)
+
+	for i := range applicationList.Items {
+		app := &applicationList.Items[i]
+		// accumulate health status
+		healthStatus := app.GetLabels()[v1alpha1.HealthStatusLabelKey]
+		if healthStatus != "" {
+			summary.HealthStatus[healthStatus]++
+		}
+		// accumulate sync status
+		syncStatus := app.GetLabels()[v1alpha1.SyncStatusLabelKey]
+		if syncStatus != "" {
+			summary.SyncStatus[syncStatus]++
+		}
+	}
+	return summary, nil
 }
 
 func (h *handler) handleSyncApplication(req *restful.Request, res *restful.Response) {
@@ -169,75 +181,6 @@ func (h *handler) updateOperation(namespace, name string, operation *v1alpha1.Op
 	})
 }
 
-func (h *handler) delApplication(req *restful.Request, res *restful.Response) {
-	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-	name := common.GetPathParameter(req, pathParameterApplication)
-	cascade := common.GetQueryParameter(req, cascadeQueryParam)
-
-	ctx := context.Background()
-	application := &v1alpha1.Application{}
-	objectKey := types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}
-	err := h.Get(ctx, objectKey, application)
-	if err == nil {
-		// add the Argo CD resources finalizer if cascade is true
-		if cascade == "true" {
-			if k8sutil.AddFinalizer(&application.ObjectMeta, v1alpha1.ArgoCDResourcesFinalizer) {
-				if err = h.Update(ctx, application); err != nil {
-					common.Response(req, res, application, err)
-					return
-				}
-
-				if err = h.Get(ctx, objectKey, application); err != nil {
-					common.Response(req, res, application, err)
-					return
-				}
-			}
-		}
-		err = h.Delete(ctx, application)
-	}
-	common.Response(req, res, application, err)
-}
-
-func (h *handler) createApplication(req *restful.Request, res *restful.Response) {
-	var err error
-	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-
-	application := &v1alpha1.Application{}
-	if err = req.ReadEntity(application); err == nil {
-		application.Namespace = namespace
-		if application.Labels == nil {
-			application.Labels = make(map[string]string)
-		}
-		application.Labels[v1alpha1.ArgoCDLocationLabelKey] = h.ArgoCDNamespace
-		err = h.Create(context.Background(), application)
-	}
-
-	common.Response(req, res, application, err)
-}
-
-func (h *handler) updateApplication(req *restful.Request, res *restful.Response) {
-	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
-	name := common.GetPathParameter(req, pathParameterApplication)
-
-	var err error
-	application := &v1alpha1.Application{}
-	if err = req.ReadEntity(application); err == nil {
-		latestApp := &v1alpha1.Application{}
-		err = h.Get(context.Background(), types.NamespacedName{
-			Namespace: namespace,
-			Name:      name,
-		}, latestApp)
-		if err == nil {
-			application.ResourceVersion = latestApp.ResourceVersion
-			err = h.Update(context.Background(), application)
-		}
-	}
-	common.Response(req, res, application, err)
-}
-
 func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 	ctx := context.Background()
 
@@ -269,48 +212,14 @@ func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 	common.Response(req, res, argoClusters, err)
 }
 
-func (h *handler) applicationSummary(request *restful.Request, response *restful.Response) {
-	namespace := common.GetPathParameter(request, common.NamespacePathParameter)
-
-	summary, err := h.populateApplicationSummary(namespace)
-	common.Response(request, response, summary, err)
-}
-
-func (h *handler) populateApplicationSummary(namespace string) (*ApplicationsSummary, error) {
-	applicationList := &v1alpha1.ApplicationList{}
-	if err := h.List(context.Background(), applicationList, client.InNamespace(namespace)); err != nil {
-		return nil, err
-	}
-	summary := &ApplicationsSummary{
-		HealthStatus: map[string]int{},
-		SyncStatus:   map[string]int{},
-	}
-	summary.Total = len(applicationList.Items)
-
-	for i := range applicationList.Items {
-		app := &applicationList.Items[i]
-		// accumulate health status
-		healthStatus := app.GetLabels()[v1alpha1.HealthStatusLabelKey]
-		if healthStatus != "" {
-			summary.HealthStatus[healthStatus]++
-		}
-		// accumulate sync status
-		syncStatus := app.GetLabels()[v1alpha1.SyncStatusLabelKey]
-		if syncStatus != "" {
-			summary.SyncStatus[syncStatus]++
-		}
-	}
-	return summary, nil
-}
-
 type handler struct {
-	client.Client
+	*gitops.Handler
 	ArgoCDNamespace string
 }
 
 func newHandler(options *common.Options, argoOption *config.ArgoCDOption) *handler {
 	return &handler{
-		Client:          options.GenericClient,
+		Handler:         gitops.NewHandler(options),
 		ArgoCDNamespace: argoOption.Namespace,
 	}
 }

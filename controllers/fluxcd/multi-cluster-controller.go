@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -99,7 +98,7 @@ func (r *MultiClusterReconciler) reconcileCluster(ctx context.Context, cluster *
 			newSecret.SetNamespace(ns.GetName())
 			newSecret.SetName(name)
 			newSecret.SetLabels(map[string]string{
-				"app.kubernetes.io/managed-by": v1alpha1.GroupName,
+				"app.kubernetes.io/managed-by": "fluxcd-controller",
 			})
 			newSecret.SetOwnerReferences([]metav1.OwnerReference{
 				{

@@ -34,7 +34,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 )
 
-func TestCreateCredential(t *testing.T) {
+func TestDeleteCredentialInProject(t *testing.T) {
 	var roundTripper *mhttp.MockRoundTripper
 	ctrl := gomock.NewController(t)
 	roundTripper = mhttp.NewMockRoundTripper(ctrl)
@@ -68,9 +68,13 @@ func TestUpdateCredentialInProject(t *testing.T) {
 
 	secret := &v1.Secret{}
 	secret.SetName("id")
+	secret.Type = devopsv1alpha3.SecretTypeBasicAuth
+
+	data, err := devopsutil.ConvertSecretToCredential(secret.DeepCopy())
+	assert.Nil(t, err)
 
 	formData := url.Values{}
-	formData.Add("json", fmt.Sprintf(`{"credentials": %s}`, util.TOJSON(secret.DeepCopy())))
+	formData.Add("json", util.TOJSON(data))
 
 	const folder = "fake"
 	const id = "id"

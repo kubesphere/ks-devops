@@ -14,17 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package store
 
-import "github.com/spf13/pflag"
+import "testing"
 
-// ArgoCDOption as the ArgoCD integration configuration
-type ArgoCDOption struct {
-	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty" description:"Which namespace the ArgoCD located"`
-}
-
-// AddFlags adds the flags which related to argocd
-func (o *ArgoCDOption) AddFlags(fs *pflag.FlagSet) {
-	// see also https://argo-cd.readthedocs.io/en/stable/getting_started/
-	fs.StringVarP(&o.Namespace, "argocd-namespace", o.Namespace, "argocd", "Which namespace the ArgoCD located")
+func TestStepLogKey(t *testing.T) {
+	type args struct {
+		stage int
+		step  int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{{
+		name: "normal",
+		args: args{
+			stage: 1,
+			step:  2,
+		},
+		want: "log-step-1-2",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StepLogKey(tt.args.stage, tt.args.step); got != tt.want {
+				t.Errorf("StepLogKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -402,6 +402,9 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Chart = nil
 	helmAppWithTemplate.Spec.FluxApp.Spec.Config.HelmRelease.Template = "fake-app"
 
+	helmAppWithNoInterval := helmAppWithLabel.DeepCopy()
+	helmAppWithNoInterval.Spec.FluxApp.Spec.Config.HelmRelease.Chart.Interval = nil
+
 	kusApp := &v1alpha1.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "fake-ns",
@@ -615,6 +618,36 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 				assert.Equal(t, "./helm-chart", fluxChart.Spec.Chart)
 				assert.Equal(t, "0.1.0", fluxChart.Spec.Version)
 				assert.Equal(t, time.Minute, fluxChart.Spec.Interval.Duration)
+				assert.Equal(t, "Revision", fluxChart.Spec.ReconcileStrategy)
+				chartValueFiles := fluxChart.Spec.ValuesFiles
+				assert.Equal(t, 1, len(chartValueFiles))
+				assert.Equal(t, "./helm-chart/values.yaml", chartValueFiles[0])
+			},
+		},
+		{
+			name: "create the Multi-Clusters FluxApp(HelmRelease) but with no Interval for HelmChart",
+			fields: fields{
+				Client: fake.NewFakeClientWithScheme(schema),
+			},
+			args: args{
+				app: helmAppWithNoInterval.DeepCopy(),
+			},
+			verify: func(t *testing.T, Client client.Client, err error) {
+				assert.Nil(t, err)
+				ctx := context.Background()
+				appNS, appName := helmApp.GetNamespace(), helmApp.GetName()
+
+				fluxChart := &sourcev1.HelmChart{}
+				err = Client.Get(ctx, types.NamespacedName{Namespace: appNS, Name: appName}, fluxChart)
+				assert.Nil(t, err)
+
+				assert.Equal(t, "source.toolkit.fluxcd.io/v1beta2", fluxChart.Spec.SourceRef.APIVersion)
+				assert.Equal(t, "GitRepository", fluxChart.Spec.SourceRef.Kind)
+				assert.Equal(t, "fake-repo", fluxChart.Spec.SourceRef.Name)
+				assert.Equal(t, "./helm-chart", fluxChart.Spec.Chart)
+				assert.Equal(t, "0.1.0", fluxChart.Spec.Version)
+				// The default interval is 10m0s
+				assert.Equal(t, 10*time.Minute, fluxChart.Spec.Interval.Duration)
 				assert.Equal(t, "Revision", fluxChart.Spec.ReconcileStrategy)
 				chartValueFiles := fluxChart.Spec.ValuesFiles
 				assert.Equal(t, 1, len(chartValueFiles))
@@ -936,6 +969,31 @@ func TestApplicationReconciler_convertKubeconfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.verify(convertKubeconfig(tt.args))
+		})
+	}
+}
+
+func TestApplicationReconciler_convertInterval(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   *metav1.Duration
+		expect metav1.Duration
+	}{
+		{
+			name:   "did not set interval",
+			args:   nil,
+			expect: metav1.Duration{Duration: 10 * time.Minute},
+		},
+		{
+			name:   "set interval",
+			args:   &metav1.Duration{Duration: 5 * time.Minute},
+			expect: metav1.Duration{Duration: 5 * time.Minute},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expect.Duration, convertInterval(tt.args).Duration)
 		})
 	}
 }

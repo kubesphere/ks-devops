@@ -85,6 +85,7 @@ type Config struct {
 	S3Options             *s3.Options                        `json:"s3,omitempty" yaml:"s3,omitempty" mapstructure:"s3"`
 	SonarQubeOptions      *sonarqube.Options                 `json:"sonarqube,omitempty" yaml:"sonarQube,omitempty" mapstructure:"sonarqube"`
 	ArgoCDOption          *ArgoCDOption                      `json:"argocd,omitempty" yaml:"argocd,omitempty" mapstructure:"argocd"`
+	FluxCDOption          *FluxCDOption                      `json:"fluxcd,omitempty" yaml:"fluxcd,omitempty" mapstructure:"fluxcd"`
 	AuthenticationOptions *authoptions.AuthenticationOptions `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
 	AuthMode              AuthMode                           `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
 	JWTSecret             string                             `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
@@ -98,6 +99,8 @@ func New() *Config {
 		KubernetesOptions: k8s.NewKubernetesOptions(),
 		S3Options:         s3.NewS3Options(),
 		AuthMode:          AuthModeToken,
+		ArgoCDOption:      &ArgoCDOption{},
+		FluxCDOption:      &FluxCDOption{},
 	}
 }
 

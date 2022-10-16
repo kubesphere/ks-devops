@@ -28,6 +28,19 @@ const (
 	Kustomization AppType = "Kustomization"
 )
 
-// DefaultKubeConfigKey is the Default key for kubeconfig
-// https://fluxcd.io/docs/components/helm/helmreleases/#remote-clusters--cluster-api
-const DefaultKubeConfigKey = "value"
+const (
+	// DefaultKubeConfigKey is the Default key for kubeconfig
+	// https://fluxcd.io/docs/components/helm/helmreleases/#remote-clusters--cluster-api
+	DefaultKubeConfigKey = "value"
+
+	// FluxAppTypeKey indicate the Type of this FluxApp
+	// value is one of HelmRelease and Kustomization
+	FluxAppTypeKey = "gitops.kubepshere.io/type"
+
+	// FluxAppReadyNumKey represent how many HelmRelease or Kustomization
+	// are ready in form of readyNumber/totalNumber
+	FluxAppReadyNumKey = "gitops.kubesphere.io/ready-number"
+
+	// FluxAppLastRevision is the revision of the last successfully applied source.
+	FluxAppLastRevision = "gitops.kubesphere.io/last-revision"
+)

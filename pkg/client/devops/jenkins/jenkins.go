@@ -629,6 +629,9 @@ func CreateJenkins(client *http.Client, base string, maxConnection int, auth ...
 		base = base[:len(base)-1]
 	}
 	j.Server = base
+	if maxConnection == 0 {
+		maxConnection = 100
+	}
 	j.Requester = &Requester{Base: base, SslVerify: true, Client: client, connControl: make(chan struct{}, maxConnection)}
 	if j.Requester.Client == nil {
 		j.Requester.Client = http.DefaultClient

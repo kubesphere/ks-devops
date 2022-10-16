@@ -20,7 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/request"
@@ -42,7 +43,7 @@ func TestApis(t *testing.T) {
 	assert.Nil(t, err)
 
 	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewFakeClientWithScheme(schema, &v1alpha3.Pipeline{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake",
 			Namespace: "fake",
 		},
@@ -124,4 +125,55 @@ func TestApis(t *testing.T) {
 			assert.Equal(t, tt.args.status, httpWriter.Code)
 		})
 	}
+}
+
+func TestGetNodeDetails(t *testing.T) {
+	schema, err := v1alpha3.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+	err = v1.SchemeBuilder.AddToScheme(schema)
+	assert.Nil(t, err)
+
+	pipelineRun := &v1alpha3.PipelineRun{}
+	pipelineRun.SetName("pr1")
+	pipelineRun.SetNamespace("ns")
+
+	cm := &v1.ConfigMap{Data: map[string]string{}}
+	cm.SetName(pipelineRun.GetName())
+	cm.SetNamespace(pipelineRun.GetNamespace())
+	cm.Data["stage"] = `[{"id":"id","steps":[{"approvable":true}]}]`
+
+	handler := &apiHandler{
+		apiHandlerOption: apiHandlerOption{
+			client: fake.NewClientBuilder().WithScheme(schema).
+				WithObjects(pipelineRun.DeepCopy()).
+				WithObjects(cm.DeepCopy()).Build(),
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	req := restful.NewRequest(&http.Request{
+		Header: map[string][]string{
+			"Accept": {"*/*"},
+		},
+	})
+	restful.DefaultResponseContentType(restful.MIME_JSON)
+	req.PathParameters()["namespace"] = "ns"
+	req.PathParameters()["pipelinerun"] = "pr1"
+	resp := restful.NewResponse(recorder)
+	handler.getNodeDetails(req, resp)
+
+	body, err := io.ReadAll(recorder.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, `[
+ {
+  "id": "id",
+  "startTime": null,
+  "steps": [
+   {
+    "startTime": null,
+    "approvable": true
+   }
+  ]
+ }
+]`, string(body))
 }
