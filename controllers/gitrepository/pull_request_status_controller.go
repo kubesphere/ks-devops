@@ -16,6 +16,7 @@ package gitrepository
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -91,6 +93,9 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	maker := NewStatusMaker(repo, token)
 	maker.WithTarget(target).WithPR(prNumber).WithProvider(repoInfo.provider).WithUsername(username)
+
+	sinceFinishedTime := r.GetTimeSinceFinished(pipelinerun.Status.CompletionTime)
+	fmt.Printf("during time :%v", sinceFinishedTime)
 
 	err = maker.CreateWithPipelinePhase(ctx, pipelinerun.Status.Phase, "KubeSphere DevOps", string(pipelinerun.Status.Phase))
 	if err != nil {
@@ -221,6 +226,26 @@ func (r *PullRequestStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha3.PipelineRun{}).
 		Complete(r)
+}
+
+// GetTimeSinceFinish return the time since the pipeline finished
+func (r *PullRequestStatusReconciler) GetTimeSinceFinished(time *metav1.Time) (sinceTime string) {
+	currentTime := metav1.Now()
+	duringTime := currentTime.Time.Sub(time.Time).String()
+
+	compileRegex := regexp.MustCompile("[a-z]")
+	timeUnit := compileRegex.FindStringSubmatch(duringTime)
+
+	sinceTimeList := compileRegex.Split(duringTime, 2)
+	timeNum := strings.Split(sinceTimeList[0], ".")
+
+	sinceTime = timeNum[0] + timeUnit[0]
+	temp, _ := strconv.Atoi(timeNum[0])
+
+	if temp >= 24 && timeUnit[0] == "h" {
+		sinceTime = strconv.Itoa(temp%24) + "days"
+	}
+	return
 }
 
 // StatusMaker responsible for Pull Requests status creating
