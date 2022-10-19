@@ -16,16 +16,16 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/h2non/gock"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	mgrcore "kubesphere.io/devops/controllers/core"
@@ -227,7 +227,7 @@ func TestPullRequestStatusReconciler(t *testing.T) {
 	}
 	pipRun.Status.Phase = "Succeeded"
 
-	finishedTime := "2022-10-11T15:16:13Z"
+	finishedTime := "2022-10-16T15:03:13Z"
 	timeLayout := "2006-01-02T15:04:05Z"
 	loc, _ := time.LoadLocation("Local")
 	theTime, _ := time.ParseInLocation(timeLayout, finishedTime, loc)
