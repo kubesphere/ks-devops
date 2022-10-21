@@ -172,6 +172,13 @@ var pipelineMetadataPredicate = predicate.Funcs{
 		return false
 	},
 	UpdateFunc: func(ue event.UpdateEvent) bool {
+		oldPipeline, okOld := ue.ObjectOld.(*v1alpha3.Pipeline)
+		newPipeline, okNew := ue.ObjectNew.(*v1alpha3.Pipeline)
+		if okOld && okNew {
+			if !reflect.DeepEqual(oldPipeline.Spec, newPipeline.Spec) {
+				return true
+			}
+		}
 		return false
 	},
 	GenericFunc: func(ge event.GenericEvent) bool {
