@@ -104,7 +104,7 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	case v1alpha3.Succeeded:
 		desc = "Successful in " + sinceFinishedTime
 	case v1alpha3.Failed:
-		desc = pipelinerun.Status.Description
+		desc = pipelinerun.Status.GetLatestCondition().Reason
 	default:
 		desc = string(pipelinerun.Status.Phase)
 	}

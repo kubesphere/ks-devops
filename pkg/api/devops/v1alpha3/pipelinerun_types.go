@@ -72,10 +72,6 @@ type PipelineRunStatus struct {
 	// Current phase of PipelineRun.
 	// +optional
 	Phase RunPhase `json:"phase,omitempty"`
-
-	// Description of the operational status
-	// +optional
-	Description string `json:"description,omitempty"`
 }
 
 // +kubebuilder:object:root=true
