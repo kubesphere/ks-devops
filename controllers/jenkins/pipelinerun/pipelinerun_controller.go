@@ -57,7 +57,7 @@ type Reconciler struct {
 	JenkinsCore          core.JenkinsCore
 	TokenIssuer          token.Issuer
 	recorder             record.EventRecorder
-	pipelineRunDataStore string
+	PipelineRunDataStore string
 }
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -227,7 +227,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
-	if r.pipelineRunDataStore == "" {
+	if r.PipelineRunDataStore == "" {
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
@@ -238,7 +238,7 @@ func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string,
 		if err = r.updateLabelsAndAnnotations(r.ctx, pipelineRunCopied); err != nil {
 			r.log.Error(err, "unable to update PipelineRun labels and annotations.")
 		}
-	} else if r.pipelineRunDataStore == "configmap" {
+	} else if r.PipelineRunDataStore == "configmap" {
 		var cmStore storeInter.ConfigMapStore
 		if cmStore, err = cmstore.NewConfigMapStore(r.ctx, r.req.NamespacedName, r.Client); err == nil {
 			cmStore.SetStages(nodeDetailsJSON)
@@ -252,7 +252,7 @@ func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string,
 			err = cmStore.Save()
 		}
 	} else {
-		err = fmt.Errorf("unknown pipelineRun data store type: %s", r.pipelineRunDataStore)
+		err = fmt.Errorf("unknown pipelineRun data store type: %s", r.PipelineRunDataStore)
 	}
 	return
 }
