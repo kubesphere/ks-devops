@@ -92,7 +92,8 @@ func (pbApplier pipelineBuildApplier) apply(prStatus *v1alpha3.PipelineRunStatus
 	switch pbApplier.State {
 	case Queued.String():
 		condition.Status = v1alpha3.ConditionUnknown
-		prStatus.Phase = v1alpha3.Pending
+		prStatus.Phase = v1alpha3.Running
+		pbApplier.State = string(Running)
 	case Running.String():
 		condition.Status = v1alpha3.ConditionUnknown
 		prStatus.Phase = v1alpha3.Running
