@@ -48,25 +48,6 @@ func Test_pipelineBuildApplier_apply(t *testing.T) {
 		args      args
 		assertion func(prStatus *v1alpha3.PipelineRunStatus)
 	}{{
-		name: "PipelineRun was in queue",
-		fields: fields{
-			pb: &job.PipelineRun{
-				BlueItemRun: job.BlueItemRun{
-					ID:    "1",
-					State: Queued.String(),
-				},
-			},
-		},
-		args: args{
-			prStatus: &v1alpha3.PipelineRunStatus{},
-		},
-		assertion: func(prStatus *v1alpha3.PipelineRunStatus) {
-			commonStatusAssert(prStatus)
-			assert.Equal(t, v1alpha3.ConditionUnknown, prStatus.Conditions[0].Status)
-			assert.Equal(t, v1alpha3.ConditionReady, prStatus.Conditions[0].Type)
-			assert.Equal(t, v1alpha3.Pending, prStatus.Phase)
-		},
-	}, {
 		name: "PipelineRun was running",
 		fields: fields{
 			pb: &job.PipelineRun{
