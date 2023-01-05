@@ -16,15 +16,17 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/utils/stringutils"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"kubesphere.io/devops/pkg/utils/stringutils"
 
 	"github.com/go-logr/logr"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
@@ -95,7 +97,19 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	maker.WithTarget(target).WithPR(prNumber).WithProvider(repoInfo.provider).WithUsername(username)
 	maker.WithExpirationCheck(createExpirationCheckFunc(ctx, r, pipelinerun.DeepCopy()))
 
-	err = maker.CreateWithPipelinePhase(ctx, pipelinerun.Status.Phase, "KubeSphere DevOps", string(pipelinerun.Status.Phase))
+	var desc string
+	sinceFinishedTime := r.getTimeSinceFinished(pipelinerun.Status.CompletionTime)
+
+	switch pipelinerun.Status.Phase {
+	case v1alpha3.Succeeded:
+		desc = "Successful in " + sinceFinishedTime
+	case v1alpha3.Failed:
+		desc = pipelinerun.Status.GetLatestCondition().Reason
+	default:
+		desc = string(pipelinerun.Status.Phase)
+	}
+
+	err = maker.CreateWithPipelinePhase(ctx, pipelinerun.Status.Phase, "KubeSphere DevOps", desc)
 	if err != nil {
 		r.log.Error(err, "failed to send status")
 	}
@@ -263,6 +277,30 @@ func (r *PullRequestStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha3.PipelineRun{}).
 		Complete(r)
+}
+
+// GetTimeSinceFinish return the time since the pipeline finished
+func (r *PullRequestStatusReconciler) getTimeSinceFinished(time *metav1.Time) (sinceTime string) {
+	currentTime := metav1.Now()
+	duringTime := currentTime.Time.Sub(time.Time).String()
+
+	compileRegex := regexp.MustCompile("[a-z]")
+	timeUnit := compileRegex.FindStringSubmatch(duringTime)
+
+	sinceTimeList := compileRegex.Split(duringTime, 2)
+	timeNum := strings.Split(sinceTimeList[0], ".")
+
+	sinceTime = timeNum[0] + timeUnit[0]
+	timeToInt, _ := strconv.Atoi(timeNum[0])
+
+	if timeUnit[0] == "h" {
+		if timeToInt >= 24 && timeToInt < 720 {
+			sinceTime = strconv.Itoa(timeToInt%24) + "days"
+		} else {
+			sinceTime = time.Format("2006-01-02")
+		}
+	}
+	return
 }
 
 // StatusMaker responsible for Pull Requests status creating

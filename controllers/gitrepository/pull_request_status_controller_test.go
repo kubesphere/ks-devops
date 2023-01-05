@@ -16,9 +16,10 @@ package gitrepository
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/h2non/gock"
@@ -225,6 +226,13 @@ func TestPullRequestStatusReconciler(t *testing.T) {
 		},
 	}
 	pipRun.Status.Phase = "Succeeded"
+
+	finishedTime := "2022-10-16T15:03:13Z"
+	timeLayout := "2006-01-02T15:04:05Z"
+	loc, _ := time.LoadLocation("Local")
+	theTime, _ := time.ParseInLocation(timeLayout, finishedTime, loc)
+	finalTime := metav1.NewTime(theTime)
+	pipRun.Status.CompletionTime = &finalTime
 
 	project := &v1alpha3.DevOpsProject{}
 	project.SetName(defaultReq.namespace)
