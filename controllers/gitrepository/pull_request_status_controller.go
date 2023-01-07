@@ -98,10 +98,9 @@ func (r *PullRequestStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	maker.WithExpirationCheck(createExpirationCheckFunc(ctx, r, pipelinerun.DeepCopy()))
 
 	var desc string
-	sinceFinishedTime := r.getTimeSinceFinished(pipelinerun.Status.CompletionTime)
-
 	switch pipelinerun.Status.Phase {
 	case v1alpha3.Succeeded:
+		sinceFinishedTime := r.getTimeSinceFinished(pipelinerun.Status.CompletionTime)
 		desc = "Successful in " + sinceFinishedTime
 	case v1alpha3.Failed:
 		desc = pipelinerun.Status.GetLatestCondition().Reason
