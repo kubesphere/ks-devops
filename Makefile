@@ -84,7 +84,9 @@ generate-listers:
 
 # Build the docker image of controller-manager
 docker-build-controller:
-	${CONTAINER_CLI} build . -f config/dockerfiles/controller-manager/Dockerfile -t ${CONTROLLER_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/controller-manager/Dockerfile --build-arg GOPROXY=${GOPROXY} -t ${CONTROLLER_IMG}
+build-controller:
+	buildctl build --frontend dockerfile.v0 --local dockerfile=config/dockerfiles/controller-manager/
 
 # Push the docker image of controller-manager
 docker-push-controller:
@@ -97,7 +99,7 @@ run-apiserver:
 	go run cmd/apiserver/apiserver.go
 # Build the docker image of apiserver
 docker-build-apiserver:
-	${CONTAINER_CLI} build . -f config/dockerfiles/apiserver/Dockerfile -t ${APISERVER_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/apiserver/Dockerfile --build-arg GOPROXY=${GOPROXY} -t ${APISERVER_IMG}
 
 # Push the docker image of controller-manager
 docker-push-apiserver:
@@ -108,7 +110,7 @@ docker-build-push-apiserver: docker-build-apiserver docker-push-apiserver
 
 # Build the docker image of apiserver
 docker-build-tools:
-	${CONTAINER_CLI} build . -f config/dockerfiles/tools/Dockerfile -t ${TOOLS_IMG}
+	${CONTAINER_CLI} build . -f config/dockerfiles/tools/Dockerfile --build-arg GOPROXY=${GOPROXY} -t ${TOOLS_IMG}
 
 # Push the docker image of controller-manager
 docker-push-tools:
