@@ -50,11 +50,12 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 		// add PipelineRun controller
 		if err = (&pipelinerun.Reconciler{
-			Client:       mgr.GetClient(),
-			Scheme:       mgr.GetScheme(),
-			DevOpsClient: devopsClient,
-			JenkinsCore:  jenkinsCore,
-			TokenIssuer:  tokenIssuer,
+			Client:               mgr.GetClient(),
+			Scheme:               mgr.GetScheme(),
+			DevOpsClient:         devopsClient,
+			JenkinsCore:          jenkinsCore,
+			TokenIssuer:          tokenIssuer,
+			PipelineRunDataStore: s.FeatureOptions.PipelineRunDataStore,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
 			return
