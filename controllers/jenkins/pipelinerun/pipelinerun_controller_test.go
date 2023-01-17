@@ -495,7 +495,7 @@ func TestStorePipelineRunData(t *testing.T) {
 	r := &Reconciler{
 		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
 		log:                  logr.New(log.NullLogSink{}),
-		pipelineRunDataStore: "fake",
+		PipelineRunDataStore: "fake",
 	}
 	assert.NotNil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 
@@ -505,14 +505,14 @@ func TestStorePipelineRunData(t *testing.T) {
 		req: ctrl.Request{
 			NamespacedName: types.NamespacedName{Name: "name", Namespace: "ns"},
 		},
-		pipelineRunDataStore: "configmap",
+		PipelineRunDataStore: "configmap",
 	}
 	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 
 	r = &Reconciler{
 		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
 		log:                  logr.New(log.NullLogSink{}),
-		pipelineRunDataStore: "",
+		PipelineRunDataStore: "",
 	}
 	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 }

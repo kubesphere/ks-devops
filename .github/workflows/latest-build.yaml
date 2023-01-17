@@ -42,8 +42,8 @@ jobs:
             kubespheredev/devops-controller
             ghcr.io/kubesphere-sigs/devops-controller
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -52,8 +52,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-controller
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -69,7 +69,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: kubesphere
+          username: kubesphere-sigs
           password: ${{ secrets.GHCR_TOKEN }}
       - name: login to GHCR for Contributors
         if: github.repository_owner != 'kubesphere'
@@ -113,8 +113,8 @@ jobs:
             kubespheredev/devops-apiserver
             ghcr.io/kubesphere-sigs/devops-apiserver
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -123,8 +123,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-apiserver
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -140,7 +140,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: kubesphere
+          username: kubesphere-sigs
           password: ${{ secrets.GHCR_TOKEN }}
       - name: login to GHCR for Contributors
         if: github.repository_owner != 'kubesphere'
@@ -184,8 +184,8 @@ jobs:
             kubespheredev/devops-tools
             ghcr.io/kubesphere-sigs/devops-tools
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -194,8 +194,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-tools
           tags: |
-            type=schedule,pattern=${GITHUB_REF#refs/heads/}
-            type=raw,enable=true,value=${GITHUB_REF#refs/heads/}
+            type=schedule,pattern={{branch}}
+            type=raw,enable=true,value={{branch}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -211,7 +211,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: kubesphere
+          username: kubesphere-sigs
           password: ${{ secrets.GHCR_TOKEN }}
       - name: login to GHCR for Contributors
         if: github.repository_owner != 'kubesphere'
