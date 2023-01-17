@@ -159,7 +159,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			nodeDetailsJSON = []byte("[]")
 		}
 
-		if err = r.storePipelineRunData(string(runResultJSON), string(nodeDetailsJSON), pipelineRunCopied); err != nil {
+		// store pipelinerun stage to configmap
+		if err = r.storePipelineRunData(string(nodeDetailsJSON), pipelineRunCopied); err != nil {
+			log.Error(err, "unable to store pipeline stages to configmap.")
+			return ctrl.Result{}, err
+		}
+
+		// store pipelinerun result to annotation
+		if pipelineRunCopied.Annotations == nil {
+			pipelineRunCopied.Annotations = make(map[string]string)
+		}
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
+		// update labels and annotations
+		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
+			log.Error(err, "unable to update PipelineRun labels and annotations.")
 			return ctrl.Result{}, err
 		}
 
@@ -225,12 +238,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
+func (r *Reconciler) storePipelineRunData(nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
 	if r.PipelineRunDataStore == "" {
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = runResultJSON
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = nodeDetailsJSON
 
 		// update labels and annotations
@@ -241,7 +253,6 @@ func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string,
 		var cmStore storeInter.ConfigMapStore
 		if cmStore, err = cmstore.NewConfigMapStore(r.ctx, r.req.NamespacedName, r.Client); err == nil {
 			cmStore.SetStages(nodeDetailsJSON)
-			cmStore.SetStatus(runResultJSON)
 			cmStore.SetOwnerReference(v1.OwnerReference{
 				APIVersion: pipelineRunCopied.APIVersion,
 				Kind:       pipelineRunCopied.Kind,
