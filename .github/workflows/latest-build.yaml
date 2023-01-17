@@ -3,11 +3,9 @@ name: LatestBuild
 on:
   push:
     branches:
-      - 'master'
       - 'release-*'
   pull_request:
     branches:
-      - 'master'
       - 'release-*'
 
 jobs:
@@ -256,6 +254,6 @@ jobs:
       - name: sync images for KubeSphere
         run: |
           skopeo login docker.io -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_SECRETS }}
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-controller:${{ github.ref_name }} docker.io/kubespheredev/devops-controller:ks-${{ github.ref_name }} --all
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-apiserver:${{ github.ref_name }} docker.io/kubespheredev/devops-apiserver:ks-${{ github.ref_name }} --all
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-tools:${{ github.ref_name }} docker.io/kubespheredev/devops-tools:ks-${{ github.ref_name }} --all
+          skopeo copy docker://docker.io/kubespheredev/devops-controller:${{ github.ref_name }} docker://docker.io/kubespheredev/devops-controller:ks-${{ github.ref_name }} --all
+          skopeo copy docker://docker.io/kubespheredev/devops-apiserver:${{ github.ref_name }} docker://docker.io/kubespheredev/devops-apiserver:ks-${{ github.ref_name }} --all
+          skopeo copy docker://docker.io/kubespheredev/devops-tools:${{ github.ref_name }} docker://docker.io/kubespheredev/devops-tools:ks-${{ github.ref_name }} --all
