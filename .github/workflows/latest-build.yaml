@@ -42,8 +42,8 @@ jobs:
             kubespheredev/devops-controller
             ghcr.io/kubesphere-sigs/devops-controller
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -52,8 +52,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-controller
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -113,8 +113,8 @@ jobs:
             kubespheredev/devops-apiserver
             ghcr.io/kubesphere-sigs/devops-apiserver
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -123,8 +123,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-apiserver
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -184,8 +184,8 @@ jobs:
             kubespheredev/devops-tools
             ghcr.io/kubesphere-sigs/devops-tools
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Docker meta for Contributors
         id: metaContributors
         if: github.repository_owner != 'kubesphere'
@@ -194,8 +194,8 @@ jobs:
           images: |
             ghcr.io/${{ github.repository_owner }}/devops-tools
           tags: |
-            type=schedule,pattern={{branch}}
-            type=raw,enable=true,value={{branch}}
+            type=schedule,pattern=${{ github.ref_name }}
+            type=raw,enable=true,value=${{ github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -256,6 +256,6 @@ jobs:
       - name: sync images for KubeSphere
         run: |
           skopeo login docker.io -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_SECRETS }}
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-controller:${GITHUB_REF#refs/heads/} docker.io/kubespheredev/devops-controller:ks-${GITHUB_REF#refs/heads/} --all
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-apiserver:${GITHUB_REF#refs/heads/} docker.io/kubespheredev/devops-apiserver:ks-${GITHUB_REF#refs/heads/} --all
-          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-tools:${GITHUB_REF#refs/heads/} docker.io/kubespheredev/devops-tools:ks-${GITHUB_REF#refs/heads/} --all
+          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-controller:${{ github.ref_name }} docker.io/kubespheredev/devops-controller:ks-${{ github.ref_name }} --all
+          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-apiserver:${{ github.ref_name }} docker.io/kubespheredev/devops-apiserver:ks-${{ github.ref_name }} --all
+          skopeo sync --src docker --dest docker docker.io/kubespheredev/devops-tools:${{ github.ref_name }} docker.io/kubespheredev/devops-tools:ks-${{ github.ref_name }} --all
