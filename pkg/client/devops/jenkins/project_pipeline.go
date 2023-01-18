@@ -93,29 +93,31 @@ func (j *Jenkins) DeleteProjectPipeline(projectId string, pipelineId string) (st
 func (j *Jenkins) UpdateProjectPipeline(projectId string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
 	switch pipeline.Spec.Type {
 	case devopsv1alpha3.NoScmPipelineType:
-		config, err := createPipelineConfigXml(pipeline.Spec.Pipeline)
+		job, err := j.GetJob(pipeline.Name, projectId)
 		if err != nil {
+			return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+		}
+		config, err := job.GetConfig()
+		if err != nil {
+			return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
+		}
+
+		updatedConfig, err := updatePipelineConfigXml(config, pipeline.Spec.Pipeline)
+		if err != nil {
+			klog.Errorf("%+v", err)
 			return "", restful.NewError(http.StatusInternalServerError, err.Error())
 		}
 
-		job, err := j.GetJob(pipeline.Name, projectId)
-
+		err = job.UpdateConfig(updatedConfig)
 		if err != nil {
 			return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
 		}
-
-		err = job.UpdateConfig(config)
-		if err != nil {
-			return "", restful.NewError(devops.GetDevOpsStatusCode(err), err.Error())
-		}
-
 		return pipeline.Name, nil
-	case devopsv1alpha3.MultiBranchPipelineType:
 
+	case devopsv1alpha3.MultiBranchPipelineType:
 		config, err := createMultiBranchPipelineConfigXml(projectId, pipeline.Spec.MultiBranchPipeline)
 		if err != nil {
 			klog.Errorf("%+v", err)
-
 			return "", restful.NewError(http.StatusInternalServerError, err.Error())
 		}
 

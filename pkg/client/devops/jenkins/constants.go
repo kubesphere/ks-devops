@@ -35,6 +35,35 @@ const (
 	PROJECT_ROLE = "projectRoles"
 )
 
+const (
+	StringNull = ""
+
+	FlowTag                 = "flow-definition"
+	PropertiesTag           = "properties"
+	DisableConcurrentJobTag = "org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty"
+	BuildDiscarderTag       = "jenkins.model.BuildDiscarderProperty"
+	StrategyTag             = "strategy"
+	DaysToKeepTag           = "daysToKeep"
+	NumToKeepTag            = "numToKeep"
+	ArtiDaysToKeepTag       = "artifactDaysToKeep"
+	ArtiNumToKeepTag        = "artifactNumToKeep"
+
+	ParamDefiPropTag = "hudson.model.ParametersDefinitionProperty"
+	ParamDefiTag     = "parameterDefinitions"
+
+	PipelineTriggersJobTag = "org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty"
+	TriggersTag            = "triggers"
+	TimerTriggerTag        = "hudson.triggers.TimerTrigger"
+
+	DefinitionTag = "definition"
+	ClassKey      = "class"
+	PluginKey     = "plugin"
+	ScriptTag     = "script"
+	SandboxTag    = "sandbox"
+	AuthTokenTag  = "authToken"
+	DisabledTag   = "disabled"
+)
+
 // ParameterTypeMap aims for simplifying representation of parameter definition type.
 var ParameterTypeMap = map[string]string{
 	"hudson.model.StringParameterDefinition":   "string",
