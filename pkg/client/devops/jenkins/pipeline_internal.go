@@ -146,19 +146,20 @@ func updatePipelineConfigXml(config string, pipeline *devopsv1alpha3.NoScmPipeli
 		removeChildElement(properties, ParamDefiPropTag)
 	}
 
-	// create trigger xml structure
-	if pipeline.TimerTrigger != nil || pipeline.GenericWebhook != nil {
-		pipelineTriggerE := addOrUpdateElement(properties, PipelineTriggersJobTag, StringNull)
-		triggersEle := addOrUpdateElement(pipelineTriggerE, TriggersTag, StringNull)
+	// update triggers xml structure
+	var pipelineTriggerEle, triggersEle *etree.Element
+	pipelineTriggerEle = addOrUpdateElement(properties, PipelineTriggersJobTag, StringNull)
+	triggersEle = addOrUpdateElement(pipelineTriggerEle, TriggersTag, StringNull)
 
-		if pipeline.TimerTrigger != nil {
-			timeTriggerE := addOrUpdateElement(triggersEle, TimerTriggerTag, StringNull)
-			addOrUpdateElement(timeTriggerE, "spec", pipeline.TimerTrigger.Cron)
-		} else {
-			removeChildElement(triggersEle, TimerTriggerTag)
-		}
+	if pipeline.TimerTrigger != nil {
+		timerTriggerEle := addOrUpdateElement(triggersEle, TimerTriggerTag, StringNull)
+		addOrUpdateElement(timerTriggerEle, "spec", pipeline.TimerTrigger.Cron)
+	} else {
+		removeChildElement(triggersEle, TimerTriggerTag)
+	}
 
-		// issue: if support GenericWebhook in console, need to delete GenericWebhook tag when pipeline.GenericWebhook is nil;
+	if pipeline.GenericWebhook != nil {
+		// TODO issue: if support GenericWebhook in console, need to delete GenericWebhook tag when pipeline.GenericWebhook is nil;
 		triggers.CreateGenericWebhookXML(triggersEle, pipeline.GenericWebhook)
 	}
 
@@ -176,7 +177,7 @@ func updatePipelineConfigXml(config string, pipeline *devopsv1alpha3.NoScmPipeli
 	if flow.SelectElement(TriggersTag) == nil {
 		flow.CreateElement(TriggersTag)
 	}
-	// issue: if support RemoteTrigger in console, need to delete GenericWebhook tag when pipeline.GenericWebhook is nil;
+	// TODO issue: if support RemoteTrigger in console, need to delete GenericWebhook tag when pipeline.GenericWebhook is nil;
 	if pipeline.RemoteTrigger != nil {
 		addOrUpdateElement(flow, AuthTokenTag, pipeline.RemoteTrigger.Token)
 	}
