@@ -82,7 +82,6 @@ func (j *JenkinsClient) DeleteProjectPipeline(projectID string, pipelineID strin
 
 // UpdateProjectPipeline updates pipeline
 func (j *JenkinsClient) UpdateProjectPipeline(projectID string, pipeline *devopsv1alpha3.Pipeline) (string, error) {
-	// TODO: Update a pipeline
 	return j.jenkins.UpdateProjectPipeline(projectID, pipeline)
 }
 
