@@ -497,7 +497,7 @@ func TestStorePipelineRunData(t *testing.T) {
 		log:                  logr.New(log.NullLogSink{}),
 		PipelineRunDataStore: "fake",
 	}
-	assert.NotNil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
+	assert.NotNil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
 
 	r = &Reconciler{
 		Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
@@ -507,12 +507,12 @@ func TestStorePipelineRunData(t *testing.T) {
 		},
 		PipelineRunDataStore: "configmap",
 	}
-	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
+	assert.Nil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
 
 	r = &Reconciler{
 		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
 		log:                  logr.New(log.NullLogSink{}),
 		PipelineRunDataStore: "",
 	}
-	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
+	assert.Nil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
 }
