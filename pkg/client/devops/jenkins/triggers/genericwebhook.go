@@ -29,7 +29,6 @@ func CreateGenericWebhookXML(parent *etree.Element, webhook *v1alpha3.GenericWeb
 		return
 	}
 
-
 	if gtE := parent.SelectElement("org.jenkinsci.plugins.gwt.GenericTrigger"); gtE != nil {
 		parent.RemoveChild(gtE)
 	}
