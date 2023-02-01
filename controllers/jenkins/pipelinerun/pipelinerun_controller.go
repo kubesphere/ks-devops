@@ -46,6 +46,9 @@ import (
 // tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
 const tokenExpireIn time.Duration = 5 * time.Minute
 
+// BuildNotExistMsg indicates the build with pipelinerun-id not exist in jenkins
+const BuildNotExistMsg = "not found resources"
+
 // Reconciler reconciles a PipelineRun object
 type Reconciler struct {
 	client.Client
@@ -129,8 +132,17 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 		pipelineBuild, err := jHandler.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
-			log.Error(err, "unable get PipelineRun data.")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
+			if err.Error() == BuildNotExistMsg { // delete pipelinerun if build not exist in jenkins
+				runId, _ := pipelineRun.GetPipelineRunID()
+				log.Info(fmt.Sprintf("the build(pipelinerun: %s) not exist in jenkins, delete it..", runId) )
+				if err = r.Client.Delete(ctx, pipelineRun); err != nil {
+					log.Error(err, "failed to delete pipelinerun")
+					return ctrl.Result{RequeueAfter: 3 * time.Second}, err
+				}
+			} else {
+				log.Error(err, "unable get PipelineRun data.")
+				r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
+			}
 			return ctrl.Result{}, err
 		} else {
 			status := pipelineRunCopied.Status.DeepCopy()
