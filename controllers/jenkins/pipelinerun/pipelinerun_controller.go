@@ -131,6 +131,7 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			log.Error(err, "unable get PipelineRun data.")
 			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
+			return ctrl.Result{}, err
 		} else {
 			status := pipelineRunCopied.Status.DeepCopy()
 			pbApplier := pipelineBuildApplier{pipelineBuild}
