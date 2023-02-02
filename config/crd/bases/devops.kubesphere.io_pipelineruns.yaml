@@ -21,6 +21,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: The id of a PipelineRun
+      jsonPath: .metadata.annotations.devops\.kubesphere\.io/jenkins-pipelinerun-id
+      name: ID
+      type: string
     - description: The phase of a PipelineRun
       jsonPath: .status.phase
       name: Phase
