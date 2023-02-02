@@ -132,8 +132,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		pipelineBuild, err := jHandler.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
 			if err.Error() == BuildNotExistMsg { // delete pipelinerun if build not exist in jenkins
-				runId, _ := pipelineRun.GetPipelineRunID()
-				log.Info(fmt.Sprintf("the build(pipelinerun: %s) not exist in jenkins, delete it..", runId) )
+				runID, _ := pipelineRun.GetPipelineRunID()
+				log.Info(fmt.Sprintf("the build(ID: %s) not exist in jenkins, delete it..", runID) )
 				if err = r.Client.Delete(ctx, pipelineRun); err != nil {
 					log.Error(err, "failed to delete pipelinerun")
 					return ctrl.Result{RequeueAfter: 3 * time.Second}, err
@@ -143,17 +143,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 			}
 			return ctrl.Result{}, err
-		} else {
-			status := pipelineRunCopied.Status.DeepCopy()
-			pbApplier := pipelineBuildApplier{pipelineBuild}
-			pbApplier.apply(status)
+		}
 
-			// Because the status is a subresource of PipelineRun, we have to update status separately.
-			// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
-			if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
-				log.Error(err, "unable to update PipelineRun status.")
-				return ctrl.Result{}, err
-			}
+		// update pipelinerun status with pipelineBuild
+		status := pipelineRunCopied.Status.DeepCopy()
+		pbApplier := pipelineBuildApplier{pipelineBuild}
+		pbApplier.apply(status)
+		// Because the status is a subresource of PipelineRun, we have to update status separately.
+		// See also: https://book-v1.book.kubebuilder.io/basics/status_subresource.html
+		if err := r.updateStatus(ctx, status, req.NamespacedName); err != nil {
+			log.Error(err, "unable to update PipelineRun status.")
+			return ctrl.Result{}, err
 		}
 
 		nodeDetails, err := jHandler.getPipelineNodeDetails(pipelineName, namespaceName, pipelineRunCopied)
