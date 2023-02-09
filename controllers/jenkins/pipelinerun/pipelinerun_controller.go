@@ -133,7 +133,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err != nil {
 			if err.Error() == BuildNotExistMsg { // delete pipelinerun if build not exist in jenkins
 				runID, _ := pipelineRun.GetPipelineRunID()
-				log.Info(fmt.Sprintf("the build(ID: %s) not exist in jenkins, delete it..", runID) )
+				log.Info(fmt.Sprintf("the build(ID: %s) not exist in jenkins, delete it..", runID))
 				if err = r.Client.Delete(ctx, pipelineRun); err != nil {
 					log.Error(err, "failed to delete pipelinerun")
 					return ctrl.Result{RequeueAfter: 3 * time.Second}, err

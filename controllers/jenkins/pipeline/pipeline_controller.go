@@ -39,6 +39,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
@@ -312,11 +313,36 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	if !reflect.DeepEqual(pipeline, copyPipeline) {
-		_, err = c.kubesphereClient.DevopsV1alpha3().Pipelines(nsName).Update(context.Background(), copyPipeline, metav1.UpdateOptions{})
+		err = c.updatePipeline(context.Background(), name, nsName, copyPipeline)
 		if err != nil {
-			klog.V(8).Info(err, fmt.Sprintf("failed to update pipeline %s ", key))
+			klog.Error(err, fmt.Sprintf("failed to update pipeline %s ", key))
 			return err
 		}
+		klog.Infof("update pipeline %s:%s successful", nsName, name)
 	}
 	return nil
+}
+
+// Update with retry, if update failed, get new version and update again
+func (c *Controller) updatePipeline(ctx context.Context, name string, nsName string, pipeline *devopsv1alpha3.Pipeline) (err error) {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+		newPipeline, err := c.kubesphereClient.DevopsV1alpha3().Pipelines(nsName).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return
+		}
+
+		if newPipeline.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey] == pipeline.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey] &&
+			newPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] == pipeline.Annotations[devopsv1alpha3.PipelineSpecHash] &&
+			reflect.DeepEqual(newPipeline.ObjectMeta.Finalizers, pipeline.ObjectMeta.Finalizers) {
+			return nil
+		}
+		if pipeline.Annotations != nil {
+			// update annotations
+			newPipeline.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey] = pipeline.Annotations[devopsv1alpha3.PipelineSyncStatusAnnoKey]
+			newPipeline.Annotations[devopsv1alpha3.PipelineSpecHash] = pipeline.Annotations[devopsv1alpha3.PipelineSpecHash]
+		}
+		newPipeline.ObjectMeta.Finalizers = pipeline.ObjectMeta.Finalizers
+		_, err = c.kubesphereClient.DevopsV1alpha3().Pipelines(nsName).Update(ctx, newPipeline, metav1.UpdateOptions{})
+		return err
+	})
 }
