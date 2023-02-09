@@ -45,11 +45,18 @@ const (
 	PipelineJenkinsfileValueAnnoKey = PipelinePrefix + "jenkinsfile"
 	// PipelineJenkinsfileEditModeAnnoKey is the annotation key of the Jenkinsfile edit mode
 	PipelineJenkinsfileEditModeAnnoKey = PipelinePrefix + "jenkinsfile.edit.mode"
+	// PipelineJenkinsfileValidateAnnoKey is the annotation key of the Jenkinsfile validate, success or failure
+	PipelineJenkinsfileValidateAnnoKey = PipelinePrefix + "jenkinsfile.validate"
 
 	// PipelineJenkinsfileEditModeJSON indicates the Jenkinsfile editing mode is JSON
 	PipelineJenkinsfileEditModeJSON = "json"
 	// PipelineJenkinsfileEditModeRaw indicates the Jenkinsfile editing mode is groovy
 	PipelineJenkinsfileEditModeRaw = "raw"
+
+	// PipelineJenkinsfileValidateSuccess indicates the Jenkinsfile validate is success
+	PipelineJenkinsfileValidateSuccess = "success"
+	// PipelineJenkinsfileValidateFailure indicates the Jenkinsfile validate is failure
+	PipelineJenkinsfileValidateFailure = "failure"
 )
 
 // PipelineSpec defines the desired state of Pipeline
