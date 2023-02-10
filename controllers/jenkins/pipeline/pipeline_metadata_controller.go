@@ -162,7 +162,7 @@ func (r *Reconciler) updateAnnotations(annotations map[string]string, pipelineKe
 	})
 }
 
-// pipelineMetadataPredicate returns a predicate which only cares about CreateEvent.
+// pipelineMetadataPredicate returns a predicate.
 var pipelineMetadataPredicate = predicate.Funcs{
 	CreateFunc: func(ce event.CreateEvent) bool {
 		return true
