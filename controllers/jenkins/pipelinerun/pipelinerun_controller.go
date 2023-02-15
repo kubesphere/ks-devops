@@ -311,19 +311,24 @@ func getSCMRefName(prSpec *v1alpha3.PipelineRunSpec) (string, error) {
 }
 
 func (r *Reconciler) updateLabelsAndAnnotations(ctx context.Context, pr *v1alpha3.PipelineRun) (err error) {
-	// get pipeline
-	prToUpdate := v1alpha3.PipelineRun{}
-	if err = r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate); err == nil {
-		if !reflect.DeepEqual(pr.Labels, prToUpdate.Labels) || !reflect.DeepEqual(pr.Annotations, prToUpdate.Annotations) {
-			prToUpdate = *prToUpdate.DeepCopy()
-			prToUpdate.Labels = pr.Labels
-			prToUpdate.Annotations = pr.Annotations
-			// make sure all PipelineRuns have the finalizer
-			k8sutil.AddFinalizer(&prToUpdate.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
-			err = r.Update(ctx, &prToUpdate)
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// get pipeline
+		prToUpdate := v1alpha3.PipelineRun{}
+		err = r.Get(ctx, client.ObjectKey{Namespace: pr.Namespace, Name: pr.Name}, &prToUpdate)
+		if err != nil {
+			return err
 		}
-	}
-	return
+		if reflect.DeepEqual(pr.Labels, prToUpdate.Labels) && reflect.DeepEqual(pr.Annotations, prToUpdate.Annotations) {
+			return nil
+		}
+
+		prToUpdate = *prToUpdate.DeepCopy()
+		prToUpdate.Labels = pr.Labels
+		prToUpdate.Annotations = pr.Annotations
+		// make sure all PipelineRuns have the finalizer
+		k8sutil.AddFinalizer(&prToUpdate.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
+		return r.Update(ctx, &prToUpdate)
+	})
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desiredStatus *v1alpha3.PipelineRunStatus, prKey client.ObjectKey) error {
