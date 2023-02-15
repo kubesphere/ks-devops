@@ -95,7 +95,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}{{
 		name: "not found",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -105,7 +105,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "invalid edit mode",
 		fields: fields{
-			Client:      fake.NewFakeClientWithScheme(schema, invalidEditMode),
+			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(invalidEditMode).Build(),
 			JenkinsCore: core.JenkinsCore{},
 			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
@@ -120,7 +120,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "empty edit mode",
 		fields: fields{
-			Client:      fake.NewFakeClientWithScheme(schema, emptyEditMode),
+			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(emptyEditMode).Build(),
 			JenkinsCore: core.JenkinsCore{},
 			log:         logr.Logger{},
 			TokenIssuer: &token.FakeIssuer{},
@@ -135,7 +135,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "irregular pipeline, and jenkinsfile edit mode",
 		fields: fields{
-			Client:      fake.NewFakeClientWithScheme(schema, irregularPip),
+			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(irregularPip).Build(),
 			JenkinsCore: core.JenkinsCore{},
 			log:         logr.Logger{},
 		},
@@ -149,7 +149,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "a regular pipeline with jenkinsfile edit mode",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, pip),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(pip).Build(),
 			JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
 			},
@@ -174,6 +174,8 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 			}, pip)
 			assert.Nil(t, err)
 			assert.Equal(t, `{"a":"b"}`, pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey])
+			assert.Equal(t, "", pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey])
+			assert.Equal(t, v1alpha3.PipelineJenkinsfileValidateSuccess, pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey])
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -182,7 +184,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "a regular pipeline with JSON edit mode",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, jsonEditModePip),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(jsonEditModePip).Build(),
 			JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
 			},
