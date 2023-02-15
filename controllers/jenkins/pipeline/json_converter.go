@@ -80,7 +80,7 @@ func (r *JenkinsfileReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	case v1alpha3.PipelineJenkinsfileEditModeRaw:
 		result, err = r.reconcileJenkinsfileEditMode(pip, req.NamespacedName, coreClient)
 	case v1alpha3.PipelineJenkinsfileEditModeJSON:
-		result, err = r.reconcileJSONEditMode(pip, coreClient)
+		result, err = r.reconcileJSONEditMode(pip, req.NamespacedName, coreClient)
 	case "":
 		// Reconcile pipeline version <= v3.3.2
 		if _, ok := pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey]; !ok {
@@ -142,21 +142,43 @@ func (r *JenkinsfileReconciler) updateAnnotations(annotations map[string]string,
 	})
 }
 
-func (r *JenkinsfileReconciler) reconcileJSONEditMode(pip *v1alpha3.Pipeline, coreClient core.Client) (
+func (r *JenkinsfileReconciler) reconcileJSONEditMode(pip *v1alpha3.Pipeline, pipelineKey client.ObjectKey, coreClient core.Client) (
 	result ctrl.Result, err error) {
 	var jsonData string
 	if jsonData = pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey]; jsonData != "" {
 		var toResult core.GenericResult
 		if toResult, err = coreClient.ToJenkinsfile(jsonData); err != nil || toResult.GetStatus() != "success" {
-			err = fmt.Errorf("failed to convert JSON format to Jenkinsfile, error: %v", err)
+			r.log.Error(err, "failed to convert json format to Jenkinsfile")
+			pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
+			pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = v1alpha3.PipelineJenkinsfileValidateFailure
+			err = r.updateAnnotations(pip.Annotations, pipelineKey)
 			return
 		}
-
 		pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
-		pip.Spec.Pipeline.Jenkinsfile = toResult.GetResult()
-		err = r.Update(context.Background(), pip)
+		pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = v1alpha3.PipelineJenkinsfileValidateSuccess
+		err = r.updateAnnotationsAndJenkinsfile(pip.Annotations, toResult.GetResult(), pipelineKey)
 	}
 	return
+}
+
+func (r *JenkinsfileReconciler) updateAnnotationsAndJenkinsfile(annotations map[string]string, jenkinsfile string, pipelineKey client.ObjectKey) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		pipeline := &v1alpha3.Pipeline{}
+		if err := r.Get(context.Background(), pipelineKey, pipeline); err != nil {
+			return client.IgnoreNotFound(err)
+		}
+		if pipeline.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] == annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] &&
+			pipeline.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] == annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] &&
+			pipeline.Spec.Pipeline.Jenkinsfile == jenkinsfile {
+			return nil
+		}
+
+		// update annotations
+		pipeline.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey]
+		pipeline.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey]
+		pipeline.Spec.Pipeline.Jenkinsfile = jenkinsfile
+		return r.Update(context.Background(), pipeline)
+	})
 }
 
 // GetName returns the name of this controller
@@ -193,7 +215,7 @@ var jenkinsfilePredicate = predicate.Funcs{
 		oldPipeline, okOld := ue.ObjectOld.(*v1alpha3.Pipeline)
 		newPipeline, okNew := ue.ObjectNew.(*v1alpha3.Pipeline)
 		if okOld && okNew {
-			if !reflect.DeepEqual(oldPipeline.Spec.Pipeline, newPipeline.Spec.Pipeline) {
+			if oldPipeline.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] != newPipeline.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] {
 				return true
 			}
 		}
