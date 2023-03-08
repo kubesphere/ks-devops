@@ -333,25 +333,31 @@ func (d devopsOperator) UpdateJenkinsfile(projectName, pipelineName, mode, jenki
 	return
 }
 
-func (d devopsOperator) ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error) {
+func (d devopsOperator) ListPipelineObj(projectName string, queryParam *query.Query) (api.ListResult, error) {
 	project, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return api.ListResult{}, err
 	}
+
 	pipelines, err := d.ksclient.DevopsV1alpha3().Pipelines(project.Status.AdminNamespace).List(d.context, metav1.ListOptions{
-		LabelSelector: query.LabelSelector,
+		LabelSelector: queryParam.LabelSelector,
 	})
 
 	if err != nil {
 		return api.ListResult{}, err
 	}
 
+	// filter pipeline type & convert Pipeline to runtime.Object
+	pipelineType, typeExist := queryParam.Filters[query.FieldType]
 	var result = make([]runtime.Object, len(pipelines.Items))
 	for i, _ := range pipelines.Items {
+		if typeExist && string(pipelines.Items[i].Spec.Type) != string(pipelineType) {
+			continue
+		}
 		result = append(result, &pipelines.Items[i])
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
+	return *resourcesV1alpha3.DefaultList(result, queryParam, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
 // CreateCredentialObj creates a secret
