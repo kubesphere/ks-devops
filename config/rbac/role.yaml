@@ -11,11 +11,11 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
   - get
   - list
   - update
   - watch
-  - create
 - apiGroups:
   - ""
   resources:
