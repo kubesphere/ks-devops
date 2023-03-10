@@ -38,7 +38,7 @@ import (
 	"time"
 )
 
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;update;watch
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;update;watch;create
 
 // ControllerOptions is the option of Jenkins configuration controller
 type ControllerOptions struct {
