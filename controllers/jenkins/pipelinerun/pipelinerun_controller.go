@@ -136,10 +136,9 @@ func (r *Reconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				runID, _ := pipelineRun.GetPipelineRunID()
 				log.Info(fmt.Sprintf("get pipelinerun data(id: %s) error with not exit, retry.", runID) )
 				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
-			} else {
-				log.Error(err, "unable get PipelineRun data.")
-				r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 			}
+			log.Error(err, "unable get PipelineRun data.")
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 			return ctrl.Result{}, err
 		}
 
