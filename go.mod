@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.52
 	github.com/beevik/etree v1.1.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/emicklei/go-restful v2.9.6+incompatible
+	github.com/emicklei/go-restful v2.16.0+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20201014110547-68ccff494617
 	github.com/fatih/structs v1.1.0
@@ -18,10 +18,9 @@ require (
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.3
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/example v0.0.0-20170904185048-46695d81d1fa
 	github.com/golang/mock v1.6.0
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.9
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.4
@@ -33,13 +32,8 @@ require (
 	github.com/speps/go-hashids v2.0.0+incompatible
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.7.0
-	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
-	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
-	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
-	google.golang.org/appengine v1.6.5 // indirect
+	github.com/spf13/viper v1.14.0
+	github.com/stretchr/testify v1.8.1
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.20.2
