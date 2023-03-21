@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.52
 	github.com/beevik/etree v1.1.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/emicklei/go-restful v2.9.6+incompatible
+	github.com/emicklei/go-restful v2.16.0+incompatible
 	github.com/emicklei/go-restful-openapi v1.4.1
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20201014110547-68ccff494617
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
