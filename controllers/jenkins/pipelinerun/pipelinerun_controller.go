@@ -131,17 +131,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		log.V(5).Info("pipeline has already started, and we are retrieving run data from Jenkins.")
 		pipelineBuild, err := jHandler.getPipelineRunResult(namespaceName, pipelineName, pipelineRunCopied)
 		if err != nil {
-			if err.Error() == BuildNotExistMsg { // delete pipelinerun if build not exist in jenkins
-				runID, _ := pipelineRun.GetPipelineRunID()
-				log.Info(fmt.Sprintf("the build(ID: %s) not exist in jenkins, delete it..", runID))
-				if err = r.Client.Delete(ctx, pipelineRun); err != nil {
-					log.Error(err, "failed to delete pipelinerun")
-					return ctrl.Result{RequeueAfter: 3 * time.Second}, err
-				}
-			} else {
-				log.Error(err, "unable get PipelineRun data.")
-				r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
+			if err.Error() == BuildNotExistMsg { // retry if get pipelinerun failed by not exist
+				runID, _ := pipelineRunCopied.GetPipelineRunID()
+				log.Info(fmt.Sprintf("get pipelinerun data(id: %s) error with not exit, retry.", runID))
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 			}
+			log.Error(err, "unable get PipelineRun data.")
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve running data from Jenkins, and error was %v", err)
 			return ctrl.Result{}, err
 		}
 
