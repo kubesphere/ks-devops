@@ -50,6 +50,11 @@ require (
 )
 
 require (
+	github.com/evanphx/json-patch v4.12.0+incompatible
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
 	code.gitea.io/sdk/gitea v0.14.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -58,7 +63,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bluekeyes/go-gitdiff v0.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -125,7 +129,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	moul.io/http2curl v1.0.0 // indirect
