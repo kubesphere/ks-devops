@@ -22,8 +22,10 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	jwt "kubesphere.io/devops/cmd/tools/jwt/app"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/config"
 )
@@ -41,6 +43,18 @@ func (o *initConfigOption) preRunE(cmd *cobra.Command, args []string) (err error
 }
 
 func (o *initConfigOption) runE(cmd *cobra.Command, args []string) (err error) {
+	// if kubesphere-config in namespace kubesphere-system not exist, generate devops.password by jwt
+	// used for deploy devops independence
+	if _, _, err = o.getKubesphereConfig(o.ksNamespace, o.ksConfigMapName); err != nil {
+		if !errors.IsNotFound(err) {
+			klog.Error("check if kubesphere-config exist failed")
+			return
+		}
+		klog.Infof("update configmap %s in %s by jwt", o.ConfigMapName, o.Namespace)
+		err = jwt.JwtFunc("", o.Namespace, o.ConfigMapName)
+		return
+	}
+
 	klog.Infof("get patch configuration from configmap %s in %s", o.ksConfigMapName, o.ksNamespace)
 	var updateConfig map[string]interface{}
 	if updateConfig, err = o.getPatchConfigFromKs(); err != nil {
