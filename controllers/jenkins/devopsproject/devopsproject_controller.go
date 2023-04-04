@@ -316,12 +316,14 @@ func (c *Controller) syncHandler(key string) error {
 		//}
 
 		// Check project exists, otherwise we will create it.
-		_, err := c.devopsClient.GetDevOpsProject(copyProject.Status.AdminNamespace)
-		if err != nil {
-			_, err := c.devopsClient.CreateDevOpsProject(copyProject.Status.AdminNamespace)
+		if k8sutil.IsCiEnable() {
+			_, err := c.devopsClient.GetDevOpsProject(copyProject.Status.AdminNamespace)
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to get project %s ", key))
-				return err
+				_, err := c.devopsClient.CreateDevOpsProject(copyProject.Status.AdminNamespace)
+				if err != nil {
+					klog.V(8).Info(err, fmt.Sprintf("failed to get project %s ", key))
+					return err
+				}
 			}
 		}
 
@@ -342,17 +344,21 @@ func (c *Controller) syncHandler(key string) error {
 		// Finalizers processing logic
 		if sliceutil.HasString(project.ObjectMeta.Finalizers, devopsv1alpha3.DevOpsProjectFinalizerName) {
 			delSuccess := false
-			if err := c.deleteDevOpsProjectInDevOps(project); err != nil {
-				// the status code should be 404 if the job does not exists
-				if srvErr, ok := err.(restful.ServiceError); ok {
-					delSuccess = srvErr.Code == http.StatusNotFound
-				} else if srvErr, ok := err.(*devopsClient.ErrorResponse); ok {
-					delSuccess = srvErr.Response.StatusCode == http.StatusNotFound
-				} else {
-					klog.Error(fmt.Sprintf("unexpected error type: %v, should be *restful.ServiceError", err))
-				}
+			if k8sutil.IsCiEnable() {
+				if err := c.deleteDevOpsProjectInDevOps(project); err != nil {
+					// the status code should be 404 if the job does not exists
+					if srvErr, ok := err.(restful.ServiceError); ok {
+						delSuccess = srvErr.Code == http.StatusNotFound
+					} else if srvErr, ok := err.(*devopsClient.ErrorResponse); ok {
+						delSuccess = srvErr.Response.StatusCode == http.StatusNotFound
+					} else {
+						klog.Error(fmt.Sprintf("unexpected error type: %v, should be *restful.ServiceError", err))
+					}
 
-				klog.V(8).Info(err, fmt.Sprintf("failed to delete resource %s in devops", key))
+					klog.V(8).Info(err, fmt.Sprintf("failed to delete resource %s in devops", key))
+				} else {
+					delSuccess = true
+				}
 			} else {
 				delSuccess = true
 			}

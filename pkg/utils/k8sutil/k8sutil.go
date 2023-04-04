@@ -17,7 +17,10 @@ limitations under the License.
 package k8sutil
 
 import (
+	"context"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubesphere.io/devops/pkg/client/k8s"
 )
 
 // IsControlledBy returns whether the ownerReferences contains the specified resource kind
@@ -56,4 +59,63 @@ func AddOwnerReference(object metav1.Object, typeMeta metav1.TypeMeta, objectMet
 		Name:       objectMeta.Name,
 		UID:        objectMeta.UID,
 	})
+}
+
+func RequestInstallerCC(ctx context.Context, client k8s.Client) (*CC, error) {
+	req := client.KubeSphere().InstallerV1alpha1().RESTClient().
+		Get().
+		Namespace("kubesphere-system").
+		Resource("clusterconfigurations").
+		Name("ks-installer").
+		SetHeader("Accept", "application/yaml")
+	result := req.Do(ctx)
+
+	if result.Error() != nil {
+		return installerCC, result.Error()
+	}
+
+	body, err := result.Raw()
+	if err != nil {
+		return installerCC, err
+	}
+
+	err = yaml.Unmarshal(body, &installerCC)
+	if err != nil {
+		return installerCC, err
+	}
+	return installerCC, nil
+}
+
+func IsCiEnable() bool {
+	if installerCC.Spec.Devops.Enabled &&
+		installerCC.Spec.Devops.Ci.Enabled {
+		return true
+	}
+	return false
+}
+
+func IsCdEnable() bool {
+	if installerCC.Spec.Devops.Enabled &&
+		installerCC.Spec.Devops.Cd.Enabled {
+		return true
+	}
+	return false
+}
+
+var (
+	installerCC = &CC{}
+)
+
+type CC struct {
+	Spec struct {
+		Devops struct {
+			Enabled bool
+			Ci      struct {
+				Enabled bool `yaml:"enabled"`
+			} `yaml:"ci"`
+			Cd struct {
+				Enabled bool `yaml:"enabled"`
+			} `yaml:"cd"`
+		} `yaml:"devops"`
+	} `yaml:"spec"`
 }

@@ -17,24 +17,25 @@ limitations under the License.
 package app
 
 import (
+	"context"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"k8s.io/klog/v2"
+	"kubesphere.io/devops/cmd/controller/app/options"
 	"kubesphere.io/devops/controllers/addon"
 	"kubesphere.io/devops/controllers/argocd"
 	"kubesphere.io/devops/controllers/fluxcd"
 	"kubesphere.io/devops/controllers/gitrepository"
+	"kubesphere.io/devops/controllers/jenkins/config"
 	"kubesphere.io/devops/controllers/jenkins/devopscredential"
 	"kubesphere.io/devops/controllers/jenkins/devopsproject"
-	"kubesphere.io/devops/pkg/jwt/token"
-	"kubesphere.io/devops/pkg/server/errors"
-
-	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"k8s.io/klog/v2"
-	"kubesphere.io/devops/cmd/controller/app/options"
-	"kubesphere.io/devops/controllers/jenkins/config"
 	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"
 	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
 	"kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/client/k8s"
 	"kubesphere.io/devops/pkg/informers"
+	"kubesphere.io/devops/pkg/jwt/token"
+	"kubesphere.io/devops/pkg/server/errors"
+	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -45,37 +46,46 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 		return errors.New("devopsClient should not be nil")
 	}
 
+	ctx := context.Background()
+	_, err := k8sutil.RequestInstallerCC(ctx, client)
+	if err != nil {
+		klog.Error(err, "Failed to get cc, use default value")
+	}
+
 	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s, jenkinsCore)
-	reconcilers["pipeline"] = func(mgr manager.Manager) (err error) {
-		tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
-		// add PipelineRun controller
-		if err = (&pipelinerun.Reconciler{
-			Client:               mgr.GetClient(),
-			Scheme:               mgr.GetScheme(),
-			DevOpsClient:         devopsClient,
-			JenkinsCore:          jenkinsCore,
-			TokenIssuer:          tokenIssuer,
-			PipelineRunDataStore: s.FeatureOptions.PipelineRunDataStore,
-		}).SetupWithManager(mgr); err != nil {
-			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
+	// ci
+	if k8sutil.IsCiEnable() {
+		reconcilers["pipeline"] = func(mgr manager.Manager) (err error) {
+			tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
+			// add PipelineRun controller
+			if err = (&pipelinerun.Reconciler{
+				Client:               mgr.GetClient(),
+				Scheme:               mgr.GetScheme(),
+				DevOpsClient:         devopsClient,
+				JenkinsCore:          jenkinsCore,
+				TokenIssuer:          tokenIssuer,
+				PipelineRunDataStore: s.FeatureOptions.PipelineRunDataStore,
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
+				return
+			}
+
+			// add PipelineRun Synchronizer
+			if err = (&pipelinerun.SyncReconciler{
+				Client:      mgr.GetClient(),
+				JenkinsCore: jenkinsCore,
+			}).SetupWithManager(mgr); err != nil {
+				klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
+				return
+			}
+
+			// add Pipeline metadata controller
+			err = (&jenkinspipeline.Reconciler{
+				Client:      mgr.GetClient(),
+				JenkinsCore: jenkinsCore,
+			}).SetupWithManager(mgr)
 			return
 		}
-
-		// add PipelineRun Synchronizer
-		if err = (&pipelinerun.SyncReconciler{
-			Client:      mgr.GetClient(),
-			JenkinsCore: jenkinsCore,
-		}).SetupWithManager(mgr); err != nil {
-			klog.Errorf("unable to create pipelinerun-synchronizer, err: %v", err)
-			return
-		}
-
-		// add Pipeline metadata controller
-		err = (&jenkinspipeline.Reconciler{
-			Client:      mgr.GetClient(),
-			JenkinsCore: jenkinsCore,
-		}).SetupWithManager(mgr)
-		return
 	}
 
 	// Add all controllers into manager.
@@ -96,7 +106,6 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory informers.InformerFactory,
 	devopsClient devops.Interface, s *options.DevOpsControllerManagerOptions, jenkinsCore core.JenkinsCore) map[string]func(mgr manager.Manager) error {
-
 	argocdReconciler := &argocd.Reconciler{
 		Client:        mgr.GetClient(),
 		ArgoNamespace: s.ArgoCDOption.Namespace,
@@ -143,33 +152,49 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 		Client: mgr.GetClient(),
 	}
 
-	return map[string]func(mgr manager.Manager) error{
-		gitRepoReconcilers.GetName(): func(mgr manager.Manager) error {
-			err := (&gitrepository.PullRequestStatusReconciler{
-				Client:          mgr.GetClient(),
-				ExternalAddress: s.FeatureOptions.ExternalAddress,
-				ClusterName:     s.FeatureOptions.ClusterName,
-			}).SetupWithManager(mgr)
-			if err != nil {
-				return err
-			}
-			return gitRepoReconcilers.SetupWithManager(mgr)
-		},
-		"addon": func(mgr manager.Manager) error {
-			err := (&addon.OperatorCRDReconciler{
+	ret := make(map[string]func(mgr manager.Manager) error)
+	ret[gitRepoReconcilers.GetName()] = func(mgr manager.Manager) error {
+		err := (&gitrepository.PullRequestStatusReconciler{
+			Client:          mgr.GetClient(),
+			ExternalAddress: s.FeatureOptions.ExternalAddress,
+			ClusterName:     s.FeatureOptions.ClusterName,
+		}).SetupWithManager(mgr)
+		if err != nil {
+			return err
+		}
+		return gitRepoReconcilers.SetupWithManager(mgr)
+	}
+	ret["addon"] = func(mgr manager.Manager) error {
+		err := (&addon.OperatorCRDReconciler{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(mgr)
+		if err == nil {
+			err = (&addon.Reconciler{
 				Client: mgr.GetClient(),
 			}).SetupWithManager(mgr)
-			if err == nil {
-				err = (&addon.Reconciler{
-					Client: mgr.GetClient(),
-				}).SetupWithManager(mgr)
-			}
-			return err
-		},
-		"jenkinsagent": func(mgr manager.Manager) error {
+		}
+		return err
+	}
+	ret["core"] = func(mgr manager.Manager) error {
+		err := mgr.Add(devopscredential.NewController(client.Kubernetes(),
+			devopsClient,
+			informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+			informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets()))
+		if err == nil {
+			err = mgr.Add(devopsproject.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
+				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects()))
+		}
+		return err
+	}
+
+	// Ci
+	if k8sutil.IsCiEnable() {
+		ret["jenkinsagent"] = func(mgr manager.Manager) error {
 			return jenkinsPodTemplate.SetupWithManager(mgr)
-		},
-		"jenkinsconfig": func(mgr manager.Manager) error {
+		}
+		ret["jenkinsconfig"] = func(mgr manager.Manager) error {
 			return mgr.Add(config.NewController(&config.ControllerOptions{
 				LimitRangeClient:    client.Kubernetes().CoreV1(),
 				ResourceQuotaClient: client.Kubernetes().CoreV1(),
@@ -182,24 +207,12 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				ConfigOperator:  devopsClient,
 				ReloadCasCDelay: s.JenkinsOptions.ReloadCasCDelay,
 			}, s.JenkinsOptions))
-		},
-		"jenkins": func(mgr manager.Manager) error {
-			err := mgr.Add(devopscredential.NewController(client.Kubernetes(),
-				devopsClient,
+		}
+		ret["jenkins"] = func(mgr manager.Manager) error {
+			err := mgr.Add(jenkinspipeline.NewController(client.Kubernetes(),
+				client.KubeSphere(), devopsClient,
 				informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-				informerFactory.KubernetesSharedInformerFactory().Core().V1().Secrets()))
-			if err == nil {
-				err = mgr.Add(devopsproject.NewController(client.Kubernetes(),
-					client.KubeSphere(), devopsClient,
-					informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().DevOpsProjects()))
-			}
-			if err == nil {
-				err = mgr.Add(jenkinspipeline.NewController(client.Kubernetes(),
-					client.KubeSphere(), devopsClient,
-					informerFactory.KubernetesSharedInformerFactory().Core().V1().Namespaces(),
-					informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
-			}
+				informerFactory.KubeSphereSharedInformerFactory().Devops().V1alpha3().Pipelines()))
 
 			if err == nil {
 				jenkinsfileReconciler := &jenkinspipeline.JenkinsfileReconciler{
@@ -213,8 +226,12 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				err = jenkinsAgentLabelsReconciler.SetupWithManager(mgr)
 			}
 			return err
-		},
-		argocdReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
+		}
+	}
+
+	// Cd
+	if k8sutil.IsCdEnable() {
+		ret[argocdReconciler.GetGroupName()] = func(mgr manager.Manager) (err error) {
 			if err = argocdReconciler.SetupWithManager(mgr); err != nil {
 				return
 			}
@@ -228,11 +245,11 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				return
 			}
 			return argocdAppReconciler.SetupWithManager(mgr)
-		},
-		argcdImageUpdaterReconciler.GetGroupName() + "-image-updater": func(mgr manager.Manager) error {
+		}
+		ret[argcdImageUpdaterReconciler.GetGroupName()+"-image-updater"] = func(mgr manager.Manager) error {
 			return argcdImageUpdaterReconciler.SetupWithManager(mgr)
-		},
-		fluxcdApplicationReconciler.GetGroupName(): func(mgr manager.Manager) (err error) {
+		}
+		ret[fluxcdApplicationReconciler.GetGroupName()] = func(mgr manager.Manager) (err error) {
 			if err = fluxcdGitRepoReconciler.SetupWithManager(mgr); err != nil {
 				return
 			}
@@ -243,6 +260,7 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 				return
 			}
 			return fluxcdApplicationReconciler.SetupWithManager(mgr)
-		},
+		}
 	}
+	return ret
 }

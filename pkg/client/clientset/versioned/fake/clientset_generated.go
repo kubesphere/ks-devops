@@ -29,6 +29,7 @@ import (
 	fakedevopsv1alpha1 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha1/fake"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha3"
 	fakedevopsv1alpha3 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha3/fake"
+	"kubesphere.io/devops/pkg/client/clientset/versioned/typed/installer/v1alpha1"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -66,6 +67,11 @@ type Clientset struct {
 	testing.Fake
 	discovery *fakediscovery.FakeDiscovery
 	tracker   testing.ObjectTracker
+	installer v1alpha1.InstallerV1alpha1Interface
+}
+
+func (c *Clientset) InstallerV1alpha1() v1alpha1.InstallerV1alpha1Interface {
+	return c.installer
 }
 
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {

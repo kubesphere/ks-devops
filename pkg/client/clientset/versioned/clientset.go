@@ -20,6 +20,7 @@ package versioned
 
 import (
 	"fmt"
+	"kubesphere.io/devops/pkg/client/clientset/versioned/typed/installer/v1alpha1"
 
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -32,14 +33,20 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	DevopsV1alpha1() devopsv1alpha1.DevopsV1alpha1Interface
 	DevopsV1alpha3() devopsv1alpha3.DevopsV1alpha3Interface
+	InstallerV1alpha1() v1alpha1.InstallerV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	devopsV1alpha1 *devopsv1alpha1.DevopsV1alpha1Client
-	devopsV1alpha3 *devopsv1alpha3.DevopsV1alpha3Client
+	devopsV1alpha1    *devopsv1alpha1.DevopsV1alpha1Client
+	devopsV1alpha3    *devopsv1alpha3.DevopsV1alpha3Client
+	installerV1alpha1 *v1alpha1.InstallerV1alpha1Client
+}
+
+func (c *Clientset) InstallerV1alpha1() v1alpha1.InstallerV1alpha1Interface {
+	return c.installerV1alpha1
 }
 
 // DevopsV1alpha1 retrieves the DevopsV1alpha1Client
@@ -83,6 +90,11 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	cs.installerV1alpha1, err = v1alpha1.NewForConfig4Installer(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
