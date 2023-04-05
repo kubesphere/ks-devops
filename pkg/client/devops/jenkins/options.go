@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const DefaultAdminPassword = "119d76305a05e7a2a65d096f71feb77921"
+
 type Options struct {
 	Host            string        `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
 	Username        string        `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
@@ -71,7 +73,7 @@ func (s *Options) Validate() []error {
 		errors = append(errors, fmt.Errorf("jenkins's username or password is empty"))
 	}
 
-	if s.Password == "119d76305a05e7a2a65d096f71feb77921" {
+	if s.Password == DefaultAdminPassword {
 		errors = append(errors, fmt.Errorf("the token of the Jenkins needs to update"))
 	}
 
