@@ -16,21 +16,13 @@ limitations under the License.
 
 package app
 
-// JwtFunc a agent func to generate and update devops.password that called by others in different package
-func JwtFunc(secret, namespace, configmap string) (err error) {
-	opt := &jwtOption{
-		secret:               secret,
-		output:               "configmap",
-		overrideJenkinsToken: true,
-		namespace:            namespace,
-		name:                 configmap,
-		k8sClientFactory:     &DefaultK8sClientFactory{},
-	}
+// GenerateJwtSecret a agent func to generate jwt secret that called by others in different package
+func GenerateJwtSecret() string {
+	opt := &jwtOption{}
+	return opt.generateSecret()
+}
 
-	if err = opt.preRunE(nil, []string{}); err != nil {
-		return
-	}
-
-	err = opt.runE(nil, []string{})
-	return
+// GeneratePassword a agent func to generate devops password that called by others in different package
+func GeneratePassword(secret string) string {
+	return generateJWT(secret)
 }
