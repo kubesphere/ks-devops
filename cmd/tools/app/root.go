@@ -24,10 +24,15 @@ import (
 var toolOpt *ToolOption
 
 type ToolOption struct {
-	Namespace     string
-	ConfigMapName string
+	Namespace string
+	Configmap string
 
 	K8sClient k8s.Client
+}
+
+func (o *ToolOption) initK8sClient() (err error) {
+	o.K8sClient, err = k8s.NewKubernetesClient(k8s.NewKubernetesOptions())
+	return
 }
 
 func (o *ToolOption) runHelpE(cmd *cobra.Command, args []string) error {
@@ -47,7 +52,7 @@ func NewToolsCmd() (cmd *cobra.Command) {
 	flags := rootCmd.PersistentFlags()
 	flags.StringVarP(&toolOpt.Namespace, "namespace", "n", "kubesphere-devops-system",
 		"The namespace of DevOps service")
-	flags.StringVarP(&toolOpt.ConfigMapName, "configmap", "c", "devops-config",
+	flags.StringVarP(&toolOpt.Configmap, "configmap", "c", "devops-config",
 		"The configmap name of DevOps service")
 
 	rootCmd.AddCommand(NewInitCmd())
