@@ -18,8 +18,11 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -38,6 +41,9 @@ import (
 
 // tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
 const tokenExpireIn time.Duration = 5 * time.Minute
+
+// HttpTimeoutErrStr indicates that connection in http request is timeout(the str in error).
+const HttpTimeoutErrStr = " (Client.Timeout exceeded while awaiting headers)"
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=pipelines,verbs=get;list;update;patch;watch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
@@ -108,6 +114,14 @@ func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipel
 		var toJSONResult core.GenericResult
 		if toJSONResult, err = coreClient.ToJSON(jenkinsfile); err != nil || toJSONResult.GetStatus() != "success" {
 			r.log.Error(err, "failed to convert jenkinsfile to json format")
+			if err != nil {
+				// ConnectRefused || Timeout when jenkins is starting(not ready), retry
+				if errors.Is(err, syscall.ECONNREFUSED) || strings.Contains(err.Error(), HttpTimeoutErrStr) {
+					r.log.Info("connect to jenkins failed, retry..")
+					return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+				}
+			}
+
 			pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey] = ""
 			pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
 			pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = v1alpha3.PipelineJenkinsfileValidateFailure
