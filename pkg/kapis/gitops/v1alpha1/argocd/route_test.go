@@ -236,6 +236,14 @@ func TestPublicAPIs(t *testing.T) {
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			Kind: v1alpha1.ArgoCD,
+			ArgoApp: &v1alpha1.ArgoApplication{
+				Operation: nil,
+				Spec: v1alpha1.ArgoApplicationSpec{
+					SyncPolicy: &v1alpha1.SyncPolicy{
+						Automated: nil,
+					},
+				},
+			},
 		},
 	}
 
