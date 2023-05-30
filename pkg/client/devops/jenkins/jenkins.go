@@ -216,6 +216,16 @@ func (j *Jenkins) Poll() (int, error) {
 	return resp.StatusCode, nil
 }
 
+func (j *Jenkins) CheckPipelineName(projectName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+	PipelineOjb := &Pipeline{
+		HttpParameters: httpParameters,
+		Jenkins:        j,
+		Path:           fmt.Sprintf(CheckPipelineName+httpParameters.Url.RawQuery, projectName),
+	}
+	res, err := PipelineOjb.CheckPipelineName()
+	return res, err
+}
+
 func (j *Jenkins) GetPipeline(projectName, pipelineName string, httpParameters *devops.HttpParameters) (*devops.Pipeline, error) {
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,
