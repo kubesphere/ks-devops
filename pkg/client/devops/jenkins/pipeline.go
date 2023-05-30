@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -84,7 +85,32 @@ const (
 	CheckCronUrl         = "/job/%s/descriptorByName/hudson.triggers.TimerTrigger/checkSpec?%s"
 
 	cronJobLayout = "Monday, January 2, 2006 15:04:05 PM"
+
+	CheckPipelineName = "/job/%s/checkJobName?"
 )
+
+func (p *Pipeline) CheckPipelineName() (map[string]interface{}, error) {
+	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
+	if err != nil {
+		return nil, err
+	}
+
+	pattern := `>[^<]+<`
+
+	// 编译正则表达式
+	reg := regexp.MustCompile(pattern)
+
+	result := make(map[string]interface{})
+	// 提取错误消息
+	match := reg.FindString(string(res))
+	if match != "" {
+		result["exist"] = true
+	} else {
+		result["exist"] = false
+	}
+
+	return result, nil
+}
 
 func (p *Pipeline) GetPipeline() (*devops.Pipeline, error) {
 	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)

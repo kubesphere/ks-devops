@@ -26,4 +26,5 @@ type ProjectOperator interface {
 	CreateDevOpsProject(projectId string) (string, error)
 	DeleteDevOpsProject(projectId string) error
 	GetDevOpsProject(projectId string) (string, error)
+	//CheckDevOpsProject(projectId string)
 }
