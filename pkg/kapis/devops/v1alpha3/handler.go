@@ -403,7 +403,6 @@ func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *rest
 
 	var result map[string]interface{}
 	if client, err := h.getDevOps(request); err == nil {
-		var project *v1alpha3.DevOpsProject
 
 		switch generateNameFlag {
 		case "true":
@@ -413,7 +412,7 @@ func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *rest
 			}
 			errorHandle(request, response, result, nil)
 		default:
-			errorHandle(request, response, project, errors2.New(fmt.Sprintf("generateNameFlag can not be false")))
+			errorHandle(request, response, nil, errors2.New(fmt.Sprintf("generateNameFlag can not be false")))
 		}
 	} else {
 		kapis.HandleBadRequest(response, request, err)
