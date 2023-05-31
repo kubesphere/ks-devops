@@ -45,6 +45,18 @@ import (
 
 const jenkinsHeaderPre = "X-"
 
+func (h *ProjectPipelineHandler) CheckPipelineName(req *restful.Request, resp *restful.Response) {
+	jobName := req.PathParameter("devops")
+	res, err := h.devopsOperator.CheckPipelineName(jobName, req.Request)
+	if err != nil {
+		parseErr(err, resp)
+		return
+	}
+
+	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
+	resp.WriteAsJson(res)
+}
+
 func (h *ProjectPipelineHandler) GetPipeline(req *restful.Request, resp *restful.Response) {
 	projectName := req.PathParameter("devops")
 	pipelineName := req.PathParameter("pipeline")
