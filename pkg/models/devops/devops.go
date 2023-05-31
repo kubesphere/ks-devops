@@ -59,6 +59,7 @@ type DevopsOperator interface {
 	DeleteDevOpsProject(workspace string, projectName string) error
 	UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error)
+	CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error)
 
 	CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error)
@@ -190,6 +191,30 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 
 	// create it
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Create(d.context, project, metav1.CreateOptions{})
+}
+
+// CheckDevopsProject check the devops is not exist
+func (d devopsOperator) CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error) {
+	var list *v1alpha3.DevOpsProjectList
+	var err error
+
+	result := make(map[string]interface{})
+	result["exist"] = false
+
+	if list, err = d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", constants.WorkspaceLabelKey, workspace),
+	}); err == nil {
+		for i := range list.Items {
+			item := list.Items[i]
+			if item.GenerateName == projectName {
+				result["exist"] = true
+				break
+			}
+		}
+		return result, nil
+	} else {
+		return result, err
+	}
 }
 
 // GetDevOpsProjectByGenerateName finds the DevOps project by workspace and project name

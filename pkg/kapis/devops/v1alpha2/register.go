@@ -108,7 +108,7 @@ func AddPipelineToWebService(webservice *restful.WebService, devopsClient devops
 		projectPipelineHandler := NewProjectPipelineHandler(devopsClient, k8sClient)
 
 		// match Jenkins api "/job/{devops}/checkJobName?value="
-		webservice.Route(webservice.GET("/job/{devops}/checkJobName").
+		webservice.Route(webservice.GET("/devops/{devops}/checkPipelineName").
 			To(projectPipelineHandler.CheckPipelineName).
 			Doc("check the job name does it exist").
 			Param(webservice.PathParameter("value", "the name of the new job")).

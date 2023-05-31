@@ -95,13 +95,16 @@ func (p *Pipeline) CheckPipelineName() (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	/*
+		if the name exist , the res will be
+		 <div class=error><img src='/static/7abb227e/images/none.gif' height=16 width=1>A job already exists with the name ‘devopsd6b97’</div>
+	*/
 	pattern := `>[^<]+<`
 
-	// 编译正则表达式
 	reg := regexp.MustCompile(pattern)
 
 	result := make(map[string]interface{})
-	// 提取错误消息
+
 	match := reg.FindString(string(res))
 	if match != "" {
 		result["exist"] = true
