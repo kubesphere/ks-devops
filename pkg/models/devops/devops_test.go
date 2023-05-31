@@ -604,3 +604,72 @@ func Test_devopsOperator_GetJenkinsAgentLabels(t *testing.T) {
 		})
 	}
 }
+
+func Test_devopsOperator_CheckDevopsName(t *testing.T) {
+	type fields struct {
+		ksclient versioned.Interface
+	}
+	type args struct {
+		workspace   string
+		projectName string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		verify func(result map[string]interface{}, resultErr error, t *testing.T)
+	}{{
+		name: "normal case",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Name:         "generated-name",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace:   "ws",
+			projectName: "fake",
+		},
+		verify: func(result map[string]interface{}, resultErr error, t *testing.T) {
+			assert.Nil(t, resultErr)
+			assert.NotNil(t, result)
+			assert.Equal(t, true, result["exist"])
+		},
+	}, {
+		name: "cannot find by the same generateName in the different workspaces",
+		fields: fields{
+			ksclient: fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "fake",
+					Name:         "generated-name",
+					Labels: map[string]string{
+						constants.WorkspaceLabelKey: "ws",
+					},
+				},
+			}),
+		},
+		args: args{
+			workspace:   "ws",
+			projectName: "fake1",
+		},
+		verify: func(result map[string]interface{}, resultErr error, t *testing.T) {
+			assert.Nil(t, resultErr)
+			assert.NotNil(t, result)
+			assert.Equal(t, false, result["exist"])
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := devopsOperator{
+				ksclient: tt.fields.ksclient,
+			}
+			got, err := d.CheckDevopsProject(tt.args.workspace, tt.args.projectName)
+			tt.verify(got, err, t)
+		})
+	}
+}
