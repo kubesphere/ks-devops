@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
+	errors2 "errors"
+	"fmt"
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -392,4 +394,28 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.Dev
 		operator = devops.NewDevopsOperator(h.devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere())
 	}
 	return
+}
+
+func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *restful.Response) {
+	workspace := request.PathParameter("workspace")
+	devopsName := request.QueryParameter("devopsName")
+	generateNameFlag := request.QueryParameter("generateName")
+
+	var result map[string]interface{}
+	if client, err := h.getDevOps(request); err == nil {
+		var project *v1alpha3.DevOpsProject
+
+		switch generateNameFlag {
+		case "true":
+			result, err = client.CheckDevopsProject(workspace, devopsName)
+			if err != nil {
+				errorHandle(request, response, result, err)
+			}
+			errorHandle(request, response, result, nil)
+		default:
+			errorHandle(request, response, project, errors2.New(fmt.Sprintf("generateNameFlag can not be false")))
+		}
+	} else {
+		kapis.HandleBadRequest(response, request, err)
+	}
 }

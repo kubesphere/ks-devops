@@ -93,6 +93,12 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/devops/fake/pipelines/fake",
 		},
 	}, {
+		name: "check pipeline name if exist",
+		args: args{
+			method: http.MethodGet,
+			uri:    "/devops/fake/checkPipelineName?value=fake1",
+		},
+	}, {
 		name: "search API",
 		args: args{
 			method: http.MethodGet,
