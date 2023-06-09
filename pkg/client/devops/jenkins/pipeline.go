@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -84,7 +85,35 @@ const (
 	CheckCronUrl         = "/job/%s/descriptorByName/hudson.triggers.TimerTrigger/checkSpec?%s"
 
 	cronJobLayout = "Monday, January 2, 2006 15:04:05 PM"
+
+	CheckPipelineName = "/job/%s/checkJobName?"
 )
+
+func (p *Pipeline) CheckPipelineName() (map[string]interface{}, error) {
+	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		if the name exist , the res will be
+		 <div class=error><img src='/static/7abb227e/images/none.gif' height=16 width=1>A job already exists with the name ‘devopsd6b97’</div>
+	*/
+	pattern := `>[^<]+<`
+
+	reg := regexp.MustCompile(pattern)
+
+	result := make(map[string]interface{})
+
+	match := reg.FindString(string(res))
+	if match != "" {
+		result["exist"] = true
+	} else {
+		result["exist"] = false
+	}
+
+	return result, nil
+}
 
 func (p *Pipeline) GetPipeline() (*devops.Pipeline, error) {
 	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)

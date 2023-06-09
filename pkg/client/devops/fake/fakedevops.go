@@ -169,6 +169,10 @@ func (d *Devops) GetPipeline(projectName, pipelineName string, httpParameters *d
 	return nil, nil
 }
 
+func (d *Devops) CheckPipelineName(projectName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+	return nil, nil
+}
+
 func (d *Devops) ListPipelines(httpParameters *devops.HttpParameters) (*devops.PipelineList, error) {
 	return nil, nil
 }
