@@ -59,6 +59,7 @@ type DevopsOperator interface {
 	DeleteDevOpsProject(workspace string, projectName string) error
 	UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
 	ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error)
+	CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error)
 
 	CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error)
@@ -73,6 +74,7 @@ type DevopsOperator interface {
 	UpdateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error)
 	ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error)
 
+	CheckPipelineName(projectName string, req *http.Request) (map[string]interface{}, error)
 	GetPipeline(projectName, pipelineName string, req *http.Request) (*devops.Pipeline, error)
 	ListPipelines(req *http.Request) (*devops.PipelineList, error)
 	GetPipelineRun(projectName, pipelineName, runId string, req *http.Request) (*devops.PipelineRun, error)
@@ -189,6 +191,30 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 
 	// create it
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Create(d.context, project, metav1.CreateOptions{})
+}
+
+// CheckDevopsProject check the devops is not exist
+func (d devopsOperator) CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error) {
+	var list *v1alpha3.DevOpsProjectList
+	var err error
+
+	result := make(map[string]interface{})
+	result["exist"] = false
+
+	if list, err = d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", constants.WorkspaceLabelKey, workspace),
+	}); err == nil {
+		for i := range list.Items {
+			item := list.Items[i]
+			if item.GenerateName == projectName {
+				result["exist"] = true
+				break
+			}
+		}
+		return result, nil
+	} else {
+		return result, err
+	}
 }
 
 // GetDevOpsProjectByGenerateName finds the DevOps project by workspace and project name
@@ -441,6 +467,10 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 	}
 
 	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
+}
+
+func (d devopsOperator) CheckPipelineName(projectName string, req *http.Request) (map[string]interface{}, error) {
+	return d.devopsClient.CheckPipelineName(projectName, convertToHttpParameters(req))
 }
 
 // others
