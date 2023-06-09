@@ -23,6 +23,9 @@ spec:
     - jsonPath: .spec.server
       name: Server
       type: string
+    - jsonPath: .spec.url
+      name: URL
+      type: string
     name: v1alpha3
     schema:
       openAPIV3Schema:
