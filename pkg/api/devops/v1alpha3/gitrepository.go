@@ -34,6 +34,7 @@ const GitRepoFinalizerName = "finalizer.gitrepository.devops.kubesphere.io"
 // +k8s:openapi-gen=true
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider"
 // +kubebuilder:printcolumn:name="Server",type="string",JSONPath=".spec.server"
+// +kubebuilder:printcolumn:name="URL",type="string",JSONPath=".spec.url"
 type GitRepository struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

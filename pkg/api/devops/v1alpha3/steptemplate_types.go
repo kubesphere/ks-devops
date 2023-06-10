@@ -47,6 +47,8 @@ type ParameterInStep struct {
 	Options      string        `json:"options,omitempty"`
 	// Condition is an expression about if this variable is necessary for users
 	Condition string `json:"condition,omitempty"`
+	// represents that the relationship of parameters
+	Reactions string `json:"reactions,omitempty"`
 }
 
 // ParameterType represents the type of parameter
@@ -69,6 +71,8 @@ const (
 	ParameterTypeSecret ParameterType = "secret"
 	// ParameterTypeHidden represents a parameter that is hidden
 	ParameterTypeHidden ParameterType = "hidden"
+	// ParameterTypeImportCodeRepo represents a parameter that is import values to other parameters from code repositories
+	ParameterTypeImportCodeRepo ParameterType = "importCodeRepo"
 )
 
 // StepTemplateStatus defines the observed state of ClusterStepTemplate
