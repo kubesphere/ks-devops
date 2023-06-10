@@ -56,6 +56,9 @@ spec:
                       type: string
                     options:
                       type: string
+                    reactions:
+                      description: represents that the relationship of parameters
+                      type: string
                     required:
                       type: boolean
                     type:
