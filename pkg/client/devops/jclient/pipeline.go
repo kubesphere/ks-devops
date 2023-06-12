@@ -226,6 +226,6 @@ func (j *JenkinsClient) CheckCron(projectName string, httpParameters *devops.Htt
 	return j.jenkins.CheckCron(projectName, httpParameters)
 }
 
-func (j *JenkinsClient) CheckPipelineName(projectName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
-	return j.jenkins.CheckPipelineName(projectName, httpParameters)
+func (j *JenkinsClient) CheckPipelineName(projectName, pipelineName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+	return j.jenkins.CheckPipelineName(projectName, pipelineName, httpParameters)
 }

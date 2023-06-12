@@ -74,7 +74,7 @@ type DevopsOperator interface {
 	UpdateCredentialObj(projectName string, secret *v1.Secret) (*v1.Secret, error)
 	ListCredentialObj(projectName string, query *query.Query) (api.ListResult, error)
 
-	CheckPipelineName(projectName string, req *http.Request) (map[string]interface{}, error)
+	CheckPipelineName(projectName, pipelineName string, req *http.Request) (map[string]interface{}, error)
 	GetPipeline(projectName, pipelineName string, req *http.Request) (*devops.Pipeline, error)
 	ListPipelines(req *http.Request) (*devops.PipelineList, error)
 	GetPipelineRun(projectName, pipelineName, runId string, req *http.Request) (*devops.PipelineRun, error)
@@ -469,8 +469,8 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
 }
 
-func (d devopsOperator) CheckPipelineName(projectName string, req *http.Request) (map[string]interface{}, error) {
-	return d.devopsClient.CheckPipelineName(projectName, convertToHttpParameters(req))
+func (d devopsOperator) CheckPipelineName(projectName, pipelineName string, req *http.Request) (map[string]interface{}, error) {
+	return d.devopsClient.CheckPipelineName(projectName, pipelineName, convertToHttpParameters(req))
 }
 
 // others

@@ -45,9 +45,8 @@ import (
 
 const jenkinsHeaderPre = "X-"
 
-func (h *ProjectPipelineHandler) CheckPipelineName(req *restful.Request, resp *restful.Response) {
-	jobName := req.PathParameter("devops")
-	res, err := h.devopsOperator.CheckPipelineName(jobName, req.Request)
+func (h *ProjectPipelineHandler) CheckPipelineName(req *restful.Request, resp *restful.Response, projectName, pipelineName string) {
+	res, err := h.devopsOperator.CheckPipelineName(projectName, pipelineName, req.Request)
 	if err != nil {
 		parseErr(err, resp)
 		return
@@ -60,6 +59,12 @@ func (h *ProjectPipelineHandler) CheckPipelineName(req *restful.Request, resp *r
 func (h *ProjectPipelineHandler) GetPipeline(req *restful.Request, resp *restful.Response) {
 	projectName := req.PathParameter("devops")
 	pipelineName := req.PathParameter("pipeline")
+	check := req.QueryParameter("check")
+
+	if check == "true" {
+		h.CheckPipelineName(req, resp, projectName, pipelineName)
+		return
+	}
 
 	res, err := h.devopsOperator.GetPipeline(projectName, pipelineName, req.Request)
 	if err != nil {
@@ -69,6 +74,7 @@ func (h *ProjectPipelineHandler) GetPipeline(req *restful.Request, resp *restful
 
 	resp.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	resp.WriteAsJson(res)
+
 }
 
 func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (api.ListResult, error) {

@@ -235,11 +235,6 @@ func registerRoutersForWorkspace(handler *devopsHandler, ws *restful.WebService)
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.DevOpsProject{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsProjectTag}))
 
-	// /workspaces/{workspace}/devops/checkDevopsName?devopsName=xxx&generateName=true
-	ws.Route(ws.GET("/workspaces/{workspace}/devops/checkDevopsName").
-		To(handler.CheckDevopsName).
-		Doc("check the devops project name does it exist").
-		Returns(http.StatusOK, api.StatusOK, nil))
 }
 
 func registerRoutersForCI(handler *devopsHandler, ws *restful.WebService) {

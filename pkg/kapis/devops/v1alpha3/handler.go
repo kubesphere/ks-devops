@@ -50,6 +50,12 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 	workspace := request.PathParameter("workspace")
 	devopsProject := request.PathParameter("devops")
 	generateNameFlag := request.QueryParameter("generateName")
+	check := request.QueryParameter("check")
+
+	if check == "true" {
+		h.CheckDevopsName(request, response, workspace, devopsProject, generateNameFlag)
+		return
+	}
 
 	if client, err := h.getDevOps(request); err == nil {
 		var project *v1alpha3.DevOpsProject
@@ -395,10 +401,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.Dev
 	return
 }
 
-func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *restful.Response) {
-	workspace := request.PathParameter("workspace")
-	devopsName := request.QueryParameter("devopsName")
-	generateNameFlag := request.QueryParameter("generateName")
+func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *restful.Response, workspace, devopsName string, generateNameFlag string) {
 
 	var result map[string]interface{}
 	if client, err := h.getDevOps(request); err == nil {
