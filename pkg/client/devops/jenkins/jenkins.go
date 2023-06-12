@@ -216,11 +216,13 @@ func (j *Jenkins) Poll() (int, error) {
 	return resp.StatusCode, nil
 }
 
-func (j *Jenkins) CheckPipelineName(projectName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+func (j *Jenkins) CheckPipelineName(projectName, pipelineName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+
+	httpParameters.Url.RawQuery = fmt.Sprintf("value=%s", pipelineName)
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,
 		Jenkins:        j,
-		Path:           fmt.Sprintf(CheckPipelineName+httpParameters.Url.RawQuery, projectName),
+		Path:           fmt.Sprintf(CheckPipelineName, projectName),
 	}
 	res, err := PipelineOjb.CheckPipelineName()
 	return res, err

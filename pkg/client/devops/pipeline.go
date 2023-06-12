@@ -1127,7 +1127,7 @@ type HttpParameters struct {
 
 type PipelineOperator interface {
 	// Pipelinne operator interface
-	CheckPipelineName(projectName string, httpParameters *HttpParameters) (map[string]interface{}, error)
+	CheckPipelineName(projectName, pipelineName string, httpParameters *HttpParameters) (map[string]interface{}, error)
 	GetPipeline(projectName, pipelineName string, httpParameters *HttpParameters) (*Pipeline, error)
 	ListPipelines(httpParameters *HttpParameters) (*PipelineList, error)
 	GetPipelineRun(projectName, pipelineName, runId string, httpParameters *HttpParameters) (*PipelineRun, error)
