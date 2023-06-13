@@ -169,7 +169,7 @@ func (d *Devops) GetPipeline(projectName, pipelineName string, httpParameters *d
 	return nil, nil
 }
 
-func (d *Devops) CheckPipelineName(projectName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
+func (d *Devops) CheckPipelineName(projectName, pipelineName string, httpParameters *devops.HttpParameters) (map[string]interface{}, error) {
 	return nil, nil
 }
 
