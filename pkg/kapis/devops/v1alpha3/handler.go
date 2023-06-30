@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"fmt"
 	"github.com/emicklei/go-restful"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -414,7 +413,7 @@ func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *rest
 			}
 			errorHandle(request, response, result, nil)
 		default:
-			errorHandle(request, response, nil, fmt.Errorf("generateNameFlag can not be false"))
+			errorHandle(request, response, nil, errors.NewBadRequest("generateNameFlag can not be false"))
 		}
 	} else {
 		kapis.HandleBadRequest(response, request, err)
