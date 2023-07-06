@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/artifact"
+
 	"kubesphere.io/devops/pkg/client/devops"
 )
 
@@ -67,12 +68,15 @@ func (j *JenkinsClient) GetArtifacts(projectName, pipelineName, runID string, ht
 }
 
 // DownloadArtifact download an artifact
-func (j *JenkinsClient) DownloadArtifact(projectName, pipelineName, runID, filename string) (io.ReadCloser, error) {
+func (j *JenkinsClient) DownloadArtifact(projectName, pipelineName, runID, filename string, isMultiBranch bool, branchName string) (io.ReadCloser, error) {
 	jobRunID, err := strconv.Atoi(runID)
 	if err != nil {
 		return nil, fmt.Errorf("runId error, not a number: %v", err)
 	}
 	c := artifact.Client{JenkinsCore: j.Core}
+	if isMultiBranch {
+		return c.GetArtifactFromMultiBranchPipeline(projectName, pipelineName, isMultiBranch, branchName, jobRunID, filename)
+	}
 	return c.GetArtifact(projectName, pipelineName, jobRunID, filename)
 }
 

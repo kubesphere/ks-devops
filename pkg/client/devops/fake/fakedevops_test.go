@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+
 	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
@@ -190,7 +191,7 @@ func TestNotImplement(t *testing.T) {
 	assertNils(t, o1, o2)
 	o1, o2 = client.GetArtifacts("", "", "", nil)
 	assertNils(t, o1, o2)
-	o1, o2 = client.DownloadArtifact("", "", "", "")
+	o1, o2 = client.DownloadArtifact("", "", "", "", false, "")
 	assertNils(t, o1, o2)
 	o1, o2 = client.GetRunLog("", "", "", nil)
 	assertNils(t, o1, o2)
