@@ -20,7 +20,7 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.11.19
-	github.com/jenkins-zh/jenkins-client v0.0.14-0.20220905100332-0c9041a612a1
+	github.com/jenkins-zh/jenkins-client v0.0.15-0.20230706113353-4db299897849
 	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20220905100332-0c9041a612a1
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.5
