@@ -163,6 +163,15 @@ func (prSpec *PipelineRunSpec) IsMultiBranchPipeline() bool {
 	return prSpec.PipelineSpec != nil && prSpec.PipelineSpec.Type == MultiBranchPipelineType
 }
 
+// GetRefName get refName
+func (pr *PipelineRun) GetRefName() string {
+	var refName string
+	if pr.Spec.IsMultiBranchPipeline() && pr.Spec.SCM != nil {
+		refName = pr.Spec.SCM.RefName
+	}
+	return refName
+}
+
 // GetPipelineRunID gets ID of PipelineRun.
 func (pr *PipelineRun) GetPipelineRunID() (pipelineRunID string, exist bool) {
 	pipelineRunID, exist = pr.Annotations[JenkinsPipelineRunIDAnnoKey]

@@ -240,3 +240,78 @@ func TestBuildPipelineRunIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestPipelineRun_GetRefName(t *testing.T) {
+	type fields struct {
+		TypeMeta   v1.TypeMeta
+		ObjectMeta v1.ObjectMeta
+		Spec       PipelineRunSpec
+		Status     PipelineRunStatus
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "test with nil scm",
+			fields: fields{
+				TypeMeta:   v1.TypeMeta{},
+				ObjectMeta: v1.ObjectMeta{},
+				Spec: PipelineRunSpec{
+					PipelineSpec: &PipelineSpec{
+						Type: MultiBranchPipelineType,
+					},
+					SCM: nil,
+				},
+				Status: PipelineRunStatus{},
+			},
+			want: "",
+		},
+		{
+			name: "test with noScmPipelineType",
+			fields: fields{
+				TypeMeta:   v1.TypeMeta{},
+				ObjectMeta: v1.ObjectMeta{},
+				Spec: PipelineRunSpec{
+					PipelineSpec: &PipelineSpec{
+						Type: NoScmPipelineType,
+					},
+				},
+				Status: PipelineRunStatus{},
+			},
+			want: "",
+		},
+		{
+			name: "test with multiBranchPipelineType",
+			fields: fields{
+				TypeMeta:   v1.TypeMeta{},
+				ObjectMeta: v1.ObjectMeta{},
+				Spec: PipelineRunSpec{
+					PipelineSpec: &PipelineSpec{
+						Type: MultiBranchPipelineType,
+					},
+					SCM: &SCM{
+						RefType: "",
+						RefName: "main",
+					},
+				},
+				Status: PipelineRunStatus{},
+			},
+			want: "main",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := &PipelineRun{
+				TypeMeta:   tt.fields.TypeMeta,
+				ObjectMeta: tt.fields.ObjectMeta,
+				Spec:       tt.fields.Spec,
+				Status:     tt.fields.Status,
+			}
+			if got := pr.GetRefName(); got != tt.want {
+				t.Errorf("GetRefName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

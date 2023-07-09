@@ -30,6 +30,8 @@ import (
 	"kubesphere.io/devops/pkg/kapis"
 
 	"github.com/emicklei/go-restful"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
@@ -37,7 +39,6 @@ import (
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/models/pipelinerun"
 	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // apiHandlerOption holds some useful tools for API handler.
@@ -233,9 +234,11 @@ func (h *apiHandler) downloadArtifact(request *restful.Request, response *restfu
 		return
 	}
 	pipelineName := pr.Labels[v1alpha3.PipelineNameLabelKey]
+	isMultiBranch := pr.Spec.IsMultiBranchPipeline()
+	branchName := pr.GetRefName()
 
 	// request the Jenkins API to download artifact
-	body, err := h.devopsClient.DownloadArtifact(namespaceName, pipelineName, buildID, filename)
+	body, err := h.devopsClient.DownloadArtifact(namespaceName, pipelineName, buildID, filename, isMultiBranch, branchName)
 	if err != nil {
 		kapis.HandleError(request, response, err)
 		return
