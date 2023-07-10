@@ -138,6 +138,8 @@ func updatePipelineConfigXml(config string, pipeline *devopsv1alpha3.NoScmPipeli
 		addOrUpdateElement(strategy, NumToKeepTag, pipeline.Discarder.NumToKeep)
 		addOrUpdateElement(strategy, ArtiDaysToKeepTag, "-1")
 		addOrUpdateElement(strategy, ArtiNumToKeepTag, "-1")
+	} else {
+		removeChildElement(properties, BuildDiscarderTag)
 	}
 
 	if pipeline.Parameters != nil { // overwrite parameters
