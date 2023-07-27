@@ -66,7 +66,7 @@ func (r *ApplicationStatusReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Namespace: appNs,
 		Name:      appName,
 	}, app); err != nil {
-		r.log.Error(err, "cannot find application with namespace: %s, name: %s", appNs, appName)
+		r.log.Error(err, "cannot find application, maybe deleted", "namespace", appNs, "name", appName)
 		err = nil
 		return
 	}

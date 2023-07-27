@@ -19,6 +19,7 @@ import (
 	"context"
 	"github.com/emicklei/go-restful"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	"kubesphere.io/devops/pkg/kapis/common"
@@ -100,6 +101,8 @@ func (h *Handler) DelApplication(req *restful.Request, res *restful.Response) {
 					}
 				}
 			}
+		} else {
+			klog.Errorf("Application %s in namespace %s is not type argocd", name, namespace)
 		}
 		err = h.Delete(ctx, application)
 	}
