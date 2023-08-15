@@ -210,7 +210,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}{{
 		name: "without Argo Application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(app.DeepCopy()).Build(),
 		},
 		args: args{
 			app: app.DeepCopy(),
@@ -233,7 +233,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}, {
 		name: "with Argo Application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(app.DeepCopy()).Build(),
 		},
 		args: args{
 			app: app.DeepCopy(),
@@ -258,7 +258,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}, {
 		name: "update the existing argo application which not have labels",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy(), argoAppList.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(app.DeepCopy()).WithLists(argoAppList.DeepCopy()).Build(),
 		},
 		args: args{
 			app: app.DeepCopy(),
@@ -269,7 +269,7 @@ func TestApplicationReconciler_reconcileArgoApplication(t *testing.T) {
 	}, {
 		name: "update the existing argo application which has labels",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, appWithLabel.DeepCopy(), argoAppWithLabel.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(appWithLabel.DeepCopy()).WithObjects(argoAppWithLabel.DeepCopy()).Build(),
 		},
 		args: args{
 			app: appWithLabel.DeepCopy(),
@@ -665,7 +665,7 @@ func TestApplicationReconciler_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &core.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},
@@ -679,6 +679,313 @@ func TestApplicationReconciler_SetupWithManager(t *testing.T) {
 				recorder: tt.fields.recorder,
 			}
 			tt.wantErr(t, r.SetupWithManager(tt.args.mgr), fmt.Sprintf("SetupWithManager(%v)", tt.args.mgr))
+		})
+	}
+}
+
+func TestApplicationReconciler_deleteArgoApp(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.Nil(t, err)
+
+	ctx := context.Background()
+	baseArgoApp := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "argoproj.io/v1alpha1",
+			"kind":       "Application",
+			"metadata": map[string]interface{}{
+				"name":      "test-app",
+				"namespace": "argocd",
+			},
+		},
+	}
+
+	tests := []struct {
+		name   string
+		verify func(*testing.T)
+	}{
+		{
+			name: "cascade",
+			verify: func(t *testing.T) {
+				argoApp := baseArgoApp.DeepCopy()
+				app := &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"finalizer-1", "resources-finalizer.argocd.argoproj.io", "finalizer-2"},
+					},
+				}
+				expectedFinalizers := []string{"resources-finalizer.argocd.argoproj.io"}
+				r := &ApplicationReconciler{
+					Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(baseArgoApp.DeepCopy()).Build(),
+					log:    logr.Logger{},
+				}
+				err = r.DeleteArgoApp(app, argoApp)
+				assert.NoError(t, err)
+
+				err = r.Get(ctx, types.NamespacedName{
+					Namespace: argoApp.GetNamespace(),
+					Name:      argoApp.GetName(),
+				}, argoApp)
+
+				assert.NoError(t, err)
+				assert.NotNil(t, argoApp.GetDeletionTimestamp())
+				assert.Equal(t, argoApp.GetFinalizers(), expectedFinalizers)
+			},
+		},
+		{
+			name: "cascade with other finalizer",
+			verify: func(t *testing.T) {
+				argoApp := baseArgoApp.DeepCopy()
+				argoApp.SetFinalizers([]string{"test-finalizer.argocd.argoproj.io"})
+				app := &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"finalizer-1", "resources-finalizer.argocd.argoproj.io", "finalizer-2"},
+					},
+				}
+				expectedFinalizers := []string{"resources-finalizer.argocd.argoproj.io"}
+				r := &ApplicationReconciler{
+					Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(baseArgoApp.DeepCopy()).Build(),
+					log:    logr.Logger{},
+				}
+				err = r.DeleteArgoApp(app, argoApp)
+				assert.NoError(t, err)
+
+				err = r.Get(ctx, types.NamespacedName{
+					Namespace: argoApp.GetNamespace(),
+					Name:      argoApp.GetName(),
+				}, argoApp)
+
+				assert.NoError(t, err)
+				assert.NotNil(t, argoApp.GetDeletionTimestamp())
+				assert.Equal(t, argoApp.GetFinalizers(), expectedFinalizers)
+			},
+		},
+		{
+			name: "normal",
+			verify: func(t *testing.T) {
+				argoApp := baseArgoApp.DeepCopy()
+				app := &v1alpha1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{"finalizer-1", "finalizer-2"},
+					},
+				}
+				r := &ApplicationReconciler{
+					Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(baseArgoApp.DeepCopy()).Build(),
+					log:    logr.Logger{},
+				}
+				err = r.DeleteArgoApp(app, argoApp)
+				assert.NoError(t, err)
+
+				err = r.Get(ctx, types.NamespacedName{
+					Namespace: argoApp.GetNamespace(),
+					Name:      argoApp.GetName(),
+				}, argoApp)
+				assert.Error(t, err)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.verify(t)
+		})
+	}
+}
+
+func TestApplicationReconciler_addArgoAppNameIntoLabels(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.NoError(t, err)
+	ctx := context.Background()
+
+	baseApp := &v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "argocd",
+			Name:      "test-app",
+		},
+	}
+
+	labelApp := baseApp.DeepCopy()
+	labelApp.SetLabels(map[string]string{
+		"test-label": "test",
+	})
+
+	sameLabelApp := baseApp.DeepCopy()
+	sameLabelApp.SetLabels(map[string]string{
+		v1alpha1.ArgoCDAppNameLabelKey: "test",
+	})
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		namespace      string
+		name           string
+		argoAppName    string
+		expectedLabels map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty label",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(baseApp.DeepCopy()).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				namespace:   "argocd",
+				name:        "test-app",
+				argoAppName: "test-argo-app",
+				expectedLabels: map[string]string{
+					v1alpha1.ArgoCDAppNameLabelKey: "test-argo-app",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "with label",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(labelApp.DeepCopy()).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				namespace:   "argocd",
+				name:        "test-app",
+				argoAppName: "test-argo-app",
+				expectedLabels: map[string]string{
+					v1alpha1.ArgoCDAppNameLabelKey: "test-argo-app",
+					"test-label":                   "test",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "same label",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(sameLabelApp.DeepCopy()).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				namespace:   "argocd",
+				name:        "test-app",
+				argoAppName: "test-argo-app",
+				expectedLabels: map[string]string{
+					v1alpha1.ArgoCDAppNameLabelKey: "test-argo-app",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "not exist app",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(sameLabelApp.DeepCopy()).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				namespace: "not-exist",
+				name:      "not-exist",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ApplicationReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			if err := r.addArgoAppNameIntoLabels(tt.args.namespace, tt.args.name, tt.args.argoAppName); (err != nil) != tt.wantErr {
+				t.Errorf("addArgoAppNameIntoLabels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				app := &v1alpha1.Application{}
+				err = r.Client.Get(ctx, types.NamespacedName{
+					Namespace: tt.args.namespace,
+					Name:      tt.args.name,
+				}, app)
+				assert.NoError(t, err)
+				assert.Equal(t, app.Labels, tt.args.expectedLabels)
+			}
+		})
+	}
+}
+
+func TestApplicationReconciler_RemoveAppFinalizer(t *testing.T) {
+	schema, err := v1alpha1.SchemeBuilder.Register().Build()
+	assert.NoError(t, err)
+	ctx := context.Background()
+
+	baseApp := &v1alpha1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "argocd",
+			Name:      "test-app",
+		},
+	}
+
+	noFinalizersApp := baseApp.DeepCopy()
+
+	finalizersApp := baseApp.DeepCopy()
+	finalizersApp.SetFinalizers([]string{v1alpha1.ApplicationFinalizerName, v1alpha1.ArgoCDResourcesFinalizer})
+
+	type fields struct {
+		Client   client.Client
+		log      logr.Logger
+		recorder record.EventRecorder
+	}
+	type args struct {
+		app *v1alpha1.Application
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty finalizer",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(noFinalizersApp).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				app: noFinalizersApp,
+			},
+			wantErr: false,
+		},
+		{
+			name: "with finalizer",
+			fields: fields{
+				Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(finalizersApp).Build(),
+				log:    logr.Logger{},
+			},
+			args: args{
+				app: finalizersApp,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ApplicationReconciler{
+				Client:   tt.fields.Client,
+				log:      tt.fields.log,
+				recorder: tt.fields.recorder,
+			}
+			if err := r.RemoveAppFinalizer(tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("RemoveAppFinalizer() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				app := &v1alpha1.Application{}
+				err = r.Client.Get(ctx, types.NamespacedName{
+					Namespace: tt.args.app.Namespace,
+					Name:      tt.args.app.Name,
+				}, app)
+				assert.NoError(t, err)
+				assert.Empty(t, app.Finalizers)
+			}
 		})
 	}
 }

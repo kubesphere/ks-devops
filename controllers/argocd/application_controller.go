@@ -95,13 +95,11 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 			}
 			err = nil
 		} else {
-			err = r.Delete(ctx, argoApp)
+			err = r.DeleteArgoApp(app, argoApp)
 		}
 
 		if err == nil {
-			k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName)
-			k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ArgoCDResourcesFinalizer)
-			err = r.Update(context.TODO(), app)
+			err = r.RemoveAppFinalizer(app)
 		}
 		return
 	}
@@ -153,26 +151,28 @@ func (r *ApplicationReconciler) reconcileArgoApplication(app *v1alpha1.Applicati
 		} else {
 			var newArgoApp *unstructured.Unstructured
 			if newArgoApp, err = createUnstructuredApplication(app); err == nil {
-				argoApp.Object["spec"] = newArgoApp.Object["spec"]
-				argoApp.Object["operation"] = newArgoApp.Object["operation"]
-
-				// append annotations and labels
-				copyArgoAnnotationsAndLabels(newArgoApp, argoApp)
-
-				argoApp.SetFinalizers(newArgoApp.GetFinalizers())
 				err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
-					latestArgoApp := createBareArgoCDApplicationObject()
-					if err = r.Get(context.Background(), types.NamespacedName{
+					updateArgoApp := createBareArgoCDApplicationObject()
+					if err = r.Get(ctx, types.NamespacedName{
 						Namespace: argoApp.GetNamespace(),
 						Name:      argoApp.GetName(),
-					}, latestArgoApp); err != nil {
+					}, updateArgoApp); err != nil {
 						return
 					}
 
-					argoApp.SetResourceVersion(latestArgoApp.GetResourceVersion())
-					err = r.Update(ctx, argoApp)
+					updateArgoApp.Object["spec"] = newArgoApp.Object["spec"]
+					updateArgoApp.Object["operation"] = newArgoApp.Object["operation"]
+
+					// append annotations and labels
+					copyArgoAnnotationsAndLabels(newArgoApp, updateArgoApp)
+					updateArgoApp.SetFinalizers(newArgoApp.GetFinalizers())
+
+					err = r.Update(ctx, updateArgoApp)
 					return
 				})
+				if err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -261,18 +261,22 @@ func copyArgoAnnotationsAndLabels(app metav1.Object, argoApp metav1.Object) {
 }
 
 func (r *ApplicationReconciler) addArgoAppNameIntoLabels(namespace, name, argoAppName string) (err error) {
-	app := &v1alpha1.Application{}
 	ctx := context.Background()
-	if err = r.Client.Get(ctx, types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, app); err == nil {
-		if app.Labels == nil {
-			app.Labels = make(map[string]string)
+
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+		updateApp := &v1alpha1.Application{}
+		if err = r.Client.Get(ctx, types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		}, updateApp); err == nil {
+			if updateApp.Labels == nil {
+				updateApp.Labels = make(map[string]string)
+			}
+			updateApp.Labels[v1alpha1.ArgoCDAppNameLabelKey] = argoAppName
+			err = r.Update(ctx, updateApp)
 		}
-		app.Labels[v1alpha1.ArgoCDAppNameLabelKey] = argoAppName
-		err = r.Update(ctx, app)
-	}
+		return
+	})
 	return
 }
 
@@ -290,7 +294,6 @@ func (r *ApplicationReconciler) setArgoProject(app *v1alpha1.Application) (err e
 	}, latestApp); err != nil {
 		return client.IgnoreNotFound(err)
 	}
-	err = r.Update(ctx, latestApp)
 
 	// there is a appProject in the same namespace
 	needUpdate := false
@@ -299,12 +302,81 @@ func (r *ApplicationReconciler) setArgoProject(app *v1alpha1.Application) (err e
 		needUpdate = true
 	}
 
-	if k8sutil.AddFinalizer(&latestApp.ObjectMeta, v1alpha1.ApplicationFinalizerName) || needUpdate {
-		if err = r.Update(context.TODO(), latestApp); err != nil {
+	if k8sutil.AddFinalizer(&latestApp.ObjectMeta, v1alpha1.ApplicationFinalizerName) {
+		needUpdate = true
+	}
+
+	if needUpdate {
+		if err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+			updateApp := &v1alpha1.Application{}
+			if err = r.Get(ctx, types.NamespacedName{
+				Namespace: app.Namespace,
+				Name:      app.Name,
+			}, updateApp); err != nil {
+				return
+			}
+			updateApp.Spec.ArgoApp.Spec.Project = latestApp.Spec.ArgoApp.Spec.Project
+			updateApp.ObjectMeta.Finalizers = latestApp.ObjectMeta.Finalizers
+			err = r.Update(ctx, updateApp)
+			return
+		}); err != nil {
 			return
 		}
 	}
 	return
+}
+
+// RemoveAppFinalizer the app will be deleted after remove finalizer
+func (r *ApplicationReconciler) RemoveAppFinalizer(app *v1alpha1.Application) (err error) {
+	ctx := context.Background()
+
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+		if err = r.Get(ctx, types.NamespacedName{
+			Namespace: app.Namespace,
+			Name:      app.Name,
+		}, app); err != nil {
+			return
+		}
+		k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ApplicationFinalizerName)
+		k8sutil.RemoveFinalizer(&app.ObjectMeta, v1alpha1.ArgoCDResourcesFinalizer)
+		err = r.Update(ctx, app)
+		return
+	})
+	return
+}
+
+// DeleteArgoApp will delete argo app, support cascade delete
+func (r *ApplicationReconciler) DeleteArgoApp(app *v1alpha1.Application, argoApp *unstructured.Unstructured) (err error) {
+	ctx := context.Background()
+
+	// support cascade delete
+	finalizers := app.GetFinalizers()
+	targetFinalizers := make([]string, 0)
+	for i := range finalizers {
+		finalizer := finalizers[i]
+		if strings.HasSuffix(finalizer, "argocd.argoproj.io") {
+			targetFinalizers = append(targetFinalizers, finalizer)
+		}
+	}
+	if len(targetFinalizers) > 0 {
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() (err error) {
+			updateArgoApp := createBareArgoCDApplicationObject()
+			if err = r.Get(ctx, types.NamespacedName{
+				Namespace: argoApp.GetNamespace(),
+				Name:      argoApp.GetName(),
+			}, updateArgoApp); err != nil {
+				return
+			}
+			updateArgoApp.SetFinalizers(targetFinalizers)
+			err = r.Update(ctx, updateArgoApp)
+			return
+		})
+		if err != nil {
+			return
+		}
+	}
+
+	return r.Delete(ctx, argoApp)
 }
 
 // GetName returns the name of this reconciler
