@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 GO111MODULE=on go build -a -o devops-tool cmd/tools/main.go
 
 FROM golang:1.17 as downloader
 RUN go install github.com/linuxsuren/http-downloader@v0.0.49
-RUN http-downloader install kubesphere-sigs/ks@v0.0.70
+RUN http-downloader install kubesphere-sigs/ks@v0.0.71
 
 
 # Use distroless as minimal base image to package the manager binary
