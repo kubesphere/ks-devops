@@ -198,8 +198,8 @@ func (d *Devops) DownloadArtifact(projectName, pipelineName, runId, filename str
 	return nil, nil
 }
 
-func (d *Devops) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, error) {
-	return nil, nil
+func (d *Devops) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
+	return nil, nil, nil
 }
 func (d *Devops) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
 	return nil, nil, nil
