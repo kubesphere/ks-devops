@@ -112,6 +112,7 @@ func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipel
 	// Users are able to clean jenkinsfile
 	if jenkinsfile != "" {
 		var toJSONResult core.GenericResult
+		jenkinsfile = strings.ReplaceAll(jenkinsfile, "\\", "\\\\") // escape backslash
 		if toJSONResult, err = coreClient.ToJSON(jenkinsfile); err != nil || toJSONResult.GetStatus() != "success" {
 			r.log.Error(err, "failed to convert jenkinsfile to json format")
 			if err != nil {
@@ -168,9 +169,13 @@ func (r *JenkinsfileReconciler) reconcileJSONEditMode(pip *v1alpha3.Pipeline, pi
 			err = r.updateAnnotations(pip.Annotations, pipelineKey)
 			return
 		}
+		jenkinsfile := toResult.GetResult()
+		jenkinsfile = strings.ReplaceAll(jenkinsfile, "\\\\", "\\") // unescape backslash
+		jenkinsfile = strings.ReplaceAll(jenkinsfile, `\'`, `'`)    // unescape single quote
+
 		pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
 		pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = v1alpha3.PipelineJenkinsfileValidateSuccess
-		err = r.updateAnnotationsAndJenkinsfile(pip.Annotations, toResult.GetResult(), pipelineKey)
+		err = r.updateAnnotationsAndJenkinsfile(pip.Annotations, jenkinsfile, pipelineKey)
 	}
 	return
 }
