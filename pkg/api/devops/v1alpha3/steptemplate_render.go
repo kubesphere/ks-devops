@@ -137,6 +137,10 @@ func dslRender(dslTpl string, param map[string]interface{}, secret *v1.Secret) (
 
 func shellRender(shellTpl string, param map[string]interface{}, secret *v1.Secret) (output string, err error) {
 	if output, err = dslRender(shellTpl, param, secret); err == nil {
+		escapedOutput := strings.ReplaceAll(output, `\`, `\\`)
+		escapedOutput = strings.ReplaceAll(escapedOutput, "\n", "\\n")
+		escapedOutput = strings.ReplaceAll(escapedOutput, `"`, `\"`)
+
 		output = fmt.Sprintf(`{
 "arguments": [
   {
@@ -148,7 +152,7 @@ func shellRender(shellTpl string, param map[string]interface{}, secret *v1.Secre
   }
 ],
 "name": "sh"
-}`, strings.ReplaceAll(output, "\n", "\\n"))
+}`, escapedOutput)
 	}
 	return
 }
