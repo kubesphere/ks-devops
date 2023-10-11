@@ -374,13 +374,13 @@ func (p *Pipeline) GetArtifacts() ([]devops.Artifacts, error) {
 	return artifacts, err
 }
 
-func (p *Pipeline) GetRunLog() ([]byte, error) {
-	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
+func (p *Pipeline) GetRunLog() ([]byte, http.Header, error) {
+	res, header, err := p.Jenkins.SendPureRequestWithHeaderResp(p.Path, p.HttpParameters)
 	if err != nil {
 		klog.Error(err)
 	}
 
-	return res, err
+	return res, header, err
 }
 
 func (p *Pipeline) GetStepLog() ([]byte, http.Header, error) {

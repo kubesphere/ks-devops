@@ -278,10 +278,16 @@ func (h *ProjectPipelineHandler) GetRunLog(req *restful.Request, resp *restful.R
 	pipelineName := req.PathParameter("pipeline")
 	runId := req.PathParameter("run")
 
-	res, err := h.devopsOperator.GetRunLog(projectName, pipelineName, runId, req.Request)
+	res, header, err := h.devopsOperator.GetRunLog(projectName, pipelineName, runId, req.Request)
 	if err != nil {
 		parseErr(err, resp)
 		return
+	}
+
+	for k, v := range header {
+		if strings.HasPrefix(k, jenkinsHeaderPre) {
+			resp.AddHeader(k, v[0])
+		}
 	}
 
 	resp.Write(res)
