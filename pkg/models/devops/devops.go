@@ -83,7 +83,7 @@ type DevopsOperator interface {
 	ReplayPipeline(projectName, pipelineName, runId string, req *http.Request) (*devops.ReplayPipeline, error)
 	RunPipeline(projectName, pipelineName string, req *http.Request) (*devops.RunPipeline, error)
 	GetArtifacts(projectName, pipelineName, runId string, req *http.Request) ([]devops.Artifacts, error)
-	GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, error)
+	GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, http.Header, error)
 	GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, req *http.Request) ([]byte, http.Header, error)
 	GetNodeSteps(projectName, pipelineName, runId, nodeId string, req *http.Request) ([]devops.NodeSteps, error)
 	GetPipelineRunNodes(projectName, pipelineName, runId string, req *http.Request) ([]devops.PipelineRunNodes, error)
@@ -550,15 +550,15 @@ func (d devopsOperator) GetArtifacts(projectName, pipelineName, runId string, re
 	return res, err
 }
 
-func (d devopsOperator) GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, error) {
+func (d devopsOperator) GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, http.Header, error) {
 
-	res, err := d.devopsClient.GetRunLog(projectName, pipelineName, runId, convertToHttpParameters(req))
+	res, header, err := d.devopsClient.GetRunLog(projectName, pipelineName, runId, convertToHttpParameters(req))
 	if err != nil {
 		klog.Error(err)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return res, err
+	return res, header, err
 }
 
 func (d devopsOperator) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, req *http.Request) ([]byte, http.Header, error) {
