@@ -308,14 +308,13 @@ func (j *Jenkins) GetArtifacts(projectName, pipelineName, runId string, httpPara
 	return res, err
 }
 
-func (j *Jenkins) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, error) {
+func (j *Jenkins) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,
 		Jenkins:        j,
 		Path:           fmt.Sprintf(GetRunLogUrl+httpParameters.Url.RawQuery, projectName, pipelineName, runId),
 	}
-	res, err := PipelineOjb.GetRunLog()
-	return res, err
+	return PipelineOjb.GetRunLog()
 }
 
 func (j *Jenkins) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
