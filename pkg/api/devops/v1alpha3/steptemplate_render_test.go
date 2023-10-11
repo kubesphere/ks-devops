@@ -28,8 +28,16 @@ import (
 
 func Test_handler_stepTemplateRender(t *testing.T) {
 	stepTemplate := &StepTemplateSpec{
-		Template: `echo 1`,
-		Runtime:  "shell",
+		Template: `cat > log.sh << EOF
+        for ((i=1; i<=1000000; i++))
+        do
+            echo "Log message number \\$i: This is a sample log message."
+        done
+EOF
+
+        cat log.sh
+        bash log.sh`,
+		Runtime: "shell",
 	}
 	stepTemplateWithParameters := &StepTemplateSpec{
 		Template: `docker login -u $USERNAMEVARIABLE -p $PASSWORDVARIABLE
@@ -74,7 +82,7 @@ docker build {{.param.context}} -t {{.param.tag}} -f {{.param.dockerfile.path}}`
       "key": "script",
       "value": {
         "isLiteral": true,
-        "value": "echo 1"
+        "value": "cat > log.sh << EOF\n        for ((i=1; i<=1000000; i++))\n        do\n            echo \"Log message number \\\\$i: This is a sample log message.\"\n        done\nEOF\n\n        cat log.sh\n        bash log.sh"
       }
     }
   ],
