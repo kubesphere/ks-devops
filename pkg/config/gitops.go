@@ -23,15 +23,15 @@ import (
 
 // ArgoCDOption as the ArgoCD integration configuration
 type ArgoCDOption struct {
-	Enabled   bool   `json:"enabled,omitempty" yaml:"enabled,omitempty" description:"enabled FluxCD"`
+	Enabled   bool   `json:"enabled,omitempty" yaml:"enabled,omitempty" description:"enabled ArgoCD"`
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty" description:"Which namespace the ArgoCD located"`
 }
 
 // AddFlags adds the flags which related to argocd
-func (o *ArgoCDOption) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.Enabled, "argocd-enabled", false, "Enable ArgoCD APIs")
+func (o *ArgoCDOption) AddFlags(fs *pflag.FlagSet, parentOptions *ArgoCDOption) {
+	fs.BoolVar(&o.Enabled, "argocd-enabled", parentOptions.Enabled, "Enable ArgoCD APIs")
 	// see also https://argo-cd.readthedocs.io/en/stable/getting_started/
-	fs.StringVarP(&o.Namespace, "argocd-namespace", o.Namespace, "argocd", "Which namespace the ArgoCD located")
+	fs.StringVar(&o.Namespace, "argocd-namespace", parentOptions.Namespace, "Which namespace the ArgoCD located")
 }
 
 // FluxCDOption as the FluxCD integration configuration
@@ -40,8 +40,8 @@ type FluxCDOption struct {
 }
 
 // AddFlags adds the flags which related to fluxcd
-func (o *FluxCDOption) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.Enabled, "fluxcd-enabled", false, "Enable FluxCD APIs")
+func (o *FluxCDOption) AddFlags(fs *pflag.FlagSet, parentOptions *FluxCDOption) {
+	fs.BoolVar(&o.Enabled, "fluxcd-enabled", parentOptions.Enabled, "Enable FluxCD APIs")
 }
 
 // GetGitOpsEngine return gitops engine type
