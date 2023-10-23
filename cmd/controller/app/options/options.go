@@ -81,7 +81,7 @@ func (s *DevOpsControllerManagerOptions) Flags() cliflag.NamedFlagSets {
 	s.KubernetesOptions.AddFlags(fss.FlagSet("kubernetes"), s.KubernetesOptions)
 	s.JenkinsOptions.AddFlags(fss.FlagSet("devops"), s.JenkinsOptions)
 	s.FeatureOptions.AddFlags(fss.FlagSet("feature"), s.FeatureOptions)
-	s.ArgoCDOption.AddFlags(fss.FlagSet("argocd"))
+	s.ArgoCDOption.AddFlags(fss.FlagSet("argocd"), s.ArgoCDOption)
 
 	fs := fss.FlagSet("leaderelection")
 	s.bindLeaderElectionFlags(s.LeaderElection, fs)
