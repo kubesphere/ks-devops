@@ -8,3 +8,6 @@ Then, start the APIServer and explore all API documentation via the Swagger UI: 
  
 
 * The URL pattern is like `http://ip:port/apidocs/?url=http://ip:port/apidocs.json`
+
+---
+In kubesphere enabled DevOps, you could update service type of devops-apiserver to NodePort, and then via the Swagger UI: `http://ip:NodePort/apidocs/?url=http://ip:NodePort/apidocs.json`.

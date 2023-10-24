@@ -36,6 +36,15 @@ func AddSwaggerService(wss []*restful.WebService, c *restful.Container) {
 		WebServices:     wssWithSchema,
 		ApiPath:         "/apidocs.json",
 		SwaggerPath:     "/apidocs/",
-		SwaggerFilePath: "bin/swagger-ui/dist"}
+		SwaggerFilePath: "bin/swagger-ui/dist",
+		Info: swagger.Info{
+			Title:             "KubeSphere DevOps",
+			Description:       "KubeSphere DevOps OpenAPI",
+			TermsOfServiceUrl: "https://kubesphere.io/",
+			Contact:           "kubesphere@yunify.com",
+			License:           "Apache 2.0",
+			LicenseUrl:        "https://www.apache.org/licenses/LICENSE-2.0.html",
+		},
+	}
 	swagger.RegisterSwaggerService(config, c)
 }
