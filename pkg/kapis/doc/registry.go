@@ -19,14 +19,32 @@ package doc
 import (
 	"github.com/emicklei/go-restful"
 	swagger "github.com/emicklei/go-restful-swagger12"
+	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"strings"
 )
 
 // AddSwaggerService adds the Swagger service
 func AddSwaggerService(wss []*restful.WebService, c *restful.Container) {
+	var wssWithSchema []*restful.WebService
+	for _, service := range wss {
+		if strings.HasPrefix(service.RootPath(), runtime.ApiRootPath) {
+			wssWithSchema = append(wssWithSchema, service)
+		}
+	}
+
 	config := swagger.Config{
-		WebServices:     wss,
+		WebServices:     wssWithSchema,
 		ApiPath:         "/apidocs.json",
 		SwaggerPath:     "/apidocs/",
-		SwaggerFilePath: "bin/swagger-ui/dist"}
+		SwaggerFilePath: "bin/swagger-ui/dist",
+		Info: swagger.Info{
+			Title:             "KubeSphere DevOps",
+			Description:       "KubeSphere DevOps OpenAPI",
+			TermsOfServiceUrl: "https://kubesphere.io/",
+			Contact:           "kubesphere@yunify.com",
+			License:           "Apache 2.0",
+			LicenseUrl:        "https://www.apache.org/licenses/LICENSE-2.0.html",
+		},
+	}
 	swagger.RegisterSwaggerService(config, c)
 }
