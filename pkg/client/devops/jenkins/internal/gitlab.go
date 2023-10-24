@@ -145,11 +145,15 @@ func GetGitlabSourceFromEtree(source *etree.Element) (gitSource *devopsv1alpha3.
 				if value, err := strconv.ParseBool(cloneExtension.SelectElement("shallow").Text()); err == nil {
 					gitSource.CloneOption.Shallow = value
 				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("timeout").Text(), 10, 32); err == nil {
-					gitSource.CloneOption.Timeout = int(value)
+				if timeout := cloneExtension.SelectElement("timeout"); timeout != nil {
+					if value, err := strconv.ParseInt(timeout.Text(), 10, 32); err == nil {
+						gitSource.CloneOption.Timeout = int(value)
+					}
 				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("depth").Text(), 10, 32); err == nil {
-					gitSource.CloneOption.Depth = int(value)
+				if depth := cloneExtension.SelectElement("depth"); depth != nil {
+					if value, err := strconv.ParseInt(depth.Text(), 10, 32); err == nil {
+						gitSource.CloneOption.Depth = int(value)
+					}
 				}
 			}
 		}
