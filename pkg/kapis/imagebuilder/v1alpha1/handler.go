@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -59,13 +59,51 @@ func newAPIHandler(o apiHandlerOption) *apiHandler {
 	return &apiHandler{o}
 }
 
+func (h *apiHandler) listImageBuildStrategies(request *restful.Request, response *restful.Response) {
+	queryParam := query.ParseQueryParameter(request)
+
+	strategyList := &buildv1alpha1.ClusterBuildStrategyList{}
+
+	if err := h.client.List(context.Background(), strategyList); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	apiResult := resourcesV1alpha3.DefaultList(toBuildStrategyObjects(strategyList.Items),
+		queryParam,
+		resourcesV1alpha3.DefaultCompare(),
+		resourcesV1alpha3.DefaultFilter(), nil)
+
+	_ = response.WriteAsJson(apiResult)
+}
+
+func toBuildStrategyObjects(apps []buildv1alpha1.ClusterBuildStrategy) []runtime.Object {
+	objs := make([]runtime.Object, len(apps))
+	for i := range apps {
+		objs[i] = &apps[i]
+	}
+	return objs
+}
+
+func (h *apiHandler) getImageBuildStrategy(request *restful.Request, response *restful.Response) {
+	strategyName := request.PathParameter("imageBuildStrategy")
+
+	// get imageBuildStrategy
+	strategy := &buildv1alpha1.ClusterBuildStrategy{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Name: strategyName}, strategy); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	_ = response.WriteEntity(strategy)
+}
+
 func (h *apiHandler) listImageBuilds(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
 	queryParam := query.ParseQueryParameter(request)
 
 	opts := make([]client.ListOption, 0, 3)
 	opts = append(opts, client.InNamespace(namespace))
-	buildList := &v1alpha1.BuildList{}
+	buildList := &buildv1alpha1.BuildList{}
 
 	if err := h.client.List(context.Background(), buildList, opts...); err != nil {
 		kapis.HandleError(request, response, err)
@@ -81,7 +119,7 @@ func (h *apiHandler) listImageBuilds(request *restful.Request, response *restful
 	_ = response.WriteAsJson(apiResult)
 }
 
-func toBuildObjects(apps []v1alpha1.Build) []runtime.Object {
+func toBuildObjects(apps []buildv1alpha1.Build) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]
@@ -96,7 +134,7 @@ func (h *apiHandler) createImageBuild(request *restful.Request, response *restfu
 	language := request.QueryParameter("language")
 	outputImage := request.QueryParameter("outputImage")
 
-	build := v1alpha1.Build{}
+	build := buildv1alpha1.Build{}
 	err := request.ReadEntity(&build)
 	if err != nil {
 		klog.Error(err)
@@ -128,7 +166,7 @@ func (h *apiHandler) updateImageBuild(request *restful.Request, response *restfu
 	namespace := request.PathParameter("namespace")
 	imageBuild := request.PathParameter("build")
 
-	oldBuild := v1alpha1.Build{}
+	oldBuild := buildv1alpha1.Build{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Name: imageBuild}, &oldBuild); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -165,7 +203,7 @@ func (h *apiHandler) getImageBuild(request *restful.Request, response *restful.R
 	imageBuild := request.PathParameter("build")
 
 	// get imageBuild
-	build := v1alpha1.Build{}
+	build := buildv1alpha1.Build{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imageBuild}, &build); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -178,7 +216,7 @@ func (h *apiHandler) deleteImageBuild(request *restful.Request, response *restfu
 	imageBuild := request.PathParameter("build")
 
 	// get imageBuild
-	build := v1alpha1.Build{}
+	build := buildv1alpha1.Build{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imageBuild}, &build); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -195,7 +233,7 @@ func (h *apiHandler) createImageBuildRun(request *restful.Request, response *res
 	buildrunName := request.PathParameter("imageBuildrun")
 	imageBuild := request.QueryParameter("build")
 
-	buildRun := v1alpha1.BuildRun{}
+	buildRun := buildv1alpha1.BuildRun{}
 	err := request.ReadEntity(&buildRun)
 	if err != nil {
 		klog.Error(err)
@@ -220,7 +258,7 @@ func (h *apiHandler) getImageBuildRun(request *restful.Request, response *restfu
 	buildrunName := request.PathParameter("imageBuildrun")
 
 	// get imageBuildRun
-	buildRun := v1alpha1.BuildRun{}
+	buildRun := buildv1alpha1.BuildRun{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: buildrunName}, &buildRun); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -234,7 +272,7 @@ func (h *apiHandler) deleteImageBuildRun(request *restful.Request, response *res
 	ctx := context.Background()
 
 	// get imageBuild
-	buildRun := v1alpha1.BuildRun{}
+	buildRun := buildv1alpha1.BuildRun{}
 	if err := h.client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: buildrunName}, &buildRun); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -257,7 +295,7 @@ func (h *apiHandler) listImageBuildRuns(request *restful.Request, response *rest
 	opts = append(opts, client.InNamespace(namespace))
 	opts = append(opts, client.MatchingLabelsSelector{Selector: labelSelector})
 
-	buildRunList := &v1alpha1.BuildRunList{}
+	buildRunList := &buildv1alpha1.BuildRunList{}
 	// fetch PipelineRuns
 	if err := h.client.List(context.Background(), buildRunList, opts...); err != nil {
 		kapis.HandleError(request, response, err)
@@ -272,45 +310,7 @@ func (h *apiHandler) listImageBuildRuns(request *restful.Request, response *rest
 	_ = response.WriteAsJson(apiResult)
 }
 
-func toBuildRunObjects(apps []v1alpha1.BuildRun) []runtime.Object {
-	objs := make([]runtime.Object, len(apps))
-	for i := range apps {
-		objs[i] = &apps[i]
-	}
-	return objs
-}
-
-func (h *apiHandler) getImageBuildStrategy(request *restful.Request, response *restful.Response) {
-	strategyName := request.PathParameter("imageBuildStrategy")
-
-	// get imageBuildStrategy
-	strategy := &v1alpha1.ClusterBuildStrategy{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Name: strategyName}, strategy); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-	_ = response.WriteEntity(strategy)
-}
-
-func (h *apiHandler) listImageBuildStrategies(request *restful.Request, response *restful.Response) {
-	queryParam := query.ParseQueryParameter(request)
-
-	strategyList := &v1alpha1.ClusterBuildStrategyList{}
-
-	if err := h.client.List(context.Background(), strategyList); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-
-	apiResult := resourcesV1alpha3.DefaultList(toBuildStrategyObjects(strategyList.Items),
-		queryParam,
-		resourcesV1alpha3.DefaultCompare(),
-		resourcesV1alpha3.DefaultFilter(), nil)
-
-	_ = response.WriteAsJson(apiResult)
-}
-
-func toBuildStrategyObjects(apps []v1alpha1.ClusterBuildStrategy) []runtime.Object {
+func toBuildRunObjects(apps []buildv1alpha1.BuildRun) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]
