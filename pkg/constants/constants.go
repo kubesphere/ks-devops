@@ -31,6 +31,8 @@ const (
 	DevOpsProjectTag         = "DevOps Project"
 	DevOpsTemplateTag        = "DevOps Template"
 	DevOpsClusterTemplateTag = "DevOps Cluster Template"
+
+	DevOpsImageBuilder = "DevOps ImageBuilder"
 )
 
 // K8SToken is the context key of k8s token
