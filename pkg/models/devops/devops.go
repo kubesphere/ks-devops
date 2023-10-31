@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"kubesphere.io/devops/pkg/api/devops/v2alpha1"
 	"net/http"
 	"strings"
 	"sync"
@@ -68,12 +67,6 @@ type DevopsOperator interface {
 	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
 	UpdateJenkinsfile(projectName, pipelineName, mode, jenkinsfile string) error
-
-	CreateS2iBuildObj(projectName string, Build *v2alpha1.Build) (*v2alpha1.Build, error)
-	GetS2iBuildObj(projectName string, buildName string) (*v2alpha1.Build, error)
-	DeleteS2iBuildObj(projectName string, buildName string) error
-	UpdateS2iBuildObj(projectName string, build *v2alpha1.Build) (*v2alpha1.Build, error)
-	ListS2iBuildObj(projectName string, query *query.Query) (api.ListResult, error)
 
 	CreateCredentialObj(projectName string, s *v1.Secret) (*v1.Secret, error)
 	GetCredentialObj(projectName string, secretName string) (*v1.Secret, error)
@@ -136,31 +129,6 @@ type devopsOperator struct {
 	k8sclient    kubernetes.Interface
 	ksclient     kubesphere.Interface
 	context      context.Context
-}
-
-func (d devopsOperator) CreateS2iBuildObj(projectName string, Build *v2alpha1.Build) (*v2alpha1.Build, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d devopsOperator) GetS2iBuildObj(projectName string, buildName string) (*v2alpha1.Build, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d devopsOperator) DeleteS2iBuildObj(projectName string, buildName string) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d devopsOperator) UpdateS2iBuildObj(projectName string, build *v2alpha1.Build) (*v2alpha1.Build, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d devopsOperator) ListS2iBuildObj(projectName string, query *query.Query) (api.ListResult, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func NewDevopsOperator(client devops.Interface,

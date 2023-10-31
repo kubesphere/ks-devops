@@ -1,6 +1,6 @@
 /*
 
-  Copyright 2020 The KubeSphere Authors.
+  Copyright 2023 The KubeSphere Authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,9 +16,13 @@
 
 */
 
-package v2alpha1
+package v1alpha1
 
 import (
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"kubesphere.io/devops/pkg/apiserver/runtime"
+	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -28,14 +32,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// GroupVersion describes CRD group and its version.
+var GroupVersion = schema.GroupVersion{Group: "builder.kubesphere.io", Version: "v1alpha1"}
+
+// AddToContainer adds web service into container.
+func AddToContainer(container *restful.Container, client client.Client, devopsClient devopsClient.Interface) (ws *restful.WebService) {
+	ws = runtime.NewWebService(GroupVersion)
+	registerRoutes(ws, devopsClient, client)
+	container.Add(ws)
+	return
+}
+
 // RegisterRoutes register routes into web service.
-func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface, c client.Client) {
+func registerRoutes(ws *restful.WebService, devopsClient devopsClient.Interface, c client.Client) {
 	handler := newAPIHandler(apiHandlerOption{
 		devopsClient: devopsClient,
 		client:       c,
 	})
 
-	ws.Route(ws.POST("/namespaces/{namespace}/ImageBuilds/{ImageBuild}").
+	ws.Route(ws.POST("/namespaces/{namespace}/imageBuilds/{imageBuild}").
 		To(handler.createImageBuild).
 		Doc("Create an ImageBuild").
 		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
@@ -51,21 +66,21 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 		Param(ws.PathParameter("namespace", "Namespace of the imageBuilds")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildList{}))
 
-	ws.Route(ws.GET("/namespaces/{namespace}/ImageBuilds/{ImageBuild}").
+	ws.Route(ws.GET("/namespaces/{namespace}/imageBuilds/{imageBuild}").
 		To(handler.getImageBuild).
 		Doc("Get an ImageBuild").
 		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
 		Param(ws.PathParameter("imageBuild", "Name of the ImageBuild")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Build{}))
 
-	ws.Route(ws.GET("/namespaces/{namespace}/ImageBuilds/{ImageBuild}").
+	ws.Route(ws.GET("/namespaces/{namespace}/imageBuilds/{imageBuild}").
 		To(handler.deleteImageBuild).
 		Doc("Delete an ImageBuild").
 		Param(ws.PathParameter("namespace", "Namespace of the ImageBuildRun")).
 		Param(ws.PathParameter("imageBuild", "Name of the ImageBuildRun")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildRun{}))
 
-	ws.Route(ws.POST("/namespaces/{namespace}/ImageBuilds/{ImageBuild}").
+	ws.Route(ws.POST("/namespaces/{namespace}/imageBuilds/{imageBuild}").
 		To(handler.updateImageBuild).
 		Doc("Update an ImageBuild").
 		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
@@ -75,18 +90,18 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 		Param(ws.QueryParameter("outputImageUrl", "Output image url")).
 		Returns(http.StatusCreated, api.StatusOK, v1alpha1.Build{}))
 
-	ws.Route(ws.GET("/namespaces/{namespace}/ImageBuildStrategies").
+	ws.Route(ws.GET("imageBuildStrategies").
 		To(handler.listImageBuildStrategies).
-		Doc("Get all ImageBuildStrategies").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuildStrategies")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildStrategyList{}))
+		Doc("Get all imageBuildStrategies").
+		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterBuildStrategyList{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.GET("/namespaces/{namespace}/imageBuildStrategys/{imageBuildStrategy}").
+	ws.Route(ws.GET("/imageBuildStrategies/{imageBuildStrategy}").
 		To(handler.getImageBuildStrategy).
 		Doc("Get an imageBuildStrategy").
-		Param(ws.PathParameter("namespace", "Namespace of the imageBuildStrategy")).
 		Param(ws.PathParameter("imageBuildStrategy", "Name of the imageBuildStrategy")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildStrategy{}))
+		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterBuildStrategy{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
 	ws.Route(ws.POST("/namespaces/{namespace}/ImageBuildRuns/{ImageBuildRun}").
 		To(handler.createImageBuildRun).

@@ -61,6 +61,7 @@ import (
 	"kubesphere.io/devops/pkg/informers"
 	devopsv1alpha2 "kubesphere.io/devops/pkg/kapis/devops/v1alpha2"
 	devopsv1alpha3 "kubesphere.io/devops/pkg/kapis/devops/v1alpha3"
+	imagebuilder "kubesphere.io/devops/pkg/kapis/imagebuilder/v1alpha1"
 	utilnet "kubesphere.io/devops/pkg/utils/net"
 )
 
@@ -166,6 +167,7 @@ func (s *APIServer) installKubeSphereAPIs() {
 	wss = append(wss, gitops.AddToContainer(s.container, &common.Options{
 		GenericClient: s.Client,
 	}, s.Config.ArgoCDOption, s.Config.FluxCDOption)...)
+	wss = append(wss, imagebuilder.AddToContainer(s.container, s.Client, s.DevopsClient))
 	doc.AddSwaggerService(wss, s.container)
 }
 

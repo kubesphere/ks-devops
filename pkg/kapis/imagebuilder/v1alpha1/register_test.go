@@ -1,6 +1,6 @@
 /*
 
-  Copyright 2020 The KubeSphere Authors.
+  Copyright 2023 The KubeSphere Authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,6 @@
 
 */
 
-package v2alpha1
+package v1alpha1
 
-// TODO:
+// TODO
