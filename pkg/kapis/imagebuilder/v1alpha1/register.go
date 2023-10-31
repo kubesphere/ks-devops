@@ -26,7 +26,8 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	//shbuild: shipwright-io/build
+	shbuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	"kubesphere.io/devops/pkg/api"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,85 +51,90 @@ func registerRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 		client:       c,
 	})
 
-	ws.Route(ws.POST("/namespaces/{namespace}/imageBuilds/{imageBuild}").
-		To(handler.createImageBuild).
-		Doc("Create an ImageBuild").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
-		Param(ws.PathParameter("imageBuild", "Name of the ImageBuild")).
-		Param(ws.QueryParameter("codeUrl", "URL for the code")).
-		Param(ws.QueryParameter("languageKind", "Kind of the language")).
-		Param(ws.QueryParameter("outputImageUrl", "Output image url")).
-		Returns(http.StatusCreated, api.StatusOK, v1alpha1.Build{}))
-
-	ws.Route(ws.GET("/namespaces/{namespace}/imageBuilds").
-		To(handler.listImageBuilds).
-		Doc("Get all imageBuilds").
-		Param(ws.PathParameter("namespace", "Namespace of the imageBuilds")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildList{}))
-
-	ws.Route(ws.GET("/namespaces/{namespace}/imageBuilds/{imageBuild}").
-		To(handler.getImageBuild).
-		Doc("Get an ImageBuild").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
-		Param(ws.PathParameter("imageBuild", "Name of the ImageBuild")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.Build{}))
-
-	ws.Route(ws.GET("/namespaces/{namespace}/imageBuilds/{imageBuild}").
-		To(handler.deleteImageBuild).
-		Doc("Delete an ImageBuild").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuildRun")).
-		Param(ws.PathParameter("imageBuild", "Name of the ImageBuildRun")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildRun{}))
-
-	ws.Route(ws.POST("/namespaces/{namespace}/imageBuilds/{imageBuild}").
-		To(handler.updateImageBuild).
-		Doc("Update an ImageBuild").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuild")).
-		Param(ws.PathParameter("imageBuild", "Name of the ImageBuild")).
-		Param(ws.QueryParameter("codeUrl", "URL for the code")).
-		Param(ws.QueryParameter("languageKind", "Kind of the language")).
-		Param(ws.QueryParameter("outputImageUrl", "Output image url")).
-		Returns(http.StatusCreated, api.StatusOK, v1alpha1.Build{}))
-
-	ws.Route(ws.GET("imageBuildStrategies").
-		To(handler.listImageBuildStrategies).
-		Doc("Get all imageBuildStrategies").
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterBuildStrategyList{}).
+	ws.Route(ws.GET("imagebuildStrategies").
+		To(handler.listImagebuildStrategies).
+		Doc("Get all imagebuildStrategies").
+		Param(ws.QueryParameter("language", "Kind of the language, one of nodejs/go/java/..")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.ClusterBuildStrategyList{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.GET("/imageBuildStrategies/{imageBuildStrategy}").
-		To(handler.getImageBuildStrategy).
-		Doc("Get an imageBuildStrategy").
-		Param(ws.PathParameter("imageBuildStrategy", "Name of the imageBuildStrategy")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.ClusterBuildStrategy{}).
+	ws.Route(ws.GET("/imagebuildStrategies/{imagebuildStrategy}").
+		To(handler.getImagebuildStrategy).
+		Doc("Get an imagebuildStrategy").
+		Param(ws.PathParameter("imagebuildStrategy", "Name of the imagebuildStrategy")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.ClusterBuildStrategy{}).
 		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.POST("/namespaces/{namespace}/ImageBuildRuns/{ImageBuildRun}").
-		To(handler.createImageBuildRun).
-		Doc("Create an ImageBuildRun").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuildRun")).
-		Param(ws.PathParameter("imageBuildRun", "Name of the ImageBuildRun for imageBuild")).
-		Param(ws.QueryParameter("imageBuild", "Name of Build for the buildRun")).
-		Returns(http.StatusCreated, api.StatusOK, v1alpha1.BuildRun{}))
+	ws.Route(ws.POST("/namespaces/{namespace}/imagebuilds").
+		To(handler.createImagebuild).
+		Doc("Create an imagebuild").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuild")).
+		Reads(shbuild.Build{}).
+		Returns(http.StatusCreated, api.StatusOK, shbuild.Build{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.GET("/namespace/{namespace}/ImageBuildRuns").
-		To(handler.listImageBuildRuns).
-		Doc("Get all imageBuildRuns").
-		Param(ws.PathParameter("namespace", "Namespace of imageBuildRuns")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildRunList{}))
+	ws.Route(ws.GET("/namespaces/{namespace}/imagebuilds").
+		To(handler.listImagebuilds).
+		Doc("Get all imagebuilds").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuilds")).
+		Returns(http.StatusOK, api.StatusOK, api.ListResult{Items: []interface{}{}}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.GET("/namespace/{namespace}/ImageBuildRuns/{ImageBuildRun}").
-		To(handler.getImageBuildRun).
-		Doc("Get an imageBuildRun").
-		Param(ws.PathParameter("namespace", "Namespace of imageBuildRun")).
-		Param(ws.PathParameter("imageBuildRun", "Name of the ImageBuildRun")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildRun{}))
+	ws.Route(ws.GET("/namespaces/{namespace}/imagebuilds/{imagebuild}").
+		To(handler.getImagebuild).
+		Doc("Get an imagebuild").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuild")).
+		Param(ws.PathParameter("imagebuild", "Name of the imagebuild")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.Build{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
-	ws.Route(ws.GET("/namespaces/{namespace}/ImageBuildRuns/{ImageBuildRun}").
-		To(handler.deleteImageBuildRun).
-		Doc("Delete an ImageBuildRun").
-		Param(ws.PathParameter("namespace", "Namespace of the ImageBuildRun")).
-		Param(ws.PathParameter("imageBuildRun", "Name of the ImageBuildRun")).
-		Returns(http.StatusOK, api.StatusOK, v1alpha1.BuildRun{}))
+	ws.Route(ws.DELETE("/namespaces/{namespace}/imagebuilds/{imagebuild}").
+		To(handler.deleteImagebuild).
+		Doc("Delete an imagebuild").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuildRun")).
+		Param(ws.PathParameter("imagebuild", "Name of the imagebuildRun")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.BuildRun{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
+
+	ws.Route(ws.PUT("/namespaces/{namespace}/imagebuilds/{imagebuild}").
+		To(handler.updateImagebuild).
+		Doc("Update an imagebuild").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuild")).
+		Param(ws.PathParameter("imagebuild", "Name of the imagebuild")).
+		Reads(shbuild.Build{}).
+		Returns(http.StatusCreated, api.StatusOK, shbuild.Build{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
+
+	ws.Route(ws.POST("/namespaces/{namespace}/imagebuilds/{imagebuild}/imagebuildRuns").
+		To(handler.createImagebuildRun).
+		Doc("Create an imagebuildRun").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuildRun")).
+		Param(ws.PathParameter("imagebuild", "Name of the imagebuildRun")).
+		Returns(http.StatusCreated, api.StatusOK, shbuild.BuildRun{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
+
+	ws.Route(ws.GET("/namespaces/{namespace}/imagebuilds/{imagebuild}/imagebuildRuns").
+		To(handler.listImagebuildRuns).
+		Doc("Get all imagebuildRuns of the imagebuild").
+		Param(ws.PathParameter("namespace", "Namespace of imagebuildRuns")).
+		Param(ws.PathParameter("imagebuild", "Imagebuild of imagebuildRuns")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.BuildRunList{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
+
+	ws.Route(ws.GET("/namespaces/{namespace}/imagebuildRuns/{imagebuildRun}").
+		To(handler.getImagebuildRun).
+		Doc("Get an imagebuildRun").
+		Param(ws.PathParameter("namespace", "Namespace of imagebuildRun")).
+		Param(ws.PathParameter("imagebuildRun", "Name of the imagebuildRun")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.BuildRun{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
+
+	ws.Route(ws.DELETE("/namespaces/{namespace}/imagebuildRuns/{imagebuildRun}").
+		To(handler.deleteImagebuildRun).
+		Doc("Delete an imagebuildRun").
+		Param(ws.PathParameter("namespace", "Namespace of the imagebuildRun")).
+		Param(ws.PathParameter("imagebuildRun", "Name of the imagebuildRun")).
+		Returns(http.StatusOK, api.StatusOK, shbuild.BuildRun{}).
+		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsImageBuilder}))
 
 }

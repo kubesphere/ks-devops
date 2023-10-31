@@ -20,28 +20,19 @@ package v1alpha1
 
 import (
 	"context"
-	"strings"
-
 	"github.com/emicklei/go-restful"
-	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	"k8s.io/apimachinery/pkg/labels"
+	//shbuild: shipwright-io/build
+	shbuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"kubesphere.io/devops/pkg/apiserver/query"
 	devopsClient "kubesphere.io/devops/pkg/client/devops"
 	"kubesphere.io/devops/pkg/kapis"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	devopsResource "kubesphere.io/devops/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// StrategyMapping Currently only support `buildpacks-v3` strategy
-var StrategyMapping = map[string]string{
-	"nodejs":  "buildpacks-v3-full",
-	"go":      "buildpacks-v3-go",
-	"python":  "buildpacks-v3-python",
-	"java":    "buildpacks-v3-java",
-	"default": "buildpacks-v3-full",
-}
+const LabelKeyLanguage   = "language"
 
 // apiHandlerOption holds some useful tools for API handler.
 type apiHandlerOption struct {
@@ -59,25 +50,27 @@ func newAPIHandler(o apiHandlerOption) *apiHandler {
 	return &apiHandler{o}
 }
 
-func (h *apiHandler) listImageBuildStrategies(request *restful.Request, response *restful.Response) {
-	queryParam := query.ParseQueryParameter(request)
-
-	strategyList := &buildv1alpha1.ClusterBuildStrategyList{}
-
-	if err := h.client.List(context.Background(), strategyList); err != nil {
+func (h *apiHandler) listImagebuildStrategies(request *restful.Request, response *restful.Response) {
+	language := request.QueryParameter("language")
+	opt := client.MatchingLabels{
+		LabelKeyLanguage: language,
+	}
+	strategyList := &shbuild.ClusterBuildStrategyList{}
+	if err := h.client.List(context.Background(), strategyList, opt); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
 
-	apiResult := resourcesV1alpha3.DefaultList(toBuildStrategyObjects(strategyList.Items),
+	queryParam := query.ParseQueryParameter(request)
+	apiResult := devopsResource.DefaultList(toBuildStrategyObjects(strategyList.Items),
 		queryParam,
-		resourcesV1alpha3.DefaultCompare(),
-		resourcesV1alpha3.DefaultFilter(), nil)
+		devopsResource.DefaultCompare(),
+		devopsResource.DefaultFilter(), nil)
 
 	_ = response.WriteAsJson(apiResult)
 }
 
-func toBuildStrategyObjects(apps []buildv1alpha1.ClusterBuildStrategy) []runtime.Object {
+func toBuildStrategyObjects(apps []shbuild.ClusterBuildStrategy) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]
@@ -85,11 +78,11 @@ func toBuildStrategyObjects(apps []buildv1alpha1.ClusterBuildStrategy) []runtime
 	return objs
 }
 
-func (h *apiHandler) getImageBuildStrategy(request *restful.Request, response *restful.Response) {
-	strategyName := request.PathParameter("imageBuildStrategy")
+func (h *apiHandler) getImagebuildStrategy(request *restful.Request, response *restful.Response) {
+	strategyName := request.PathParameter("imagebuildStrategy")
 
-	// get imageBuildStrategy
-	strategy := &buildv1alpha1.ClusterBuildStrategy{}
+	// get imagebuildStrategy
+	strategy := &shbuild.ClusterBuildStrategy{}
 	if err := h.client.Get(context.Background(), client.ObjectKey{Name: strategyName}, strategy); err != nil {
 		kapis.HandleError(request, response, err)
 		return
@@ -97,44 +90,8 @@ func (h *apiHandler) getImageBuildStrategy(request *restful.Request, response *r
 	_ = response.WriteEntity(strategy)
 }
 
-func (h *apiHandler) listImageBuilds(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	queryParam := query.ParseQueryParameter(request)
-
-	opts := make([]client.ListOption, 0, 3)
-	opts = append(opts, client.InNamespace(namespace))
-	buildList := &buildv1alpha1.BuildList{}
-
-	if err := h.client.List(context.Background(), buildList, opts...); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-
-	apiResult := resourcesV1alpha3.DefaultList(
-		toBuildObjects(buildList.Items),
-		queryParam,
-		resourcesV1alpha3.DefaultCompare(),
-		resourcesV1alpha3.DefaultFilter(), nil)
-
-	_ = response.WriteAsJson(apiResult)
-}
-
-func toBuildObjects(apps []buildv1alpha1.Build) []runtime.Object {
-	objs := make([]runtime.Object, len(apps))
-	for i := range apps {
-		objs[i] = &apps[i]
-	}
-	return objs
-}
-
-func (h *apiHandler) createImageBuild(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	imageBuild := request.PathParameter("build")
-	sourceUrl := request.QueryParameter("sourceUrl")
-	language := request.QueryParameter("language")
-	outputImage := request.QueryParameter("outputImage")
-
-	build := buildv1alpha1.Build{}
+func (h *apiHandler) createImagebuild(request *restful.Request, response *restful.Response) {
+	build := shbuild.Build{}
 	err := request.ReadEntity(&build)
 	if err != nil {
 		klog.Error(err)
@@ -142,39 +99,54 @@ func (h *apiHandler) createImageBuild(request *restful.Request, response *restfu
 		return
 	}
 
-	build.Namespace = namespace
-	build.Name = imageBuild + "-"
-	build.Spec.Source.URL = &sourceUrl
-
-	strategyName, exists := StrategyMapping[strings.ToLower(language)]
-	if !exists {
-		strategyName = StrategyMapping["default"]
+	if build.Annotations == nil {
+		build.Annotations = map[string]string{}
 	}
-
-	build.Spec.Strategy.Name = strategyName
-	build.Spec.Output.Image = outputImage
+	build.Annotations[shbuild.AnnotationBuildRunDeletion] = "false"
 
 	if err := h.client.Create(context.Background(), &build); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
-
 	_ = response.WriteEntity(build)
 }
 
-func (h *apiHandler) updateImageBuild(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) listImagebuilds(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	imageBuild := request.PathParameter("build")
+	queryParam := query.ParseQueryParameter(request)
 
-	oldBuild := buildv1alpha1.Build{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Name: imageBuild}, &oldBuild); err != nil {
+	buildList := &shbuild.BuildList{}
+	if err := h.client.List(context.Background(), buildList, client.InNamespace(namespace)); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
 
-	sourceUrl := request.QueryParameter("sourceUrl")
-	language := request.QueryParameter("language")
-	outputImage := request.QueryParameter("outputImage")
+	apiResult := devopsResource.DefaultList(
+		toBuildObjects(buildList.Items),
+		queryParam,
+		devopsResource.DefaultCompare(),
+		devopsResource.DefaultFilter(), nil)
+
+	_ = response.WriteAsJson(apiResult)
+}
+
+func toBuildObjects(apps []shbuild.Build) []runtime.Object {
+	objs := make([]runtime.Object, len(apps))
+	for i := range apps {
+		objs[i] = &apps[i]
+	}
+	return objs
+}
+
+func (h *apiHandler) updateImagebuild(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	imagebuild := request.PathParameter("imagebuild")
+
+	oldBuild := shbuild.Build{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuild}, &oldBuild); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
 
 	err := request.ReadEntity(&oldBuild)
 	if err != nil {
@@ -182,13 +154,6 @@ func (h *apiHandler) updateImageBuild(request *restful.Request, response *restfu
 		kapis.HandleBadRequest(response, request, err)
 		return
 	}
-
-	oldBuild.Spec.Source.URL = &sourceUrl
-	if "nodejs" == language {
-		oldBuild.Spec.Strategy.Name = "buildpacks-v3"
-	}
-	oldBuild.Spec.Output.Image = outputImage
-	oldBuild.Namespace = namespace
 
 	if err := h.client.Update(context.Background(), &oldBuild); err != nil {
 		kapis.HandleError(request, response, err)
@@ -198,26 +163,25 @@ func (h *apiHandler) updateImageBuild(request *restful.Request, response *restfu
 	_ = response.WriteEntity(oldBuild)
 }
 
-func (h *apiHandler) getImageBuild(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) getImagebuild(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	imageBuild := request.PathParameter("build")
+	imagebuild := request.PathParameter("imagebuild")
 
-	// get imageBuild
-	build := buildv1alpha1.Build{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imageBuild}, &build); err != nil {
+	build := shbuild.Build{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuild}, &build); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
 	_ = response.WriteEntity(&build)
 }
 
-func (h *apiHandler) deleteImageBuild(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) deleteImagebuild(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	imageBuild := request.PathParameter("build")
+	imagebuild := request.PathParameter("imagebuild")
 
-	// get imageBuild
-	build := buildv1alpha1.Build{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imageBuild}, &build); err != nil {
+	// get imagebuild
+	build := shbuild.Build{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuild}, &build); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
@@ -228,92 +192,97 @@ func (h *apiHandler) deleteImageBuild(request *restful.Request, response *restfu
 	_ = response.WriteEntity(&build)
 }
 
-func (h *apiHandler) createImageBuildRun(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) createImagebuildRun(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	buildrunName := request.PathParameter("imageBuildrun")
-	imageBuild := request.QueryParameter("build")
+	imagebuild := request.PathParameter("imagebuild")
 
-	buildRun := buildv1alpha1.BuildRun{}
-	err := request.ReadEntity(&buildRun)
-	if err != nil {
-		klog.Error(err)
-		kapis.HandleBadRequest(response, request, err)
-		return
-	}
-
-	buildRun.ObjectMeta.GenerateName = buildrunName + "-"
-	buildRun.Spec.BuildRef.Name = imageBuild
-	buildRun.Namespace = namespace
-
-	if err := h.client.Create(context.Background(), &buildRun); err != nil {
+	// validate the imagebuild
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuild}, &shbuild.Build{}); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
 
-	_ = response.WriteEntity(buildRun)
+	run := &shbuild.BuildRun{
+		Spec: shbuild.BuildRunSpec{
+			BuildRef: &shbuild.BuildRef{
+				Name: imagebuild,
+			},
+		},
+	}
+	run.SetNamespace(namespace)
+	run.SetGenerateName(imagebuild + "-")
+
+	if run.Labels == nil {
+		run.Labels = map[string]string{}
+	}
+	run.Labels[shbuild.LabelBuild] = imagebuild
+
+	if err := h.client.Create(context.Background(), run); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	_ = response.WriteEntity(run)
 }
 
-func (h *apiHandler) getImageBuildRun(request *restful.Request, response *restful.Response) {
+func (h *apiHandler) listImagebuildRuns(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	buildrunName := request.PathParameter("imageBuildrun")
-
-	// get imageBuildRun
-	buildRun := buildv1alpha1.BuildRun{}
-	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: buildrunName}, &buildRun); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-	_ = response.WriteEntity(&buildRun)
-}
-
-func (h *apiHandler) deleteImageBuildRun(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	buildrunName := request.PathParameter("imageBuildrun")
-	ctx := context.Background()
-
-	// get imageBuild
-	buildRun := buildv1alpha1.BuildRun{}
-	if err := h.client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: buildrunName}, &buildRun); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-	if err := h.client.Delete(context.Background(), &buildRun); err != nil {
-		kapis.HandleError(request, response, err)
-		return
-	}
-	_ = response.WriteEntity(&buildRun)
-}
-
-func (h *apiHandler) listImageBuildRuns(request *restful.Request, response *restful.Response) {
-	namespace := request.PathParameter("namespace")
-	imageBuild := request.PathParameter("build")
-
+	imagebuild := request.PathParameter("imagebuild")
 	queryParam := query.ParseQueryParameter(request)
-	labelSelector := labels.SelectorFromSet(labels.Set{"build.shipwright.io/name": imageBuild})
 
-	opts := make([]client.ListOption, 0, 3)
+	opts := make([]client.ListOption, 0, 2)
 	opts = append(opts, client.InNamespace(namespace))
-	opts = append(opts, client.MatchingLabelsSelector{Selector: labelSelector})
+	opts = append(opts, client.MatchingLabels{
+		shbuild.LabelBuild: imagebuild,
+	})
 
-	buildRunList := &buildv1alpha1.BuildRunList{}
-	// fetch PipelineRuns
+	buildRunList := &shbuild.BuildRunList{}
 	if err := h.client.List(context.Background(), buildRunList, opts...); err != nil {
 		kapis.HandleError(request, response, err)
 		return
 	}
 
-	apiResult := resourcesV1alpha3.DefaultList(toBuildRunObjects(buildRunList.Items),
+	apiResult := devopsResource.DefaultList(toBuildRunObjects(buildRunList.Items),
 		queryParam,
-		resourcesV1alpha3.DefaultCompare(),
-		resourcesV1alpha3.DefaultFilter(), nil)
+		devopsResource.DefaultCompare(),
+		devopsResource.DefaultFilter(), nil)
 
 	_ = response.WriteAsJson(apiResult)
 }
 
-func toBuildRunObjects(apps []buildv1alpha1.BuildRun) []runtime.Object {
+func toBuildRunObjects(apps []shbuild.BuildRun) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]
 	}
 	return objs
+}
+
+func (h *apiHandler) getImagebuildRun(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	imagebuildRun := request.PathParameter("imagebuildRun")
+
+	// get imagebuildRun
+	run := shbuild.BuildRun{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuildRun}, &run); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	_ = response.WriteEntity(&run)
+}
+
+func (h *apiHandler) deleteImagebuildRun(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	imagebuildRun := request.PathParameter("imagebuildRun")
+
+	run := shbuild.BuildRun{}
+	if err := h.client.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: imagebuildRun}, &run); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	if err := h.client.Delete(context.Background(), &run); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	_ = response.WriteEntity(&run)
 }
