@@ -434,13 +434,15 @@ func createMultiBranchPipelineConfigXml(projectName string, pipeline *devopsv1al
 		appendMultiBranchJobTriggerToEtree(properties, pipeline.MultiBranchJobTrigger)
 	}
 
+	discarder := project.CreateElement("orphanedItemStrategy")
+	discarder.CreateAttr("class", "com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy")
+	discarder.CreateAttr("plugin", "cloudbees-folder")
 	if pipeline.Discarder != nil {
-		discarder := project.CreateElement("orphanedItemStrategy")
-		discarder.CreateAttr("class", "com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy")
-		discarder.CreateAttr("plugin", "cloudbees-folder")
 		discarder.CreateElement("pruneDeadBranches").SetText("true")
 		discarder.CreateElement("daysToKeep").SetText(pipeline.Discarder.DaysToKeep)
 		discarder.CreateElement("numToKeep").SetText(pipeline.Discarder.NumToKeep)
+	} else {
+		discarder.CreateElement("pruneDeadBranches").SetText("false")
 	}
 
 	triggers := project.CreateElement("triggers")
@@ -525,9 +527,11 @@ func parseMultiBranchPipelineConfigXml(config string) (*devopsv1alpha3.MultiBran
 	}
 
 	if discarder := project.SelectElement("orphanedItemStrategy"); discarder != nil {
-		pipeline.Discarder = &devopsv1alpha3.DiscarderProperty{
-			DaysToKeep: getElementTextValueOrEmpty(discarder, "daysToKeep"),
-			NumToKeep:  getElementTextValueOrEmpty(discarder, "numToKeep"),
+		if getElementTextValueOrEmpty(discarder, "pruneDeadBranches") == "true" {
+			pipeline.Discarder = &devopsv1alpha3.DiscarderProperty{
+				DaysToKeep: getElementTextValueOrEmpty(discarder, "daysToKeep"),
+				NumToKeep:  getElementTextValueOrEmpty(discarder, "numToKeep"),
+			}
 		}
 	}
 	if triggers := project.SelectElement("triggers"); triggers != nil {
