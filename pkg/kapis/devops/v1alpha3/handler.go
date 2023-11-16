@@ -182,6 +182,12 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 		return
 	}
 
+	// fix: scan branch failed when source type is gitsource
+	if pipeline.IsMultiBranch() && pipeline.Spec.MultiBranchPipeline.GitSource != nil {
+		pipeline.Spec.MultiBranchPipeline.GitSource.DiscoverBranches = true
+		pipeline.Spec.MultiBranchPipeline.GitSource.DiscoverTags = true
+	}
+
 	if client, err := h.getDevOps(request); err == nil {
 		created, err := client.CreatePipelineObj(devops, &pipeline)
 		errorHandle(request, response, created, err)
