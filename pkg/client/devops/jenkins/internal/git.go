@@ -90,22 +90,9 @@ func GetGitSourcefromEtree(source *etree.Element) *devopsv1alpha3.GitSource {
 		"jenkins.plugins.git.traits.TagDiscoveryTrait"); tagDiscoverTrait != nil {
 		gitSource.DiscoverTags = true
 	}
-	if cloneTrait := traits.SelectElement(
-		"jenkins.plugins.git.traits.CloneOptionTrait"); cloneTrait != nil {
-		if cloneExtension := cloneTrait.SelectElement(
-			"extension"); cloneExtension != nil {
-			gitSource.CloneOption = &devopsv1alpha3.GitCloneOption{}
-			if value, err := strconv.ParseBool(cloneExtension.SelectElement("shallow").Text()); err == nil {
-				gitSource.CloneOption.Shallow = value
-			}
-			if value, err := strconv.ParseInt(cloneExtension.SelectElement("timeout").Text(), 10, 32); err == nil {
-				gitSource.CloneOption.Timeout = int(value)
-			}
-			if value, err := strconv.ParseInt(cloneExtension.SelectElement("depth").Text(), 10, 32); err == nil {
-				gitSource.CloneOption.Depth = int(value)
-			}
-		}
-	}
+
+	gitSource.CloneOption = parseFromCloneTrait(traits.SelectElement("jenkins.plugins.git.traits.CloneOptionTrait"))
+
 	if regexTrait := traits.SelectElement(
 		"jenkins.scm.impl.trait.RegexSCMHeadFilterTrait"); regexTrait != nil {
 		if regex := regexTrait.SelectElement("regex"); regex != nil {

@@ -138,22 +138,8 @@ func GetGithubSourcefromEtree(source *etree.Element) *devopsv1alpha3.GithubSourc
 				klog.Warningf("invalid Gitlab discover PR trust value: %s", trust[1])
 			}
 		}
-		if cloneTrait := traits.SelectElement(
-			"jenkins.plugins.git.traits.CloneOptionTrait"); cloneTrait != nil {
-			if cloneExtension := cloneTrait.SelectElement(
-				"extension"); cloneExtension != nil {
-				githubSource.CloneOption = &devopsv1alpha3.GitCloneOption{}
-				if value, err := strconv.ParseBool(cloneExtension.SelectElement("shallow").Text()); err == nil {
-					githubSource.CloneOption.Shallow = value
-				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("timeout").Text(), 10, 32); err == nil {
-					githubSource.CloneOption.Timeout = int(value)
-				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("depth").Text(), 10, 32); err == nil {
-					githubSource.CloneOption.Depth = int(value)
-				}
-			}
-		}
+
+		githubSource.CloneOption = parseFromCloneTrait(traits.SelectElement("jenkins.plugins.git.traits.CloneOptionTrait"))
 
 		if regexTrait := traits.SelectElement(
 			"jenkins.scm.impl.trait.RegexSCMHeadFilterTrait"); regexTrait != nil {
