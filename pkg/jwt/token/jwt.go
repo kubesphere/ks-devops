@@ -99,7 +99,6 @@ func (s *jwtTokenIssuer) Verify(tokenString string) (user.Info, TokenType, error
 
 func (s *jwtTokenIssuer) IssueTo(user user.Info, tokenType TokenType, expiresIn time.Duration) (string, error) {
 	issueAt := time.Now().Unix() - int64(s.maximumClockSkew.Seconds())
-	notBefore := issueAt
 	clm := &Claims{
 		Username:  user.GetName(),
 		Groups:    user.GetGroups(),
@@ -108,7 +107,6 @@ func (s *jwtTokenIssuer) IssueTo(user user.Info, tokenType TokenType, expiresIn 
 		StandardClaims: jwt.StandardClaims{
 			IssuedAt:  issueAt,
 			Issuer:    s.name,
-			NotBefore: notBefore,
 		},
 	}
 
