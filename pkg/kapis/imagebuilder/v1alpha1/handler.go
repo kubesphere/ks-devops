@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const LabelKeyLanguage   = "language"
+const LabelKeyLanguage = "language"
 
 // apiHandlerOption holds some useful tools for API handler.
 type apiHandlerOption struct {

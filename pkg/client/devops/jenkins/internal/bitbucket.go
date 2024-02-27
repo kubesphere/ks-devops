@@ -141,22 +141,7 @@ func GetBitbucketServerSourceFromEtree(source *etree.Element) *devopsv1alpha3.Bi
 			}
 		}
 
-		if cloneTrait := traits.SelectElement(
-			"jenkins.plugins.git.traits.CloneOptionTrait"); cloneTrait != nil {
-			if cloneExtension := cloneTrait.SelectElement(
-				"extension"); cloneExtension != nil {
-				s.CloneOption = &devopsv1alpha3.GitCloneOption{}
-				if value, err := strconv.ParseBool(cloneExtension.SelectElement("shallow").Text()); err == nil {
-					s.CloneOption.Shallow = value
-				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("timeout").Text(), 10, 32); err == nil {
-					s.CloneOption.Timeout = int(value)
-				}
-				if value, err := strconv.ParseInt(cloneExtension.SelectElement("depth").Text(), 10, 32); err == nil {
-					s.CloneOption.Depth = int(value)
-				}
-			}
-		}
+		s.CloneOption = parseFromCloneTrait(traits.SelectElement("jenkins.plugins.git.traits.CloneOptionTrait"))
 
 		if regexTrait := traits.SelectElement(
 			"jenkins.scm.impl.trait.RegexSCMHeadFilterTrait"); regexTrait != nil {
