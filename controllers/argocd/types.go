@@ -19,7 +19,6 @@ limitations under the License.
 package argocd
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v2"
 )
 
@@ -58,11 +57,12 @@ type TLSClientConfig struct {
 	CAData []byte `json:"caData,omitempty"`
 }
 
-func parseKubeConfig(data []byte) (cfg *config) {
-	cfg = &config{}
-	err := yaml.Unmarshal(data, cfg)
-	fmt.Println(err)
-	return
+func parseKubeConfig(data []byte) (*config, error) {
+	cfg := &config{}
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 type config struct {
