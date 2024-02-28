@@ -63,7 +63,9 @@ users:
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, parseKubeConfig(tt.args.data), "parseKubeConfig(%v)", tt.args.data)
+			config, err := parseKubeConfig(tt.args.data)
+			assert.Nil(t, err)
+			assert.Equalf(t, tt.want, config, "parseKubeConfig(%v)", tt.args.data)
 		})
 	}
 }

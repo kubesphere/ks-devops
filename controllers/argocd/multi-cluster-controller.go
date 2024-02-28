@@ -155,7 +155,7 @@ func getArgoClusterConfigObject(configText string) (object *ClusterConfig) {
 	rawDecodedconfig, _ := base64.StdEncoding.DecodeString(configText)
 
 	var kubeconfig *config
-	if kubeconfig = parseKubeConfig(rawDecodedconfig); kubeconfig == nil {
+	if kubeconfig, _ = parseKubeConfig(rawDecodedconfig); kubeconfig == nil {
 		return
 	}
 
