@@ -39,6 +39,8 @@ func (t *StepTemplateSpec) Render(param map[string]interface{}, secret *v1.Secre
 	switch t.Runtime {
 	case "dsl":
 		output, err = dslRender(t.Template, param, secret)
+	case "script":
+		output, err = scriptRender(t.Template, param, secret)
 	case "shell":
 		fallthrough
 	default:
@@ -131,6 +133,28 @@ func dslRender(dslTpl string, param map[string]interface{}, secret *v1.Secret) (
 	buf := bytes.NewBuffer([]byte{})
 	if err = tpl.Execute(buf, data); err == nil {
 		output = strings.TrimSpace(buf.String())
+	}
+	return
+}
+
+func scriptRender(scriptTpl string, param map[string]interface{}, secret *v1.Secret) (output string, err error) {
+	if output, err = dslRender(scriptTpl, param, secret); err == nil {
+		escapedOutput := strings.ReplaceAll(output, `\`, `\\`)
+		escapedOutput = strings.ReplaceAll(escapedOutput, "\n", "\\n")
+		escapedOutput = strings.ReplaceAll(escapedOutput, `"`, `\"`)
+
+		output = fmt.Sprintf(`{
+"arguments": [
+  {
+	"key": "scriptBlock",
+	"value": {
+      "isLiteral": true,
+      "value": "%s"
+    }
+  }
+],
+"name": "script"
+}`, escapedOutput)
 	}
 	return
 }
