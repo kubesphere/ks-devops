@@ -23,7 +23,7 @@ const (
 	InsecureSkipTLSAnnotationKey = "devops.kubesphere.io/insecure-skip-tls"
 	GitAuthorNameAnnotationKey   = "devops.kubesphere.io/git-author-name"
 	GitAuthorEmailAnnotationKey  = "devops.kubesphere.io/git-author-email"
-	DevOpsProjectLabelKey        = "github.com/kubesphere/ks-devopsproject"
+	DevOpsProjectLabelKey        = "kubesphere.io/devopsproject"
 
 	AuthenticationTag        = "Authentication"
 	DevOpsCredentialTag      = "DevOps Credential"
