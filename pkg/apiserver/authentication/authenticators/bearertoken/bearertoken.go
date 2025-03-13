@@ -22,8 +22,8 @@ import (
 
 	"k8s.io/apiserver/pkg/authentication/user"
 
+	jwt "github.com/kubesphere/ks-devops/pkg/jwt/token"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	jwt "kubesphere.io/devops/pkg/jwt/token"
 )
 
 // tokenAuthenticator implements an simple auth which only check the format of target JWT token

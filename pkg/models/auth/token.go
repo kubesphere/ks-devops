@@ -26,10 +26,10 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/apiserver/authentication/oauth"
-	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"
-	"kubesphere.io/devops/pkg/client/cache"
-	"kubesphere.io/devops/pkg/jwt/token"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/authentication/oauth"
+	authoptions "github.com/kubesphere/ks-devops/pkg/apiserver/authentication/options"
+	"github.com/kubesphere/ks-devops/pkg/client/cache"
+	"github.com/kubesphere/ks-devops/pkg/jwt/token"
 )
 
 // TokenManagementInterface is the interface for the token management

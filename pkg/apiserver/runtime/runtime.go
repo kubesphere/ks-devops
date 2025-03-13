@@ -18,22 +18,25 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/emicklei/go-restful"
+
+	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
+	// ApiRootPath defines the root path of all KubeSphere apis.
 	ApiRootPath = "/kapis"
+
+	// MimeMergePatchJson is the mime header used in merge request
+	MimeMergePatchJson = "application/merge-patch+json"
+
+	MimeJsonPatchJson = "application/json-patch+json"
 )
 
-// container holds all webservice of apiserver
+// Container holds all webservice of apiserver
 var Container = restful.NewContainer()
 
 type ContainerBuilder []func(c *restful.Container) error
-
-const MimeMergePatchJson = "application/merge-patch+json"
-const MimeJsonPatchJson = "application/json-patch+json"
-const MimeMultipartFormData = "multipart/form-data"
 
 func init() {
 	restful.RegisterEntityAccessor(MimeMergePatchJson, restful.NewEntityAccessorJSON(restful.MIME_JSON))

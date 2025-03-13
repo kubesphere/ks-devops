@@ -29,7 +29,7 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
 )
 
 // WithAuthentication installs authentication handler to handler chain.

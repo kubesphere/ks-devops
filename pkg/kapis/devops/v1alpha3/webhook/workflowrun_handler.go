@@ -20,15 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kubesphere/ks-devops/pkg/event/workflowrun"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/event/workflowrun"
 	"strings"
 	"time"
 
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

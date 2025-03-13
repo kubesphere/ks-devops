@@ -18,8 +18,8 @@ package triggers
 
 import (
 	"github.com/beevik/etree"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"reflect"
 	"strconv"
 	"testing"

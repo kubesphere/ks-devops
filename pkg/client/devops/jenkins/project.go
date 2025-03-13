@@ -17,10 +17,10 @@ limitations under the License.
 package jenkins
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 func (j *Jenkins) CreateDevOpsProject(projectId string) (string, error) {

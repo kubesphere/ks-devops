@@ -17,7 +17,7 @@ limitations under the License.
 package stringutils
 
 import (
-	"kubesphere.io/devops/pkg/server/errors"
+	"github.com/kubesphere/ks-devops/pkg/server/errors"
 	"testing"
 )
 

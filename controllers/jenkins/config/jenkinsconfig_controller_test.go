@@ -17,10 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/client/devops/fake"
 	"reflect"
 	"testing"
 )
@@ -140,30 +140,33 @@ func TestReloadJenkinsConfig(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestCheckJenkinsConfigData(t *testing.T) {
+func TestHandleJenkinsCasCConfig(t *testing.T) {
 	ctrl := Controller{}
-	err := ctrl.checkJenkinsConfigData(&v1.ConfigMap{})
+	err := ctrl.handleJenkinsUser(&v1.ConfigMap{})
 	assert.Nil(t, err, "failed when check an empty ConfigMap")
 
+	var jenkinsData = "jenkins:\n  mode: EXCLUSIVE\n\n  clouds:\n    - kubernetes:\n        name: \"kubernetes\"\n        templates:\n          - name: \"base\"\n            namespace: \"kubesphere-devops-worker\"\n            label: \"base\"\n  securityRealm:\n    oic:\n      clientId: \"jenkins\"\n      clientSecret: \"jenkins\"\n\nunclassified:\n  gitLabServers:\n    servers:\n      - name: https://gitlab.com\n        serverUrl: https://gitlab.com"
 	targetConfigMap := &v1.ConfigMap{
 		Data: map[string]string{
-			"jenkins.yaml": "fake",
+			"jenkins.yaml": jenkinsData,
 		},
 	}
-	err = ctrl.checkJenkinsConfigData(targetConfigMap)
+	err = ctrl.handleJenkinsUser(targetConfigMap)
 	assert.Nil(t, err, "failed when check a ConfigMap with the expected data field")
-	assert.Equal(t, "fake", targetConfigMap.Data["jenkins_user.yaml"], "didn't get the expected data field")
+	assert.Equal(t, jenkinsData, targetConfigMap.Data["jenkins_user.yaml"], "didn't get the expected data field")
 
+	var jenkinsUserData = "jenkins:\n  mode: USER-EXCLUSIVE\n  clouds:\n    - kubernetes:\n        name: \"kubernetes\"\n        templates:\n          - name: \"user-base\"\n            namespace: \"kubesphere-devops-worker\"\n            label: \"base\"\n  securityRealm:\n    oic:\n      clientId: \"jenkins-in-user\"\n      clientSecret: \"jenkins-in-user\"\nunclassified:\n  gitLabServers:\n    servers:\n      - name: https://my-gitlab.com\n        serverUrl: https://my-gitlab.com\n"
+	var expectedJenkinsUserData = "jenkins:\n  mode: USER-EXCLUSIVE\n  clouds:\n    - kubernetes:\n        name: \"kubernetes\"\n        templates:\n          - name: \"user-base\"\n            namespace: \"kubesphere-devops-worker\"\n            label: \"base\"\n  securityRealm:\n    oic:\n      clientId: \"jenkins\"\n      clientSecret: \"jenkins\"\nunclassified:\n  gitLabServers:\n    servers:\n      - name: https://gitlab.com\n        serverUrl: https://gitlab.com\n"
 	targetConfigMap = &v1.ConfigMap{
 		Data: map[string]string{
-			"jenkins.yaml":      "jenkins",
-			"jenkins_user.yaml": "ks-jenkins",
+			"jenkins.yaml":      jenkinsData,
+			"jenkins_user.yaml": jenkinsUserData,
 		},
 	}
-	err = ctrl.checkJenkinsConfigData(targetConfigMap)
-	assert.Nil(t, err, "failed when check a ConfigMap which contains ks-jenkins.yaml")
-	assert.Equal(t, "ks-jenkins", targetConfigMap.Data["jenkins_user.yaml"],
-		"the existing ks-jenkins.yaml should not be override")
+	err = ctrl.handleJenkinsUser(targetConfigMap)
+	assert.Nil(t, err, "failed when check a ConfigMap which contains jenkins-user.yaml")
+	assert.Equal(t, expectedJenkinsUserData, targetConfigMap.Data["jenkins_user.yaml"],
+		"the existing jenkins-user.yaml should not be override")
 }
 
 func TestCheckJenkinsConfigFormula(t *testing.T) {

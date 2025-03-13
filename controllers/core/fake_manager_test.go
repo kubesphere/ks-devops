@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	clientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -34,7 +34,7 @@ func TestFakeManager(t *testing.T) {
 	assert.Nil(t, err)
 	err = v1.SchemeBuilder.AddToScheme(schema)
 	assert.Nil(t, err)
-	client := clientfake.NewFakeClientWithScheme(schema)
+	client := clientfake.NewClientBuilder().WithScheme(schema).Build()
 
 	fake := FakeManager{
 		Client: client,
@@ -57,5 +57,4 @@ func TestFakeManager(t *testing.T) {
 	assert.Equal(t, client, fake.GetAPIReader())
 	assert.Nil(t, fake.GetWebhookServer())
 	assert.Equal(t, logr.New(log.NullLogSink{}), fake.GetLogger())
-	assert.NotNil(t, fake.GetControllerOptions())
 }

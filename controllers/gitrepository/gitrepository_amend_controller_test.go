@@ -22,12 +22,12 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	mgrcore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	mgrcore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -170,7 +170,7 @@ func TestAmendReconciler_Reconcile(t *testing.T) {
 	}{{
 		name: "not found",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -179,7 +179,7 @@ func TestAmendReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "gitlab case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -196,7 +196,7 @@ func TestAmendReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "github case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, ghRepo.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ghRepo.DeepCopy()).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -222,7 +222,7 @@ func TestAmendReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "bitbucket case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, bitbucket.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(bitbucket.DeepCopy()).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{

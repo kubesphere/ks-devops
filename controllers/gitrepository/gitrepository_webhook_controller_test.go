@@ -27,13 +27,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/h2non/gock"
 	"github.com/jenkins-x/go-scm/scm"
+	mgrcore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	mgrcore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -192,7 +192,7 @@ func Test_linkToWebhook(t *testing.T) {
 					Name:      "name",
 				},
 			},
-			client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy(), webhook.DeepCopy()),
+			client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		check: func(client client.Client) bool {
 			webh := &v1alpha3.Webhook{}
@@ -216,7 +216,7 @@ func Test_linkToWebhook(t *testing.T) {
 					Name:      "name",
 				},
 			},
-			client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy(), webhook.DeepCopy()),
+			client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		check: func(client client.Client) bool {
 			webh := &v1alpha3.Webhook{}
@@ -240,7 +240,7 @@ func Test_linkToWebhook(t *testing.T) {
 					Name:      "name",
 				},
 			},
-			client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy(), webhookA.DeepCopy()),
+			client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy(), webhookA.DeepCopy()).Build(),
 		},
 		check: func(client client.Client) (result bool) {
 			webh := &v1alpha3.Webhook{}
@@ -360,7 +360,7 @@ func TestReconciler_linkToWebhooks(t *testing.T) {
 	}{{
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy(), webhook.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		args: args{
 			repo: &repo,
@@ -380,7 +380,7 @@ func TestReconciler_linkToWebhooks(t *testing.T) {
 	}, {
 		name: "has errors",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build(),
 		},
 		args: args{
 			repo: &repo,
@@ -449,7 +449,7 @@ func TestReconciler_getTokenFromSecret(t *testing.T) {
 	}{{
 		name: "normal case, basic auth secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, basicSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(basicSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			secretRef: &v1.SecretReference{
@@ -466,7 +466,7 @@ func TestReconciler_getTokenFromSecret(t *testing.T) {
 	}, {
 		name: "normal case, opaque secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, opaqueSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(opaqueSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			secretRef: &v1.SecretReference{
@@ -483,7 +483,7 @@ func TestReconciler_getTokenFromSecret(t *testing.T) {
 	}, {
 		name: "normal case, no namespace in the SecretReference",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, opaqueSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(opaqueSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			secretRef: &v1.SecretReference{
@@ -499,7 +499,7 @@ func TestReconciler_getTokenFromSecret(t *testing.T) {
 	}, {
 		name: "error case, not exist secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			secretRef: &v1.SecretReference{
@@ -576,7 +576,7 @@ func TestReconciler_getGitClient(t *testing.T) {
 	}, {
 		name: "no secret found",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			repo: &v1alpha3.GitRepository{
@@ -596,7 +596,7 @@ func TestReconciler_getGitClient(t *testing.T) {
 	}, {
 		name: "github provider",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, basicSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(basicSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			repo: &v1alpha3.GitRepository{
@@ -616,7 +616,7 @@ func TestReconciler_getGitClient(t *testing.T) {
 	}, {
 		name: "gitlab provider",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, basicSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(basicSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			repo: &v1alpha3.GitRepository{
@@ -747,7 +747,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 		prepare    func()
 	}{{
 		name:   "not found git repository",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema)},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).Build()},
 		args: args{
 			req: req,
 		},
@@ -757,7 +757,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "no webhooks in git repository",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build()},
 		args: args{
 			req: req,
 		},
@@ -767,7 +767,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "has one correct webhook in git repository, but no secret",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, repoWithHook.DeepCopy(), webhook.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithHook.DeepCopy(), webhook.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -777,7 +777,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "repo address is empty",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithSecretEmptyAddress.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithSecretEmptyAddress.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		args: args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -787,7 +787,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "invliad git provider",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, invalidGitProvider.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidGitProvider.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		args: args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -797,7 +797,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "failed to list hooks",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithSecret.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithSecret.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		args: args{req: req},
 		prepare: func() {
@@ -832,7 +832,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithSecret.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithSecret.DeepCopy(), secret.DeepCopy(), webhook.DeepCopy()).Build(),
 		},
 		args: args{req: req},
 		prepare: func() {

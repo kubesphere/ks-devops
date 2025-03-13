@@ -22,23 +22,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/types"
-	cmstore "kubesphere.io/devops/pkg/store/configmap"
 	"net/url"
 	"strconv"
 
-	"kubesphere.io/devops/pkg/kapis"
+	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/emicklei/go-restful"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+
+	"github.com/emicklei/go-restful/v3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/client/devops"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/models/pipelinerun"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	apiserverrequest "github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/models/pipelinerun"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 )
 
 // apiHandlerOption holds some useful tools for API handler.
@@ -98,11 +100,18 @@ func (h *apiHandler) listPipelineRuns(request *restful.Request, response *restfu
 		return
 	}
 
-	var listHandler resourcesV1alpha3.ListHandler = listHandler{}
+	lh := listHandler{ctx: request.Request.Context(), client: h.client}
+	compareFunc := lh.Comparator()
+	filterFunc := lh.Filter()
+	transformFunc := lh.Transformer()
 	if backward {
-		listHandler = backwardListHandler{}
+		blh := backwardListHandler{client: h.client}
+		compareFunc = blh.Comparator()
+		filterFunc = blh.Filter()
+		transformFunc = blh.Transformer()
 	}
-	apiResult := resourcesV1alpha3.ToListResult(convertPipelineRunsToObject(prs.Items), queryParam, listHandler)
+
+	apiResult := resourcesv1alpha3.DefaultList(convertPipelineRunsToObject(prs.Items), queryParam, compareFunc, filterFunc, transformFunc)
 	_ = response.WriteAsJson(apiResult)
 }
 
@@ -155,6 +164,7 @@ func (h *apiHandler) createPipelineRun(request *restful.Request, response *restf
 func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.Response) {
 	nsName := request.PathParameter("namespace")
 	prName := request.PathParameter("pipelinerun")
+	ctx := request.Request.Context()
 
 	// get pipelinerun
 	var pr v1alpha3.PipelineRun
@@ -162,6 +172,20 @@ func (h *apiHandler) getPipelineRun(request *restful.Request, response *restful.
 		kapis.HandleError(request, response, err)
 		return
 	}
+
+	// get status
+	if _, ok := pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey]; !ok {
+		pipelineRunStore, err := cmstore.NewConfigMapStore(ctx, types.NamespacedName{
+			Namespace: nsName, Name: prName}, h.client)
+		if err != nil && !errors.IsNotFound(err) {
+			kapis.HandleError(request, response, err)
+			return
+		}
+
+		pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = pipelineRunStore.GetStatus()
+		pr.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = pipelineRunStore.GetStages()
+	}
+
 	_ = response.WriteEntity(&pr)
 }
 

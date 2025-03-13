@@ -18,8 +18,8 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/devops"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"kubesphere.io/devops/pkg/api/devops"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 

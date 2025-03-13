@@ -17,30 +17,48 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"github.com/emicklei/go-restful"
+	"context"
+	"fmt"
+
+	"github.com/emicklei/go-restful/v3"
+	"kubesphere.io/kubesphere/pkg/models/iam/am"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/kapis"
-	"kubesphere.io/devops/pkg/models/devops"
-	servererr "kubesphere.io/devops/pkg/server/errors"
-	"kubesphere.io/devops/pkg/server/params"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	apiserverRequest "github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+	devopsModel "github.com/kubesphere/ks-devops/pkg/models/devops"
+	servererr "github.com/kubesphere/ks-devops/pkg/server/errors"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesV1beta1 "kubesphere.io/kubesphere/pkg/models/resources/v1beta1"
 )
 
 type devopsHandler struct {
 	k8sClient    k8s.Client
 	devopsClient devopsClient.Interface
+
+	am am.AccessManagementInterface
 }
 
-func newDevOpsHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) *devopsHandler {
+func newDevOpsHandler(client client.Client, devopsClient devopsClient.Interface, k8sClient k8s.Client, runtimeCache cache.Cache) *devopsHandler {
+	resourceMgr, err := resourcesV1beta1.New(context.Background(), client, runtimeCache)
+	if err != nil {
+		klog.Fatalf("failed to create resource manager, error: %+v", err)
+		return nil
+	}
 	return &devopsHandler{
 		k8sClient:    k8sClient,
 		devopsClient: devopsClient,
+		am:           am.NewOperator(resourceMgr),
 	}
 }
 
@@ -56,15 +74,15 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
+	if devopsOperator, err := h.getDevOps(request); err == nil {
 		var project *v1alpha3.DevOpsProject
 		var err error
 
 		switch generateNameFlag {
 		case "true":
-			project, err = client.GetDevOpsProjectByGenerateName(workspace, devopsProject)
+			project, err = devopsOperator.GetDevOpsProjectByGenerateName(workspace, devopsProject)
 		default:
-			project, err = client.GetDevOpsProject(workspace, devopsProject)
+			project, err = devopsOperator.GetDevOpsProject(workspace, devopsProject)
 		}
 		errorHandle(request, response, project, err)
 	} else {
@@ -73,11 +91,26 @@ func (h *devopsHandler) GetDevOpsProject(request *restful.Request, response *res
 }
 
 func (h *devopsHandler) ListDevOpsProject(request *restful.Request, response *restful.Response) {
-	workspace := request.PathParameter("workspace")
-	limit, offset := params.ParsePaging(request)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		workspace := request.PathParameter("workspace")
+		queryParam := query.ParseQueryParameter(request)
 
-	if client, err := h.getDevOps(request); err == nil {
-		projectList, err := client.ListDevOpsProject(workspace, limit, offset)
+		var requestUser user.Info
+		if username := request.PathParameter("workspacemember"); username != "" {
+			requestUser = &user.DefaultInfo{
+				Name: username,
+			}
+		} else {
+			var ok bool
+			requestUser, ok = apiserverRequest.UserFrom(request.Request.Context())
+			if !ok {
+				err := fmt.Errorf("cannot obtain user info")
+				klog.Errorln(err)
+				kapis.HandleForbidden(response, nil, err)
+				return
+			}
+		}
+		projectList, err := devopsOperator.ListDevOpsProject(requestUser, workspace, queryParam)
 		errorHandle(request, response, projectList, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -95,8 +128,8 @@ func (h *devopsHandler) CreateDevOpsProject(request *restful.Request, response *
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		created, err := client.CreateDevOpsProject(workspace, &devOpsProject)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		created, err := devopsOperator.CreateDevOpsProject(workspace, &devOpsProject)
 		if err != nil {
 			klog.Error(err)
 			if errors.IsNotFound(err) {
@@ -126,8 +159,8 @@ func (h *devopsHandler) UpdateDevOpsProject(request *restful.Request, response *
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		project, err := client.UpdateDevOpsProject(workspace, &devOpsProject)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		project, err := devopsOperator.UpdateDevOpsProject(workspace, &devOpsProject)
 		errorHandle(request, response, project, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -138,21 +171,21 @@ func (h *devopsHandler) DeleteDevOpsProject(request *restful.Request, response *
 	workspace := request.PathParameter("workspace")
 	devops := request.PathParameter("devops")
 
-	if client, err := h.getDevOps(request); err == nil {
-		err := client.DeleteDevOpsProject(workspace, devops)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		err := devopsOperator.DeleteDevOpsProject(workspace, devops)
 		errorHandle(request, response, nil, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
 	}
 }
 
-// pipeline handler about get/list/post/put/delete
+// GetPipeline pipeline handler about get/list/post/put/delete
 func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.Response) {
 	devops := request.PathParameter("devops")
 	pipeline := request.PathParameter("pipeline")
 
-	if client, err := h.getDevOps(request); err == nil {
-		obj, err := client.GetPipelineObj(devops, pipeline)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		obj, err := devopsOperator.GetPipelineObj(devops, pipeline)
 		errorHandle(request, response, obj, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -161,10 +194,10 @@ func (h *devopsHandler) GetPipeline(request *restful.Request, response *restful.
 
 func (h *devopsHandler) ListPipeline(request *restful.Request, response *restful.Response) {
 	devops := request.PathParameter("devops")
-	query := query.ParseQueryParameter(request)
+	queryParam := query.ParseQueryParameter(request)
 
-	if client, err := h.getDevOps(request); err == nil {
-		objs, err := client.ListPipelineObj(devops, query)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		objs, err := devopsOperator.ListPipelineObj(devops, queryParam)
 		errorHandle(request, response, objs, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -182,8 +215,8 @@ func (h *devopsHandler) CreatePipeline(request *restful.Request, response *restf
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		created, err := client.CreatePipelineObj(devops, &pipeline)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		created, err := devopsOperator.CreatePipelineObj(devops, &pipeline)
 		errorHandle(request, response, created, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -202,8 +235,8 @@ func (h *devopsHandler) UpdatePipeline(request *restful.Request, response *restf
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		obj, err := client.UpdatePipelineObj(devops, &pipeline)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		obj, err := devopsOperator.UpdatePipelineObj(devops, &pipeline)
 		errorHandle(request, response, obj, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -254,9 +287,9 @@ func (h *devopsHandler) UpdateJenkinsfile(request *restful.Request, response *re
 		return
 	}
 
-	var client devops.DevopsOperator
-	if client, err = h.getDevOps(request); err == nil {
-		err = client.UpdateJenkinsfile(projectName, pipelineName, mode, payload.Data)
+	var devopsOperator devopsModel.DevopsOperator
+	if devopsOperator, err = h.getDevOps(request); err == nil {
+		err = devopsOperator.UpdateJenkinsfile(projectName, pipelineName, mode, payload.Data)
 	}
 	errorHandle(request, response, NewSuccessResponse(), err)
 }
@@ -267,8 +300,8 @@ func (h *devopsHandler) DeletePipeline(request *restful.Request, response *restf
 
 	klog.V(8).Infof("ready to delete pipeline %s/%s", devops, pipeline)
 
-	if client, err := h.getDevOps(request); err == nil {
-		err := client.DeletePipelineObj(devops, pipeline)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		err := devopsOperator.DeletePipelineObj(devops, pipeline)
 		errorHandle(request, response, nil, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -280,8 +313,8 @@ func (h *devopsHandler) GetCredential(request *restful.Request, response *restfu
 	devops := request.PathParameter("devops")
 	credential := request.PathParameter("credential")
 
-	if client, err := h.getDevOps(request); err == nil {
-		obj, err := client.GetCredentialObj(devops, credential)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		obj, err := devopsOperator.GetCredentialObj(devops, credential)
 		errorHandle(request, response, obj, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -290,10 +323,10 @@ func (h *devopsHandler) GetCredential(request *restful.Request, response *restfu
 
 func (h *devopsHandler) ListCredential(request *restful.Request, response *restful.Response) {
 	devops := request.PathParameter("devops")
-	query := query.ParseQueryParameter(request)
+	queryParam := query.ParseQueryParameter(request)
 
-	if client, err := h.getDevOps(request); err == nil && client != nil {
-		objs, err := client.ListCredentialObj(devops, query)
+	if devopsOperator, err := h.getDevOps(request); err == nil && devopsOperator != nil {
+		objs, err := devopsOperator.ListCredentialObj(devops, queryParam)
 		errorHandle(request, response, objs, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -311,8 +344,8 @@ func (h *devopsHandler) CreateCredential(request *restful.Request, response *res
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		created, err := client.CreateCredentialObj(devops, &obj)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		created, err := devopsOperator.CreateCredentialObj(devops, &obj)
 		errorHandle(request, response, created, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -330,8 +363,8 @@ func (h *devopsHandler) UpdateCredential(request *restful.Request, response *res
 		return
 	}
 
-	if client, err := h.getDevOps(request); err == nil {
-		updated, err := client.UpdateCredentialObj(devops, &obj)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		updated, err := devopsOperator.UpdateCredentialObj(devops, &obj)
 		errorHandle(request, response, updated, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -359,8 +392,8 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 	devopsProject := request.PathParameter("devops")
 	credential := request.PathParameter("credential")
 
-	if client, err := h.getDevOps(request); err == nil {
-		err := client.DeleteCredentialObj(devopsProject, credential)
+	if devopsOperator, err := h.getDevOps(request); err == nil {
+		err := devopsOperator.DeleteCredentialObj(devopsProject, credential)
 		errorHandle(request, response, servererr.None, err)
 	} else {
 		kapis.HandleBadRequest(response, request, err)
@@ -368,21 +401,22 @@ func (h *devopsHandler) DeleteCredential(request *restful.Request, response *res
 }
 
 func (h *devopsHandler) getJenkinsLabels(request *restful.Request, response *restful.Response) {
-	client, err := h.getDevOps(request)
+	devopsOperator, err := h.getDevOps(request)
 	if err != nil {
 		kapis.HandleBadRequest(response, request, err)
 		return
 	}
 
 	var labels []string
-	if labels, err = client.GetJenkinsAgentLabels(); err != nil {
+	if labels, err = devopsOperator.GetJenkinsAgentLabels(); err != nil {
 		kapis.HandleBadRequest(response, request, err)
 	} else {
 		errorHandle(request, response, NewSuccessGenericArrayResponse(labels), nil)
 	}
 }
 
-func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.DevopsOperator, err error) {
+// TODO: delete this func and add DevopsOperator to devopsHandler
+func (h *devopsHandler) getDevOps(request *restful.Request) (operator devopsModel.DevopsOperator, err error) {
 	ctx := request.Request.Context()
 	token := ctx.Value(constants.K8SToken).(constants.ContextKeyK8SToken)
 
@@ -395,7 +429,7 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.Dev
 	}
 
 	if err == nil {
-		operator = devops.NewDevopsOperator(h.devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere())
+		operator = devopsModel.NewDevopsOperator(h.devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere(), h.am)
 	}
 	return
 }
@@ -403,11 +437,10 @@ func (h *devopsHandler) getDevOps(request *restful.Request) (operator devops.Dev
 func (h *devopsHandler) CheckDevopsName(request *restful.Request, response *restful.Response, workspace, devopsName string, generateNameFlag string) {
 
 	var result map[string]interface{}
-	if client, err := h.getDevOps(request); err == nil {
-
+	if devopsOperator, err := h.getDevOps(request); err == nil {
 		switch generateNameFlag {
 		case "true":
-			result, err = client.CheckDevopsProject(workspace, devopsName)
+			result, err = devopsOperator.CheckDevopsProject(workspace, devopsName)
 			if err != nil {
 				errorHandle(request, response, result, err)
 			}

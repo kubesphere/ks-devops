@@ -17,8 +17,12 @@ limitations under the License.
 package api
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime"
+	"kubesphere.io/kubesphere/pkg/api"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 )
 
 type ListResult struct {
@@ -35,6 +39,44 @@ func NewListResult(items []interface{}, total int) *ListResult {
 		Items:      items,
 		TotalItems: total,
 	}
+}
+
+func FromKSListResult(result *api.ListResult) *ListResult {
+	if result == nil {
+		return nil
+	}
+	var items []interface{}
+	for _, item := range result.Items {
+		items = append(items, item)
+	}
+	return &ListResult{
+		Items:      items,
+		TotalItems: result.TotalItems,
+	}
+}
+
+func DefaultCompareFunc(left runtime.Object, right runtime.Object, field query.Field) bool {
+	a, err := k8sutil.ExtractObjectMeta(left)
+	if err != nil {
+		return false
+	}
+	b, err := k8sutil.ExtractObjectMeta(right)
+	if err != nil {
+		return false
+	}
+	return resourcesv1alpha3.DefaultObjectMetaCompare(*a, *b, field)
+}
+
+func DefaultFilterFunc(obj runtime.Object, filter query.Filter) bool {
+	a, err := k8sutil.ExtractObjectMeta(obj)
+	if err != nil {
+		return false
+	}
+	return resourcesv1alpha3.DefaultObjectMetaFilter(*a, filter)
+}
+
+func NoTransformFunc(obj runtime.Object) runtime.Object {
+	return obj
 }
 
 type ResourceQuota struct {
@@ -79,72 +121,6 @@ type Workloads struct {
 type ClientType string
 
 const (
-	ClientKubernetes  ClientType = "Kubernetes"
-	ClientKubeSphere  ClientType = "Kubesphere"
-	ClientIstio       ClientType = "Istio"
-	ClientS2i         ClientType = "S2i"
-	ClientApplication ClientType = "Application"
-
 	StatusOK  = "ok"
 	GroupName = "devops.kubesphere.io"
 )
-
-var SupportedGroupVersionResources = map[ClientType][]schema.GroupVersionResource{
-	// all supported kubernetes api objects
-	ClientKubernetes: {
-		{Group: "", Version: "v1", Resource: "namespaces"},
-		{Group: "", Version: "v1", Resource: "nodes"},
-		{Group: "", Version: "v1", Resource: "resourcequotas"},
-		{Group: "", Version: "v1", Resource: "pods"},
-		{Group: "", Version: "v1", Resource: "services"},
-		{Group: "", Version: "v1", Resource: "persistentvolumeclaims"},
-		{Group: "", Version: "v1", Resource: "secrets"},
-		{Group: "", Version: "v1", Resource: "configmaps"},
-		{Group: "", Version: "v1", Resource: "serviceaccounts"},
-
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"},
-
-		{Group: "apps", Version: "v1", Resource: "deployments"},
-		{Group: "apps", Version: "v1", Resource: "daemonsets"},
-		{Group: "apps", Version: "v1", Resource: "replicasets"},
-		{Group: "apps", Version: "v1", Resource: "statefulsets"},
-		{Group: "apps", Version: "v1", Resource: "controllerrevisions"},
-
-		{Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses"},
-
-		{Group: "batch", Version: "v1", Resource: "jobs"},
-		{Group: "batch", Version: "v1beta1", Resource: "cronjobs"},
-
-		{Group: "extensions", Version: "v1beta1", Resource: "ingresses"},
-
-		{Group: "autoscaling", Version: "v2beta2", Resource: "horizontalpodautoscalers"},
-	},
-
-	// all supported kubesphere api objects
-	ClientKubeSphere: {
-		{Group: "tenant.kubesphere.io", Version: "v1alpha1", Resource: "workspaces"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibinaries"},
-
-		{Group: "servicemesh.kubesphere.io", Version: "v1alpha2", Resource: "strategies"},
-		{Group: "servicemesh.kubesphere.io", Version: "v1alpha2", Resource: "servicepolicies"},
-	},
-
-	// all supported istio api objects
-	ClientIstio: {},
-
-	// all supported s2i api objects
-	// TODO: move s2i clientset into kubesphere
-	ClientS2i: {
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibuildertemplates"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2iruns"},
-		{Group: "devops.kubesphere.io", Version: "v1alpha1", Resource: "s2ibuilders"},
-	},
-
-	// kubernetes-sigs application api objects
-	ClientApplication: {
-		{Group: "app.k8s.io", Version: "v1beta1", Resource: "applications"},
-	},
-}

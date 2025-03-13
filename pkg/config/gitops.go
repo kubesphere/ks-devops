@@ -17,9 +17,27 @@ limitations under the License.
 package config
 
 import (
+	"os"
+
 	"github.com/spf13/pflag"
-	v1alpha1 "kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 )
+
+type GitOpsOptions struct {
+	// RootDir is the root directory to save git repositories data
+	RootDir string `json:"rootDir,omitempty" yaml:"rootDir,omitempty"`
+
+	// NewFilePerm is the permissions for new files or folders in git repository, default is 0755.
+	NewFilePerm os.FileMode `json:"newFilePerm,omitempty" yaml:"newFilePerm,omitempty"`
+}
+
+func NewGitOpsOptions() *GitOpsOptions {
+	return &GitOpsOptions{
+		RootDir:     "/gitops",
+		NewFilePerm: 0755,
+	}
+}
 
 // ArgoCDOption as the ArgoCD integration configuration
 type ArgoCDOption struct {

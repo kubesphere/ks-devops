@@ -18,9 +18,9 @@ package jclient
 
 import (
 	jcredential "github.com/jenkins-zh/jenkins-client/pkg/credential"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/util"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/util"
 )
 
 // CreateCredentialInProject creates a credential, then returns the ID

@@ -18,23 +18,24 @@ package fluxcd
 import (
 	"bytes"
 	"fmt"
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 func TestRegisterRoutes(t *testing.T) {
@@ -53,7 +54,7 @@ func TestRegisterRoutes(t *testing.T) {
 		name: "normal case",
 		args: args{
 			service: runtime.NewWebService(v1alpha1.GroupVersion),
-			options: &common.Options{GenericClient: fake.NewFakeClientWithScheme(schema)},
+			options: &common.Options{GenericClient: fake.NewClientBuilder().WithScheme(schema).Build()},
 		},
 		verify: func(t *testing.T, service *restful.WebService) {
 			assert.Greater(t, len(service.Routes()), 0)
@@ -101,7 +102,7 @@ func TestPublicAPIs(t *testing.T) {
 				method: http.MethodGet,
 				uri:    "/namespaces/ns/applications",
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxApp.DeepCopy()).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				list := &api.ListResult{}
@@ -118,7 +119,7 @@ func TestPublicAPIs(t *testing.T) {
 				method: http.MethodGet,
 				uri:    "/namespaces/ns/applications/app",
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxApp.DeepCopy()).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				app := &unstructured.Unstructured{}
@@ -136,7 +137,7 @@ func TestPublicAPIs(t *testing.T) {
 				method: http.MethodDelete,
 				uri:    "/namespaces/ns/applications/app",
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxApp.DeepCopy()).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				app := &unstructured.Unstructured{}
@@ -226,7 +227,7 @@ func TestPublicAPIs(t *testing.T) {
 }`))
 				},
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				app := &unstructured.Unstructured{}
@@ -320,7 +321,7 @@ func TestPublicAPIs(t *testing.T) {
 }`))
 				},
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxApp.DeepCopy()).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				app := &unstructured.Unstructured{}

@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func Test_listHandler_Comparator(t *testing.T) {

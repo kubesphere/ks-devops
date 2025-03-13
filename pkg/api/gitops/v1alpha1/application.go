@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
 
 // FluxApplication is an abstraction of FluxCD HelmRelease and FluxCD Kustomization

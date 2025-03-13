@@ -18,23 +18,24 @@ package argocd
 import (
 	"bytes"
 	"fmt"
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 func TestRegisterRoutes(t *testing.T) {
@@ -53,7 +54,7 @@ func TestRegisterRoutes(t *testing.T) {
 		name: "normal case",
 		args: args{
 			service: runtime.NewWebService(v1alpha1.GroupVersion),
-			options: &common.Options{GenericClient: fake.NewFakeClientWithScheme(schema)},
+			options: &common.Options{GenericClient: fake.NewClientBuilder().WithScheme(schema).Build()},
 		},
 		verify: func(t *testing.T, service *restful.WebService) {
 			assert.Greater(t, len(service.Routes()), 0)
@@ -133,7 +134,7 @@ func TestArgoAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/clusters",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, nonArgoClusterSecret.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(nonArgoClusterSecret.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			assert.Equal(t, `[
@@ -149,7 +150,7 @@ func TestArgoAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/clusters",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, invalidArgoClusterSecret.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidArgoClusterSecret.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			assert.Equal(t, `[
@@ -165,7 +166,7 @@ func TestArgoAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/clusters",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, validArgoClusterSecret.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(validArgoClusterSecret.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			assert.Equal(t, `[
@@ -185,7 +186,7 @@ func TestArgoAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/ns/application-summary",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, app.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(app.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			assert.JSONEq(t, `{"total": 1, "healthStatus": { "Healthy": 1 }, "syncStatus": { "Synced": 1 }}`, string(body))
@@ -264,7 +265,7 @@ func TestPublicAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/fake/applications",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			list := &api.ListResult{}
@@ -279,7 +280,7 @@ func TestPublicAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/ns/applications",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			list := &api.ListResult{}
@@ -295,7 +296,7 @@ func TestPublicAPIs(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/ns/applications/app",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			list := &unstructured.Unstructured{}
@@ -312,7 +313,7 @@ func TestPublicAPIs(t *testing.T) {
 			method: http.MethodDelete,
 			uri:    "/namespaces/ns/applications/app",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			list := &unstructured.Unstructured{}
@@ -329,7 +330,7 @@ func TestPublicAPIs(t *testing.T) {
 			method: http.MethodDelete,
 			uri:    "/namespaces/ns/applications/app?cascade=true",
 		},
-		k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+		k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 		responseCode: http.StatusOK,
 		verify: func(t *testing.T, body []byte) {
 			list := &unstructured.Unstructured{}
@@ -366,7 +367,7 @@ func TestPublicAPIs(t *testing.T) {
 }`))
 				},
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				list := &unstructured.Unstructured{}
@@ -387,7 +388,7 @@ func TestPublicAPIs(t *testing.T) {
 					return bytes.NewBuffer([]byte(`fake`))
 				},
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).Build(),
 			responseCode: http.StatusInternalServerError,
 		}, {
 			name: "update an argo application",
@@ -413,7 +414,7 @@ func TestPublicAPIs(t *testing.T) {
 }`))
 				},
 			},
-			k8sclient:    fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+			k8sclient:    fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 			responseCode: http.StatusOK,
 			verify: func(t *testing.T, body []byte) {
 				list := &unstructured.Unstructured{}

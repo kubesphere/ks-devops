@@ -22,12 +22,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	v1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -210,6 +210,7 @@ func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName("pipelinerun-synchronizer")
 
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_pipelinerun_synchronizer").
 		For(&v1alpha3.Pipeline{}).
 		WithEventFilter(predicate.And(predicate.ResourceVersionChangedPredicate{}, requestSyncPredicate())).
 		Complete(r)

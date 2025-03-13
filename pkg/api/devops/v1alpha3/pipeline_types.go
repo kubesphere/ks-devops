@@ -18,6 +18,8 @@ package v1alpha3
 
 import (
 	"fmt"
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -212,6 +214,18 @@ type GitlabSource struct {
 	CloneOption               *GitCloneOption      `json:"git_clone_option,omitempty" mapstructure:"git_clone_option" description:"advavced git clone options"`
 	RegexFilter               string               `json:"regex_filter,omitempty" mapstructure:"regex_filter" description:"Regex used to match the name of the branch that needs to be run"`
 	AcceptJenkinsNotification bool                 `json:"accept_jenkins_notification,omitempty"  mapstructure:"accept_jenkins_notification" description:"Allow Jenkins send build status notification to Gitlab"`
+}
+
+func (s *GitlabSource) GetJenkinsProjectPath() string {
+	return fmt.Sprintf("%s/%s", s.Owner, s.Repo)
+}
+
+func (s *GitlabSource) SetRepoFromJenkinsProjectPath(path string) {
+	parts := strings.Split(path, "/")
+	if len(parts) > 0 {
+		// deem the last part is repo name
+		s.Repo = parts[len(parts)-1]
+	}
 }
 
 type BitbucketServerSource struct {

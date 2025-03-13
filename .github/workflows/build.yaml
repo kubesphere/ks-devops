@@ -1,7 +1,11 @@
 name: Build
-# Need GitHub secret: DOCKER_HUB_USER, DOCKER_HUB_SECRETS, GHCR_TOKEN
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image Tag"
+        default: "latest"
   push:
     branches:
       - master
@@ -21,34 +25,27 @@ on:
 
 jobs:
   BuildController:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - name: Prepare
+        id: prepare
+        run: |
+          VERSION=latest
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=${{ github.event.inputs.tag }}
+          fi
+          echo ::set-output name=version::${VERSION}
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-controller
-            ghcr.io/${{ github.repository_owner }}/devops-controller
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
-      - name: Docker meta for Contributors
-        id: metaContributors
-        if: github.repository_owner != 'kubesphere'
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/devops-controller
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
+            kubesphere/devops-controller
+          tags: ${{ steps.prepare.outputs.version }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -59,13 +56,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_SECRETS }}
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GHCR_TOKEN }}
       - name: Build env
         id: build_env
         run: |
@@ -84,7 +74,6 @@ jobs:
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/controller-manager/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -94,57 +83,39 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Build and push Docker images for Contributors
-        uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
-        with:
-          file: config/dockerfiles/controller-manager/Dockerfile
-          tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ steps.build_env.outputs.push }}
-          load: ${{ steps.build_env.outputs.load }}
-          labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.5.1
+        uses: aquasecurity/trivy-action@0.29.0
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-controller:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'docker.io/kubesphere/devops-controller:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          trivyignores: .github/workflows/.trivyignore
 
   BuildAPIServer:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - name: Prepare
+        id: prepare
+        run: |
+          VERSION=latest
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=${{ github.event.inputs.tag }}
+          fi
+          echo ::set-output name=version::${VERSION}
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-apiserver
-            ghcr.io/${{ github.repository_owner }}/devops-apiserver
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
-      - name: Docker meta for Contributors
-        id: metaContributors
-        if: github.repository_owner != 'kubesphere'
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/devops-apiserver
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
+            kubesphere/devops-apiserver
+          tags: ${{ steps.prepare.outputs.version }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -155,13 +126,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_SECRETS }}
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GHCR_TOKEN }}
       - name: Build env
         id: build_env
         run: |
@@ -180,7 +144,6 @@ jobs:
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/apiserver/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -190,57 +153,39 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Build and push Docker images for Contributors
-        uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
-        with:
-          file: config/dockerfiles/apiserver/Dockerfile
-          tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ steps.build_env.outputs.push }}
-          load: ${{ steps.build_env.outputs.load }}
-          labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.5.1
+        uses: aquasecurity/trivy-action@0.29.0
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-apiserver:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'docker.io/kubesphere/devops-apiserver:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          trivyignores: .github/workflows/.trivyignore
 
   BuildTools:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - name: Prepare
+        id: prepare
+        run: |
+          VERSION=latest
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=${{ github.event.inputs.tag }}
+          fi
+          echo ::set-output name=version::${VERSION}
       - name: Docker meta for kubesphere
         id: meta
-        if: github.repository_owner == 'kubesphere'
         uses: docker/metadata-action@v3
         with:
           images: |
-            kubespheredev/devops-tools
-            ghcr.io/${{ github.repository_owner }}/devops-tools
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
-      - name: Docker meta for Contributors
-        id: metaContributors
-        if: github.repository_owner != 'kubesphere'
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/devops-tools
-          tags: |
-            type=schedule
-            type=ref,event=branch,suffix=-{{sha}}
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}},prefix=v
+            kubesphere/devops-tools
+          tags: ${{ steps.prepare.outputs.version }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -251,13 +196,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_SECRETS }}
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GHCR_TOKEN }}
       - name: Build env
         id: build_env
         run: |
@@ -276,7 +214,6 @@ jobs:
           echo "::set-output name=short_sha::${GITHUB_SHA::7}"
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner == 'kubesphere'
         with:
           file: config/dockerfiles/tools/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -286,47 +223,13 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Build and push Docker images for Contributors
-        uses: docker/build-push-action@v2.4.0
-        if: github.repository_owner != 'kubesphere'
-        with:
-          file: config/dockerfiles/tools/Dockerfile
-          tags: ${{ steps.metaContributors.outputs.tags }}
-          push: ${{ steps.build_env.outputs.push }}
-          load: ${{ steps.build_env.outputs.load }}
-          labels: ${{ steps.metaContributors.outputs.labels }}
-          platforms: ${{ steps.build_env.outputs.platforms }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.5.1
+        uses: aquasecurity/trivy-action@0.29.0
         if: github.event_name == 'pull_request'
         with:
-          image-ref: 'ghcr.io/${{github.repository_owner}}/devops-tools:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
+          image-ref: 'docker.io/kubesphere/devops-tools:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          trivyignores: .github/workflows/.trivyignore
-
-  UnitTest:
-    name: Test
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Set up Go 1.17
-        uses: actions/setup-go@v2.1.3
-        with:
-          go-version: 1.17
-        id: go
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2.3.4
-      - name: Test
-        run: |
-          make test
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.out
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true

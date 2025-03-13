@@ -19,7 +19,7 @@ package s3
 import (
 	"github.com/spf13/pflag"
 
-	"kubesphere.io/devops/pkg/utils/reflectutils"
+	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 )
 
 // Options contains configuration to access a s3 service

@@ -35,12 +35,12 @@ import (
 //	"k8s.io/apimachinery/pkg/watch"
 //	clientgotesting "k8s.io/client-go/testing"
 //
-//	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+//	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
 //
-//	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
-//	ksinformers "kubesphere.io/devops/pkg/client/informers/externalversions"
-//	fakeS3 "kubesphere.io/devops/pkg/client/s3/fake"
-//	"kubesphere.io/devops/pkg/utils/hashutil"
+//	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/fake"
+//	ksinformers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
+//	fakeS3 "github.com/kubesphere/ks-devops/pkg/client/s3/fake"
+//	"github.com/kubesphere/ks-devops/pkg/utils/hashutil"
 //)
 //
 //const (

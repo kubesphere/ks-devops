@@ -14,10 +14,10 @@
 package kapis
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/server/errors"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"kubesphere.io/devops/pkg/server/errors"
 	"net/http/httptest"
 	"reflect"
 	"testing"

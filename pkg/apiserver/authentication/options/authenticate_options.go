@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"kubesphere.io/devops/pkg/apiserver/authentication/oauth"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/authentication/oauth"
 )
 
 type AuthenticationOptions struct {

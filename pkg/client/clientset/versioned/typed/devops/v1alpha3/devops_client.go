@@ -19,9 +19,9 @@ limitations under the License.
 package v1alpha3
 
 import (
+	v1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
-	v1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 )
 
 type DevopsV1alpha3Interface interface {

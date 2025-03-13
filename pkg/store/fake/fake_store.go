@@ -16,7 +16,7 @@ limitations under the License.
 
 package fake
 
-import "kubesphere.io/devops/pkg/store/store"
+import "github.com/kubesphere/ks-devops/pkg/store/store"
 
 // FakeStore is a fake store
 type FakeStore struct {

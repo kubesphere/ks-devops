@@ -17,8 +17,8 @@ limitations under the License.
 package k8s
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 	"k8s.io/client-go/util/homedir"
-	"kubesphere.io/devops/pkg/utils/reflectutils"
 	"os"
 	"path"
 

@@ -19,7 +19,7 @@ package workflowrun
 import (
 	"encoding/json"
 	"errors"
-	"kubesphere.io/devops/pkg/event/common"
+	"github.com/kubesphere/ks-devops/pkg/event/common"
 	"testing"
 )
 

@@ -18,10 +18,10 @@ package configmap
 
 import (
 	"context"
+	"github.com/kubesphere/ks-devops/pkg/store/store"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/store/store"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )

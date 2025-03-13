@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"kubesphere.io/devops/cmd/allinone/app"
+	"github.com/kubesphere/ks-devops/cmd/allinone/app"
 	"log"
 )
 

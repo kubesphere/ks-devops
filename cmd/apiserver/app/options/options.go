@@ -20,27 +20,29 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/client/cache"
-	"kubesphere.io/devops/pkg/client/devops/jclient"
-	"kubesphere.io/devops/pkg/client/sonarqube"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kubesphere/ks-devops/pkg/client/cache"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jclient"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/kubesphere/ks-devops/pkg/apis"
+	"github.com/kubesphere/ks-devops/pkg/apiserver"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
+	apiserverconfig "github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/informers"
+	genericoptions "github.com/kubesphere/ks-devops/pkg/server/options"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/apis"
-	"kubesphere.io/devops/pkg/apiserver"
-	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
-	apiserverconfig "kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/informers"
-	genericoptions "kubesphere.io/devops/pkg/server/options"
 
 	"net/http"
 	"strings"
 
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
-	fakes3 "kubesphere.io/devops/pkg/client/s3/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
+	fakes3 "github.com/kubesphere/ks-devops/pkg/client/s3/fake"
 )
 
 type ServerRunOptions struct {
@@ -170,7 +172,9 @@ func (s *ServerRunOptions) NewAPIServer(stopCh <-chan struct{}) (*apiserver.APIS
 	m, err := manager.New(kubernetesClient.Config(), manager.Options{
 		Scheme: sch,
 		// disable metrics server needed by controller only
-		MetricsBindAddress: "0",
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 	})
 	if err != nil {
 		klog.Errorf("unable to create manager for getting client and cache, err = %v", err)

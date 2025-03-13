@@ -25,25 +25,19 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/jwt/token"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-)
 
-// tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
-const tokenExpireIn time.Duration = 5 * time.Minute
+	"github.com/kubesphere/ks-devops/pkg/api/devops"
+)
 
 // AgentLabelsReconciler responsible for the Jenkins agent labels sync
 type AgentLabelsReconciler struct {
 	// TargetNamespace indicate which namespace the target ConfigMap located in
 	TargetNamespace string
-	JenkinsClient   core.JenkinsCore
-	TokenIssuer     token.Issuer
+	JenkinsClient   core.Client
 
 	targetName string
 	client.Client
@@ -56,7 +50,8 @@ func (r *AgentLabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	var cm *v1.ConfigMap
 	if cm, err = r.getConfigMap(); err != nil {
 		if apierrors.IsNotFound(err) {
-			err = r.initConfigMap()
+			// retry to wait the configmap created
+			result = ctrl.Result{RequeueAfter: time.Second * 30}
 		}
 
 		if err != nil {
@@ -82,42 +77,13 @@ func (r *AgentLabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func (r *AgentLabelsReconciler) getLabels() (labels []string, err error) {
-	// set up the Jenkins client
-	var c *core.JenkinsCore
-	if c, err = r.getOrCreateJenkinsCore(map[string]string{
-		v1alpha3.PipelineRunCreatorAnnoKey: "admin",
-	}); err != nil {
-		err = fmt.Errorf("failed to create Jenkins client, error: %v", err)
-		return
-	}
-	c.RoundTripper = r.JenkinsClient.RoundTripper
-	coreClient := core.Client{JenkinsCore: *c}
-
 	var labelRes *core.LabelsResponse
-	if labelRes, err = coreClient.GetLabels(); err != nil {
+	if labelRes, err = r.JenkinsClient.GetLabels(); err != nil {
 		err = fmt.Errorf("failed to get lables from Jenkins, error: %v", err)
 		return
 	}
 	labels = labelRes.GetLabels()
 	return
-}
-
-func (r *AgentLabelsReconciler) getOrCreateJenkinsCore(annotations map[string]string) (*core.JenkinsCore, error) {
-	creator, ok := annotations[v1alpha3.PipelineRunCreatorAnnoKey]
-	if !ok || creator == "" {
-		return &r.JenkinsClient, nil
-	}
-	// create a new JenkinsCore for current creator
-	accessToken, err := r.TokenIssuer.IssueTo(&user.DefaultInfo{Name: creator}, token.AccessToken, tokenExpireIn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to issue access token for creator %s, error was %v", creator, err)
-	}
-	jenkinsCore := &core.JenkinsCore{
-		URL:      r.JenkinsClient.URL,
-		UserName: creator,
-		Token:    accessToken,
-	}
-	return jenkinsCore, nil
 }
 
 func setLabelsToConfigMap(labels []string, cm *v1.ConfigMap) (changed bool) {
@@ -127,19 +93,6 @@ func setLabelsToConfigMap(labels []string, cm *v1.ConfigMap) (changed bool) {
 	if cm.Data[devops.JenkinsAgentLabelsKey] != strings.Join(labels, ",") {
 		cm.Data[devops.JenkinsAgentLabelsKey] = strings.Join(labels, ",")
 		changed = true
-	}
-	return
-}
-
-func (r *AgentLabelsReconciler) initConfigMap() (err error) {
-	var labels []string
-	if labels, err = r.getLabels(); err == nil {
-		cm := &v1.ConfigMap{}
-		setLabelsToConfigMap(labels, cm)
-		cm.SetNamespace(r.TargetNamespace)
-		cm.SetName(r.targetName)
-
-		err = r.Create(context.Background(), cm)
 	}
 	return
 }
@@ -182,6 +135,7 @@ func (r *AgentLabelsReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_config_labels_controller").
 		WithEventFilter(getSpecificConfigMapPredicate(r.targetName, r.TargetNamespace)).
 		For(&v1.ConfigMap{}).
 		Complete(r)

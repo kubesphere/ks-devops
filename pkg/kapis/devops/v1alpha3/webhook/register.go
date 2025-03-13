@@ -17,24 +17,32 @@ limitations under the License.
 package webhook
 
 import (
-	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"kubesphere.io/devops/pkg/jwt/token"
+	"encoding/json"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api"
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 )
 
 // RegisterWebhooks registers all webhooks into web service.
-func RegisterWebhooks(genericClient client.Client, ws *restful.WebService, issue token.Issuer, jenkins core.JenkinsCore) {
+func RegisterWebhooks(genericClient client.Client, ws *restful.WebService, jenkins core.JenkinsCore) {
 	webhookHandler := NewHandler(genericClient)
 	ws.Route(ws.POST("/webhooks/jenkins").
 		To(webhookHandler.ReceiveEventsFromJenkins).
 		Doc("Webhook for receiving events from Jenkins").
-		Returns(http.StatusOK, api.StatusOK, nil))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsWebhookTags).
+		Reads(json.RawMessage{}).
+		Returns(http.StatusOK, api.StatusOK, json.RawMessage{}))
 
-	scmHandler := NewSCMHandler(genericClient, issue, jenkins)
+	scmHandler := NewSCMHandler(genericClient, jenkins)
 	ws.Route(ws.POST("/webhooks/scm").
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsWebhookTags).
+		Reads(json.RawMessage{}).
+		Returns(http.StatusOK, api.StatusOK, json.RawMessage{}).
 		To(scmHandler.scmWebhook))
 }

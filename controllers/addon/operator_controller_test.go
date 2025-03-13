@@ -18,15 +18,16 @@ package addon
 
 import (
 	"context"
+	"testing"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func Test_getStrategyName(t *testing.T) {
@@ -76,7 +77,7 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 	}{{
 		name: "not support operator",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			log:    logr.Discard(),
 		},
 		args: args{
@@ -88,7 +89,7 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 	}, {
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			log:    logr.Discard(),
 		},
 		args: args{
@@ -110,7 +111,7 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 	}, {
 		name: "update the existing",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, &v1alpha3.AddonStrategy{
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(&v1alpha3.AddonStrategy{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "simple-operator-releasercontroller",
 				},
@@ -121,7 +122,7 @@ func TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {
 						APIVersion: "devops.kubesphere.io/v1",
 					},
 				},
-			}),
+			}).Build(),
 			log: logr.Discard(),
 		},
 		args: args{

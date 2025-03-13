@@ -17,19 +17,20 @@ package fluxcd
 
 import (
 	"encoding/json"
-	"github.com/emicklei/go-restful"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func Test_handler_applicationGet(t *testing.T) {
@@ -100,7 +101,7 @@ func Test_handler_applicationGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
 			utilruntime.Must(v1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.secrets.DeepCopy())
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithLists(tt.args.secrets.DeepCopy()).Build()
 			h := handler{Handler: &gitops.Handler{Client: fakeClient}}
 			req := tt.args.req
 			recorder := httptest.NewRecorder()

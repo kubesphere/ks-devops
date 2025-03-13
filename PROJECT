@@ -1,5 +1,5 @@
 domain: kubesphere.io
-repo: kubesphere.io/devops
+repo: github.com/kubesphere/ks-devops
 resources:
 - group: devops
   kind: Pipeline

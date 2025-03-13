@@ -20,20 +20,21 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apiserver/pkg/authentication/user"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/client/devops"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/emicklei/go-restful"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/user"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	fakedevops "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -42,7 +43,7 @@ func TestApis(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewFakeClientWithScheme(schema, &v1alpha3.Pipeline{
+	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewClientBuilder().WithScheme(schema).WithObjects(&v1alpha3.Pipeline{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fake",
 			Namespace: "fake",
@@ -50,7 +51,7 @@ func TestApis(t *testing.T) {
 		Spec: v1alpha3.PipelineSpec{
 			Type: v1alpha3.NoScmPipelineType,
 		},
-	}))
+	}).Build())
 	restful.DefaultContainer.Add(wsWithGroup)
 
 	type args struct {

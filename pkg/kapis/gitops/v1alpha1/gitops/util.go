@@ -16,12 +16,21 @@
 package gitops
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func ToObjects(apps []v1alpha1.Application) []runtime.Object {
 	objs := make([]runtime.Object, len(apps))
+	for i := range apps {
+		objs[i] = &apps[i]
+	}
+	return objs
+}
+
+func ToClientObjects(apps []v1alpha1.Application) []client.Object {
+	objs := make([]client.Object, len(apps))
 	for i := range apps {
 		objs[i] = &apps[i]
 	}

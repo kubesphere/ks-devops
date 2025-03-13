@@ -123,6 +123,27 @@ func dslRender(dslTpl string, param map[string]interface{}, secret *v1.Secret) (
 		return
 	}
 
+	repalceString := func(output string) string {
+		escapedOutput := strings.ReplaceAll(output, `\`, `\\`)
+		escapedOutput = strings.ReplaceAll(escapedOutput, "\n", "\\n")
+		escapedOutput = strings.ReplaceAll(escapedOutput, "\r", "\\r")
+		escapedOutput = strings.ReplaceAll(escapedOutput, "\t", "\\t")
+		escapedOutput = strings.ReplaceAll(escapedOutput, `"`, `\"`)
+		return escapedOutput
+	}
+
+	replaceList := []string{"script", "command"}
+	for _, key := range replaceList {
+		if s, exist := param[key]; exist {
+			str, ok := s.(string)
+			if !ok {
+				continue
+			}
+
+			param[key] = repalceString(str)
+		}
+	}
+
 	data := map[string]interface{}{
 		"param":  param,
 		"secret": secret,
@@ -132,15 +153,12 @@ func dslRender(dslTpl string, param map[string]interface{}, secret *v1.Secret) (
 	if err = tpl.Execute(buf, data); err == nil {
 		output = strings.TrimSpace(buf.String())
 	}
+
 	return
 }
 
 func shellRender(shellTpl string, param map[string]interface{}, secret *v1.Secret) (output string, err error) {
 	if output, err = dslRender(shellTpl, param, secret); err == nil {
-		escapedOutput := strings.ReplaceAll(output, `\`, `\\`)
-		escapedOutput = strings.ReplaceAll(escapedOutput, "\n", "\\n")
-		escapedOutput = strings.ReplaceAll(escapedOutput, `"`, `\"`)
-
 		output = fmt.Sprintf(`{
 "arguments": [
   {
@@ -152,7 +170,7 @@ func shellRender(shellTpl string, param map[string]interface{}, secret *v1.Secre
   }
 ],
 "name": "sh"
-}`, escapedOutput)
+}`, output)
 	}
 	return
 }

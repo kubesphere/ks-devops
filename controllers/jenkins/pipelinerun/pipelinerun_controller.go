@@ -20,31 +20,27 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-logr/logr"
-	cmstore "kubesphere.io/devops/pkg/store/configmap"
-	storeInter "kubesphere.io/devops/pkg/store/store"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"reflect"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/jwt/token"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
 
-// tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
-const tokenExpireIn time.Duration = 5 * time.Minute
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
+	storeInter "github.com/kubesphere/ks-devops/pkg/store/store"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+)
 
 // BuildNotExistMsg indicates the build with pipelinerun-id not exist in jenkins
 const BuildNotExistMsg = "not found resources"
@@ -58,7 +54,6 @@ type Reconciler struct {
 	Scheme               *runtime.Scheme
 	DevOpsClient         devopsClient.Interface
 	JenkinsCore          core.JenkinsCore
-	TokenIssuer          token.Issuer
 	recorder             record.EventRecorder
 	PipelineRunDataStore string
 }
@@ -141,6 +136,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, err
 		}
 
+		nodeDetails, err := jHandler.getPipelineNodeDetails(pipelineName, namespaceName, pipelineRunCopied)
+		if err != nil {
+			log.Error(err, "unable to get PipelineRun nodes detail")
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %v", err)
+			return ctrl.Result{}, err
+		}
+		runResultJSON, err := json.Marshal(pipelineBuild)
+		if err != nil {
+			log.Error(err, "unable to marshal result data to JSON")
+			return ctrl.Result{}, err
+		}
+		nodeDetailsJSON, err := json.Marshal(nodeDetails)
+		if err != nil {
+			log.Error(err, "unable to marshal nodes details to JSON")
+			return ctrl.Result{}, err
+		}
+
+		// store pipelinerun stage to configmap
+		if err = r.storePipelineRunData(string(runResultJSON), string(nodeDetailsJSON), pipelineRunCopied); err != nil {
+			log.Error(err, "unable to store pipeline stages to configmap.")
+			return ctrl.Result{}, err
+		}
+
 		// update pipelinerun status with pipelineBuild
 		status := pipelineRunCopied.Status.DeepCopy()
 		pbApplier := pipelineBuildApplier{pipelineBuild}
@@ -152,53 +170,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, err
 		}
 
-		nodeDetails, err := jHandler.getPipelineNodeDetails(pipelineName, namespaceName, pipelineRunCopied)
-		if err != nil {
-			log.Error(err, "unable to get PipelineRun nodes detail")
-			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve nodes detail from Jenkins, and error was %v", err)
-		}
-		runResultJSON, err := json.Marshal(pipelineBuild)
-		if err != nil {
-			log.Error(err, "unable to marshal result data to JSON")
-			runResultJSON = []byte("{}")
-		}
-		nodeDetailsJSON, err := json.Marshal(nodeDetails)
-		if err != nil {
-			log.Error(err, "unable to marshal nodes details to JSON")
-			nodeDetailsJSON = []byte("[]")
-		}
-
-		// store pipelinerun stage to configmap
-		if err = r.storePipelineRunData(string(nodeDetailsJSON), pipelineRunCopied); err != nil {
-			log.Error(err, "unable to store pipeline stages to configmap.")
-			return ctrl.Result{}, err
-		}
-
-		// store pipelinerun result to annotation
-		if pipelineRunCopied.Annotations == nil {
-			pipelineRunCopied.Annotations = make(map[string]string)
-		}
-		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = string(runResultJSON)
-		// update labels and annotations
-		if err := r.updateLabelsAndAnnotations(ctx, pipelineRunCopied); err != nil {
-			log.Error(err, "unable to update PipelineRun labels and annotations.")
-			return ctrl.Result{}, err
-		}
-
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 	}
 
-	// get or create JenkinsCore if the PipelineRun has creator annotation
-	jenkinsCore, err := r.getOrCreateJenkinsCore(pipelineRunCopied.GetAnnotations())
-	if err != nil {
-		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.TriggerFailed, "Failed to trigger PipelineRun %s, and error was %v", req.NamespacedName, err)
-		return ctrl.Result{}, err
-	}
 	// create trigger handler
-	triggerHandler := &jenkinsHandler{jenkinsCore}
+	triggerHandler := &jenkinsHandler{&r.JenkinsCore}
 	// first run
 	jobRun, err := triggerHandler.triggerJenkinsJob(namespaceName, pipelineName, &pipelineRunCopied.Spec)
 	if err != nil {
@@ -247,11 +226,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *Reconciler) storePipelineRunData(nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
+func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {
 	if r.PipelineRunDataStore == "" {
 		if pipelineRunCopied.Annotations == nil {
 			pipelineRunCopied.Annotations = make(map[string]string)
 		}
+		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = runResultJSON
 		pipelineRunCopied.Annotations[v1alpha3.JenkinsPipelineRunStagesStatusAnnoKey] = nodeDetailsJSON
 
 		// update labels and annotations
@@ -261,6 +241,7 @@ func (r *Reconciler) storePipelineRunData(nodeDetailsJSON string, pipelineRunCop
 	} else if r.PipelineRunDataStore == "configmap" {
 		var cmStore storeInter.ConfigMapStore
 		if cmStore, err = cmstore.NewConfigMapStore(r.ctx, r.req.NamespacedName, r.Client); err == nil {
+			cmStore.SetStatus(runResultJSON)
 			cmStore.SetStages(nodeDetailsJSON)
 			cmStore.SetOwnerReference(v1.OwnerReference{
 				APIVersion: pipelineRunCopied.APIVersion,
@@ -364,30 +345,13 @@ func (r *Reconciler) makePipelineRunOrphan(ctx context.Context, pr *v1alpha3.Pip
 	return
 }
 
-func (r *Reconciler) getOrCreateJenkinsCore(annotations map[string]string) (*core.JenkinsCore, error) {
-	creator, ok := annotations[v1alpha3.PipelineRunCreatorAnnoKey]
-	if !ok || creator == "" {
-		return &r.JenkinsCore, nil
-	}
-	// create a new JenkinsCore for current creator
-	accessToken, err := r.TokenIssuer.IssueTo(&user.DefaultInfo{Name: creator}, token.AccessToken, tokenExpireIn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to issue access token for creator %s, error was %v", creator, err)
-	}
-	jenkinsCore := &core.JenkinsCore{
-		URL:      r.JenkinsCore.URL,
-		UserName: creator,
-		Token:    accessToken,
-	}
-	return jenkinsCore, nil
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// the name should obey Kubernetes naming convention: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 	r.recorder = mgr.GetEventRecorderFor("pipelinerun-controller")
 	r.log = ctrl.Log.WithName("pipelinerun-controller")
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_pipelinerun_controller").
 		For(&v1alpha3.PipelineRun{}).
 		Complete(r)
 }

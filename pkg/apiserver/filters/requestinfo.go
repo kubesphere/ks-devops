@@ -19,13 +19,13 @@ package filters
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"net/http"
 	"strings"
 
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 
-	"kubesphere.io/devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
 )
 
 func WithRequestInfo(handler http.Handler, resolver request.RequestInfoResolver) http.Handler {

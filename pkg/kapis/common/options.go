@@ -16,11 +16,13 @@
 package common
 
 import (
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/kapis"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+
+	"github.com/emicklei/go-restful/v3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 )
 
 // Options contain options needed by creating handlers.
@@ -37,11 +39,11 @@ var (
 	// PageNumberQueryParameter is a restful query parameter of the page number
 	//
 	// Deprecated
-	PageNumberQueryParameter = restful.QueryParameter("pageNumber", "The number of paging").DataType("int")
+	PageNumberQueryParameter = restful.QueryParameter("pageNumber", "The number of paging").DataType("integer")
 	// PageSizeQueryParameter is a restful query parameter of the page size
 	//
 	// Deprecated
-	PageSizeQueryParameter = restful.QueryParameter("pageSize", "The size of each paging data").DataType("int")
+	PageSizeQueryParameter = restful.QueryParameter("pageSize", "The size of each paging data").DataType("integer")
 
 	// NameQueryParameter is a restful query parameter of the name filter
 	NameQueryParameter = restful.QueryParameter(query.ParameterName, "Filter by name, containing match pattern")
@@ -65,11 +67,22 @@ func GetQueryParameter(req *restful.Request, param *restful.Parameter) string {
 	return req.QueryParameter(param.Data().Name)
 }
 
+// GetQueryParameters returns the query parameter values from a request
+func GetQueryParameters(req *restful.Request, param *restful.Parameter) []string {
+	return req.QueryParameters(param.Data().Name)
+}
+
 // GetPageParameters returns the page number and page size from a request
 // the default value of page number is 1, page size is 10 if the number string is invalid
 func GetPageParameters(req *restful.Request) (pageNumber, pageSize int) {
 	pageNumberStr := req.QueryParameter(PageNumberQueryParameter.Data().Name)
+	if pageNumberStr == "" {
+		pageNumberStr = req.QueryParameter(PageQueryParameter.Data().Name)
+	}
 	pageSizeStr := req.QueryParameter(PageSizeQueryParameter.Data().Name)
+	if pageSizeStr == "" {
+		pageSizeStr = req.QueryParameter(LimitQueryParameter.Data().Name)
+	}
 
 	var err error
 	if pageNumber, err = strconv.Atoi(pageNumberStr); err != nil {

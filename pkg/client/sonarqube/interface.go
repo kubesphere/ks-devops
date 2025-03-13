@@ -20,7 +20,7 @@ import (
 	sonargo "github.com/kubesphere/sonargo/sonar"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 // SonarInterface represents a SonarQube interface

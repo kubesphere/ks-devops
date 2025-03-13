@@ -23,7 +23,7 @@ import (
 	"github.com/beevik/etree"
 	"k8s.io/klog/v2"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 )
 
 func AppendGitlabSourceToEtree(source *etree.Element, gitSource *devopsv1alpha3.GitlabSource) {
@@ -37,7 +37,7 @@ func AppendGitlabSourceToEtree(source *etree.Element, gitSource *devopsv1alpha3.
 	source.CreateElement("serverName").SetText(gitSource.ServerName)
 	source.CreateElement("credentialsId").SetText(gitSource.CredentialId)
 	source.CreateElement("projectOwner").SetText(gitSource.Owner)
-	source.CreateElement("projectPath").SetText(gitSource.Repo)
+	source.CreateElement("projectPath").SetText(gitSource.GetJenkinsProjectPath())
 	traits := source.CreateElement("traits")
 	if gitSource.DiscoverBranches != 0 {
 		traits.CreateElement("io.jenkins.plugins.gitlabbranchsource.BranchDiscoveryTrait").
@@ -105,7 +105,7 @@ func GetGitlabSourceFromEtree(source *etree.Element) (gitSource *devopsv1alpha3.
 		gitSource.Owner = repoOwner.Text()
 	}
 	if repository := source.SelectElement("projectPath"); repository != nil {
-		gitSource.Repo = repository.Text()
+		gitSource.SetRepoFromJenkinsProjectPath(repository.Text())
 	}
 	traits := source.SelectElement("traits")
 	if branchDiscoverTrait := traits.SelectElement(

@@ -22,11 +22,11 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -113,6 +113,7 @@ func getStrategyName(operatorName, kind string) string {
 func (r *OperatorCRDReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName("OperatorCRDReconciler")
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("addon_operator").
 		For(&apiextensions.CustomResourceDefinition{}).
 		Complete(r)
 }

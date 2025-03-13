@@ -20,20 +20,21 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
 )
 
 func Test_ignore(t *testing.T) {
@@ -103,7 +104,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake-devops-project-ns",
 			Labels: map[string]string{
-				"kubesphere.io/devopsproject": "fake-devops-project-ns",
+				"github.com/kubesphere/ks-devopsproject": "fake-devops-project-ns",
 			},
 		},
 	}
@@ -125,7 +126,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 		{
 			name: "not found cluster",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(nil),
+				Client: fake.NewClientBuilder().WithScheme(nil).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -138,7 +139,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found a hostCluster",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(nil, hostCluster.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(nil).WithObjects(hostCluster.DeepCopy()).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -151,7 +152,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found a memberCluster",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, memberCluster.DeepCopy(), devopsNs.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(memberCluster.DeepCopy(), devopsNs.DeepCopy()).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -222,7 +223,7 @@ func TestMultiClusterReconciler_reconcileCluster(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake-devops-project-ns",
 			Labels: map[string]string{
-				"kubesphere.io/devopsproject": "fake-devops-project-ns",
+				"github.com/kubesphere/ks-devopsproject": "fake-devops-project-ns",
 			},
 		},
 	}
@@ -239,7 +240,7 @@ func TestMultiClusterReconciler_reconcileCluster(t *testing.T) {
 		{
 			name: "there is no devops project namespace",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -252,7 +253,7 @@ func TestMultiClusterReconciler_reconcileCluster(t *testing.T) {
 		{
 			name: "create kubeconfig secret in devops project namespaces",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, devopsProjectNs.DeepCopy(), anotherDevopsProjectNs.DeepCopyObject()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(devopsProjectNs.DeepCopy(), anotherDevopsProjectNs.DeepCopy()).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -280,7 +281,7 @@ func TestMultiClusterReconciler_reconcileCluster(t *testing.T) {
 		{
 			name: "update a kubeconfig secret",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, memberCluster.DeepCopy(), devopsProjectNs.DeepCopy(), anotherDevopsProjectNs.DeepCopyObject(), oldSecret.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(memberCluster.DeepCopy(), devopsProjectNs.DeepCopy(), anotherDevopsProjectNs.DeepCopy(), oldSecret.DeepCopy()).Build(),
 				log:    logr.New(log.NullLogSink{}),
 			},
 			args: args{
@@ -347,7 +348,7 @@ func TestMultiClusterReconciler_SetupWithManager(t *testing.T) {
 		args: args{
 			mgr: &core.FakeManager{
 				Scheme: schema,
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 		},
 		wantErr: core.NoErrors,

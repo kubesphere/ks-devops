@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
 
 // HelmChartSpec specifies the desired state of a Helm chart.

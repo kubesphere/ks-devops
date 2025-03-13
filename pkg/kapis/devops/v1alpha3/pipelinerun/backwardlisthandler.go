@@ -17,36 +17,40 @@ limitations under the License.
 package pipelinerun
 
 import (
-	"encoding/json"
-	"fmt"
-	"k8s.io/klog/v2"
+	"context"
 
+	"github.com/kubesphere/ks-devops/pkg/api"
+	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 )
 
 type backwardListHandler struct {
+	client client.Client
 }
 
-// Make sure backwardListHandler implement ListHandler interface.
-var _ resourcesV1alpha3.ListHandler = backwardListHandler{}
-
-func (b backwardListHandler) Comparator() resourcesV1alpha3.CompareFunc {
-	return resourcesV1alpha3.DefaultCompare()
+func (b backwardListHandler) Comparator() resourcesv1alpha3.CompareFunc {
+	return api.DefaultCompareFunc
 }
 
-func (b backwardListHandler) Filter() resourcesV1alpha3.FilterFunc {
-	return resourcesV1alpha3.DefaultFilter().And(func(object runtime.Object, filter query.Filter) bool {
-		return b.backwardFilter(object)
-	})
-}
-
-func (b backwardListHandler) Transformer() resourcesV1alpha3.TransformFunc {
-	return func(object runtime.Object) interface{} {
-		return b.backwardTransformer(object)
+func (b backwardListHandler) Filter() resourcesv1alpha3.FilterFunc {
+	return func(obj runtime.Object, filter query.Filter) bool {
+		ok := b.backwardFilter(obj)
+		if !ok {
+			return false
+		}
+		return api.DefaultFilterFunc(obj, filter)
 	}
+}
+
+func (b backwardListHandler) Transformer() resourcesv1alpha3.TransformFunc {
+	return api.NoTransformFunc
 }
 
 func checkPipelineRun(object runtime.Object) (*v1alpha3.PipelineRun, bool) {
@@ -59,25 +63,19 @@ func checkPipelineRun(object runtime.Object) (*v1alpha3.PipelineRun, bool) {
 
 func (b backwardListHandler) backwardFilter(object runtime.Object) bool {
 	if pr, valid := checkPipelineRun(object); valid {
-		return pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] != ""
+		statusJSON, ok := pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey]
+		if !ok {
+			if pipelineRunStore, err := cmstore.NewConfigMapStore(context.Background(), types.NamespacedName{
+				Namespace: pr.Namespace,
+				Name:      pr.Name,
+			}, b.client); err == nil {
+				statusJSON = pipelineRunStore.GetStatus()
+			} else {
+				klog.Error(err, "failed to get status from configmap store")
+			}
+		}
+
+		return statusJSON != ""
 	}
 	return false
-}
-
-func (b backwardListHandler) backwardTransformer(object runtime.Object) json.Marshaler {
-	pr, valid := checkPipelineRun(object)
-	if !valid {
-		// should never happen
-		return json.RawMessage("{}")
-	}
-	runStatusJSON := pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey]
-	rawRunStatus := json.RawMessage(runStatusJSON)
-	// check if the run status is a valid JSON
-	valid = json.Valid(rawRunStatus)
-	if !valid {
-		klog.ErrorS(nil, "invalid Jenkins run status",
-			"PipelineRun", fmt.Sprintf("%s/%s", pr.GetNamespace(), pr.GetName()), "runStatusJSON", runStatusJSON)
-		rawRunStatus = []byte("{}")
-	}
-	return rawRunStatus
 }

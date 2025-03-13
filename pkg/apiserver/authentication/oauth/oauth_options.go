@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"kubesphere.io/devops/pkg/utils/sliceutil"
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 )
 
 type GrantHandlerType string

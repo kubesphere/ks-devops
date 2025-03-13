@@ -17,22 +17,42 @@ limitations under the License.
 package constants
 
 const (
-	AuthenticationTag    = "Authentication"
-	CreatorAnnotationKey = "kubesphere.io/creator"
-	WorkspaceLabelKey    = "kubesphere.io/workspace"
+	CreatorAnnotationKey         = "kubesphere.io/creator"
+	WorkspaceLabelKey            = "kubesphere.io/workspace"
+	DisplayNameAnnotationKey     = "kubesphere.io/alias-name"
+	InsecureSkipTLSAnnotationKey = "devops.kubesphere.io/insecure-skip-tls"
+	GitAuthorNameAnnotationKey   = "devops.kubesphere.io/git-author-name"
+	GitAuthorEmailAnnotationKey  = "devops.kubesphere.io/git-author-email"
+	DevOpsProjectLabelKey        = "github.com/kubesphere/ks-devopsproject"
 
-	DevOpsProjectLabelKey    = "kubesphere.io/devopsproject"
+	AuthenticationTag        = "Authentication"
 	DevOpsCredentialTag      = "DevOps Credential"
 	DevOpsPipelineTag        = "DevOps Pipeline"
 	DevOpsWebhookTag         = "DevOps Webhook"
 	DevOpsJenkinsfileTag     = "DevOps Jenkinsfile"
 	DevOpsScmTag             = "DevOps Scm"
-	DevOpsJenkinsTag         = "Jenkins"
+	DevOpsJenkinsTag         = "DevOps Jenkins"
 	DevOpsProjectTag         = "DevOps Project"
 	DevOpsTemplateTag        = "DevOps Template"
-	DevOpsClusterTemplateTag = "DevOps Cluster Template"
+	DevOpsStepTemplateTag    = "DevOps StepTemplate"
+	DevOpsClusterTemplateTag = "DevOps ClusterTemplate"
+	GitOpsTag                = "GitOps"
 
-	DevOpsImageBuilder = "DevOps ImageBuilder"
+	DevOpsManagedKey = "devops.kubesphere.io/managed"
+)
+
+var (
+	AuthenticationTags        = []string{AuthenticationTag}
+	DevOpsProjectTags         = []string{DevOpsProjectTag}
+	DevOpsCredentialTags      = []string{DevOpsCredentialTag}
+	DevOpsPipelineTags        = []string{DevOpsPipelineTag}
+	DevOpsWebhookTags         = []string{DevOpsWebhookTag}
+	DevOpsScmTags             = []string{DevOpsScmTag}
+	DevOpsJenkinsTags         = []string{DevOpsJenkinsTag}
+	DevOpsTemplateTags        = []string{DevOpsTemplateTag}
+	DevOpsStepTemplateTags    = []string{DevOpsStepTemplateTag}
+	DevOpsClusterTemplateTags = []string{DevOpsClusterTemplateTag}
+	GitOpsTags                = []string{GitOpsTag}
 )
 
 // K8SToken is the context key of k8s token
@@ -49,4 +69,8 @@ const (
 	StatusPending    = "pending"
 	StatusWorking    = "working"
 	StatusSuccessful = "successful"
+)
+
+const (
+	FieldType = "type"
 )

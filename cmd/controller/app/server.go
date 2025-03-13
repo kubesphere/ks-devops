@@ -19,34 +19,38 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"kubesphere.io/devops/cmd/controller/app/options"
-	"kubesphere.io/devops/pkg/apis"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/jclient"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/indexers"
-	"kubesphere.io/devops/pkg/informers"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"github.com/kubesphere/ks-devops/cmd/controller/app/options"
+	"github.com/kubesphere/ks-devops/pkg/apis"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jclient"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/indexers"
+	"github.com/kubesphere/ks-devops/pkg/informers"
 )
 
 func NewControllerManagerCommand() *cobra.Command {
 	// Here will create a default devops controller manager options
 	s := options.NewDevOpsControllerManagerOptions()
-	// Load configuration from disk via viper, /etc/kubesphere/kubesphere.[yaml,json,xxx]
+	// Load configuration from disk and env via viper, /etc/kubesphere/kubesphere.[yaml,json,xxx]
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
+		conf.TryLoadFromEnv()
+
 		if conf.ArgoCDOption == nil {
 			conf.ArgoCDOption = &config.ArgoCDOption{}
 		}
@@ -56,15 +60,11 @@ func NewControllerManagerCommand() *cobra.Command {
 			KubernetesOptions: conf.KubernetesOptions,
 			JenkinsOptions:    conf.JenkinsOptions,
 			S3Options:         conf.S3Options,
-			JWTOptions: &options.JWTOptions{
-				Secret:           conf.AuthenticationOptions.JwtSecret,
-				MaximumClockSkew: conf.AuthenticationOptions.MaximumClockSkew,
-			},
-			ArgoCDOption:   conf.ArgoCDOption,
-			FeatureOptions: s.FeatureOptions,
-			LeaderElection: s.LeaderElection,
-			LeaderElect:    s.LeaderElect,
-			WebhookCertDir: s.WebhookCertDir,
+			ArgoCDOption:      conf.ArgoCDOption,
+			FeatureOptions:    s.FeatureOptions,
+			LeaderElection:    s.LeaderElection,
+			LeaderElect:       s.LeaderElect,
+			WebhookCertDir:    s.WebhookCertDir,
 		}
 	} else {
 		klog.Fatal("Failed to load configuration from disk", err)
@@ -139,7 +139,7 @@ func Run(s *options.DevOpsControllerManagerOptions, ctx context.Context) error {
 	jenkinsCore := core.JenkinsCore{
 		URL:      s.JenkinsOptions.Host,
 		UserName: s.JenkinsOptions.Username,
-		Token:    s.JenkinsOptions.Password,
+		Token:    s.JenkinsOptions.ApiToken,
 	}
 
 	// Init informers
@@ -148,15 +148,18 @@ func Run(s *options.DevOpsControllerManagerOptions, ctx context.Context) error {
 		kubernetesClient.KubeSphere(),
 		kubernetesClient.ApiExtensions())
 
-	mgrOptions := manager.Options{
-		CertDir: s.WebhookCertDir,
+	webhookServer := webhook.NewServer(webhook.Options{
 		Port:    8443,
+		CertDir: s.WebhookCertDir,
+	})
+
+	mgrOptions := manager.Options{
+		WebhookServer: webhookServer,
 	}
 
 	if s.LeaderElect {
 		mgrOptions = manager.Options{
-			CertDir:                 s.WebhookCertDir,
-			Port:                    8443,
+			WebhookServer:           webhookServer,
 			LeaderElection:          s.LeaderElect,
 			LeaderElectionNamespace: "kubesphere-devops-system",
 			LeaderElectionID:        "ks-devops-controller-manager-leader-election",

@@ -21,11 +21,11 @@ package versioned
 import (
 	"fmt"
 
+	devopsv1alpha1 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha1"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha3"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	devopsv1alpha1 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha1"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha3"
 )
 
 type Interface interface {

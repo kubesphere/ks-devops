@@ -17,18 +17,20 @@ package argocd
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
-	v1 "k8s.io/api/core/v1"
+	"net/http"
+
+	"github.com/emicklei/go-restful/v3"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/authentication/user"
 	utilretry "k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	apiserverrequest "kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	serverrequest "github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops"
 )
 
 var argoAppNotConfiguredError = restful.NewError(http.StatusBadRequest,
@@ -101,7 +103,7 @@ func (h *handler) handleSyncApplication(req *restful.Request, res *restful.Respo
 		return
 	}
 
-	currentUser, ok := apiserverrequest.UserFrom(req.Request.Context())
+	currentUser, ok := serverrequest.UserFrom(req.Request.Context())
 	if !ok || currentUser == nil {
 		common.Response(req, res, nil, unauthenticatedError)
 		return
@@ -184,7 +186,7 @@ func (h *handler) updateOperation(namespace, name string, operation *v1alpha1.Op
 func (h *handler) getClusters(req *restful.Request, res *restful.Response) {
 	ctx := context.Background()
 
-	secrets := &v1.SecretList{}
+	secrets := &corev1.SecretList{}
 	err := h.List(ctx, secrets, client.MatchingLabels{
 		"argocd.argoproj.io/secret-type": "cluster",
 	})

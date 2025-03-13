@@ -20,18 +20,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
 	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"k8s.io/apiserver/pkg/authentication/user"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/jwt/token"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/pipelinerun"
 	"net/http"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,15 +46,13 @@ const triggerAnnotationKey = "devops.kubesphere.io/trigger"
 // SCMHandler handles requests from webhooks.
 type SCMHandler struct {
 	client.Client
-	issue   token.Issuer
 	jenkins core.JenkinsCore
 }
 
 // NewSCMHandler creates a new handler for handling webhooks.
-func NewSCMHandler(genericClient client.Client, issue token.Issuer, jenkins core.JenkinsCore) *SCMHandler {
+func NewSCMHandler(genericClient client.Client, jenkins core.JenkinsCore) *SCMHandler {
 	return &SCMHandler{
 		Client:  genericClient,
-		issue:   issue,
 		jenkins: jenkins,
 	}
 }
@@ -110,7 +106,7 @@ func (h *SCMHandler) scmWebhook(request *restful.Request, response *restful.Resp
 				if pipeline.IsMultiBranch() {
 					gitURL = pipeline.Spec.MultiBranchPipeline.GetGitURL()
 					if gitURL != "" && gitRepoMatch(gitURL, repo.Link, repo.Clone, repo.CloneSSH) {
-						err = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins, h.issue)
+						err = scanJenkinsMultiBranchPipeline(pipeline, h.jenkins)
 					}
 				} else if gitURL != "" {
 					if gitRepoMatch(gitURL, repo.Link, repo.Clone, repo.CloneSSH) {
@@ -145,16 +141,7 @@ func (h *SCMHandler) createPipelineRun(pipeline v1alpha3.Pipeline, hook *scm.Pus
 	return
 }
 
-func scanJenkinsMultiBranchPipeline(pipeline v1alpha3.Pipeline, jenkins core.JenkinsCore, issue token.Issuer) (err error) {
-	var accessToken string
-	accessToken, err = issue.IssueTo(&user.DefaultInfo{Name: "admin"}, token.AccessToken, tokenExpireIn)
-	if err != nil {
-		err = fmt.Errorf("failed to issue access token for creator webhook, error was %v", err)
-		return
-	}
-
-	// using a dynamic Jenkins token instead of the static one
-	jenkins.Token = accessToken
+func scanJenkinsMultiBranchPipeline(pipeline v1alpha3.Pipeline, jenkins core.JenkinsCore) (err error) {
 	jclient := job.Client{
 		JenkinsCore: jenkins,
 	}

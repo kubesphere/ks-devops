@@ -17,17 +17,18 @@ package template
 
 import (
 	"fmt"
-	"github.com/emicklei/go-restful"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
 	"github.com/stretchr/testify/assert"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestRegisterRoutes(t *testing.T) {
@@ -73,7 +74,7 @@ func TestRegisterRoutes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			container := restful.NewContainer()
 			utilruntime.Must(v1alpha3.SchemeBuilder.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 			service := runtime.NewWebService(v1alpha3.GroupVersion)
 			RegisterRoutes(service, &common.Options{
 				GenericClient: fakeClient,

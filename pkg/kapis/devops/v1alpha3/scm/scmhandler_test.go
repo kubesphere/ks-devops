@@ -19,21 +19,22 @@ package scm
 import (
 	"context"
 	"encoding/json"
-	"github.com/emicklei/go-restful"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
 	"github.com/h2non/gock"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/client/git"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/client/git"
-	"kubesphere.io/devops/pkg/constants"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestNewHandler(t *testing.T) {
@@ -320,7 +321,7 @@ func TestSCMAPI(t *testing.T) {
 			httpRequest = httpRequest.WithContext(context.WithValue(context.TODO(), constants.K8SToken, constants.ContextKeyK8SToken("")))
 
 			ws := runtime.NewWebService(runtimeSchema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"})
-			RegisterRoutersForSCM(fake.NewFakeClientWithScheme(schema, &v1.Secret{
+			RegisterRoutersForSCM(fake.NewClientBuilder().WithScheme(schema).WithObjects(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "token", Namespace: "default",
 				},
@@ -328,7 +329,7 @@ func TestSCMAPI(t *testing.T) {
 				Data: map[string][]byte{
 					v1.ServiceAccountTokenKey: []byte("token"),
 				},
-			}), ws)
+			}).Build(), ws)
 			container := restful.NewContainer()
 			container.Add(ws)
 

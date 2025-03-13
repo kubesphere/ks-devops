@@ -23,9 +23,9 @@ import (
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/models/pipelinerun"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/models/pipelinerun"
 )
 
 // jenkinsHandler handles some actions with Jenkins endpoint.

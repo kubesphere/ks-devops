@@ -20,24 +20,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"io"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/jwt/token"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/emicklei/go-restful"
+	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/retry"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	apiserverruntime "github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	apiserverruntime "kubesphere.io/devops/pkg/apiserver/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -47,7 +46,7 @@ func TestJenkinsWebhook(t *testing.T) {
 		method     string
 		uri        string
 		bodyJSON   string
-		initObject []runtime.Object
+		initObject []client.Object
 	}
 	tests := []struct {
 		name      string
@@ -58,7 +57,7 @@ func TestJenkinsWebhook(t *testing.T) {
 		args: args{
 			method: http.MethodPost,
 			uri:    "/webhooks/jenkins",
-			initObject: []runtime.Object{
+			initObject: []client.Object{
 				&v1alpha3.Pipeline{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "example-pipeline",
@@ -137,7 +136,7 @@ func TestJenkinsWebhook(t *testing.T) {
 		args: args{
 			method:     http.MethodPost,
 			uri:        "/webhooks/jenkins",
-			initObject: []runtime.Object{},
+			initObject: []client.Object{},
 			bodyJSON: `
 				{
 				  "dataType": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
@@ -156,11 +155,11 @@ func TestJenkinsWebhook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObject...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.args.initObject...).Build()
 
 			container := restful.NewContainer()
 			wsWithGroup := apiserverruntime.NewWebService(v1alpha3.GroupVersion)
-			RegisterWebhooks(fakeClient, wsWithGroup, &token.FakeIssuer{}, core.JenkinsCore{})
+			RegisterWebhooks(fakeClient, wsWithGroup, core.JenkinsCore{})
 			container.Add(wsWithGroup)
 
 			var bodyReader io.Reader
@@ -195,7 +194,7 @@ func TestSCMWebhook(t *testing.T) {
 		uri        string
 		bodyJSON   string
 		header     map[string]string
-		initObject []runtime.Object
+		initObject []client.Object
 	}
 	tests := []struct {
 		name      string
@@ -206,7 +205,7 @@ func TestSCMWebhook(t *testing.T) {
 		args: args{
 			method:     http.MethodPost,
 			uri:        "/webhooks/scm",
-			initObject: []runtime.Object{},
+			initObject: []client.Object{},
 		},
 		assertion: func(t *testing.T, c client.Client, body string) {
 			assert.Equal(t, "unknown SCM type", body)
@@ -216,7 +215,7 @@ func TestSCMWebhook(t *testing.T) {
 		args: args{
 			method:     http.MethodPost,
 			uri:        "/webhooks/scm",
-			initObject: []runtime.Object{},
+			initObject: []client.Object{},
 			bodyJSON:   gitlabWebhookBody,
 			header: map[string]string{
 				"X-Gitlab-Event": "Push Hook",
@@ -230,7 +229,7 @@ func TestSCMWebhook(t *testing.T) {
 		args: args{
 			method:     http.MethodPost,
 			uri:        "/webhooks/scm",
-			initObject: []runtime.Object{defaultPipeline.DeepCopy()},
+			initObject: []client.Object{defaultPipeline.DeepCopy()},
 			bodyJSON:   gitlabWebhookBody,
 			header: map[string]string{
 				"X-Gitlab-Event": "Push Hook",
@@ -243,11 +242,11 @@ func TestSCMWebhook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObject...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.args.initObject...).Build()
 
 			container := restful.NewContainer()
 			wsWithGroup := apiserverruntime.NewWebService(v1alpha3.GroupVersion)
-			RegisterWebhooks(fakeClient, wsWithGroup, &token.FakeIssuer{}, core.JenkinsCore{})
+			RegisterWebhooks(fakeClient, wsWithGroup, core.JenkinsCore{})
 			container.Add(wsWithGroup)
 
 			var bodyReader io.Reader

@@ -16,7 +16,26 @@ limitations under the License.
 
 package jclient
 
-// ReloadConfiguration reloads the Jenkins configuration
-func (j *JenkinsClient) ReloadConfiguration() error {
-	return j.jenkins.ReloadConfiguration()
+import "github.com/jenkins-zh/jenkins-client/pkg/casc"
+
+// ReloadConfiguration reloads the Jenkins Configuration as Code YAML file
+func (j *JenkinsClient) ReloadConfiguration() (err error) {
+	client := casc.Manager{}
+	if j != nil {
+		client.JenkinsCore = j.Core
+	}
+	err = client.Reload()
+	return
+}
+
+// ApplyNewSource apply a new source
+func (j *JenkinsClient) ApplyNewSource(s string) (err error) {
+	client := casc.Manager{}
+	if j != nil {
+		client.JenkinsCore = j.Core
+	}
+	if err = client.CheckNewSource(s); err == nil {
+		err = client.Replace(s)
+	}
+	return
 }

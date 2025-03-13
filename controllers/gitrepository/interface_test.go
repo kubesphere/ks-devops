@@ -19,8 +19,8 @@ package gitrepository
 import (
 	"testing"
 
+	"github.com/kubesphere/ks-devops/controllers/core"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/controllers/core"
 )
 
 func TestInterfaceImplement(t *testing.T) {

@@ -23,13 +23,13 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -161,7 +161,7 @@ func TestReconcile(t *testing.T) {
 	}{{
 		name: "no imageUpdaters found",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, app.DeepCopy(), updater.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(app.DeepCopy(), updater.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -179,7 +179,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "kind is not argocd",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, notArgoKindUpdater.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(notArgoKindUpdater.DeepCopy()).Build(),
 		},
 		args: args{
 			req: defaultReq,
@@ -191,7 +191,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "argo setting is nil",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, noArgoSettingUpdater),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(noArgoSettingUpdater).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -201,7 +201,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "argo app name is empty",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, emptyAppName),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(emptyAppName).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -211,7 +211,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "cannot found app",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, updater),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(updater).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -221,7 +221,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, updater, app),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(updater, app).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -245,7 +245,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "invalid write method",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, invalidWriteMethod, app),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidWriteMethod, app).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -268,7 +268,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		name: "with image secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, withSecretUpdater, app),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(withSecretUpdater, app).Build(),
 		},
 		args: args{req: defaultReq},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -376,7 +376,7 @@ func TestImageUpdaterReconciler_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &core.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},

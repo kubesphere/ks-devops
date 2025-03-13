@@ -17,28 +17,16 @@ limitations under the License.
 package jclient
 
 import (
-	"github.com/jenkins-zh/jenkins-client/pkg/casc"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
+
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
 )
 
 // JenkinsClient represents a client of Jenkins
 type JenkinsClient struct {
 	Core    core.JenkinsCore
 	jenkins *jenkins.Jenkins // For refactor purpose only
-}
-
-// ApplyNewSource apply a new source
-func (j *JenkinsClient) ApplyNewSource(s string) (err error) {
-	client := casc.Manager{}
-	if j != nil {
-		client.JenkinsCore = j.Core
-	}
-	if err = client.CheckNewSource(s); err == nil {
-		err = client.Replace(s)
-	}
-	return
 }
 
 var _ devops.Interface = &JenkinsClient{}
@@ -48,7 +36,7 @@ func NewJenkinsClient(options *jenkins.Options) (*JenkinsClient, error) {
 	jenkinsCore := core.JenkinsCore{
 		URL:      options.Host,
 		UserName: options.Username,
-		Token:    options.Password,
+		Token:    options.ApiToken,
 	}
 
 	devopsClient, _ := jenkins.NewDevopsClient(options) // For refactor purpose only

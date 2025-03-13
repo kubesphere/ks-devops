@@ -17,9 +17,9 @@ limitations under the License.
 package v1beta2
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
 
 // KustomizationSpec defines the configuration to calculate the desired state from a Source using Kustomize.

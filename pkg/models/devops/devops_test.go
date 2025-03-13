@@ -25,16 +25,16 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	fakeclientset "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/fake"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/client/clientset/versioned"
-	fakeclientset "kubesphere.io/devops/pkg/client/clientset/versioned/fake"
-	"kubesphere.io/devops/pkg/constants"
 
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 )
 
 const baseUrl = "http://127.0.0.1/kapis/devops.kubesphere.io/v1alpha2/"
@@ -74,7 +74,7 @@ func TestGetNodesDetail(t *testing.T) {
 
 	devopsClient := fake.NewFakeDevops(fakeData)
 
-	devopsOperator := NewDevopsOperator(devopsClient, nil, nil)
+	devopsOperator := NewDevopsOperator(devopsClient, nil, nil, nil)
 
 	httpReq, _ := http.NewRequest(http.MethodGet, baseUrl+"devops/project1/pipelines/pipeline1/runs/run1/nodesdetail/?limit=10000", nil)
 
@@ -126,7 +126,7 @@ func TestGetBranchNodesDetail(t *testing.T) {
 
 	devopsClient := fake.NewFakeDevops(fakeData)
 
-	devopsOperator := NewDevopsOperator(devopsClient, nil, nil)
+	devopsOperator := NewDevopsOperator(devopsClient, nil, nil, nil)
 
 	httpReq, _ := http.NewRequest(http.MethodGet, baseUrl+"devops/project1/pipelines/pipeline1/branchs/branch1/runs/run1/nodesdetail/?limit=10000", nil)
 

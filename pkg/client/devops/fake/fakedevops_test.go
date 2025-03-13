@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 )
 
 func TestCredential(t *testing.T) {
@@ -193,8 +193,8 @@ func TestNotImplement(t *testing.T) {
 	assertNils(t, o1, o2)
 	o1, o2 = client.DownloadArtifact("", "", "", "", false, "")
 	assertNils(t, o1, o2)
-	o1, o2, o3 = client.GetRunLog("", "", "", nil)
-	assertNils(t, o1, o2, o3)
+	o1, o2 = client.GetRunLog("", "", "", nil)
+	assertNils(t, o1, o2)
 	o1, o2, o3 = client.GetStepLog("", "", "", "", "", nil)
 	assertNils(t, o1, o2, o3)
 	o1, o2 = client.RunPipeline("", "", nil)

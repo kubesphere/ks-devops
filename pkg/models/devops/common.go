@@ -39,3 +39,5 @@ const (
 func GetSyncNowTime() string {
 	return time.Now().String()
 }
+
+type StringMap map[string]string

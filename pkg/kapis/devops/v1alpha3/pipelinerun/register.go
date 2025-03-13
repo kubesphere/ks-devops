@@ -20,20 +20,20 @@ import (
 	"net/http"
 
 	restfulspec "github.com/emicklei/go-restful-openapi"
-	"kubesphere.io/devops/pkg/constants"
-
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/models/pipelinerun"
-
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/client/devops"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
+	"github.com/emicklei/go-restful/v3"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	dclient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/models/pipelinerun"
 )
 
 // RegisterRoutes register routes into web service.
-func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface, c client.Client) {
+func RegisterRoutes(ws *restful.WebService, devopsClient dclient.Interface, c client.Client) {
 	handler := newAPIHandler(apiHandlerOption{
 		devopsClient: devopsClient,
 		client:       c,
@@ -42,19 +42,23 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
 		To(handler.listPipelineRuns).
 		Doc("Get all runs of the specified pipeline").
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags).
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
+		Param(ws.QueryParameter(query.ParameterPage, "page").Required(false).DataFormat("page=%d").DefaultValue("page=1")).
+		Param(ws.QueryParameter(query.ParameterLimit, "limit").Required(false)).
 		Param(ws.QueryParameter("branch", "The name of SCM reference")).
 		Param(ws.QueryParameter("backward", "Backward compatibility for v1alpha2 API "+
 			"`/devops/{devops}/pipelines/{pipeline}/runs`. By default, the backward is true. If you want to list "+
 			"full data of PipelineRuns, just set the parameters to false.").
-			DataType("bool").
+			DataType("boolean").
 			DefaultValue("true")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRunList{}))
 
 	ws.Route(ws.POST("/namespaces/{namespace}/pipelines/{pipeline}/pipelineruns").
 		To(handler.createPipelineRun).
 		Doc("Create a PipelineRun for the specified pipeline").
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags).
 		Param(ws.PathParameter("namespace", "Namespace of the pipeline")).
 		Param(ws.PathParameter("pipeline", "Name of the pipeline")).
 		Param(ws.QueryParameter("branch", "The name of SCM reference, only for multi-branch pipeline")).
@@ -64,6 +68,7 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelineruns/{pipelinerun}").
 		To(handler.getPipelineRun).
 		Doc("Get a PipelineRun for a specified pipeline").
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags).
 		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
 		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.PipelineRun{}))
@@ -71,6 +76,7 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 	ws.Route(ws.GET("/namespaces/{namespace}/pipelineruns/{pipelinerun}/nodedetails").
 		To(handler.getNodeDetails).
 		Doc("Get node details including steps and approvable for a given Pipeline").
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags).
 		Param(ws.PathParameter("namespace", "Namespace of the PipelineRun")).
 		Param(ws.PathParameter("pipelinerun", "Name of the PipelineRun")).
 		Returns(http.StatusOK, api.StatusOK, []pipelinerun.NodeDetail{}))
@@ -82,5 +88,5 @@ func RegisterRoutes(ws *restful.WebService, devopsClient devopsClient.Interface,
 		Param(ws.QueryParameter("filename", "artifact filename. e.g. artifact:v1.0.1")).
 		To(handler.downloadArtifact).
 		Returns(http.StatusOK, api.StatusOK, nil).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsPipelineTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags))
 }

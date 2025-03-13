@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,17 +40,17 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
-	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 
-	kubesphereclient "kubesphere.io/devops/pkg/client/clientset/versioned"
-	devopsinformers "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha3"
-	devopslisters "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
+	kubesphereclient "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	devopsinformers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/devops/v1alpha3"
+	devopslisters "github.com/kubesphere/ks-devops/pkg/client/listers/devops/v1alpha3"
 )
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=devopsprojects,verbs=get;list;update;watch
@@ -427,6 +427,8 @@ func (c *Controller) generateNewNamespace(project *devopsv1alpha3.DevOpsProject)
 			Name: project.Name,
 			Labels: map[string]string{
 				constants.DevOpsProjectLabelKey: project.Name,
+				constants.DevOpsManagedKey:      "true",
+				constants.WorkspaceLabelKey:     project.Labels[constants.WorkspaceLabelKey],
 			},
 		},
 	}

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The KubeSphere Authors.
+Copyright 2024 The KubeSphere Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,43 +18,32 @@ package app
 
 import (
 	"github.com/spf13/cobra"
-	"kubesphere.io/devops/pkg/client/k8s"
 )
 
-var toolOpt *ToolOption
+var toolOpt *ToolOptions
 
-type ToolOption struct {
-	Namespace string
-	Configmap string
-
-	K8sClient k8s.Client
+type ToolOptions struct {
+	kubeconfig string
 }
 
-func (o *ToolOption) initK8sClient() (err error) {
-	o.K8sClient, err = k8s.NewKubernetesClient(k8s.NewKubernetesOptions())
-	return
-}
-
-func (o *ToolOption) runHelpE(cmd *cobra.Command, args []string) error {
+func (o *ToolOptions) runHelpE(cmd *cobra.Command, args []string) error {
 	return cmd.Help()
 }
 
 // NewToolsCmd creates a root command for tools
 func NewToolsCmd() (cmd *cobra.Command) {
-	toolOpt = &ToolOption{}
+	opts := &ToolOptions{}
 
 	rootCmd := &cobra.Command{
-		Use:   "devops-tool",
-		Short: "Tools for DevOps apiserver and controller-manager",
+		Use:   "devops-tools",
+		Short: "Tools for DevOps services",
 		RunE:  toolOpt.runHelpE,
 	}
 
 	flags := rootCmd.PersistentFlags()
-	flags.StringVarP(&toolOpt.Namespace, "namespace", "n", "kubesphere-devops-system",
-		"The namespace of DevOps service")
-	flags.StringVarP(&toolOpt.Configmap, "configmap", "c", "devops-config",
-		"The configmap name of DevOps service")
+	flags.StringVarP(&opts.kubeconfig, "kubeconfig", "k", "",
+		"path of kubernetes kubeconfig file, default: Using the inClusterConfig")
 
-	rootCmd.AddCommand(NewInitCmd())
+	rootCmd.AddCommand(NewRestoreCmd(opts.kubeconfig))
 	return rootCmd
 }

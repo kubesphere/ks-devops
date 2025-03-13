@@ -18,7 +18,7 @@ package internal
 
 import (
 	"github.com/beevik/etree"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"strconv"
 )
 

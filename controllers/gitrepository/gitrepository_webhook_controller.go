@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/git"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/client/git"
 
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/record"
@@ -261,6 +261,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	r.log = ctrl.Log.WithName(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("git_repository_webhook_controller").
 		For(&v1alpha3.GitRepository{}).
 		Complete(r)
 }

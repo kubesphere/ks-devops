@@ -18,7 +18,7 @@ package oauth
 
 import (
 	"bytes"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

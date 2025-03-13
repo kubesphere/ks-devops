@@ -28,7 +28,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
-	"kubesphere.io/devops/pkg/client/devops/jclient"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jclient"
 )
 
 // NewFakeJenkinsClient creates a fake Jenkins client

@@ -17,8 +17,8 @@ limitations under the License.
 package secretutil
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 type credentialMask func(*v1.Secret) *v1.Secret

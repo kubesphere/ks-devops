@@ -18,18 +18,17 @@ package jenkins
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/utils/reflectutils"
+	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 	"time"
 
 	"github.com/spf13/pflag"
 )
 
-const DefaultAdminPassword = "119d76305a05e7a2a65d096f71feb77921"
-
 type Options struct {
 	Host            string        `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
 	Username        string        `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
 	Password        string        `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
+	ApiToken        string        `json:"apiToken,omitempty" yaml:"apiToken" description:"Jenkins admin apiToken"`
 	MaxConnections  int           `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
 	Namespace       string        `json:"namespace,omitempty" yaml:"namespace"`
 	WorkerNamespace string        `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
@@ -43,6 +42,7 @@ func NewJenkinsOptions() *Options {
 		Host:            "",
 		Username:        "",
 		Password:        "",
+		ApiToken:        "",
 		MaxConnections:  100,
 		Namespace:       "kubesphere-devops-system",
 		WorkerNamespace: "kubesphere-devops-worker",
@@ -69,16 +69,8 @@ func (s *Options) Validate() []error {
 		return errors
 	}
 
-	if s.Username == "" || s.Password == "" {
-		errors = append(errors, fmt.Errorf("jenkins's username or password is empty"))
-	}
-
-	if s.Password == DefaultAdminPassword {
-		errors = append(errors, fmt.Errorf("the token of the Jenkins needs to update"))
-	}
-
-	if s.MaxConnections <= 0 {
-		errors = append(errors, fmt.Errorf("jenkins's maximum connections should be greater than 0"))
+	if s.Username == "" || s.ApiToken == "" {
+		errors = append(errors, fmt.Errorf("jenkins's username or api-token is empty"))
 	}
 
 	return errors
@@ -93,7 +85,10 @@ func (s *Options) AddFlags(fs *pflag.FlagSet, c *Options) {
 		"Username for access to Jenkins service. Leave it blank if there isn't any.")
 
 	fs.StringVar(&s.Password, "jenkins-password", c.Password, ""+
-		"Password for access to Jenkins service, used pair with username.")
+		"password for access to Jenkins service, used pair with username.")
+
+	fs.StringVar(&s.ApiToken, "jenkins-api-token", c.ApiToken, ""+
+		"api-token for access to Jenkins service, used pair with username.")
 
 	fs.IntVar(&s.MaxConnections, "jenkins-max-connections", c.MaxConnections, ""+
 		"Maximum allowed connections to Jenkins. ")

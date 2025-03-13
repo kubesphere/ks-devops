@@ -18,10 +18,10 @@ package devops
 
 import (
 	"fmt"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/fake"
 	"testing"
 )
 

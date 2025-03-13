@@ -20,9 +20,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func TestParseNameFilterFromQuery(t *testing.T) {

@@ -19,7 +19,7 @@ package devops
 import (
 	"context"
 	"fmt"
-	"kubesphere.io/devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -27,16 +27,16 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsS3 "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
 
-	"kubesphere.io/devops/pkg/client/clientset/versioned"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
-	"kubesphere.io/devops/pkg/client/s3"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	"github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
 )
 
 const (

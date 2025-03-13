@@ -18,20 +18,21 @@ package gitops
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/emicklei/go-restful"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-	"time"
 )
 
 func Test_getPathParameter(t *testing.T) {
@@ -299,7 +300,7 @@ func Test_handler_applicationList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(ToClientObjects(tt.args.apps)...).Build()
 			h := &Handler{
 				Client: fakeClient,
 			}
@@ -365,7 +366,7 @@ func Test_handler_applicationGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(ToClientObjects(tt.args.apps)...).Build()
 			h := NewHandler(&common.Options{GenericClient: Handler{
 				Client: fakeClient,
 			}})
@@ -465,7 +466,7 @@ func Test_handler_applicationDel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(ToClientObjects(tt.args.apps)...).Build()
 			h := NewHandler(&common.Options{GenericClient: Handler{
 				Client: fakeClient,
 			}})
@@ -544,7 +545,7 @@ func Test_handler_applicationUpdate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, ToObjects(tt.args.apps)...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(ToClientObjects(tt.args.apps)...).Build()
 			h := NewHandler(&common.Options{GenericClient: Handler{
 				Client: fakeClient,
 			}})

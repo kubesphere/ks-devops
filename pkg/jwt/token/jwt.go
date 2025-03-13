@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"kubesphere.io/devops/pkg/server/errors"
+	"github.com/kubesphere/ks-devops/pkg/server/errors"
 
 	"github.com/form3tech-oss/jwt-go"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -99,6 +99,7 @@ func (s *jwtTokenIssuer) Verify(tokenString string) (user.Info, TokenType, error
 
 func (s *jwtTokenIssuer) IssueTo(user user.Info, tokenType TokenType, expiresIn time.Duration) (string, error) {
 	issueAt := time.Now().Unix() - int64(s.maximumClockSkew.Seconds())
+	notBefore := issueAt
 	clm := &Claims{
 		Username:  user.GetName(),
 		Groups:    user.GetGroups(),
@@ -107,6 +108,7 @@ func (s *jwtTokenIssuer) IssueTo(user user.Info, tokenType TokenType, expiresIn 
 		StandardClaims: jwt.StandardClaims{
 			IssuedAt:  issueAt,
 			Issuer:    s.name,
+			NotBefore: notBefore,
 		},
 	}
 

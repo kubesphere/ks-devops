@@ -18,13 +18,13 @@ package app
 
 import (
 	"context"
+	apiserverApp "github.com/kubesphere/ks-devops/cmd/apiserver/app"
+	"github.com/kubesphere/ks-devops/cmd/apiserver/app/options"
+	controllerApp "github.com/kubesphere/ks-devops/cmd/controller/app"
+	controllerOpt "github.com/kubesphere/ks-devops/cmd/controller/app/options"
+	"github.com/kubesphere/ks-devops/pkg/config"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-	apiserverApp "kubesphere.io/devops/cmd/apiserver/app"
-	"kubesphere.io/devops/cmd/apiserver/app/options"
-	controllerApp "kubesphere.io/devops/cmd/controller/app"
-	controllerOpt "kubesphere.io/devops/cmd/controller/app/options"
-	"kubesphere.io/devops/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -52,6 +52,8 @@ func runAPIServer(stopCh context.Context) error {
 	// Load configuration from file
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
+		conf.TryLoadFromEnv()
+
 		s = &options.ServerRunOptions{
 			GenericServerRunOptions: s.GenericServerRunOptions,
 			Config:                  conf,
@@ -72,6 +74,8 @@ func runControllerManager(stopCh context.Context) (err error) {
 	s := controllerOpt.NewDevOpsControllerManagerOptions()
 	conf, err = config.TryLoadFromDisk()
 	if err == nil {
+		conf.TryLoadFromEnv()
+
 		// make sure LeaderElection is not nil
 		s = &controllerOpt.DevOpsControllerManagerOptions{
 			KubernetesOptions: conf.KubernetesOptions,

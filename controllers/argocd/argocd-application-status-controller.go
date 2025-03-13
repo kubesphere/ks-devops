@@ -24,12 +24,12 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/predicate"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/predicate"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -165,6 +165,7 @@ func (r *ApplicationStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	var withLabelPredicate = predicate.NewPredicateFuncs(predicate.NewFilterHasLabel(v1alpha1.ArgoCDAppControlByLabelKey))
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("argocd_application_status_controller").
 		For(argoApp).
 		WithEventFilter(withLabelPredicate).
 		Complete(r)

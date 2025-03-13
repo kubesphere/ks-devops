@@ -24,12 +24,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	v1 "k8s.io/api/core/v1"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 type Devops struct {
@@ -198,8 +198,8 @@ func (d *Devops) DownloadArtifact(projectName, pipelineName, runId, filename str
 	return nil, nil
 }
 
-func (d *Devops) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
-	return nil, nil, nil
+func (d *Devops) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, error) {
+	return nil, nil
 }
 func (d *Devops) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
 	return nil, nil, nil

@@ -17,8 +17,11 @@ limitations under the License.
 package k8sutil
 
 import (
+	"fmt"
+
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // AddFinalizer adds an finalizer
@@ -32,4 +35,32 @@ func AddFinalizer(objectMeta *metav1.ObjectMeta, finalizer string) (added bool) 
 // RemoveFinalizer removes an finalizer
 func RemoveFinalizer(objectMeta *metav1.ObjectMeta, finalizer string) {
 	objectMeta.Finalizers = sliceutil.RemoveString(objectMeta.Finalizers, sliceutil.SameItem(finalizer))
+}
+
+func ExtractObjectMeta(obj runtime.Object) (*metav1.ObjectMeta, error) {
+	// Ensure the object supports the metav1.Object interface
+	accessor, ok := obj.(metav1.Object)
+	if !ok {
+		return nil, fmt.Errorf("object does not implement metav1.Object")
+	}
+
+	// Create a copy of the ObjectMeta
+	meta := &metav1.ObjectMeta{
+		Name:                       accessor.GetName(),
+		GenerateName:               accessor.GetGenerateName(),
+		Namespace:                  accessor.GetNamespace(),
+		SelfLink:                   accessor.GetSelfLink(),
+		UID:                        accessor.GetUID(),
+		ResourceVersion:            accessor.GetResourceVersion(),
+		Generation:                 accessor.GetGeneration(),
+		CreationTimestamp:          accessor.GetCreationTimestamp(),
+		DeletionTimestamp:          accessor.GetDeletionTimestamp(),
+		DeletionGracePeriodSeconds: accessor.GetDeletionGracePeriodSeconds(),
+		Labels:                     accessor.GetLabels(),
+		Annotations:                accessor.GetAnnotations(),
+		OwnerReferences:            accessor.GetOwnerReferences(),
+		Finalizers:                 accessor.GetFinalizers(),
+		ManagedFields:              accessor.GetManagedFields(),
+	}
+	return meta, nil
 }

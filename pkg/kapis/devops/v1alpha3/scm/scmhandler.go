@@ -19,12 +19,12 @@ package scm
 import (
 	"context"
 	"fmt"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	goscm "github.com/jenkins-x/go-scm/scm"
+	"github.com/kubesphere/ks-devops/pkg/client/git"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/client/git"
-	"kubesphere.io/devops/pkg/kapis"
-	"kubesphere.io/devops/pkg/kapis/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )

@@ -21,10 +21,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func Test_compatibleTransform(t *testing.T) {
@@ -71,7 +73,7 @@ func Test_compatibleTransform(t *testing.T) {
 
 func Test_backwardFilter(t *testing.T) {
 	type args struct {
-		obj    runtime.Object
+		obj    *v1alpha3.PipelineRun
 		filter query.Filter
 	}
 	tests := []struct {
@@ -153,7 +155,13 @@ func Test_backwardFilter(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			schema, err := v1alpha3.SchemeBuilder.Register().Build()
+			assert.Nil(t, err)
+
 			handler := backwardListHandler{}
+			if tt.args.obj != nil {
+				handler.client = fake.NewClientBuilder().WithScheme(schema).WithObjects(tt.args.obj).Build()
+			}
 			if got := handler.Filter()(tt.args.obj, tt.args.filter); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("backwardFilter() = %v, want %v", got, tt.want)
 			}

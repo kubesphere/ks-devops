@@ -24,11 +24,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/golang/mock/gomock"
-	fakeDevOps "kubesphere.io/devops/pkg/client/devops/fake"
-	"kubesphere.io/devops/pkg/client/devops/jclient"
+	fakeDevOps "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jclient"
 
-	"kubesphere.io/devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 
+	modelsdevops "github.com/kubesphere/ks-devops/pkg/models/devops"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,13 +39,12 @@ import (
 	core "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	modelsdevops "kubesphere.io/devops/pkg/models/devops"
 
-	devops "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devops "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
-	"kubesphere.io/devops/pkg/client/clientset/versioned/fake"
-	informers "kubesphere.io/devops/pkg/client/informers/externalversions"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/fake"
+	informers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
 )
 
 var (

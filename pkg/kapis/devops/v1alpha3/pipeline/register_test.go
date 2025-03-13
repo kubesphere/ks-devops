@@ -17,14 +17,15 @@ limitations under the License.
 package pipeline
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestAPIsExist(t *testing.T) {
@@ -34,7 +35,7 @@ func TestAPIsExist(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	RegisterRoutes(wsWithGroup, fake.NewFakeClientWithScheme(schema))
+	RegisterRoutes(wsWithGroup, fake.NewClientBuilder().WithScheme(schema).Build())
 	restful.DefaultContainer.Add(wsWithGroup)
 
 	type args struct {

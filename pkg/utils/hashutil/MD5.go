@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"code.cloudfoundry.org/bytefmt"
-	"kubesphere.io/devops/pkg/utils/readerutils"
+	"github.com/kubesphere/ks-devops/pkg/utils/readerutils"
 )
 
 // GetMD5 returns the md5 value from a reader

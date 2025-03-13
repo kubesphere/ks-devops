@@ -18,21 +18,22 @@ package steptemplate
 
 import (
 	"bytes"
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
 	"io"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	ksruntime "kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	ksruntime "github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestAPIs(t *testing.T) {
@@ -50,7 +51,7 @@ func TestAPIs(t *testing.T) {
 	tests := []struct {
 		name         string
 		args         args
-		getInstances func() []runtime.Object
+		getInstances func() []client.Object
 		wantCode     int
 		verify       func([]byte, *testing.T)
 	}{{
@@ -66,8 +67,8 @@ func TestAPIs(t *testing.T) {
 			api:    "/clustersteptemplates",
 			method: http.MethodGet,
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{&v1alpha3.ClusterStepTemplate{}}
+		getInstances: func() []client.Object {
+			return []client.Object{&v1alpha3.ClusterStepTemplate{}}
 		},
 		wantCode: http.StatusOK,
 	}, {
@@ -76,8 +77,8 @@ func TestAPIs(t *testing.T) {
 			api:    "/clustersteptemplates/fake",
 			method: http.MethodGet,
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
+		getInstances: func() []client.Object {
+			return []client.Object{&v1alpha3.ClusterStepTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fake",
 				},
@@ -93,8 +94,8 @@ func TestAPIs(t *testing.T) {
 				return bytes.NewBufferString(`{}`)
 			},
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
+		getInstances: func() []client.Object {
+			return []client.Object{&v1alpha3.ClusterStepTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fake",
 				},
@@ -132,8 +133,8 @@ func TestAPIs(t *testing.T) {
 				return bytes.NewBufferString(`{"number":"3"}`)
 			},
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{&v1alpha3.ClusterStepTemplate{
+		getInstances: func() []client.Object {
+			return []client.Object{&v1alpha3.ClusterStepTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "fake",
 				},
@@ -166,14 +167,14 @@ func TestAPIs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.getInstances == nil {
-				tt.getInstances = func() []runtime.Object {
-					return []runtime.Object{}
+				tt.getInstances = func() []client.Object {
+					return []client.Object{}
 				}
 			}
 
 			ws := ksruntime.NewWebService(runtimeSchema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"})
 			RegisterRoutes(ws, &common.Options{
-				GenericClient: fake.NewFakeClientWithScheme(schema, tt.getInstances()...),
+				GenericClient: fake.NewClientBuilder().WithScheme(schema).WithObjects(tt.getInstances()...).Build(),
 			})
 			container := restful.NewContainer()
 			container.Add(ws)

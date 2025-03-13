@@ -17,17 +17,18 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
 	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops"
+	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestArgoAPIsExist(t *testing.T) {
@@ -36,7 +37,7 @@ func TestArgoAPIsExist(t *testing.T) {
 	container := restful.NewContainer()
 	opt := &common.Options{
 		GenericClient: gitops.Handler{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 	}
 	argoOption := &config.ArgoCDOption{Enabled: true, Namespace: "argocd"}
@@ -81,7 +82,7 @@ func TestFluxAPIsExist(t *testing.T) {
 	container := restful.NewContainer()
 	opt := &common.Options{
 		GenericClient: gitops.Handler{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 	}
 	argoOption := &config.ArgoCDOption{Enabled: false, Namespace: "argocd"}
@@ -126,7 +127,7 @@ func Test_NonAPIsExist(t *testing.T) {
 	container := restful.NewContainer()
 	opt := &common.Options{
 		GenericClient: gitops.Handler{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 	}
 	argoOption := &config.ArgoCDOption{Enabled: false, Namespace: "argocd"}

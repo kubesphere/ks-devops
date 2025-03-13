@@ -19,16 +19,16 @@ limitations under the License.
 package fake
 
 import (
+	clientset "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	devopsv1alpha1 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha1"
+	fakedevopsv1alpha1 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha1/fake"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha3"
+	fakedevopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/typed/devops/v1alpha3/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "kubesphere.io/devops/pkg/client/clientset/versioned"
-	devopsv1alpha1 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha1"
-	fakedevopsv1alpha1 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha1/fake"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha3"
-	fakedevopsv1alpha3 "kubesphere.io/devops/pkg/client/clientset/versioned/typed/devops/v1alpha3/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

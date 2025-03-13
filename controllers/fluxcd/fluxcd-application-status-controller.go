@@ -19,20 +19,20 @@ package fluxcd
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	apimeta "github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	apimeta "kubesphere.io/devops/pkg/external/fluxcd/meta"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strconv"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=get;update
@@ -180,7 +180,8 @@ func (r *ApplicationStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &kusv1.Kustomization{}}, &handler.EnqueueRequestForObject{}).
+		Named("fluxcd_application_status_controller").
+		Watches(&kusv1.Kustomization{}, &handler.EnqueueRequestForObject{}).
 		For(&helmv2.HelmRelease{}).
 		Complete(r)
 }

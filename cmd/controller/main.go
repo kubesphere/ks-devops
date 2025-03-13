@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"kubesphere.io/devops/cmd/controller/app"
+	"github.com/kubesphere/ks-devops/cmd/controller/app"
 )
 
 func main() {

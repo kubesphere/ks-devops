@@ -18,7 +18,7 @@ package workflowrun
 
 import (
 	"encoding/json"
-	"kubesphere.io/devops/pkg/event/common"
+	"github.com/kubesphere/ks-devops/pkg/event/common"
 )
 
 // Type is a full qualified class name in Java.

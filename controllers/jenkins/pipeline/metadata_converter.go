@@ -18,8 +18,8 @@ package pipeline
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
-	"kubesphere.io/devops/pkg/models/pipeline"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/models/pipeline"
 )
 
 func convertPipeline(jobPipeline *job.Pipeline) *pipeline.Metadata {

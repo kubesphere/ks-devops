@@ -19,16 +19,17 @@ package webhook
 import (
 	"context"
 	"errors"
-	"k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/event/workflowrun"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/kubesphere/ks-devops/pkg/event/workflowrun"
+	"k8s.io/client-go/util/retry"
+
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -221,7 +222,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 	}
 	type args struct {
 		workflowRunData *workflowrun.Data
-		initObjs        []runtime.Object
+		initObjs        []client.Object
 	}
 	tests := []struct {
 		name      string
@@ -232,7 +233,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 		name: "Should create a new PipelineRun",
 		args: args{
 			workflowRunData: createWorkflowRun("fake-namespace", "fake-pipeline", "1", false),
-			initObjs: []runtime.Object{
+			initObjs: []client.Object{
 				createPipeline("fake-namespace", "fake-pipeline"),
 			},
 		},
@@ -274,7 +275,7 @@ func TestHandler_handleWorkflowRunInitialize(t *testing.T) {
 	for _, tt := range tests {
 		scheme := runtime.NewScheme()
 		_ = v1alpha3.AddToScheme(scheme)
-		fakeClient := fake.NewFakeClientWithScheme(scheme, tt.args.initObjs...)
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(tt.args.initObjs...).Build()
 
 		t.Run(tt.name, func(t *testing.T) {
 			handler := &Handler{

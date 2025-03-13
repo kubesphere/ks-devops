@@ -16,10 +16,10 @@
 package gitops
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	"testing"
 )
 

@@ -17,13 +17,13 @@ limitations under the License.
 package informers
 
 import (
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
+	"github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
 	"time"
 
+	ksinformers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
-	ksinformers "kubesphere.io/devops/pkg/client/informers/externalversions"
 )
 
 type nullInformerFactory struct {

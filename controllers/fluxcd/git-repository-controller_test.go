@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,8 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -90,7 +90,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "create a Non-Artifact git repository",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, NonArtifactRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(NonArtifactRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: NonArtifactRepo.DeepCopy(),
@@ -108,7 +108,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "create a Artifact git repository",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ArtifactRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: ArtifactRepo.DeepCopy(),
@@ -132,7 +132,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "delete a Artifact git repository by click the delete button",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: ArtifactRepoWithDeletion.DeepCopy(),
@@ -150,7 +150,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "update a Artifact git repository (delete the ArtifactRepo Label)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: NonArtifactRepo.DeepCopy(),
@@ -168,7 +168,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "update a Artifact git repository (normal case)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ArtifactRepo.DeepCopy(), preDelFluxGitRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: ArtifactRepoWithNewURL.DeepCopy(),
@@ -188,7 +188,7 @@ func TestGitRepositoryReconciler_reconcileFluxGitRepo(t *testing.T) {
 		{
 			name: "update a Non-Artifact git repository (add the ArtifactRepo Label)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, NonArtifactRepo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(NonArtifactRepo.DeepCopy()).Build(),
 			},
 			args: args{
 				repo: ArtifactRepo.DeepCopy(),
@@ -274,7 +274,7 @@ func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 		{
 			name: "not found",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -289,7 +289,7 @@ func TestGitRepositoryReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{

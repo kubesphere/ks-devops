@@ -17,13 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/argocd"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/fluxcd"
+	"github.com/emicklei/go-restful/v3"
+
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/argocd"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/fluxcd"
 )
 
 // TODO perhaps we can find a better way to declaim the permission needs of the apiserver
@@ -33,7 +34,6 @@ import (
 func AddToContainer(container *restful.Container, options *common.Options, argoOption *config.ArgoCDOption, fluxOption *config.FluxCDOption) []*restful.WebService {
 	services := []*restful.WebService{
 		runtime.NewWebService(v1alpha1.GroupVersion),
-		runtime.NewWebServiceWithoutGroup(v1alpha1.GroupVersion),
 	}
 	for _, service := range services {
 		// dynamic register routers

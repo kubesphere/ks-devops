@@ -24,60 +24,46 @@ import (
 	rt "runtime"
 	"time"
 
-	"kubesphere.io/devops/pkg/jwt/token"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/doc"
-	gitops "kubesphere.io/devops/pkg/kapis/gitops/v1alpha1"
-
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
-	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
-	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsbearertoken "kubesphere.io/devops/pkg/apiserver/authentication/authenticators/bearertoken"
-	"kubesphere.io/devops/pkg/apiserver/authentication/request/anonymous"
-	"kubesphere.io/devops/pkg/apiserver/filters"
-	"kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/indexers"
-	"kubesphere.io/devops/pkg/kapis/oauth"
-	"kubesphere.io/devops/pkg/models/auth"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/emicklei/go-restful"
+	"github.com/kubesphere/ks-devops/assets"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	devopsbearertoken "github.com/kubesphere/ks-devops/pkg/apiserver/authentication/authenticators/bearertoken"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/authentication/request/anonymous"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/filters"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/swagger"
+	"github.com/kubesphere/ks-devops/pkg/client/cache"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+	apiserverconfig "github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/indexers"
+	"github.com/kubesphere/ks-devops/pkg/informers"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	devopsv1alpha2 "github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha2"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3"
+	gitops "github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/kapis/oauth"
+	"github.com/kubesphere/ks-devops/pkg/kapis/proxy"
+	"github.com/kubesphere/ks-devops/pkg/models/auth"
+	utilnet "github.com/kubesphere/ks-devops/pkg/utils/net"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/request/bearertoken"
+	unionauth "k8s.io/apiserver/pkg/authentication/request/union"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	"k8s.io/klog/v2"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
-
-	"kubesphere.io/devops/pkg/client/cache"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
-	"kubesphere.io/devops/pkg/client/sonarqube"
-	apiserverconfig "kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/informers"
-	devopsv1alpha2 "kubesphere.io/devops/pkg/kapis/devops/v1alpha2"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/kapis/devops/v1alpha3"
-	imagebuilder "kubesphere.io/devops/pkg/kapis/imagebuilder/v1alpha1"
-	utilnet "kubesphere.io/devops/pkg/utils/net"
-)
-
-const (
-	// ApiRootPath defines the root path of all KubeSphere apis.
-	ApiRootPath = "/kapis"
-
-	// MimeMergePatchJson is the mime header used in merge request
-	MimeMergePatchJson = "application/merge-patch+json"
-
-	//
-	MimeJsonPatchJson = "application/json-patch+json"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type APIServer struct {
-
 	// number of kubesphere apiserver
 	ServerCount int
 
@@ -120,10 +106,18 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 		logStackOnRecover(panicReason, httpWriter)
 	})
 
-	s.installKubeSphereAPIs()
+	s.InstallDevOpsAPIs()
+	s.setProxy()
+
+	swaggerConfig := swagger.GetSwaggerConfig(s.container)
+	s.container.Add(restfulspec.NewOpenAPIService(swaggerConfig))
+	s.container.Handle("/swagger-ui/", http.FileServer(http.FS(assets.Static)))
 
 	for _, ws := range s.container.RegisteredWebServices() {
-		klog.V(2).Infof("%s", ws.RootPath())
+		klog.Infof("Register %s", ws.RootPath())
+		for _, r := range ws.Routes() {
+			klog.Infof("    %s", r.Method+" "+r.Path)
+		}
 	}
 
 	s.Server.Handler = s.container
@@ -133,21 +127,17 @@ func (s *APIServer) PrepareRun(stopCh <-chan struct{}) error {
 	return nil
 }
 
-// Install all KubeSphere api groups
-// Installation happens before all informers start to cache objects, so
-//
-//	any attempt to list objects using listers will get empty results.
-func (s *APIServer) installKubeSphereAPIs() {
+// Install all DevOps api groups
+// Installation happens before all informers start to cache objects,
+// so any attempt to list objects using listers will get empty results.
+func (s *APIServer) InstallDevOpsAPIs() {
 	jenkinsCore := core.JenkinsCore{
 		URL:      s.Config.JenkinsOptions.Host,
 		UserName: s.Config.JenkinsOptions.Username,
-		Token:    s.Config.JenkinsOptions.Password,
+		Token:    s.Config.JenkinsOptions.ApiToken,
 	}
 
-	var wss []*restful.WebService
-	tokenIssue := getTokenIssue(s.Config)
-
-	v1alpha2WSS, err := devopsv1alpha2.AddToContainer(s.container,
+	_, err := devopsv1alpha2.AddToContainer(s.container,
 		s.InformerFactory.KubeSphereSharedInformerFactory(),
 		s.DevopsClient,
 		s.SonarClient,
@@ -157,22 +147,23 @@ func (s *APIServer) installKubeSphereAPIs() {
 		s.KubernetesClient,
 		jenkinsCore)
 	utilruntime.Must(err)
-	wss = append(wss, v1alpha2WSS...)
-	wss = append(wss, devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client, tokenIssue, jenkinsCore)...)
-	wss = append(wss, oauth.AddToContainer(s.container,
+	devopsv1alpha3.AddToContainer(s.container, s.DevopsClient, s.KubernetesClient, s.Client, s.RuntimeCache, jenkinsCore, s.Config)
+	oauth.AddToContainer(s.container,
 		auth.NewTokenOperator(
 			s.CacheClient,
 			s.Config.AuthenticationOptions),
-	))
-	wss = append(wss, gitops.AddToContainer(s.container, &common.Options{
+	)
+	gitops.AddToContainer(s.container, &common.Options{
 		GenericClient: s.Client,
-	}, s.Config.ArgoCDOption, s.Config.FluxCDOption)...)
-	wss = append(wss, imagebuilder.AddToContainer(s.container, s.Client, s.DevopsClient))
-	doc.AddSwaggerService(wss, s.container)
+	}, s.Config.ArgoCDOption, s.Config.FluxCDOption)
 }
 
-func getTokenIssue(config *apiserverconfig.Config) token.Issuer {
-	return token.NewTokenIssuer(config.AuthenticationOptions.JwtSecret, config.AuthenticationOptions.MaximumClockSkew)
+func (s *APIServer) setProxy() {
+	proxy.AddToContainer(s.container)
+}
+
+func (s *APIServer) SetContainer(container *restful.Container) {
+	s.container = container
 }
 
 func (s *APIServer) Run(stopCh context.Context) (err error) {
@@ -327,7 +318,7 @@ func logRequestAndResponse(req *restful.Request, resp *restful.Response, chain *
 	logWithVerbose.Infof("%s - \"%s %s %s\" %d %d %dms",
 		utilnet.GetRequestIP(req.Request),
 		req.Request.Method,
-		req.Request.URL,
+		req.Request.RequestURI,
 		req.Request.Proto,
 		resp.StatusCode(),
 		resp.ContentLength(),

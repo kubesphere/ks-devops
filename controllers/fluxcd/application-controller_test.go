@@ -19,24 +19,25 @@ package fluxcd
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
+	sourcev1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/source/v1beta2"
 	"github.com/stretchr/testify/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
-	sourcev1 "kubesphere.io/devops/pkg/external/fluxcd/source/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
-	"time"
 )
 
 func TestApplicationReconciler_Reconcile(t *testing.T) {
@@ -155,7 +156,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "not found an application",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -170,7 +171,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an argocd application",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, argoApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(argoApp.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -185,7 +186,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an invalid flux application that have no FluxApplication field",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp1.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidFluxApp1.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -200,7 +201,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an invalid flux application that have no Config",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp2.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidFluxApp2.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -215,7 +216,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an invalid flux application that have no Source",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp3.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidFluxApp3.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -230,7 +231,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an invalid flux application that have no HelmRelease",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp4.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidFluxApp4.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -245,7 +246,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found an invalid flux application (HelmRelease) that have no chart",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, invalidFluxApp5.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(invalidFluxApp5.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -260,7 +261,7 @@ func TestApplicationReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found a flux application",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxApp.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -511,7 +512,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "reconcile a invalid fluxApp",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: fakeApp.DeepCopy(),
@@ -523,7 +524,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create a Multi-Clusters FluxApp(HelmRelease) without saving Template",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: helmApp.DeepCopy(),
@@ -568,7 +569,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create a Multi-Clusters FluxApp(HelmRelease) and save Template",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: helmAppWithLabel.DeepCopy(),
@@ -627,7 +628,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create the Multi-Clusters FluxApp(HelmRelease) but with no Interval for HelmChart",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: helmAppWithNoInterval.DeepCopy(),
@@ -657,7 +658,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "update the Multi-Clusters FluxApp(HelmRelease)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxHR.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxHR.DeepCopy()).Build(),
 			},
 			args: args{
 				app: helmAppWithUpdate.DeepCopy(),
@@ -693,7 +694,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create a Multi-Clusters FluxApp(HelmRelease) by using a Template",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxHelmChart.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxHelmChart.DeepCopy()).Build(),
 			},
 			args: args{
 				app: helmAppWithTemplate.DeepCopy(),
@@ -753,7 +754,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create a Multi-Clusters FluxApp(HelmRelease) by using a Template",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: helmAppWithTemplate.DeepCopy(),
@@ -765,7 +766,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "create a  Multi-Clusters FluxApp(Kustomization)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				app: kusApp.DeepCopy(),
@@ -805,7 +806,7 @@ func TestApplicationReconciler_reconcileApp(t *testing.T) {
 		{
 			name: "update the Multi-Clusters FluxApp(Kustomization)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxKus.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxKus.DeepCopy()).Build(),
 			},
 			args: args{
 				app: kusAppWithUpdate.DeepCopy(),
@@ -1020,7 +1021,7 @@ func TestApplicationReconciler_SetupWithManager(t *testing.T) {
 		args: args{
 			mgr: &core.FakeManager{
 				Scheme: schema,
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 		},
 		wantErr: core.NoErrors,

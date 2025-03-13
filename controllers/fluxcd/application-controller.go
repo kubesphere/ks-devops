@@ -19,21 +19,22 @@ package fluxcd
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	sourcev1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/source/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	sourcev1 "kubesphere.io/devops/pkg/external/fluxcd/source/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"time"
 )
 
 //+kubebuilder:rbac:groups=gitops.kubesphere.io,resources=applications,verbs=watch;get;list
@@ -533,6 +534,7 @@ func (r *ApplicationReconciler) SetupWithManager(mgr manager.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("fluxcd_application_controller").
 		For(&v1alpha1.Application{}).
 		Complete(r)
 }

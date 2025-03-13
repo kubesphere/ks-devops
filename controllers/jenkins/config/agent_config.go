@@ -23,7 +23,6 @@ const (
 	// Resource limit key of map
 	resourceLimitKey = "resource.limit"
 
-	jenkinsConfigName     = "jenkins-casc-config"
 	jenkinsYamlKey        = "jenkins.yaml"
 	jenkinsUserYamlKey    = "jenkins_user.yaml"
 	jenkinsCasCConfigName = "jenkins-casc-config"

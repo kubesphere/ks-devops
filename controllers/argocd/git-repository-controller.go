@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -175,6 +175,7 @@ func (c *GitRepositoryController) SetupWithManager(mgr ctrl.Manager) error {
 	c.log = ctrl.Log.WithName(c.GetName())
 	c.recorder = mgr.GetEventRecorderFor(c.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("argocd_git_repository_controller").
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&v1alpha3.GitRepository{}).
 		Complete(c)

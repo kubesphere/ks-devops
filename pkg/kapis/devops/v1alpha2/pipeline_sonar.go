@@ -17,9 +17,9 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/kapis"
 )
 
 func (h PipelineSonarHandler) GetPipelineSonarStatusHandler(request *restful.Request, resp *restful.Response) {

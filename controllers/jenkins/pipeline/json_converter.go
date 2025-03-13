@@ -27,20 +27,15 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/jwt/token"
+	v1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
-
-// tokenExpireIn indicates that the temporary token issued by controller will be expired in some time.
-const tokenExpireIn time.Duration = 5 * time.Minute
 
 // HttpTimeoutErrStr indicates that connection in http request is timeout(the str in error).
 const HttpTimeoutErrStr = " (Client.Timeout exceeded while awaiting headers)"
@@ -54,8 +49,7 @@ type JenkinsfileReconciler struct {
 	recorder record.EventRecorder
 
 	client.Client
-	JenkinsCore core.JenkinsCore
-	TokenIssuer token.Issuer
+	JenkinsClient core.Client
 }
 
 // Reconcile is the main entrypoint of this controller
@@ -70,28 +64,17 @@ func (r *JenkinsfileReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return
 	}
 
-	// set up the Jenkins client
-	var c *core.JenkinsCore
-	if c, err = r.getOrCreateJenkinsCore(map[string]string{
-		v1alpha3.PipelineRunCreatorAnnoKey: "admin",
-	}); err != nil {
-		err = fmt.Errorf("failed to create Jenkins client, error: %v", err)
-		return
-	}
-	c.RoundTripper = r.JenkinsCore.RoundTripper
-	coreClient := core.Client{JenkinsCore: *c}
-
 	editMode := pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey]
 	switch editMode {
 	case v1alpha3.PipelineJenkinsfileEditModeRaw:
-		result, err = r.reconcileJenkinsfileEditMode(pip, req.NamespacedName, coreClient)
+		result, err = r.reconcileJenkinsfileEditMode(pip, req.NamespacedName)
 	case v1alpha3.PipelineJenkinsfileEditModeJSON:
-		result, err = r.reconcileJSONEditMode(pip, req.NamespacedName, coreClient)
+		result, err = r.reconcileJSONEditMode(pip, req.NamespacedName)
 	case "":
 		// Reconcile pipeline version <= v3.3.2
 		if _, ok := pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey]; !ok {
 			if pip.Spec.Pipeline != nil && pip.Spec.Pipeline.Jenkinsfile != "" {
-				result, err = r.reconcileJenkinsfileEditMode(pip, req.NamespacedName, coreClient)
+				result, err = r.reconcileJenkinsfileEditMode(pip, req.NamespacedName)
 			}
 		}
 	default:
@@ -101,7 +84,7 @@ func (r *JenkinsfileReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return
 }
 
-func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipeline, pipelineKey client.ObjectKey, coreClient core.Client) (
+func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipeline, pipelineKey client.ObjectKey) (
 	result ctrl.Result, err error) {
 	jenkinsfile := pip.Spec.Pipeline.Jenkinsfile
 	toJsonJenkinsfile := ""
@@ -113,7 +96,7 @@ func (r *JenkinsfileReconciler) reconcileJenkinsfileEditMode(pip *v1alpha3.Pipel
 	if jenkinsfile != "" {
 		var toJSONResult core.GenericResult
 		jenkinsfile = strings.ReplaceAll(jenkinsfile, "\\", "\\\\") // escape backslash
-		if toJSONResult, err = coreClient.ToJSON(jenkinsfile); err != nil || toJSONResult.GetStatus() != "success" {
+		if toJSONResult, err = r.JenkinsClient.ToJSON(jenkinsfile); err != nil || toJSONResult.GetStatus() != "success" {
 			r.log.Error(err, "failed to convert jenkinsfile to json format")
 			if err != nil {
 				// ConnectRefused || Timeout when jenkins is starting(not ready), retry
@@ -157,12 +140,12 @@ func (r *JenkinsfileReconciler) updateAnnotations(annotations map[string]string,
 	})
 }
 
-func (r *JenkinsfileReconciler) reconcileJSONEditMode(pip *v1alpha3.Pipeline, pipelineKey client.ObjectKey, coreClient core.Client) (
+func (r *JenkinsfileReconciler) reconcileJSONEditMode(pip *v1alpha3.Pipeline, pipelineKey client.ObjectKey) (
 	result ctrl.Result, err error) {
 	var jsonData string
 	if jsonData = pip.Annotations[v1alpha3.PipelineJenkinsfileValueAnnoKey]; jsonData != "" {
 		var toResult core.GenericResult
-		if toResult, err = coreClient.ToJenkinsfile(jsonData); err != nil || toResult.GetStatus() != "success" {
+		if toResult, err = r.JenkinsClient.ToJenkinsfile(jsonData); err != nil || toResult.GetStatus() != "success" {
 			r.log.Error(err, "failed to convert json format to Jenkinsfile")
 			pip.Annotations[v1alpha3.PipelineJenkinsfileEditModeAnnoKey] = ""
 			pip.Annotations[v1alpha3.PipelineJenkinsfileValidateAnnoKey] = v1alpha3.PipelineJenkinsfileValidateFailure
@@ -210,24 +193,6 @@ func (r *JenkinsfileReconciler) GetGroupName() string {
 	return ControllerGroupName
 }
 
-func (r *JenkinsfileReconciler) getOrCreateJenkinsCore(annotations map[string]string) (*core.JenkinsCore, error) {
-	creator, ok := annotations[v1alpha3.PipelineRunCreatorAnnoKey]
-	if !ok || creator == "" {
-		return &r.JenkinsCore, nil
-	}
-	// create a new JenkinsCore for current creator
-	accessToken, err := r.TokenIssuer.IssueTo(&user.DefaultInfo{Name: creator}, token.AccessToken, tokenExpireIn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to issue access token for creator %s, error was %v", creator, err)
-	}
-	jenkinsCore := &core.JenkinsCore{
-		URL:      r.JenkinsCore.URL,
-		UserName: creator,
-		Token:    accessToken,
-	}
-	return jenkinsCore, nil
-}
-
 // jenkinsfilePredicate returns a predicate only care about pipeline update event..
 var jenkinsfilePredicate = predicate.Funcs{
 	UpdateFunc: func(ue event.UpdateEvent) bool {
@@ -250,6 +215,7 @@ func (r *JenkinsfileReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_pipeline_jenkinsfile_controller").
 		WithEventFilter(jenkinsfilePredicate).
 		For(&v1alpha3.Pipeline{}).
 		Complete(r)
