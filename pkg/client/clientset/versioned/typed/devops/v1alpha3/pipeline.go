@@ -22,12 +22,12 @@ import (
 	"context"
 	"time"
 
+	v1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	scheme "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	scheme "kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
 )
 
 // PipelinesGetter has a method to return a PipelineInterface.

@@ -14,15 +14,16 @@
 package template
 
 import (
-	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func Test_newHandler(t *testing.T) {
-	fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme)
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 	type args struct {
 		options *common.Options
 	}

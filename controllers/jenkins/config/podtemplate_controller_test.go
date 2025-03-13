@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	mgrcore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	mgrcore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -120,7 +120,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 		verify     func(*testing.T, client.Client)
 	}{{
 		name:   "not found podtemplate",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema)},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -128,7 +128,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "no related ConfigMap exist",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, podT.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(podT.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -136,7 +136,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "no expect key in specific ConfigMap",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, podT.DeepCopy(), cmWithoutKey.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(podT.DeepCopy(), cmWithoutKey.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -144,7 +144,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "normal case",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, podT.DeepCopy(), cm.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(podT.DeepCopy(), cm.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
@@ -162,7 +162,7 @@ func TestPodTemplateReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "handle a deleting podTemplate",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, deletingPodT.DeepCopy(), cm.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(deletingPodT.DeepCopy(), cm.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)

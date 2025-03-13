@@ -20,12 +20,12 @@ import (
 
 	"github.com/go-logr/logr"
 	k8s "github.com/jenkins-zh/jenkins-client/pkg/k8s"
+	"github.com/kubesphere/ks-devops/controllers/predicate"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+	"github.com/kubesphere/ks-devops/pkg/utils/stringutils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/predicate"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"kubesphere.io/devops/pkg/utils/stringutils"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -132,5 +132,9 @@ func (r *PodTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	var withLabelPredicate = predicate.NewPredicateFuncs(predicate.NewFilterHasLabel(r.LabelSelector))
-	return ctrl.NewControllerManagedBy(mgr).WithEventFilter(withLabelPredicate).For(&v1.PodTemplate{}).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_config_pod_template_controller").
+		WithEventFilter(withLabelPredicate).
+		For(&v1.PodTemplate{}).
+		Complete(r)
 }

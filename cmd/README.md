@@ -12,5 +12,3 @@ There're three commands here:
 ## Others
 
 There're some small tools under this directory.
-
-* [jwt](tools/jwt/README.md) helps to generate `jwtSecret` and Jenkins `token`

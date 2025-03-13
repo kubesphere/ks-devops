@@ -18,24 +18,24 @@ package v1alpha2
 
 import (
 	"context"
+	"github.com/kubesphere/ks-devops/pkg/client/s3/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+	"github.com/kubesphere/ks-devops/pkg/informers"
 	sonargo "github.com/kubesphere/sonargo/sonar"
-	"kubesphere.io/devops/pkg/client/s3/fake"
-	"kubesphere.io/devops/pkg/client/sonarqube"
-	"kubesphere.io/devops/pkg/informers"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	fakeclientset "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/fake"
+	fakedevops "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	fakeclientset "kubesphere.io/devops/pkg/client/clientset/versioned/fake"
-	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/constants"
 )
 
 func TestAPIsExist(t *testing.T) {
@@ -237,13 +237,13 @@ func TestAPIsExist(t *testing.T) {
 			uri:    "/tojenkinsfile",
 		},
 	}, {
-		name: "/devops/{devops}/pipelines/{pipeline}/sonarstatus",
+		name: "/namespaces/{devops}/pipelines/{pipeline}/sonarstatus",
 		args: args{
 			method: http.MethodGet,
 			uri:    "/devops/ns/pipelines/fake/sonarstatus",
 		},
 	}, {
-		name: "/devops/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus",
+		name: "/namespaces/{devops}/pipelines/{pipeline}/branches/{branch}/sonarstatus",
 		args: args{
 			method: http.MethodGet,
 			uri:    "/devops/ns/pipelines/fake/branches/master/sonarstatus",

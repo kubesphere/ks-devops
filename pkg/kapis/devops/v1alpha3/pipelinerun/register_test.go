@@ -21,11 +21,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	fakedevops "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/runtime"
-	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -36,7 +36,7 @@ func TestAPIsExist(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 
-	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewFakeClientWithScheme(schema))
+	RegisterRoutes(wsWithGroup, fakedevops.NewFakeDevops(nil), fake.NewClientBuilder().WithScheme(schema).Build())
 	restful.DefaultContainer.Add(wsWithGroup)
 
 	type args struct {

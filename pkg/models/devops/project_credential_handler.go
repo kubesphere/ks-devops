@@ -19,7 +19,7 @@ package devops
 import (
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 type ProjectCredentialGetter interface {

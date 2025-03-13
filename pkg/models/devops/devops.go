@@ -27,25 +27,29 @@ import (
 	"strings"
 	"sync"
 
-	"kubesphere.io/devops/pkg/constants"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/secretutil"
+	"kubesphere.io/kubesphere/pkg/models/iam/am"
 
-	"kubesphere.io/devops/pkg/api"
-	devopsapi "kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
-	"kubesphere.io/devops/pkg/client/devops"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	apidevops "github.com/kubesphere/ks-devops/pkg/api/devops"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	kubesphere "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/utils/secretutil"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
+
+	"kubesphere.io/kubesphere/pkg/apiserver/authorization/authorizer"
+	"kubesphere.io/kubesphere/pkg/apiserver/authorization/rbac"
 )
 
 const (
@@ -53,18 +57,18 @@ const (
 )
 
 type DevopsOperator interface {
-	CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
-	GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
-	GetDevOpsProjectByGenerateName(workspace string, projectName string) (*v1alpha3.DevOpsProject, error)
+	CreateDevOpsProject(workspace string, project *devopsv1alpha3.DevOpsProject) (*devopsv1alpha3.DevOpsProject, error)
+	GetDevOpsProject(workspace string, projectName string) (*devopsv1alpha3.DevOpsProject, error)
+	GetDevOpsProjectByGenerateName(workspace string, projectName string) (*devopsv1alpha3.DevOpsProject, error)
 	DeleteDevOpsProject(workspace string, projectName string) error
-	UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error)
-	ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error)
+	UpdateDevOpsProject(workspace string, project *devopsv1alpha3.DevOpsProject) (*devopsv1alpha3.DevOpsProject, error)
+	ListDevOpsProject(user user.Info, workspace string, queryParam *query.Query) (*api.ListResult, error)
 	CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error)
 
-	CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
-	GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error)
+	CreatePipelineObj(projectName string, pipeline *devopsv1alpha3.Pipeline) (*devopsv1alpha3.Pipeline, error)
+	GetPipelineObj(projectName string, pipelineName string) (*devopsv1alpha3.Pipeline, error)
 	DeletePipelineObj(projectName string, pipelineName string) error
-	UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error)
+	UpdatePipelineObj(projectName string, pipeline *devopsv1alpha3.Pipeline) (*devopsv1alpha3.Pipeline, error)
 	ListPipelineObj(projectName string, query *query.Query) (api.ListResult, error)
 	UpdateJenkinsfile(projectName, pipelineName, mode, jenkinsfile string) error
 
@@ -83,7 +87,7 @@ type DevopsOperator interface {
 	ReplayPipeline(projectName, pipelineName, runId string, req *http.Request) (*devops.ReplayPipeline, error)
 	RunPipeline(projectName, pipelineName string, req *http.Request) (*devops.RunPipeline, error)
 	GetArtifacts(projectName, pipelineName, runId string, req *http.Request) ([]devops.Artifacts, error)
-	GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, http.Header, error)
+	GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, error)
 	GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, req *http.Request) ([]byte, http.Header, error)
 	GetNodeSteps(projectName, pipelineName, runId, nodeId string, req *http.Request) ([]devops.NodeSteps, error)
 	GetPipelineRunNodes(projectName, pipelineName, runId string, req *http.Request) ([]devops.PipelineRunNodes, error)
@@ -129,16 +133,18 @@ type devopsOperator struct {
 	k8sclient    kubernetes.Interface
 	ksclient     kubesphere.Interface
 	context      context.Context
+
+	am am.AccessManagementInterface
 }
 
-func NewDevopsOperator(client devops.Interface,
-	k8sclient kubernetes.Interface,
-	ksclient kubesphere.Interface) DevopsOperator {
+func NewDevopsOperator(client devops.Interface, k8sclient kubernetes.Interface,
+	ksclient kubesphere.Interface, am am.AccessManagementInterface) DevopsOperator {
 	return &devopsOperator{
 		devopsClient: client,
 		k8sclient:    k8sclient,
 		ksclient:     ksclient,
 		context:      context.Background(),
+		am:           am,
 	}
 }
 
@@ -155,7 +161,7 @@ func convertToHttpParameters(req *http.Request) *devops.HttpParameters {
 	return &httpParameters
 }
 
-func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error) {
+func (d devopsOperator) CreateDevOpsProject(workspace string, project *devopsv1alpha3.DevOpsProject) (*devopsv1alpha3.DevOpsProject, error) {
 	// All resources of devops project belongs to the namespace of the same name
 	// The devops project name is used as the name of the admin namespace, using generateName to avoid conflicts
 	if project.GenerateName == "" {
@@ -195,7 +201,7 @@ func (d devopsOperator) CreateDevOpsProject(workspace string, project *v1alpha3.
 
 // CheckDevopsProject check the devops is not exist
 func (d devopsOperator) CheckDevopsProject(workspace, projectName string) (map[string]interface{}, error) {
-	var list *v1alpha3.DevOpsProjectList
+	var list *devopsv1alpha3.DevOpsProjectList
 	var err error
 
 	result := make(map[string]interface{})
@@ -219,8 +225,8 @@ func (d devopsOperator) CheckDevopsProject(workspace, projectName string) (map[s
 
 // GetDevOpsProjectByGenerateName finds the DevOps project by workspace and project name
 // the projectName is the generateName instead of the real resource name
-func (d devopsOperator) GetDevOpsProjectByGenerateName(workspace string, projectName string) (project *v1alpha3.DevOpsProject, err error) {
-	var list *v1alpha3.DevOpsProjectList
+func (d devopsOperator) GetDevOpsProjectByGenerateName(workspace string, projectName string) (project *devopsv1alpha3.DevOpsProject, err error) {
+	var list *devopsv1alpha3.DevOpsProjectList
 
 	if list, err = d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", constants.WorkspaceLabelKey, workspace),
@@ -241,7 +247,7 @@ func (d devopsOperator) GetDevOpsProjectByGenerateName(workspace string, project
 }
 
 // GetDevOpsProject finds the DevOps project by workspace and project name
-func (d devopsOperator) GetDevOpsProject(workspace string, projectName string) (*v1alpha3.DevOpsProject, error) {
+func (d devopsOperator) GetDevOpsProject(workspace string, projectName string) (*devopsv1alpha3.DevOpsProject, error) {
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 }
 
@@ -249,7 +255,7 @@ func (d devopsOperator) DeleteDevOpsProject(workspace string, projectName string
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Delete(d.context, projectName, *metav1.NewDeleteOptions(0))
 }
 
-func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.DevOpsProject) (*v1alpha3.DevOpsProject, error) {
+func (d devopsOperator) UpdateDevOpsProject(workspace string, project *devopsv1alpha3.DevOpsProject) (*devopsv1alpha3.DevOpsProject, error) {
 	if project.Annotations == nil {
 		project.Annotations = make(map[string]string)
 	}
@@ -258,29 +264,48 @@ func (d devopsOperator) UpdateDevOpsProject(workspace string, project *v1alpha3.
 	return d.ksclient.DevopsV1alpha3().DevOpsProjects().Update(d.context, project, metav1.UpdateOptions{})
 }
 
-func (d devopsOperator) ListDevOpsProject(workspace string, limit, offset int) (api.ListResult, error) {
-	devOpsProjectList, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{})
-	if err != nil {
-		return api.ListResult{}, nil
-	}
-	items := make([]interface{}, 0)
-	var result []interface{}
-	for _, item := range devOpsProjectList.Items {
-		result = append(result, item)
+func (d devopsOperator) ListDevOpsProject(user user.Info, workspace string, queryParam *query.Query) (*api.ListResult, error) {
+	var err error
+	var projects *devopsv1alpha3.DevOpsProjectList
+	if projects, err = d.ksclient.DevopsV1alpha3().DevOpsProjects().List(d.context, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", constants.WorkspaceLabelKey, workspace),
+	}); err != nil || len(projects.Items) == 0 {
+		return nil, err
 	}
 
-	if limit == -1 || limit+offset > len(result) {
-		limit = len(result) - offset
+	projectObjs := make([]runtime.Object, 0)
+	authorizor := rbac.NewRBACAuthorizer(d.am)
+	var decision authorizer.Decision
+	var reason string
+	for i, item := range projects.Items {
+		attr := authorizer.AttributesRecord{
+			User:            user,
+			ResourceRequest: true,
+			Verb:            "get",
+			APIGroup:        apidevops.GroupName,
+			Workspace:       workspace,
+			Namespace:       item.Name,
+			Resource:        devopsv1alpha3.ResourcePluralDevOpsProject,
+			Name:            item.Name,
+			ResourceScope:   request.NamespaceScope,
+		}
+		if decision, reason, err = authorizor.Authorize(attr); err != nil {
+			return nil, err
+		}
+		klog.V(4).Infof("the user: %s access devops project: %s, access decision: %v reason: %s",
+			user.GetName(), item.Name, decision, reason)
+		if decision == authorizer.DecisionAllow {
+			projectObjs = append(projectObjs, &projects.Items[i])
+		}
 	}
-	items = result[offset : offset+limit]
-	if items == nil {
-		items = []interface{}{}
-	}
-	return api.ListResult{TotalItems: len(result), Items: items}, nil
+
+	// use default pagination search logic
+	result := resourcesv1alpha3.DefaultList(projectObjs, queryParam, api.DefaultCompareFunc, api.DefaultFilterFunc)
+	return api.FromKSListResult(result), nil
 }
 
 // pipelineobj in crd
-func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (pip *v1alpha3.Pipeline, err error) {
+func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *devopsv1alpha3.Pipeline) (pip *devopsv1alpha3.Pipeline, err error) {
 	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err == nil {
 		if projectObj.Annotations == nil {
@@ -293,7 +318,7 @@ func (d devopsOperator) CreatePipelineObj(projectName string, pipeline *v1alpha3
 	return
 }
 
-func (d devopsOperator) GetPipelineObj(projectName string, pipelineName string) (*v1alpha3.Pipeline, error) {
+func (d devopsOperator) GetPipelineObj(projectName string, pipelineName string) (*devopsv1alpha3.Pipeline, error) {
 	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -309,7 +334,7 @@ func (d devopsOperator) DeletePipelineObj(projectName string, pipelineName strin
 	return d.ksclient.DevopsV1alpha3().Pipelines(projectObj.Status.AdminNamespace).Delete(d.context, pipelineName, *metav1.NewDeleteOptions(0))
 }
 
-func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *v1alpha3.Pipeline) (*v1alpha3.Pipeline, error) {
+func (d devopsOperator) UpdatePipelineObj(projectName string, pipeline *devopsv1alpha3.Pipeline) (*devopsv1alpha3.Pipeline, error) {
 	projectObj, err := d.ksclient.DevopsV1alpha3().DevOpsProjects().Get(d.context, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -374,8 +399,8 @@ func (d devopsOperator) ListPipelineObj(projectName string, queryParam *query.Qu
 	}
 
 	// filter pipeline type & convert Pipeline to runtime.Object
-	pipelineType, typeExist := queryParam.Filters[query.FieldType]
-	var result = make([]runtime.Object, len(pipelines.Items))
+	pipelineType, typeExist := queryParam.Filters[constants.FieldType]
+	var result = make([]runtime.Object, 0)
 	for i, _ := range pipelines.Items {
 		if typeExist && string(pipelines.Items[i].Spec.Type) != string(pipelineType) {
 			continue
@@ -383,7 +408,8 @@ func (d devopsOperator) ListPipelineObj(projectName string, queryParam *query.Qu
 		result = append(result, &pipelines.Items[i])
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, queryParam, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
+	resultList := resourcesv1alpha3.DefaultList(result, queryParam, api.DefaultCompareFunc, api.DefaultFilterFunc)
+	return *api.FromKSListResult(resultList), nil
 }
 
 // CreateCredentialObj creates a secret
@@ -456,7 +482,7 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 	}
 	var result []runtime.Object
 
-	credentialTypeList := v1alpha3.GetSupportedCredentialTypes()
+	credentialTypeList := devopsv1alpha3.GetSupportedCredentialTypes()
 	for i := range credentialObjList.Items {
 		credential := credentialObjList.Items[i]
 		for _, credentialType := range credentialTypeList {
@@ -466,7 +492,8 @@ func (d devopsOperator) ListCredentialObj(projectName string, query *query.Query
 		}
 	}
 
-	return *resourcesV1alpha3.DefaultList(result, query, resourcesV1alpha3.DefaultCompare(), resourcesV1alpha3.DefaultFilter()), nil
+	resultList := resourcesv1alpha3.DefaultList(result, query, api.DefaultCompareFunc, api.DefaultFilterFunc)
+	return *api.FromKSListResult(resultList), nil
 }
 
 func (d devopsOperator) CheckPipelineName(projectName, pipelineName string, req *http.Request) (map[string]interface{}, error) {
@@ -550,15 +577,15 @@ func (d devopsOperator) GetArtifacts(projectName, pipelineName, runId string, re
 	return res, err
 }
 
-func (d devopsOperator) GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, http.Header, error) {
+func (d devopsOperator) GetRunLog(projectName, pipelineName, runId string, req *http.Request) ([]byte, error) {
 
-	res, header, err := d.devopsClient.GetRunLog(projectName, pipelineName, runId, convertToHttpParameters(req))
+	res, err := d.devopsClient.GetRunLog(projectName, pipelineName, runId, convertToHttpParameters(req))
 	if err != nil {
 		klog.Error(err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	return res, header, err
+	return res, err
 }
 
 func (d devopsOperator) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, req *http.Request) ([]byte, http.Header, error) {
@@ -1015,7 +1042,7 @@ func (d devopsOperator) GetJenkinsAgentLabels() (labels []string, err error) {
 	var cm *v1.ConfigMap
 	if cm, err = d.k8sclient.CoreV1().ConfigMaps("kubesphere-devops-system").
 		Get(context.Background(), "jenkins-agent-config", metav1.GetOptions{}); err == nil {
-		labelsInStr := cm.Data[devopsapi.JenkinsAgentLabelsKey]
+		labelsInStr := cm.Data[apidevops.JenkinsAgentLabelsKey]
 		labels = strings.Split(labelsInStr, ",")
 	}
 	return

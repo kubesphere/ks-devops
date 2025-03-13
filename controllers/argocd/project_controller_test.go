@@ -19,19 +19,20 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestCreateUnstructuredObject(t *testing.T) {
@@ -120,7 +121,7 @@ func TestReconcileArgoProject(t *testing.T) {
 		verify  func(t *testing.T, err error, c client.Client)
 	}{{
 		name: "no argo in the project",
-		c:    fake.NewFakeClientWithScheme(schema),
+		c:    fake.NewClientBuilder().WithScheme(schema).Build(),
 		project: func() *v1alpha3.DevOpsProject {
 			return project.DeepCopy()
 		},
@@ -129,7 +130,7 @@ func TestReconcileArgoProject(t *testing.T) {
 		},
 	}, {
 		name: "have an empty Argo",
-		c:    fake.NewFakeClientWithScheme(schema),
+		c:    fake.NewClientBuilder().WithScheme(schema).Build(),
 		project: func() *v1alpha3.DevOpsProject {
 			p1 := project.DeepCopy()
 			p1.Spec.Argo = &v1alpha3.Argo{}
@@ -149,7 +150,7 @@ func TestReconcileArgoProject(t *testing.T) {
 		},
 	}, {
 		name: "update the existing Argo AppProject",
-		c:    fake.NewFakeClientWithScheme(schema, appProject.DeepCopy()),
+		c:    fake.NewClientBuilder().WithScheme(schema).WithObjects(appProject.DeepCopy()).Build(),
 		project: func() *v1alpha3.DevOpsProject {
 			p1 := project.DeepCopy()
 			p1.Spec.Argo = &v1alpha3.Argo{
@@ -208,7 +209,7 @@ func TestReconciler_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &core.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},

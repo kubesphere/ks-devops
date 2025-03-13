@@ -23,6 +23,8 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,8 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -444,6 +444,7 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("argocd_application_controller").
 		WithEventFilter(predicate.Or(
 			predicate.GenerationChangedPredicate{},
 			finalizersChangedPredicate{},

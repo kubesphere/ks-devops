@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 var (

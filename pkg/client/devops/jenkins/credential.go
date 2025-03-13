@@ -21,7 +21,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 func (j *Jenkins) GetCredentialInProject(projectId, id string) (*devops.Credential, error) {

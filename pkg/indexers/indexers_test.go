@@ -17,9 +17,9 @@ limitations under the License.
 package indexers
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"

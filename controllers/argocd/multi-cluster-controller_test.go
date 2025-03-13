@@ -23,15 +23,15 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -160,7 +160,7 @@ func Test_getCluster(t *testing.T) {
 	}{{
 		name: "normal case",
 		args: args{
-			client:         fake.NewFakeClientWithScheme(schema, cluster.DeepCopy()),
+			client:         fake.NewClientBuilder().WithScheme(schema).WithObjects(cluster.DeepCopy()).Build(),
 			namespacedName: defaultNamespacedName,
 		},
 		verify: func(t *testing.T, obj *unstructured.Unstructured, err error) {
@@ -171,7 +171,7 @@ func Test_getCluster(t *testing.T) {
 	}, {
 		name: "not found",
 		args: args{
-			client:         fake.NewFakeClientWithScheme(schema),
+			client:         fake.NewClientBuilder().WithScheme(schema).Build(),
 			namespacedName: defaultNamespacedName,
 		},
 		verify: func(t *testing.T, obj *unstructured.Unstructured, err error) {
@@ -221,7 +221,7 @@ func TestMultiClusterReconciler_updateOrCreate(t *testing.T) {
 	}{{
 		name: "create when the cluster does not exist",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			cluster: defaultArgoCluster.DeepCopy(),
@@ -242,7 +242,7 @@ func TestMultiClusterReconciler_updateOrCreate(t *testing.T) {
 	}, {
 		name: "update when the corresponding cluster does not exist",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, defaultArgoCluster.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(defaultArgoCluster.DeepCopy()).Build(),
 		},
 		args: args{
 			cluster: defaultArgoCluster.DeepCopy(),
@@ -354,7 +354,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 	}{{
 		name: "not found",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			req: defaultRequest,
@@ -366,7 +366,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "ignore changes case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, ignoreCluster.DeepCopy(), argoSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(ignoreCluster.DeepCopy(), argoSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			req: defaultRequest,
@@ -378,7 +378,7 @@ func TestMultiClusterReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "no argo cluster existing",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, defaultCluster.DeepCopy(), argoSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(defaultCluster.DeepCopy(), argoSecret.DeepCopy()).Build(),
 		},
 		args: args{
 			req: defaultRequest,
@@ -431,13 +431,13 @@ func TestMultiClusterReconciler_findArgoCDNamespace(t *testing.T) {
 	}{{
 		name: "no expected secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		want: "",
 	}, {
 		name: "normal case, have the expected secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, argoSecret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(argoSecret.DeepCopy()).Build(),
 		},
 		want: expectedNamespace,
 	}}
@@ -509,7 +509,7 @@ func TestMultiClusterReconciler_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &core.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},

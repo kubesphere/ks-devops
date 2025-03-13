@@ -18,24 +18,26 @@ package v1alpha3
 
 import (
 	"context"
+
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
-	"kubesphere.io/devops/pkg/jwt/token"
+	"github.com/kubesphere/ks-devops/pkg/config"
+
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	fakeclientset "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/fake"
+	fakedevops "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	fakeclientset "kubesphere.io/devops/pkg/client/clientset/versioned/fake"
-	fakedevops "kubesphere.io/devops/pkg/client/devops/fake"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -46,6 +48,7 @@ func TestAPIsExist(t *testing.T) {
 	err = v1.SchemeBuilder.AddToScheme(schema)
 	assert.Nil(t, err)
 
+	cfg := &config.Config{}
 	container := restful.NewContainer()
 	AddToContainer(container, fakedevops.NewFakeDevops(nil), k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -57,11 +60,11 @@ func TestAPIsExist(t *testing.T) {
 			Status:     v1alpha3.DevOpsProjectStatus{AdminNamespace: "fake"},
 		}, &v1alpha3.Pipeline{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "fake", Name: "fake"},
-		})), fake.NewFakeClientWithScheme(schema, &v1.Secret{
+		})), fake.NewClientBuilder().WithScheme(schema).WithObjects(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fake", Namespace: "fake",
 		},
-	}), &token.FakeIssuer{}, core.JenkinsCore{})
+	}).Build(), nil, core.JenkinsCore{}, cfg)
 
 	type args struct {
 		method string
@@ -261,8 +264,9 @@ func TestGetDevOpsProject(t *testing.T) {
 	schema, err := v1alpha1.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
 	container := restful.NewContainer()
+	cfg := &config.Config{}
 
-	AddToContainer(container, fakedevops.NewFakeDevops(nil), k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(), nil, nil, "", nil,
+	k8sClient := k8s.NewFakeClientSets(k8sfake.NewSimpleClientset(), nil, nil, "", nil,
 		fakeclientset.NewSimpleClientset(&v1alpha3.DevOpsProject{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "fake",
@@ -271,7 +275,8 @@ func TestGetDevOpsProject(t *testing.T) {
 					constants.WorkspaceLabelKey: "ws",
 				},
 			},
-		})), fake.NewFakeClientWithScheme(schema), &token.FakeIssuer{}, core.JenkinsCore{})
+		}))
+	AddToContainer(container, fakedevops.NewFakeDevops(nil), k8sClient, fake.NewClientBuilder().WithScheme(schema).Build(), nil, core.JenkinsCore{}, cfg)
 
 	type args struct {
 		method string

@@ -22,9 +22,9 @@ import (
 
 	goscm "github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -32,13 +32,13 @@ import (
 type ClientFactory struct {
 	provider  string
 	secretRef *v1.SecretReference
-	k8sClient ResourceGetter
+	k8sClient client.Client
 
 	Server string
 }
 
 // NewClientFactory creates an instance of the ClientFactory
-func NewClientFactory(provider string, secretRef *v1.SecretReference, k8sClient ResourceGetter) *ClientFactory {
+func NewClientFactory(provider string, secretRef *v1.SecretReference, k8sClient client.Client) *ClientFactory {
 	return &ClientFactory{
 		provider:  provider,
 		secretRef: secretRef,
@@ -102,9 +102,4 @@ func (c *ClientFactory) getSecret(ref *v1.SecretReference) (secret *v1.Secret, e
 		err = fmt.Errorf("cannot get secret %v, error is: %v", secret, err)
 	}
 	return
-}
-
-// ResourceGetter represent the interface for getting Kubernetes resource
-type ResourceGetter interface {
-	Get(ctx context.Context, key types.NamespacedName, obj client.Object) error
 }

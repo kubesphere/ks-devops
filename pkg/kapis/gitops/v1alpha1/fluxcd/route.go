@@ -16,12 +16,16 @@
 package fluxcd
 
 import (
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
 	"net/http"
+
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/v3"
+
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 )
 
 var (
@@ -31,7 +35,7 @@ var (
 	healthStatusQueryParam   = restful.QueryParameter("healthStatus", `Filter by health status. Available values: "Unknown", "Progressing", "Healthy", "Suspended", "Degraded" and "Missing"`)
 	cascadeQueryParam        = restful.QueryParameter("cascade",
 		"Delete both the app and its resources, rather than only the application if cascade is true").
-		DefaultValue("false").DataType("bool")
+		DefaultValue("false").DataType("boolean")
 )
 
 // ApplicationPageResult is the model of page result of Applications.
@@ -56,6 +60,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOp
 		Param(syncStatusQueryParam).
 		Param(healthStatusQueryParam).
 		Doc("Search applications").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, ApplicationPageResult{}))
 
 	service.Route(service.GET("/namespaces/{namespace}/applications/{application}").
@@ -63,6 +68,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOp
 		Param(common.NamespacePathParameter).
 		Param(pathParameterApplication).
 		Doc("Get a particular application").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.DELETE("/namespaces/{namespace}/applications/{application}").
@@ -71,6 +77,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOp
 		Param(pathParameterApplication).
 		Param(cascadeQueryParam).
 		Doc("Delete a particular application").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.PUT("/namespaces/{namespace}/applications/{application}").
@@ -79,6 +86,7 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOp
 		Param(pathParameterApplication).
 		Reads(v1alpha1.Application{}).
 		Doc("Update a particular application").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	// fluxcd
@@ -87,10 +95,12 @@ func RegisterRoutes(service *restful.WebService, options *common.Options, fluxOp
 		Param(common.NamespacePathParameter).
 		Reads(v1alpha1.Application{}).
 		Doc("Create an application").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, v1alpha1.Application{}))
 
 	service.Route(service.GET("/clusters").
 		To(handler.getClusters).
 		Doc("Get the clusters list").
+		Metadata(restfulspec.KeyOpenAPITags, constants.GitOpsTags).
 		Returns(http.StatusOK, api.StatusOK, []v1alpha1.ApplicationDestination{}))
 }

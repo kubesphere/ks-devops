@@ -21,16 +21,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"kubesphere.io/devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	modelpipeline "kubesphere.io/devops/pkg/models/pipeline"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	models "github.com/kubesphere/ks-devops/pkg/models/pipeline"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 )
 
 type apiHandlerOption struct {
@@ -65,7 +66,7 @@ func (h *apiHandler) getBranches(request *restful.Request, response *restful.Res
 	}
 
 	branchesJSON := pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]
-	var branches []modelpipeline.Branch
+	var branches []models.Branch
 	if err := json.Unmarshal([]byte(branchesJSON), &branches); err != nil {
 		// ignore this error
 		klog.Errorf("unable to unmarshal branches JSON: %s, and err = %v", branchesJSON, err)
@@ -98,13 +99,13 @@ func (h *apiHandler) getBranch(request *restful.Request, response *restful.Respo
 	}
 
 	branchesJSON := pipeline.Annotations[v1alpha3.PipelineJenkinsBranchesAnnoKey]
-	branches := []modelpipeline.Branch{}
+	branches := []models.Branch{}
 	if err := json.Unmarshal([]byte(branchesJSON), &branches); err != nil {
 		// ignore this error
 		klog.Errorf("unable to unmarshal branches JSON: %s, and err = %v", branchesJSON, err)
 	}
 
-	exist, searchedBranch := modelpipeline.BranchSlice(branches).SearchByName(branch)
+	exist, searchedBranch := models.BranchSlice(branches).SearchByName(branch)
 	if !exist {
 		// branch was not found
 		kapis.HandleNotFound(response, request, fmt.Errorf("Branch %s was not found", branch))

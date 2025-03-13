@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 func TestResetPaging(t *testing.T) {

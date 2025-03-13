@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,13 +40,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/utils"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/utils"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 )
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;update;watch

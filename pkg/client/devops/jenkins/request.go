@@ -16,7 +16,6 @@ package jenkins
 
 import (
 	"bytes"
-	//"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,10 +26,7 @@ import (
 	"net/url"
 	"strings"
 
-	//"github.com/dgrijalva/jwt-go"
-
-	//authtoken "kubesphere.io/devops/pkg/apiserver/authentication/token"
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 // Request Methods

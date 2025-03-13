@@ -18,12 +18,12 @@ package k8s
 
 import (
 	"errors"
+	kubesphere "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	kubesphere "kubesphere.io/devops/pkg/client/clientset/versioned"
 )
 
 type Client interface {

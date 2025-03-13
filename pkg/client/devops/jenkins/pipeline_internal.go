@@ -22,13 +22,13 @@ import (
 	"strings"
 	"time"
 
-	"kubesphere.io/devops/pkg/client/devops/jenkins/triggers"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins/triggers"
 
 	"github.com/beevik/etree"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
-	"kubesphere.io/devops/pkg/client/devops/jenkins/internal"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins/internal"
 )
 
 func replaceXmlVersion(config, oldVersion, targetVersion string) string {

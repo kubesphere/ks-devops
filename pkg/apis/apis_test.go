@@ -17,7 +17,7 @@ limitations under the License.
 package apis
 
 import (
-	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
 	"testing"
 )
 

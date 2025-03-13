@@ -18,10 +18,10 @@ package configmap
 
 import (
 	"context"
+	"github.com/kubesphere/ks-devops/pkg/store/store"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/store/store"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

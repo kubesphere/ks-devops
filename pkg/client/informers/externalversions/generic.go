@@ -21,10 +21,10 @@ package externalversions
 import (
 	"fmt"
 
+	devopsv1alpha1 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
-	devopsv1alpha1 "kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other

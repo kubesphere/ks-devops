@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -139,6 +139,7 @@ func (r *AmendReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	r.log = ctrl.Log.WithName(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("git_repository_amend_controller").
 		For(&v1alpha3.GitRepository{}).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Complete(r)

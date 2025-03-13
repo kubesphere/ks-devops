@@ -19,12 +19,12 @@ package oauth
 import (
 	"net/http"
 
-	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/v3"
 
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/models/auth"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/models/auth"
 )
 
 func AddToContainer(c *restful.Container, tokenOperator auth.TokenManagementInterface) (ws *restful.WebService) {
@@ -42,8 +42,9 @@ func AddToContainer(c *restful.Container, tokenOperator auth.TokenManagementInte
 			"cached by the webhook token authenticator plugin in the kube-apiserver.").
 		Reads(TokenReview{}).
 		To(handler.TokenReview).
+		Deprecate().
 		Returns(http.StatusOK, api.StatusOK, TokenReview{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.AuthenticationTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.AuthenticationTags))
 	c.Add(ws)
 	return
 }

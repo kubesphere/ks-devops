@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 )
 
 func (h *handler) clusterStepTemplates(req *restful.Request, resp *restful.Response) {
@@ -37,7 +38,7 @@ func (h *handler) clusterStepTemplates(req *restful.Request, resp *restful.Respo
 	err := h.List(ctx, clusterStepTemplateList)
 
 	queryParam := query.ParseQueryParameter(req)
-	apiResult := resourcesV1alpha3.ToListResult(convertToObject(clusterStepTemplateList.Items), queryParam, resourcesV1alpha3.NamedHandler{})
+	apiResult := resourcesv1alpha3.DefaultList(convertToObject(clusterStepTemplateList.Items), queryParam, api.DefaultCompareFunc, api.DefaultFilterFunc)
 
 	writeResponse(apiResult, err, resp)
 }

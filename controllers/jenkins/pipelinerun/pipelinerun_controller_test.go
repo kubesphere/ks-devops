@@ -19,28 +19,26 @@ package pipelinerun
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/go-logr/logr"
-	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	ctrlCore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/tools/record"
-	ctrlCore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/client/clientset/versioned/scheme"
-	"kubesphere.io/devops/pkg/jwt/token"
-	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
+
 	// nolint
 	// The fakeclient will undeprecated starting with v0.7.0
 	// Reference:
@@ -199,7 +197,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		BeforeEach(func() {
 			scheme := scheme.Scheme
 			Expect(v1alpha3.AddToScheme(scheme)).To(Succeed())
-			client = fake.NewFakeClientWithScheme(scheme, multiBranchPipelineRun)
+			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(multiBranchPipelineRun).Build()
 		})
 
 		It("multi-branch PipelineRun has existed", func() {
@@ -252,7 +250,7 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 		BeforeEach(func() {
 			scheme := scheme.Scheme
 			Expect(v1alpha3.AddToScheme(scheme)).To(Succeed())
-			client = fake.NewFakeClientWithScheme(scheme, generalPipelineRun)
+			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(generalPipelineRun).Build()
 		})
 
 		It("general PipelineRun has existed", func() {
@@ -287,87 +285,6 @@ var _ = Describe("TestReconciler_hasSamePipelineRun", func() {
 	})
 })
 
-func TestReconciler_getOrCreateJenkinsCoreIfHasCreator(t *testing.T) {
-	defaultJenkinsCore := &core.JenkinsCore{
-		URL:      "https://devops.com",
-		UserName: "admin",
-		Token:    "fake-token",
-	}
-	tokenIssuer := token.NewTokenIssuer("test-secret", 0)
-	accessToken, err := tokenIssuer.IssueTo(&user.DefaultInfo{Name: "tester"}, token.AccessToken, tokenExpireIn)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	type fields struct {
-		JenkinsCore core.JenkinsCore
-		TokenIssuer token.Issuer
-	}
-	type args struct {
-		annotations map[string]string
-	}
-	tests := []struct {
-		name      string
-		fields    fields
-		args      args
-		want      *core.JenkinsCore
-		assertion func(*core.JenkinsCore)
-		wantErr   bool
-	}{{
-		name: "Empty annotations",
-		fields: fields{
-			JenkinsCore: *defaultJenkinsCore,
-			TokenIssuer: tokenIssuer,
-		},
-		want: defaultJenkinsCore,
-	}, {
-		name: "Has creator in annotations",
-		fields: fields{
-			JenkinsCore: *defaultJenkinsCore,
-			TokenIssuer: tokenIssuer,
-		},
-		args: args{
-			annotations: map[string]string{
-				v1alpha3.PipelineRunCreatorAnnoKey: "tester",
-			},
-		},
-		want: &core.JenkinsCore{
-			URL:      defaultJenkinsCore.URL,
-			UserName: "tester",
-			Token:    accessToken,
-		},
-		assertion: func(jenkinsCore *core.JenkinsCore) {
-			assert.Equal(t, "tester", jenkinsCore.UserName)
-			assert.Equal(t, defaultJenkinsCore.URL, jenkinsCore.URL)
-			userInfo, tokenType, err := tokenIssuer.Verify(jenkinsCore.Token)
-			assert.Equal(t, &user.DefaultInfo{Name: "tester"}, userInfo)
-			assert.Equal(t, token.AccessToken, tokenType)
-			assert.Nil(t, err)
-		},
-	},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				JenkinsCore: tt.fields.JenkinsCore,
-				TokenIssuer: tt.fields.TokenIssuer,
-			}
-			got, err := r.getOrCreateJenkinsCore(tt.args.annotations)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Reconciler.getOrCreateJenkinsCoreIfHasCreator() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.assertion != nil {
-				tt.assertion(got)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Reconciler.getOrCreateJenkinsCoreIfHasCreator() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestPipelineRunReconciler_SetupWithManager(t *testing.T) {
 	schema, err := v1alpha3.SchemeBuilder.Register().Build()
 	assert.Nil(t, err)
@@ -392,7 +309,7 @@ func TestPipelineRunReconciler_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &ctrlCore.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},
@@ -497,7 +414,7 @@ func TestStorePipelineRunData(t *testing.T) {
 		log:                  logr.New(log.NullLogSink{}),
 		PipelineRunDataStore: "fake",
 	}
-	assert.NotNil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
+	assert.NotNil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 
 	r = &Reconciler{
 		Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
@@ -507,12 +424,12 @@ func TestStorePipelineRunData(t *testing.T) {
 		},
 		PipelineRunDataStore: "configmap",
 	}
-	assert.Nil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
+	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 
 	r = &Reconciler{
 		Client:               fake.NewClientBuilder().WithScheme(schema).WithObjects(pipelineRun.DeepCopy()).Build(),
 		log:                  logr.New(log.NullLogSink{}),
 		PipelineRunDataStore: "",
 	}
-	assert.Nil(t, r.storePipelineRunData("", pipelineRun.DeepCopy()))
+	assert.Nil(t, r.storePipelineRunData("", "", pipelineRun.DeepCopy()))
 }

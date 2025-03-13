@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/sonarqube"
-	"kubesphere.io/devops/pkg/server/errors"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+	"github.com/kubesphere/ks-devops/pkg/server/errors"
 )
 
 type PipelineSonarGetter interface {

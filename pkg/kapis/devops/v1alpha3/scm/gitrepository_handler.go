@@ -18,13 +18,17 @@ package scm
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/gitops"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/kapis/common"
-	resourcev1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"k8s.io/klog/v2"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcev1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -61,7 +65,7 @@ func (h *handler) listGitRepositories(req *restful.Request, res *restful.Respons
 		return
 	}
 	queryParam := query.ParseQueryParameter(req)
-	list := resourcev1alpha3.DefaultList(toObjects(repoList.Items), queryParam, resourcev1alpha3.DefaultCompare(), resourcev1alpha3.DefaultFilter(), nil)
+	list := resourcev1alpha3.DefaultList(toObjects(repoList.Items), queryParam, api.DefaultCompareFunc, api.DefaultFilterFunc)
 	common.Response(req, res, list, nil)
 }
 
@@ -99,13 +103,22 @@ func (h *handler) deleteGitRepositories(req *restful.Request, res *restful.Respo
 	repoName := common.GetPathParameter(req, pathParameterGitRepository)
 	ctx := context.Background()
 
-	repo := &v1alpha3.GitRepository{}
-	err := h.Get(ctx, types.NamespacedName{
+	repoNsName := types.NamespacedName{
 		Namespace: namespace,
 		Name:      repoName,
-	}, repo)
+	}
+	repo := &v1alpha3.GitRepository{}
+	err := h.Get(ctx, repoNsName, repo)
 	if err == nil {
 		err = h.Delete(ctx, repo)
+
+		// delete git repo clone
+		if gitops.DefaultGitRepoFactory != nil {
+			deleteErr := gitops.DefaultGitRepoFactory.DeleteRepoClone(ctx, repoNsName)
+			if deleteErr != nil {
+				klog.ErrorS(deleteErr, "failed to delete GitRepository", "repoName", repoNsName)
+			}
+		}
 	}
 	common.Response(req, res, repo, err)
 }

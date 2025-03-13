@@ -19,9 +19,9 @@ package options
 import (
 	"strings"
 
+	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
-	"kubesphere.io/devops/pkg/utils/reflectutils"
 )
 
 // FeatureOptions provide some feature options, such as specifying the controller to be enabled.

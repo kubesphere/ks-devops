@@ -19,23 +19,24 @@ package fluxcd
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	"github.com/stretchr/testify/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"testing"
-	"time"
 )
 
 func TestApplicationStatusReconciler_Reconcile(t *testing.T) {
@@ -228,7 +229,7 @@ func TestApplicationStatusReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found a HelmRelease",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, hr.DeepCopy(), fluxHelmApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(hr.DeepCopy(), fluxHelmApp.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -243,7 +244,7 @@ func TestApplicationStatusReconciler_Reconcile(t *testing.T) {
 		{
 			name: "found a Kustomization",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, kus.DeepCopy(), fluxKusApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(kus.DeepCopy(), fluxKusApp.DeepCopy()).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -258,7 +259,7 @@ func TestApplicationStatusReconciler_Reconcile(t *testing.T) {
 		{
 			name: "not found a HelmRelease neither a Kustomization",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				req: ctrl.Request{
@@ -488,7 +489,7 @@ func TestApplicationStatusReconciler_reconcileHelmRelease(t *testing.T) {
 		{
 			name: "update Application's status (a Unknown HelmRelease)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxHelmApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxHelmApp.DeepCopy()).Build(),
 			},
 			args: args{
 				hr: unKnownHelmRelease.DeepCopy(),
@@ -525,7 +526,7 @@ func TestApplicationStatusReconciler_reconcileHelmRelease(t *testing.T) {
 		{
 			name: "update Application's status (a Ready HelmRelease)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxHelmApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxHelmApp.DeepCopy()).Build(),
 			},
 			args: args{
 				hr: readyHelmRelease.DeepCopy(),
@@ -569,7 +570,7 @@ func TestApplicationStatusReconciler_reconcileHelmRelease(t *testing.T) {
 		{
 			name: "not found a app that manage this HelmRelease",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				hr: readyHelmRelease,
@@ -713,7 +714,7 @@ func TestApplicationStatusReconciler_reconcileKustomization(t *testing.T) {
 		{
 			name: "update Application's status (a Kustomization)",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema, fluxKusApp.DeepCopy()),
+				Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(fluxKusApp.DeepCopy()).Build(),
 			},
 			args: args{
 				kus: readyKus,
@@ -754,7 +755,7 @@ func TestApplicationStatusReconciler_reconcileKustomization(t *testing.T) {
 		{
 			name: "not found a app that manage this Kustomization",
 			fields: fields{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 			args: args{
 				kus: readyKus,
@@ -814,7 +815,7 @@ func TestApplicationStatusReconciler_SetupWithManager(t *testing.T) {
 		args: args{
 			mgr: &core.FakeManager{
 				Scheme: schema,
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 		},
 		wantErr: core.NoErrors,

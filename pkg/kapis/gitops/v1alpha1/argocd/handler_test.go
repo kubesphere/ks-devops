@@ -18,21 +18,22 @@ package argocd
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
-	"net/http"
-	"net/http/httptest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func Test_handler_handleSyncApplication(t *testing.T) {
@@ -201,7 +202,7 @@ func Test_handler_handleSyncApplication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, gitops.ToObjects(tt.fields.apps)...)
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(gitops.ToClientObjects(tt.fields.apps)...).Build()
 			h := &handler{
 				Handler: &gitops.Handler{Client: fakeClient},
 			}
@@ -294,7 +295,7 @@ func Test_handler_updateOperation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utilruntime.Must(v1alpha1.AddToScheme(scheme.Scheme))
-			fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.fields.app.DeepCopy())
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.fields.app.DeepCopy()).Build()
 			h := &handler{
 				Handler: &gitops.Handler{Client: fakeClient},
 			}

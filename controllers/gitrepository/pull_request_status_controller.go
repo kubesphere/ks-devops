@@ -20,17 +20,17 @@ import (
 	"strconv"
 	"strings"
 
-	"kubesphere.io/devops/pkg/utils/stringutils"
+	"github.com/kubesphere/ks-devops/pkg/utils/stringutils"
 
 	"github.com/go-logr/logr"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/utils/net"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -274,6 +274,7 @@ func (r *PullRequestStatusReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	r.log = ctrl.Log.WithName(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("git_repository_pull_request_status_controller").
 		For(&v1alpha3.PipelineRun{}).
 		Complete(r)
 }

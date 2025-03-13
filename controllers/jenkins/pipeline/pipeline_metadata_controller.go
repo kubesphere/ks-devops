@@ -25,10 +25,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -190,6 +190,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("pipeline-metadata-controller")
 	r.log = ctrl.Log.WithName("pipeline-metadata-controller")
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("jenkins_pipeline_metadata_controller").
 		WithEventFilter(pipelineMetadataPredicate).
 		For(&v1alpha3.Pipeline{}).
 		Complete(r)

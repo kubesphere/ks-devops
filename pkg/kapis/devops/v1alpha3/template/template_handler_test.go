@@ -17,21 +17,22 @@ package template
 
 import (
 	"encoding/json"
-	"github.com/emicklei/go-restful"
-	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func Test_templatesToObjects(t *testing.T) {
@@ -49,7 +50,7 @@ func Test_templatesToObjects(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []runtime.Object
+		want []client.Object
 	}{{
 		name: "Should convert correctly",
 		args: args{
@@ -58,7 +59,7 @@ func Test_templatesToObjects(t *testing.T) {
 				*createTemplate("template2"),
 			},
 		},
-		want: []runtime.Object{
+		want: []client.Object{
 			createTemplate("template1"),
 			createTemplate("template2"),
 		},
@@ -102,7 +103,7 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 		return request
 	}
 	type args struct {
-		initObjects []runtime.Object
+		initObjects []client.Object
 		request     *restful.Request
 	}
 	tests := []struct {
@@ -121,7 +122,7 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 		name: "Should return non-empty list if templates found",
 		args: args{
 			request: createRequest("/v1alpha1/devops/fake-devops/templates?sortBy=name&ascending=true", "fake-devops"),
-			initObjects: []runtime.Object{
+			initObjects: []client.Object{
 				createTemplate("template1"),
 				createTemplate("template2"),
 				createTemplate("template3"),
@@ -139,7 +140,7 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 		name: "Should return empty list if out of page",
 		args: args{
 			request: createRequest("/v1alpha1/devops/fake-devops/templates?sortBy=name&ascending=true&page=10", "fake-devops"),
-			initObjects: []runtime.Object{
+			initObjects: []client.Object{
 				createTemplate("template1"),
 				createTemplate("template2"),
 				createTemplate("template3"),
@@ -153,7 +154,7 @@ func Test_handler_handleQueryTemplates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
-		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.args.initObjects...).Build()
 
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
@@ -188,7 +189,7 @@ func Test_handler_handleGetTemplate(t *testing.T) {
 		return request
 	}
 	type args struct {
-		initObjects []runtime.Object
+		initObjects []client.Object
 		request     *restful.Request
 	}
 	tests := []struct {
@@ -209,7 +210,7 @@ func Test_handler_handleGetTemplate(t *testing.T) {
 		name: "Should return template if template exists ",
 		args: args{
 			request:     createRequest("/v1alpha1/devops/fake-devops/templates/fake-template", "fake-devops", "fake-template"),
-			initObjects: []runtime.Object{fakeTemplate},
+			initObjects: []client.Object{fakeTemplate},
 		},
 		wantCode: 200,
 		assertion: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -222,7 +223,7 @@ func Test_handler_handleGetTemplate(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
-		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.args.initObjects...).Build()
 
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
@@ -260,7 +261,7 @@ func Test_handler_handleRenderTemplate(t *testing.T) {
 		return request
 	}
 	type args struct {
-		initObjects []runtime.Object
+		initObjects []client.Object
 		request     *restful.Request
 	}
 	tests := []struct {
@@ -281,7 +282,7 @@ func Test_handler_handleRenderTemplate(t *testing.T) {
 		name: "Should set render result into annotations properly if no parameters needed",
 		args: args{
 			request: createRequest("/v1alpha1/devops/fake-devops/templates/fake-template/render", "fake-devops", "fake-template"),
-			initObjects: []runtime.Object{
+			initObjects: []client.Object{
 				fakeTemplate,
 			},
 		},
@@ -295,7 +296,7 @@ func Test_handler_handleRenderTemplate(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		utilruntime.Must(v1alpha3.AddToScheme(scheme.Scheme))
-		fakeClient := fake.NewFakeClientWithScheme(scheme.Scheme, tt.args.initObjects...)
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tt.args.initObjects...).Build()
 		t.Run(tt.name, func(t *testing.T) {
 			h := &handler{
 				Client: fakeClient,

@@ -18,11 +18,11 @@ package oauth
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 
-	"kubesphere.io/devops/pkg/models/auth"
+	"github.com/kubesphere/ks-devops/pkg/models/auth"
 )
 
 const (

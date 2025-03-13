@@ -17,10 +17,10 @@ limitations under the License.
 package v2beta1
 
 import (
+	kustomize "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	"github.com/kubesphere/ks-devops/pkg/external/fluxcd/meta"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kustomize "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	"kubesphere.io/devops/pkg/external/fluxcd/meta"
 )
 
 // Kustomize Helm PostRenderer specification.

@@ -14,7 +14,7 @@ limitations under the License.
 package gitrepository
 
 import (
-	"kubesphere.io/devops/controllers/core"
+	"github.com/kubesphere/ks-devops/controllers/core"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

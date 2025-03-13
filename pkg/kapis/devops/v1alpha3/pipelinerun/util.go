@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/client/devops"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 )
 
 func buildLabelSelector(queryParam *query.Query, pipelineName string) (labels.Selector, error) {

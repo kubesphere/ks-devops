@@ -18,7 +18,7 @@ package pipelinerun
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 )
 
 // pipelineRunIdentity holds id and SCM reference name to identity unique PipelineRun.

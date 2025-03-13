@@ -17,25 +17,30 @@ limitations under the License.
 package pipelinerun
 
 import (
+	"context"
 	"strings"
 
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	resourcesV1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcesv1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // listHandler is default implementation for PipelineRun.
 type listHandler struct {
+	ctx    context.Context
+	client client.Client
 }
-
-// Make sure backwardListHandler implement ListHandler interface.
-var _ resourcesV1alpha3.ListHandler = listHandler{}
 
 // Comparator compares times first, which is from start time and creation time(only when start time is nil or zero).
 // If times are equal, we will compare the unique name at last to
 // ensure that the order result is stable forever.
-func (b listHandler) Comparator() resourcesV1alpha3.CompareFunc {
+func (b listHandler) Comparator() resourcesv1alpha3.CompareFunc {
 	return func(left, right runtime.Object, f query.Field) bool {
 		leftPipelineRun, ok := left.(*v1alpha3.PipelineRun)
 		if !ok {
@@ -61,10 +66,28 @@ func (b listHandler) Comparator() resourcesV1alpha3.CompareFunc {
 	}
 }
 
-func (b listHandler) Filter() resourcesV1alpha3.FilterFunc {
-	return resourcesV1alpha3.DefaultFilter()
+func (b listHandler) Filter() resourcesv1alpha3.FilterFunc {
+	return api.DefaultFilterFunc
 }
 
-func (b listHandler) Transformer() resourcesV1alpha3.TransformFunc {
-	return resourcesV1alpha3.NoTransformFunc()
+func (b listHandler) Transformer() resourcesv1alpha3.TransformFunc {
+	return func(obj runtime.Object) runtime.Object {
+		pr, ok := obj.(*v1alpha3.PipelineRun)
+		if !ok {
+			return obj
+		}
+
+		// get status
+		if _, ok := pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey]; !ok {
+			pipelineRunStore, err := cmstore.NewConfigMapStore(b.ctx, types.NamespacedName{
+				Namespace: pr.Namespace, Name: pr.Name}, b.client)
+			if err == nil {
+				pr.Annotations[v1alpha3.JenkinsPipelineRunStatusAnnoKey] = pipelineRunStore.GetStatus()
+			} else {
+				klog.Error(err, "failed to get status from configmap store")
+			}
+		}
+
+		return pr
+	}
 }

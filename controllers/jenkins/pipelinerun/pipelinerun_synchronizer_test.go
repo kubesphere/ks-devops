@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )

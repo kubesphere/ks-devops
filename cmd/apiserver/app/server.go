@@ -25,8 +25,8 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/cmd/apiserver/app/options"
-	"kubesphere.io/devops/pkg/config"
+	"github.com/kubesphere/ks-devops/cmd/apiserver/app/options"
+	"github.com/kubesphere/ks-devops/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
@@ -36,6 +36,8 @@ func NewAPIServerCommand() (cmd *cobra.Command) {
 	// Load configuration from file
 	conf, err := config.TryLoadFromDisk()
 	if err == nil {
+		conf.TryLoadFromEnv()
+
 		s = &options.ServerRunOptions{
 			GenericServerRunOptions: s.GenericServerRunOptions,
 			Config:                  conf,

@@ -22,14 +22,14 @@ import (
 	"context"
 	time "time"
 
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	versioned "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha3 "github.com/kubesphere/ks-devops/pkg/client/listers/devops/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	versioned "kubesphere.io/devops/pkg/client/clientset/versioned"
-	internalinterfaces "kubesphere.io/devops/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha3 "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
 )
 
 // PipelineInformer provides access to a shared informer and lister for

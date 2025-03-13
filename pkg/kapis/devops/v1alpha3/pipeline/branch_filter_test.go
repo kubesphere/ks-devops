@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
+	"github.com/kubesphere/ks-devops/pkg/models/pipeline"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"kubesphere.io/devops/pkg/models/pipeline"
 )
 
 func Test_filterBranches(t *testing.T) {

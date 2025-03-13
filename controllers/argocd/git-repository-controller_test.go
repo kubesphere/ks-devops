@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -77,6 +77,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	now := metav1.Now()
 	repoWithDeletion := repo.DeepCopy()
 	repoWithDeletion.DeletionTimestamp = &now
+	repoWithDeletion.SetFinalizers([]string{"fake"})
 
 	secret := v1.Secret{}
 	secret.SetNamespace("argocd")
@@ -98,7 +99,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}{{
 		name: "not found a git repository",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -114,7 +115,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}, {
 		name: "create a git repository, without argo secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -130,7 +131,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}, {
 		name: "create a git repository, with an argo secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repo.DeepCopy(), secret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repo.DeepCopy(), secret.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -146,7 +147,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}, {
 		name: "create a git repository with auth secret, with an argo secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithAuth.DeepCopy(), secret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithAuth.DeepCopy(), secret.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -162,7 +163,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}, {
 		name: "delete a git repository, without argo secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithDeletion.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithDeletion.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -178,7 +179,7 @@ func TestGitRepositoryController_Reconcile(t *testing.T) {
 	}, {
 		name: "delete a git repository, with argo secret",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, repoWithDeletion.DeepCopy(), secret.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(repoWithDeletion.DeepCopy(), secret.DeepCopy()).Build(),
 		},
 		args: args{
 			req: ctrl.Request{
@@ -233,7 +234,7 @@ func TestGitRepositoryController_SetupWithManager(t *testing.T) {
 		name: "normal",
 		args: args{
 			mgr: &core.FakeManager{
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 				Scheme: schema,
 			},
 		},

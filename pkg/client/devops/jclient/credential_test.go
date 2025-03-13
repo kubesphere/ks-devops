@@ -26,10 +26,10 @@ import (
 	jcredential "github.com/jenkins-zh/jenkins-client/pkg/credential"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
 	"github.com/jenkins-zh/jenkins-client/pkg/util"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	devopsutil "github.com/kubesphere/ks-devops/pkg/client/devops/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	devopsutil "kubesphere.io/devops/pkg/client/devops/util"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 )

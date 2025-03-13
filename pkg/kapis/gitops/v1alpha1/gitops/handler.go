@@ -17,15 +17,19 @@ package gitops
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
+
+	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/models/resources/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
+	resources "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	"kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 )
 
 var (
@@ -35,7 +39,7 @@ var (
 	healthStatusQueryParam   = restful.QueryParameter("healthStatus", `Filter by health status. Available values: "Unknown", "Progressing", "Healthy", "Suspended", "Degraded" and "Missing"`)
 	cascadeQueryParam        = restful.QueryParameter("cascade",
 		"Delete both the app and its resources, rather than only the application if cascade is true").
-		DefaultValue("false").DataType("bool")
+		DefaultValue("false").DataType("boolean")
 )
 
 func (h *Handler) ApplicationList(req *restful.Request, res *restful.Response) {
@@ -57,7 +61,13 @@ func (h *Handler) ApplicationList(req *restful.Request, res *restful.Response) {
 	}
 
 	queryParam := query.ParseQueryParameter(req)
-	list := v1alpha3.DefaultList(ToObjects(applicationList.Items), queryParam, v1alpha3.DefaultCompare(), v1alpha3.DefaultFilter(), nil)
+	compareFunc := func(left runtime.Object, right runtime.Object, field query.Field) bool {
+		return resources.DefaultObjectMetaCompare(left.(*v1alpha1.Application).ObjectMeta, right.(*v1alpha1.Application).ObjectMeta, field)
+	}
+	filterFunc := func(obj runtime.Object, filter query.Filter) bool {
+		return resources.DefaultObjectMetaFilter(obj.(*v1alpha1.Application).ObjectMeta, filter)
+	}
+	list := v1alpha3.DefaultList(ToObjects(applicationList.Items), queryParam, compareFunc, filterFunc)
 
 	common.Response(req, res, list, nil)
 }

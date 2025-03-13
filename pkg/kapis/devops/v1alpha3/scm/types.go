@@ -17,7 +17,7 @@ limitations under the License.
 package scm
 
 import (
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 )
 
 type organization struct {

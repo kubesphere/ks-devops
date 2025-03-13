@@ -18,12 +18,13 @@ package v1alpha2
 
 import (
 	"fmt"
-	"github.com/emicklei/go-restful"
+	"net/http"
+	"strings"
+
+	"github.com/emicklei/go-restful/v3"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"k8s.io/apimachinery/pkg/util/proxy"
 	"k8s.io/klog/v2"
-	"net/http"
-	"strings"
 )
 
 type jenkinsProxy struct {
@@ -50,9 +51,9 @@ func (p *jenkinsProxy) proxyWithDevOps(request *restful.Request, response *restf
 	devopsPath := request.PathParameter("devops")
 	u.Host = p.host
 	u.Scheme = p.scheme
-	u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/devops/%s/jenkins",
+	u.Path = strings.Replace(request.Request.URL.Path, fmt.Sprintf("/kapis/%s/%s/namespaces/%s/jenkins",
 		GroupVersion.Group, GroupVersion.Version, devopsPath), "", 1)
-	u.Path = strings.Replace(u.Path, fmt.Sprintf("/%s/devops/%s/jenkins",
+	u.Path = strings.Replace(u.Path, fmt.Sprintf("/%s/namespaces/%s/jenkins",
 		GroupVersion.Version, devopsPath), "", 1)
 	httpProxy := proxy.NewUpgradeAwareHandler(u, p.roundTripper, false, false, &errorResponder{})
 

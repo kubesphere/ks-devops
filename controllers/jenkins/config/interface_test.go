@@ -17,8 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"github.com/kubesphere/ks-devops/controllers/core"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/controllers/core"
 	"testing"
 )
 

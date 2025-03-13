@@ -16,7 +16,7 @@
 package template
 
 import (
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

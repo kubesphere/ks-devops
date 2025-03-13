@@ -16,7 +16,7 @@ limitations under the License.
 
 package jclient
 
-import "kubesphere.io/devops/pkg/client/devops"
+import "github.com/kubesphere/ks-devops/pkg/client/devops"
 
 // GetProjectPipelineBuildByType returns a build
 func (j *JenkinsClient) GetProjectPipelineBuildByType(projectID, pipelineID string, status string) (*devops.Build, error) {

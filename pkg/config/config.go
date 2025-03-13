@@ -18,17 +18,19 @@ package config
 
 import (
 	"fmt"
-	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"
-	"kubesphere.io/devops/pkg/client/cache"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/sonarqube"
+	"os"
 	"reflect"
 	"strings"
 
+	authoptions "github.com/kubesphere/ks-devops/pkg/apiserver/authentication/options"
+	"github.com/kubesphere/ks-devops/pkg/client/cache"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+
 	"github.com/spf13/viper"
 
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
-	"kubesphere.io/devops/pkg/client/s3"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
 )
 
 // Package config saves configuration for running KubeSphere components
@@ -66,6 +68,8 @@ const (
 
 	// DefaultConfigurationPath the default location of the configuration file
 	defaultConfigurationPath = "/etc/kubesphere"
+
+	ENV_JENKINS_ADMIN_TOKEN = "JENKINS_ADMIN_TOKEN"
 )
 
 // AuthMode is the auth mode of current project
@@ -89,18 +93,21 @@ type Config struct {
 	AuthenticationOptions *authoptions.AuthenticationOptions `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication"`
 	AuthMode              AuthMode                           `json:"authMode,omitempty" yaml:"authMode,omitempty" mapstructure:"authMode"`
 	JWTSecret             string                             `json:"jwtSecret,omitempty" yaml:"jwtSecret,omitempty" mapstructure:"jwtSecret"`
+	GitOpsOptions         *GitOpsOptions                     `json:"gitops,omitempty" yaml:"gitops,omitempty" mapstructure:"gitops"`
 }
 
 // New creates a default non-empty Config
 func New() *Config {
 	return &Config{
-		SonarQubeOptions:  sonarqube.NewSonarQubeOptions(),
-		JenkinsOptions:    jenkins.NewJenkinsOptions(),
-		KubernetesOptions: k8s.NewKubernetesOptions(),
-		S3Options:         s3.NewS3Options(),
-		AuthMode:          AuthModeToken,
-		ArgoCDOption:      &ArgoCDOption{},
-		FluxCDOption:      &FluxCDOption{},
+		SonarQubeOptions:      sonarqube.NewSonarQubeOptions(),
+		JenkinsOptions:        jenkins.NewJenkinsOptions(),
+		KubernetesOptions:     k8s.NewKubernetesOptions(),
+		S3Options:             s3.NewS3Options(),
+		AuthMode:              AuthModeToken,
+		ArgoCDOption:          &ArgoCDOption{},
+		FluxCDOption:          &FluxCDOption{},
+		GitOpsOptions:         NewGitOpsOptions(),
+		AuthenticationOptions: &authoptions.AuthenticationOptions{},
 	}
 }
 
@@ -166,5 +173,14 @@ func (conf *Config) stripEmptyOptions() {
 
 	if conf.S3Options != nil && conf.S3Options.Endpoint == "" {
 		conf.S3Options = nil
+	}
+}
+
+func (conf *Config) TryLoadFromEnv() {
+	if conf.JenkinsOptions != nil {
+		adminToken, ok := os.LookupEnv(ENV_JENKINS_ADMIN_TOKEN)
+		if ok {
+			conf.JenkinsOptions.ApiToken = adminToken
+		}
 	}
 }

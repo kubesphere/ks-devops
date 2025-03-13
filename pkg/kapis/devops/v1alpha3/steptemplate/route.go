@@ -17,9 +17,17 @@ limitations under the License.
 package steptemplate
 
 import (
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
+	"encoding/json"
+	"net/http"
+
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/models/devops"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
 )
 
 type handler struct {
@@ -43,16 +51,22 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	h := &handler{options.GenericClient}
 	service.Route(service.GET("/clustersteptemplates").
 		To(h.clusterStepTemplates).
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsStepTemplateTags).
 		Doc("Return the cluster level stepTemplate list"))
+
 	service.Route(service.GET("/clustersteptemplates/{clustersteptemplate}").
 		To(h.getClusterStepTemplate).
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsStepTemplateTags).
 		Param(ClusterStepTemplate).
 		Doc("Return a specific ClusterStepTemplate"))
+
 	service.Route(service.POST("/clustersteptemplates/{clustersteptemplate}/render").
 		To(h.renderClusterStepTemplate).
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsStepTemplateTags).
 		Param(ClusterStepTemplate).
 		Param(SecretNameQueryParameter).
 		Param(SecretNamespaceQueryParameter).
-		Reads(map[string]string{}, "The parameters of the ClusterStepTemplate").
+		Reads(devops.StringMap{}, "The parameters of the ClusterStepTemplate").
+		Returns(http.StatusOK, api.StatusOK, json.RawMessage{}).
 		Doc("Render a specific ClusterStepTemplate, then return it"))
 }

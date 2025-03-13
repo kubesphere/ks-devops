@@ -18,12 +18,12 @@ package jenkins
 
 import (
 	"github.com/beevik/etree"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins/internal"
 	"github.com/stretchr/testify/assert"
-	"kubesphere.io/devops/pkg/client/devops/jenkins/internal"
 	"reflect"
 	"testing"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 )
 
 func Test_NoScmPipelineConfig(t *testing.T) {

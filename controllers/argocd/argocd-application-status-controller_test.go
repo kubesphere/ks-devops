@@ -23,13 +23,13 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -59,7 +59,7 @@ func Test_getArgoCDApplication(t *testing.T) {
 	}{{
 		name: "normal case",
 		args: args{
-			client: fake.NewFakeClientWithScheme(schema, defaultApp.DeepCopy()),
+			client: fake.NewClientBuilder().WithScheme(schema).WithObjects(defaultApp.DeepCopy()).Build(),
 			namespacedName: types.NamespacedName{
 				Namespace: "ns",
 				Name:      "name",
@@ -73,7 +73,7 @@ func Test_getArgoCDApplication(t *testing.T) {
 	}, {
 		name: "not found",
 		args: args{
-			client: fake.NewFakeClientWithScheme(schema),
+			client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		verify: func(t *testing.T, app *unstructured.Unstructured, err error) {
 			assert.NotNil(t, err)
@@ -159,7 +159,7 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	}{{
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, defaultArgoCDApp, defaultApp),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(defaultArgoCDApp, defaultApp).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -176,7 +176,7 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "not found ArgoCD application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -193,7 +193,7 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "not found ks application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, defaultArgoCDApp),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(defaultArgoCDApp).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -210,7 +210,7 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "have status from argo application",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, appWithStatus, defaultApp),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(appWithStatus, defaultApp).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -238,7 +238,7 @@ func TestArgoCDApplicationStatusReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "cannot found inner app",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, appWithStatus),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(appWithStatus).Build(),
 		},
 		args: args{
 			req: controllerruntime.Request{
@@ -338,7 +338,7 @@ func TestApplicationStatusReconciler_SetupWithManager(t *testing.T) {
 		args: args{
 			mgr: &core.FakeManager{
 				Scheme: schema,
-				Client: fake.NewFakeClientWithScheme(schema),
+				Client: fake.NewClientBuilder().WithScheme(schema).Build(),
 			},
 		},
 		wantErr: core.NoErrors,

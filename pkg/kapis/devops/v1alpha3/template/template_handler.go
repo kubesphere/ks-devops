@@ -17,15 +17,16 @@ package template
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
 	"io"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
 	"k8s.io/apimachinery/pkg/runtime"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/kapis"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
-	resourcev1alpha3 "kubesphere.io/devops/pkg/models/resources/v1alpha3"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
+	resourcev1alpha3 "kubesphere.io/kubesphere/pkg/models/resources/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -46,7 +47,8 @@ func (h *handler) queryTemplate(devopsName string, commonQuery *query.Query) (*a
 		}); err != nil {
 		return nil, err
 	}
-	return resourcev1alpha3.ToListResult(templatesToObjects(templateList.Items), commonQuery, nil), nil
+	result := resourcev1alpha3.DefaultList(templatesToObjects(templateList.Items), commonQuery, api.DefaultCompareFunc, api.DefaultFilterFunc)
+	return api.FromKSListResult(result), nil
 }
 
 func (h *handler) handleGetTemplate(request *restful.Request, response *restful.Response) {

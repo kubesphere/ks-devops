@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 type Job struct {

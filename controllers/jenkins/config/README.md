@@ -37,16 +37,17 @@ data:
 ```
 
 1. Make sure the new config file exists
-   1. Copy `jenkins.yaml` into `ks-jenkins.yaml` if data `ks-jenkins.yaml` not exists
-   1. Add annotation `devops.kubesphere.io/ks-jenkins-config: ks-jenkins.yaml`
+   1. Copy `jenkins.yaml` 'root-key' into `jenkins_user.yaml` if data `jenkins_user.yaml` not exists
+   2. The `jenkins.securityRealm` and `unclassified` in `jenkins.yaml` only support update in extension-configurations and copy them into jenkins_user.yaml
+   3. Copy `jenkins.clouds.kubernetes` in `jenkins.yaml` into `jenkins_user.yaml` if not exists, and only update them in jenkins_user.yaml
 1. Make sure the annotation `devops.kubesphere.io/jenkins-config-formula: xxx` exists
    1. Set the value of this annotation as `custom` if it's invalid (support values: `low`, `high`, `custom`)
    1. Add annotation `devops.kubesphere.io/jenkins-config-customized: "true"` if it's custom
-1. Provide the pre-defined configuration according to the formula name
+1. Provide the pre-defined configuration according to the formula name(don't make sure pre-defined work in 4.x)
    1. Skip this process if the formula is custom (or invalid)
    1. Take `jenkins.yaml` as a template to transform the configuration
 1. Reload CasC via Jenkins API
-   1. Change the config file to `ks-jenkins.yaml`
+   1. Change the config file to `jenkins_user.yaml`
 
 An example of target ConfigMap:
 
@@ -61,11 +62,11 @@ metadata:
 data:
   jenkins.yaml: |
     xxx: xxx
-  ks-jenkins.yaml: |
+  jenkins_user.yaml: |
     xxx: xxx
 ```
 
 ## How-to
 
-Users should only modify the configuration from `ks-jenkins.yaml`, and make sure the annotation has an expected value
+Users should only modify the configuration from `jenkins_user.yaml`, and make sure the annotation has an expected value
 `devops.kubesphere.io/jenkins-config-formula: custom`.

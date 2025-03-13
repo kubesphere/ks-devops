@@ -17,11 +17,14 @@ limitations under the License.
 package apis
 
 import (
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	iamv1beta1 "kubesphere.io/api/iam/v1beta1"
 )
 
 func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	addToSchemes = append(addToSchemes, v1alpha3.SchemeBuilder.AddToScheme, v1alpha1.SchemeBuilder.AddToScheme)
+
+	addToSchemes = append(addToSchemes, iamv1beta1.AddToScheme)
 }

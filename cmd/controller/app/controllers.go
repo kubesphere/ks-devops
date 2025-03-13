@@ -17,24 +17,23 @@ limitations under the License.
 package app
 
 import (
-	"kubesphere.io/devops/controllers/addon"
-	"kubesphere.io/devops/controllers/argocd"
-	"kubesphere.io/devops/controllers/fluxcd"
-	"kubesphere.io/devops/controllers/gitrepository"
-	"kubesphere.io/devops/controllers/jenkins/devopscredential"
-	"kubesphere.io/devops/controllers/jenkins/devopsproject"
-	"kubesphere.io/devops/pkg/jwt/token"
-	"kubesphere.io/devops/pkg/server/errors"
+	"github.com/kubesphere/ks-devops/controllers/addon"
+	"github.com/kubesphere/ks-devops/controllers/argocd"
+	"github.com/kubesphere/ks-devops/controllers/fluxcd"
+	"github.com/kubesphere/ks-devops/controllers/gitrepository"
+	"github.com/kubesphere/ks-devops/controllers/jenkins/devopscredential"
+	"github.com/kubesphere/ks-devops/controllers/jenkins/devopsproject"
+	"github.com/kubesphere/ks-devops/pkg/server/errors"
 
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
+	"github.com/kubesphere/ks-devops/cmd/controller/app/options"
+	"github.com/kubesphere/ks-devops/controllers/jenkins/config"
+	jenkinspipeline "github.com/kubesphere/ks-devops/controllers/jenkins/pipeline"
+	"github.com/kubesphere/ks-devops/controllers/jenkins/pipelinerun"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/informers"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/cmd/controller/app/options"
-	"kubesphere.io/devops/controllers/jenkins/config"
-	jenkinspipeline "kubesphere.io/devops/controllers/jenkins/pipeline"
-	"kubesphere.io/devops/controllers/jenkins/pipelinerun"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/informers"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -47,14 +46,12 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 
 	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s, jenkinsCore)
 	reconcilers["pipeline"] = func(mgr manager.Manager) (err error) {
-		tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 		// add PipelineRun controller
 		if err = (&pipelinerun.Reconciler{
 			Client:               mgr.GetClient(),
 			Scheme:               mgr.GetScheme(),
 			DevOpsClient:         devopsClient,
 			JenkinsCore:          jenkinsCore,
-			TokenIssuer:          tokenIssuer,
 			PipelineRunDataStore: s.FeatureOptions.PipelineRunDataStore,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
@@ -122,12 +119,10 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 	fluxcdGitRepoReconciler := &fluxcd.GitRepositoryReconciler{
 		Client: mgr.GetClient(),
 	}
-	tokenIssuer := token.NewTokenIssuer(s.JWTOptions.Secret, s.JWTOptions.MaximumClockSkew)
 	jenkinsAgentLabelsReconciler := config.AgentLabelsReconciler{
 		Client:          mgr.GetClient(),
 		TargetNamespace: s.FeatureOptions.SystemNamespace,
-		TokenIssuer:     tokenIssuer,
-		JenkinsClient:   jenkinsCore,
+		JenkinsClient:   core.Client{JenkinsCore: jenkinsCore},
 	}
 	jenkinsPodTemplate := config.PodTemplateReconciler{
 		Client:                   mgr.GetClient(),
@@ -203,9 +198,8 @@ func getAllControllers(mgr manager.Manager, client k8s.Client, informerFactory i
 
 			if err == nil {
 				jenkinsfileReconciler := &jenkinspipeline.JenkinsfileReconciler{
-					Client:      mgr.GetClient(),
-					TokenIssuer: tokenIssuer,
-					JenkinsCore: jenkinsCore,
+					Client:        mgr.GetClient(),
+					JenkinsClient: core.Client{JenkinsCore: jenkinsCore},
 				}
 				err = jenkinsfileReconciler.SetupWithManager(mgr)
 			}

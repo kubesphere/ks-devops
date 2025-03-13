@@ -20,22 +20,23 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/emicklei/go-restful"
-	"github.com/h2non/gock"
-	"github.com/stretchr/testify/assert"
 	"io"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	ksruntime "kubesphere.io/devops/pkg/apiserver/runtime"
-	"kubesphere.io/devops/pkg/constants"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"github.com/emicklei/go-restful/v3"
+	"github.com/h2non/gock"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	ksruntime "github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGitRepositoryAPI(t *testing.T) {
@@ -60,7 +61,7 @@ func TestGitRepositoryAPI(t *testing.T) {
 	tests := []struct {
 		name         string
 		args         args
-		getInstances func() []runtime.Object
+		getInstances func() []client.Object
 		verify       func(code int, response []byte, t *testing.T)
 	}{{
 		name: "get repository list",
@@ -68,8 +69,8 @@ func TestGitRepositoryAPI(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/ns/gitrepositories",
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{repo.DeepCopy()}
+		getInstances: func() []client.Object {
+			return []client.Object{repo.DeepCopy()}
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
@@ -85,8 +86,8 @@ func TestGitRepositoryAPI(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/namespaces/ns/gitrepositories/repo-1",
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{repo.DeepCopy()}
+		getInstances: func() []client.Object {
+			return []client.Object{repo.DeepCopy()}
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
@@ -102,8 +103,8 @@ func TestGitRepositoryAPI(t *testing.T) {
 			method: http.MethodDelete,
 			uri:    "/namespaces/ns/gitrepositories/repo-1",
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{repo.DeepCopy()}
+		getInstances: func() []client.Object {
+			return []client.Object{repo.DeepCopy()}
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
@@ -123,8 +124,8 @@ func TestGitRepositoryAPI(t *testing.T) {
 				return bytes.NewBuffer(data)
 			},
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{}
+		getInstances: func() []client.Object {
+			return []client.Object{}
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
@@ -141,8 +142,8 @@ func TestGitRepositoryAPI(t *testing.T) {
 				return bytes.NewBuffer(data)
 			},
 		},
-		getInstances: func() []runtime.Object {
-			return []runtime.Object{repo.DeepCopy()}
+		getInstances: func() []client.Object {
+			return []client.Object{repo.DeepCopy()}
 		},
 		verify: func(code int, response []byte, t *testing.T) {
 			assert.Equal(t, 200, code)
@@ -167,7 +168,7 @@ func TestGitRepositoryAPI(t *testing.T) {
 			httpRequest.Header.Set("Content-Type", "application/json")
 
 			ws := ksruntime.NewWebService(runtimeSchema.GroupVersion{Group: api.GroupName, Version: "v1alpha3"})
-			RegisterRoutersForSCM(fake.NewFakeClientWithScheme(schema, tt.getInstances()...), ws)
+			RegisterRoutersForSCM(fake.NewClientBuilder().WithScheme(schema).WithObjects(tt.getInstances()...).Build(), ws)
 			container := restful.NewContainer()
 			container.Add(ws)
 

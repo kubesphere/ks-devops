@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	mgrcore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	mgrcore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -64,7 +64,7 @@ func TestWebhookReconciler_notifyGitRepo(t *testing.T) {
 	}{{
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, gitRepo.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(gitRepo.DeepCopy()).Build(),
 		},
 		args: args{
 			ns:   "ns",
@@ -133,8 +133,7 @@ func TestWebhookReconciler_notifyGitRepos(t *testing.T) {
 	}{{
 		name: "normal case",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema,
-				gitRepo.DeepCopy(), gitRepoA.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(gitRepo.DeepCopy(), gitRepoA.DeepCopy()).Build(),
 		},
 		args: args{
 			ns:    "ns",
@@ -164,8 +163,7 @@ func TestWebhookReconciler_notifyGitRepos(t *testing.T) {
 	}, {
 		name: "has errors",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema,
-				gitRepo.DeepCopy(), gitRepoA.DeepCopy()),
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(gitRepo.DeepCopy(), gitRepoA.DeepCopy()).Build(),
 		},
 		args: args{
 			ns:    "ns",
@@ -285,14 +283,14 @@ func TestWebhookReconciler_Reconcile(t *testing.T) {
 		wantErr    assert.ErrorAssertionFunc
 	}{{
 		name:   "not found",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema)},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).Build()},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)
 			return true
 		},
 	}, {
 		name:   "no desired annotation",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, emptyAnnoWH.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(emptyAnnoWH.DeepCopy()).Build()},
 		args: args{
 			req: req,
 		},
@@ -302,7 +300,7 @@ func TestWebhookReconciler_Reconcile(t *testing.T) {
 		},
 	}, {
 		name:   "link to a not exit repo",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, wh.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(wh.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.NotNil(t, err)
@@ -311,7 +309,7 @@ func TestWebhookReconciler_Reconcile(t *testing.T) {
 		wantResult: controllerruntime.Result{Requeue: true},
 	}, {
 		name:   "normal case",
-		fields: fields{Client: fake.NewFakeClientWithScheme(schema, wh.DeepCopy(), repo.DeepCopy())},
+		fields: fields{Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(wh.DeepCopy(), repo.DeepCopy()).Build()},
 		args:   args{req: req},
 		wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
 			assert.Nil(t, err)

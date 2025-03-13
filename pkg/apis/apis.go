@@ -18,13 +18,13 @@ limitations under the License.
 package apis
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	helmv2 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/helm/v2beta1"
+	kusv1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/kustomize/v1beta2"
+	sourcev1 "github.com/kubesphere/ks-devops/pkg/external/fluxcd/source/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	helmv2 "kubesphere.io/devops/pkg/external/fluxcd/helm/v2beta1"
-	kusv1 "kubesphere.io/devops/pkg/external/fluxcd/kustomize/v1beta2"
-	sourcev1 "kubesphere.io/devops/pkg/external/fluxcd/source/v1beta2"
 )
 
 // addToSchemes may be used to add all resources defined in the project to a Scheme

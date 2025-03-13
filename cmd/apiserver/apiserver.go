@@ -19,7 +19,7 @@ package main
 import (
 	"log"
 
-	"kubesphere.io/devops/cmd/apiserver/app"
+	"github.com/kubesphere/ks-devops/cmd/apiserver/app"
 )
 
 func main() {

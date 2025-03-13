@@ -17,37 +17,40 @@ limitations under the License.
 package config
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"gopkg.in/yaml.v2"
-	v1 "k8s.io/api/core/v1"
+	"time"
+
+	"gopkg.in/yaml.v3"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	corev1informer "k8s.io/client-go/informers/core/v1"
-	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	corev1lister "k8s.io/client-go/listers/core/v1"
+	informer "k8s.io/client-go/informers/core/v1"
+	typed "k8s.io/client-go/kubernetes/typed/core/v1"
+	lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-	"kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
-	"kubesphere.io/devops/pkg/informers"
-	"time"
+
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/informers"
 )
 
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;update;watch;create
 
 // ControllerOptions is the option of Jenkins configuration controller
 type ControllerOptions struct {
-	LimitRangeClient    v1core.LimitRangesGetter
-	ResourceQuotaClient v1core.ResourceQuotasGetter
-	ConfigMapClient     v1core.ConfigMapsGetter
+	LimitRangeClient    typed.LimitRangesGetter
+	ResourceQuotaClient typed.ResourceQuotasGetter
+	ConfigMapClient     typed.ConfigMapsGetter
 
-	ConfigMapInformer corev1informer.ConfigMapInformer
-	NamespaceInformer corev1informer.NamespaceInformer
+	ConfigMapInformer informer.ConfigMapInformer
+	NamespaceInformer informer.NamespaceInformer
 
 	InformerFactory informers.InformerFactory
 	ConfigOperator  devops.ConfigurationOperator
@@ -57,13 +60,13 @@ type ControllerOptions struct {
 
 // Controller is used to maintain the state of the jenkins-casc-config ConfigMap.
 type Controller struct {
-	configmapLister corev1lister.ConfigMapLister
-	namespaceLister corev1lister.NamespaceLister
+	configmapLister lister.ConfigMapLister
+	namespaceLister lister.NamespaceLister
 	configmapSynced cache.InformerSynced
 
-	limitRangeClient    v1core.LimitRangesGetter
-	resourceQuotaClient v1core.ResourceQuotasGetter
-	configMapClient     v1core.ConfigMapsGetter
+	limitRangeClient    typed.LimitRangesGetter
+	resourceQuotaClient typed.ResourceQuotasGetter
+	configMapClient     typed.ConfigMapsGetter
 
 	configOperator devops.ConfigurationOperator
 
@@ -90,7 +93,7 @@ func NewController(
 
 		configOperator: options.ConfigOperator,
 
-		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), jenkinsConfigName),
+		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), jenkinsCasCConfigName),
 		workerLoopPeriod: time.Second,
 		ReloadCasCDelay:  options.ReloadCasCDelay,
 
@@ -100,8 +103,8 @@ func NewController(
 	options.ConfigMapInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueue,
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			oldConfigMap := oldObj.(*v1.ConfigMap)
-			newConfigMap := newObj.(*v1.ConfigMap)
+			oldConfigMap := oldObj.(*core.ConfigMap)
+			newConfigMap := newObj.(*core.ConfigMap)
 			if oldConfigMap.ResourceVersion == newConfigMap.ResourceVersion {
 				return
 			}
@@ -120,7 +123,7 @@ func (c *Controller) enqueue(obj interface{}) {
 		return
 	}
 	// Filter by namespace and name
-	if namespace, name, _ := cache.SplitMetaNamespaceKey(key); namespace != c.devopsOptions.Namespace || name != jenkinsConfigName {
+	if namespace, name, _ := cache.SplitMetaNamespaceKey(key); namespace != c.devopsOptions.Namespace || name != jenkinsCasCConfigName {
 		return
 	}
 	c.queue.Add(key)
@@ -189,18 +192,8 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
-// checkJenkinsConfigData makes sure that annotation devops.kubesphere.io/ks-jenkins-config exists
-func (c *Controller) checkJenkinsConfigData(cm *v1.ConfigMap) (err error) {
-	if data, ok := cm.Data[jenkinsYamlKey]; ok {
-		if _, ok = cm.Data[jenkinsUserYamlKey]; !ok {
-			cm.Data[jenkinsUserYamlKey] = data
-		}
-	}
-	return
-}
-
 // checkJenkinsConfigFormula makes sure that annotation devops.kubesphere.io/jenkins-config-formula exists
-func (c *Controller) checkJenkinsConfigFormula(cm *v1.ConfigMap) (err error) {
+func (c *Controller) checkJenkinsConfigFormula(cm *core.ConfigMap) (err error) {
 	annos := cm.GetAnnotations()
 	if annos == nil {
 		cm.Annotations = make(map[string]string)
@@ -223,7 +216,7 @@ func isValidJenkinsConfigFormulaName(name string) bool {
 	}
 }
 
-func (c *Controller) providePredefinedConfig(cm *v1.ConfigMap) (err error) {
+func (c *Controller) providePredefinedConfig(cm *core.ConfigMap) (err error) {
 	annos := cm.GetAnnotations()
 	if annos == nil {
 		return
@@ -291,7 +284,7 @@ func (c *Controller) delayReloadJenkinsConfig() (err error) {
 	return c.reloadJenkinsConfig()
 }
 
-func (c *Controller) getConfigMapFromKey(key string) (cm *v1.ConfigMap, err error) {
+func (c *Controller) getConfigMapFromKey(key string) (cm *core.ConfigMap, err error) {
 	var (
 		ns   string
 		name string
@@ -319,18 +312,14 @@ func (c *Controller) getConfigMapFromKey(key string) (cm *v1.ConfigMap, err erro
 func (c *Controller) syncHandler(key string) (err error) {
 	klog.Info("syncing key:", key)
 	defer klog.Info("synced key: ", key)
-	var jenkinsCM *v1.ConfigMap
+	var jenkinsCM *core.ConfigMap
 	if jenkinsCM, err = c.getConfigMapFromKey(key); err != nil {
 		return
 	}
 
+	klog.V(5).Infof("jenkins casc resourceVersion: %s", jenkinsCM.GetResourceVersion())
 	jenkinsCMCopy := jenkinsCM.DeepCopy()
 	ns, name := jenkinsCMCopy.Namespace, jenkinsCMCopy.Name
-
-	if err = c.checkJenkinsConfigData(jenkinsCMCopy); err != nil {
-		err = fmt.Errorf("failed with checking Jenkins ConfigMap data, error: %v", err)
-		return
-	}
 
 	if err = c.checkJenkinsConfigFormula(jenkinsCMCopy); err != nil {
 		err = fmt.Errorf("failed with checking Jenkins config forumla, error: %v", err)
@@ -342,8 +331,13 @@ func (c *Controller) syncHandler(key string) (err error) {
 		return
 	}
 
+	if err = c.handleJenkinsUser(jenkinsCMCopy); err != nil {
+		err = fmt.Errorf("failed to handle the jenkins_user.yaml, error: %v", err)
+		return
+	}
+
 	// Update Jenkins Configuration as Code ConfigMap
-	_, err = c.configMapClient.ConfigMaps(ns).Update(context.Background(), jenkinsCMCopy, metav1.UpdateOptions{})
+	_, err = c.configMapClient.ConfigMaps(ns).Update(context.Background(), jenkinsCMCopy, meta.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("failed to update ConfigMap: %s/%s", ns, name)
 		return err
@@ -357,10 +351,68 @@ func (c *Controller) syncHandler(key string) (err error) {
 	return
 }
 
+// Handle jenkins_user.yaml as in README.md
+func (c *Controller) handleJenkinsUser(cm *core.ConfigMap) (err error) {
+	if data, ok := cm.Data[jenkinsYamlKey]; ok {
+		if _, ok = cm.Data[jenkinsUserYamlKey]; !ok {
+			cm.Data[jenkinsUserYamlKey] = data
+		} else {
+			var jenkinsNode yaml.Node
+			if err = yaml.Unmarshal([]byte(cm.Data[jenkinsYamlKey]), &jenkinsNode); err != nil {
+				klog.Error("failed to unmarshal jenkins.yaml to Node")
+				return err
+			}
+			var securityRealmNode, unclassifiedNode *yaml.Node
+			jenkinsContent := jenkinsNode.Content[0].Content
+			for i := 0; i < len(jenkinsContent); i += 2 {
+				if jenkinsContent[i].Value == "unclassified" {
+					unclassifiedNode = jenkinsContent[i+1]
+				}
+				if jenkinsContent[i].Value == "jenkins" {
+					for ji := 0; ji < len(jenkinsContent[i+1].Content); ji += 2 {
+						if jenkinsContent[i+1].Content[ji].Value == "securityRealm" {
+							securityRealmNode = jenkinsContent[i+1].Content[ji+1]
+						}
+					}
+				}
+			}
+
+			var jenkinsUserNode yaml.Node
+			if err = yaml.Unmarshal([]byte(cm.Data[jenkinsUserYamlKey]), &jenkinsUserNode); err != nil {
+				klog.Error("failed to unmarshal jenkins_user.yaml to Node")
+				return err
+			}
+			jenkinsUserContent := jenkinsUserNode.Content[0].Content
+			for i := 0; i < len(jenkinsUserContent); i += 2 {
+				if jenkinsUserContent[i].Value == "unclassified" {
+					jenkinsUserContent[i+1] = unclassifiedNode
+				}
+				if jenkinsUserContent[i].Value == "jenkins" {
+					for ji := 0; ji < len(jenkinsUserContent[i+1].Content); ji += 2 {
+						if jenkinsUserContent[i+1].Content[ji].Value == "securityRealm" {
+							jenkinsUserContent[i+1].Content[ji+1] = securityRealmNode
+						}
+					}
+				}
+			}
+
+			var jenkinsUserBytes bytes.Buffer
+			var encoder = yaml.NewEncoder(&jenkinsUserBytes)
+			encoder.SetIndent(2)
+			if err = encoder.Encode(&jenkinsUserNode); err != nil {
+				klog.Error("failed to marshal jenkinsUserNode to jenkins_user.yaml")
+				return err
+			}
+			cm.Data[jenkinsUserYamlKey] = jenkinsUserBytes.String()
+		}
+	}
+	return
+}
+
 // Handle worker namespace quota limit
 func (c *Controller) handleWorkerNamespaceQuotaLimit(providedConfig map[string]string, namespace string) error {
 	// get the resource quota
-	workerResourceQuota, err := c.resourceQuotaClient.ResourceQuotas(namespace).Get(context.Background(), workerResQuotaName, metav1.GetOptions{})
+	workerResourceQuota, err := c.resourceQuotaClient.ResourceQuotas(namespace).Get(context.Background(), workerResQuotaName, meta.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -392,7 +444,7 @@ func (c *Controller) handleWorkerNamespaceQuotaLimit(providedConfig map[string]s
 	}
 
 	// update worker resource quota
-	_, err = c.resourceQuotaClient.ResourceQuotas(namespace).Update(context.Background(), newWorkerResourceQuota, metav1.UpdateOptions{})
+	_, err = c.resourceQuotaClient.ResourceQuotas(namespace).Update(context.Background(), newWorkerResourceQuota, meta.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("failed to update ResourceQuota: %s/%s", namespace, workerResQuotaName)
 		return err
@@ -403,7 +455,7 @@ func (c *Controller) handleWorkerNamespaceQuotaLimit(providedConfig map[string]s
 
 // Handle worker namespace limit range
 func (c *Controller) handleWorkerNamespaceLimitRange(providedConfig map[string]string, namespace string) error {
-	workerLimitRange, err := c.limitRangeClient.LimitRanges(namespace).Get(context.Background(), workerLimitRangeName, metav1.GetOptions{})
+	workerLimitRange, err := c.limitRangeClient.LimitRanges(namespace).Get(context.Background(), workerLimitRangeName, meta.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -414,7 +466,7 @@ func (c *Controller) handleWorkerNamespaceLimitRange(providedConfig map[string]s
 	newWorkerLimitRange := workerLimitRange.DeepCopy()
 	for _, limit := range newWorkerLimitRange.Spec.Limits {
 		// handle for container type
-		if v1.LimitTypeContainer == limit.Type {
+		if core.LimitTypeContainer == limit.Type {
 			// handle default cpu
 			if defaultCPURaw, ok := providedConfig[workerLRDefaultCPUKey]; ok {
 				defaultCPU, err := resource.ParseQuantity(defaultCPURaw)
@@ -458,7 +510,7 @@ func (c *Controller) handleWorkerNamespaceLimitRange(providedConfig map[string]s
 	}
 
 	// update worker limit range
-	_, err = c.limitRangeClient.LimitRanges(namespace).Update(context.Background(), newWorkerLimitRange, metav1.UpdateOptions{})
+	_, err = c.limitRangeClient.LimitRanges(namespace).Update(context.Background(), newWorkerLimitRange, meta.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("failed to update %s/%s", namespace, workerLimitRangeName)
 		return err
@@ -468,7 +520,7 @@ func (c *Controller) handleWorkerNamespaceLimitRange(providedConfig map[string]s
 }
 
 // Handle Jenkins Configuration-as-Code configuration
-func (c *Controller) handleJenkinsCasCConfig(cm *v1.ConfigMap, providedConfig map[string]string) (err error) {
+func (c *Controller) handleJenkinsCasCConfig(cm *core.ConfigMap, providedConfig map[string]string) (err error) {
 	jenkinsCasCConfigTemplate := cm.Data[jenkinsYamlKey]
 	namespace := cm.Namespace
 
@@ -523,7 +575,7 @@ func (c *Controller) handleJenkinsCasCConfig(cm *v1.ConfigMap, providedConfig ma
 		return
 	}
 
-	if _, err = c.configMapClient.ConfigMaps(namespace).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
+	if _, err = c.configMapClient.ConfigMaps(namespace).Update(context.Background(), cm, meta.UpdateOptions{}); err != nil {
 		err = fmt.Errorf("failed to update ConfigMap: %s/%s, error: %v", namespace, jenkinsCasCConfigName, err)
 	} else {
 		klog.V(5).Infof("updated ConfigMap %s/%s successfully", namespace, jenkinsCasCConfigName)

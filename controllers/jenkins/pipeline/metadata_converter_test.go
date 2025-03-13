@@ -17,7 +17,7 @@ limitations under the License.
 package pipeline
 
 import (
-	"kubesphere.io/devops/pkg/models/pipeline"
+	"github.com/kubesphere/ks-devops/pkg/models/pipeline"
 	"reflect"
 	"testing"
 	"time"

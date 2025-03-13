@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 )
 
 func Test_maskCredential(t *testing.T) {

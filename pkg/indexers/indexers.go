@@ -20,7 +20,7 @@ import (
 	"context"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 

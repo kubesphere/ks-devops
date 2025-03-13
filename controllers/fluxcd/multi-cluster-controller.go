@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -145,7 +146,7 @@ func base64DecodeWithoutErrorCheck(str string) string {
 // getFluxAppNs get the namespaces where the fluxApp (HelmRelease or Kustomization) existed.
 // The secret must be in the same namespace as the fluxApp.
 func (r *MultiClusterReconciler) getFluxAppNsList(ctx context.Context, nsList *v1.NamespaceList) (err error) {
-	devops, _ := labels.NewRequirement("kubesphere.io/devopsproject", selection.Exists, nil)
+	devops, _ := labels.NewRequirement("github.com/kubesphere/ks-devopsproject", selection.Exists, nil)
 	selector := labels.NewSelector().Add(*devops)
 	if err = r.List(ctx, nsList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		return
@@ -174,6 +175,7 @@ func (r *MultiClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName(r.GetName())
 	r.recorder = mgr.GetEventRecorderFor(r.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("fluxcd_multi_cluster_controller").
 		For(cluster).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Complete(r)

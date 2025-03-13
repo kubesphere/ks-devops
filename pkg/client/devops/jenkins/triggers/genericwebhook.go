@@ -19,7 +19,7 @@ package triggers
 import (
 	"fmt"
 	"github.com/beevik/etree"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"strconv"
 )
 

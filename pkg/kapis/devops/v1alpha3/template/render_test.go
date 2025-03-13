@@ -17,10 +17,10 @@ package template
 
 import (
 	"fmt"
+	"github.com/kubesphere/ks-devops/pkg/api/devops"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"testing"
 )
 

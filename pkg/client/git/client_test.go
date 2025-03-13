@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -112,7 +112,7 @@ func TestGetClient(t *testing.T) {
 	}, {
 		name: "no secret found",
 		fields: fields{
-			k8sClient: fake.NewFakeClientWithScheme(schema),
+			k8sClient: fake.NewClientBuilder().WithScheme(schema).Build(),
 			provider:  "github",
 			secretRef: &v1.SecretReference{Namespace: "fake", Name: "fake"},
 		},
@@ -123,7 +123,7 @@ func TestGetClient(t *testing.T) {
 	}, {
 		name: "github provider",
 		fields: fields{
-			k8sClient: fake.NewFakeClientWithScheme(schema, basicSecret.DeepCopy()),
+			k8sClient: fake.NewClientBuilder().WithScheme(schema).WithObjects(basicSecret.DeepCopy()).Build(),
 			provider:  "github",
 			secretRef: &v1.SecretReference{Namespace: "ns", Name: "basicSecret"},
 		},
@@ -134,7 +134,7 @@ func TestGetClient(t *testing.T) {
 	}, {
 		name: "gitlab provider",
 		fields: fields{
-			k8sClient: fake.NewFakeClientWithScheme(schema, opaqueSecret.DeepCopy()),
+			k8sClient: fake.NewClientBuilder().WithScheme(schema).WithObjects(opaqueSecret.DeepCopy()).Build(),
 			provider:  "gitlab",
 			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
 		},
@@ -145,7 +145,7 @@ func TestGetClient(t *testing.T) {
 	}, {
 		name: "gitlab provider - text secret",
 		fields: fields{
-			k8sClient: fake.NewFakeClientWithScheme(schema, textSecret.DeepCopy()),
+			k8sClient: fake.NewClientBuilder().WithScheme(schema).WithObjects(textSecret.DeepCopy()).Build(),
 			provider:  "gitlab",
 			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
 		},
@@ -156,7 +156,7 @@ func TestGetClient(t *testing.T) {
 	}, {
 		name: "gitlab provider - ks basic auth secret",
 		fields: fields{
-			k8sClient: fake.NewFakeClientWithScheme(schema, ksBasicAuthSecret.DeepCopy()),
+			k8sClient: fake.NewClientBuilder().WithScheme(schema).WithObjects(ksBasicAuthSecret.DeepCopy()).Build(),
 			provider:  "gitlab",
 			secretRef: &v1.SecretReference{Namespace: "ns", Name: "opaqueSecret"},
 		},

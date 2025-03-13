@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -38,6 +38,22 @@ import (
 type FakeManager struct {
 	Client client.Client
 	Scheme *runtime.Scheme
+}
+
+func (f *FakeManager) GetHTTPClient() *http.Client {
+	return nil
+}
+
+func (f *FakeManager) AddMetricsServerExtraHandler(path string, handler http.Handler) error {
+	return nil
+}
+
+func (f *FakeManager) GetWebhookServer() webhook.Server {
+	return nil
+}
+
+func (f *FakeManager) GetControllerOptions() config.Controller {
+	return config.Controller{}
 }
 
 // Add is a fake method
@@ -115,17 +131,7 @@ func (f *FakeManager) GetAPIReader() client.Reader {
 	return f.Client
 }
 
-// GetWebhookServer is a fake method
-func (f *FakeManager) GetWebhookServer() *webhook.Server {
-	return nil
-}
-
 // GetLogger is a fake method
 func (f *FakeManager) GetLogger() logr.Logger {
 	return logr.New(log.NullLogSink{})
-}
-
-// GetControllerOptions is a fake method
-func (f *FakeManager) GetControllerOptions() (spec v1alpha1.ControllerConfigurationSpec) {
-	return
 }

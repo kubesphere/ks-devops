@@ -1,6 +1,11 @@
 # Image URL to use all building/pushing image targets
 COMMIT := $(shell git rev-parse --short HEAD)
-VERSION := dev-$(shell git describe --tags $(shell git rev-list --tags --max-count=1))
+TAG_COMMIT := $(shell git rev-list --tags --max-count=1)
+ifeq (,$(TAG_COMMIT))
+VERSION := dev
+else
+VERSION := dev-$(shell git describe --tags $(TAG_COMMIT))
+endif
 
 DOCKER_REPO ?= kubespheredev
 CONTROLLER_IMG ?= ${DOCKER_REPO}/devops-controller:$(VERSION)-$(COMMIT)
@@ -25,12 +30,17 @@ all: test lint
 test: fmt vet generate manifests
 	go test ./... -coverprofile coverage.out
 
+# Build apiserver binary
+apiserver: fmt vet
+	go build -a -o bin/apiserver cmd/apiserver/apiserver.go
+
 # Build manager binary
-manager: generate fmt vet
+manager: fmt vet
 	go build -a -o bin/controller-manager cmd/controller/main.go
 
-tools-jwt: fmt vet
-	go build -a -o bin/jwt cmd/tools/jwt/jwt_cmd.go
+# Build tools binary
+tools: fmt vet
+	go build -a -o bin/devops-tools cmd/tools/main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
@@ -80,7 +90,7 @@ openapi:
 	openapi-gen -O openapi_generated -i ./api/v1alpha1 -p kubesphere.io/api/devops/v1alpha1 -h ./hack/boilerplate.go.txt --report-filename ./api/violation_exceptions.list
 
 generate-listers:
-	lister-gen -v=2 --output-base=. --input-dirs kubesphere.io/devops/pkg/api/devops/v1alpha3,kubesphere.io/devops/pkg/api/devops/v1alpha1  \
+	lister-gen -v=2 --output-base=. --input-dirs github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3,github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1  \
  		--output-package pkg/client/listers -h hack/boilerplate.go.txt
 
 # Build the docker image of controller-manager
@@ -131,12 +141,12 @@ build-tpl:
 copy-tpl: build-tpl
 	cp bin/tpl /usr/local/bin/
 
+swagger-doc-gen:
+	rm -f ./api/openapi-spec/swagger.json
+	go run cmd/tools/doc-gen/main.go
+
 swagger-ui:
 	git clone https://github.com/swagger-api/swagger-ui -b v2.2.10 --depth 1 bin/swagger-ui
-
-mock-gen:
-	mockgen -source=cmd/tools/jwt/app/configmap_updater.go -destination ./cmd/tools/jwt/app/mock_app/configmap_updater.go
-	mockgen -source=cmd/tools/jwt/app/kubernetes.go -destination ./cmd/tools/jwt/app/mock_app/kubernetes.go
 
 # find or download controller-gen
 # download controller-gen if necessary

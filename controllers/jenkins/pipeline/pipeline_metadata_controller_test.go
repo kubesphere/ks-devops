@@ -29,10 +29,10 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
 	"github.com/jenkins-zh/jenkins-client/pkg/util"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 

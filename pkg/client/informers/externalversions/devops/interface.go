@@ -19,9 +19,9 @@ limitations under the License.
 package devops
 
 import (
-	v1alpha1 "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha1"
-	v1alpha3 "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha3"
-	internalinterfaces "kubesphere.io/devops/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/devops/v1alpha1"
+	v1alpha3 "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/devops/v1alpha3"
+	internalinterfaces "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

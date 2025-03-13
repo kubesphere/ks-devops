@@ -18,7 +18,7 @@ package pipeline
 
 import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
-	"kubesphere.io/devops/pkg/models/pipeline"
+	"github.com/kubesphere/ks-devops/pkg/models/pipeline"
 )
 
 type branchPredicate func(pipeline.Branch) bool

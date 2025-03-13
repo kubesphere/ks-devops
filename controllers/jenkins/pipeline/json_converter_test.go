@@ -25,12 +25,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/jwt/token"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/jwt/token"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -75,11 +75,11 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	irregularPip.Spec.Type = ""
 
 	type fields struct {
-		Client      client.Client
-		log         logr.Logger
-		recorder    record.EventRecorder
-		JenkinsCore core.JenkinsCore
-		TokenIssuer token.Issuer
+		Client        client.Client
+		log           logr.Logger
+		recorder      record.EventRecorder
+		JenkinsClient core.Client
+		TokenIssuer   token.Issuer
 	}
 	type args struct {
 		req controllerruntime.Request
@@ -88,7 +88,7 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 		name       string
 		fields     fields
 		args       args
-		prepare    func(t *testing.T, c *core.JenkinsCore)
+		prepare    func(t *testing.T, c *core.Client)
 		verify     func(t *testing.T, Client client.Client)
 		wantResult controllerruntime.Result
 		wantErr    assert.ErrorAssertionFunc
@@ -105,10 +105,10 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "invalid edit mode",
 		fields: fields{
-			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(invalidEditMode).Build(),
-			JenkinsCore: core.JenkinsCore{},
-			log:         logr.Logger{},
-			TokenIssuer: &token.FakeIssuer{},
+			Client:        fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(invalidEditMode).Build(),
+			JenkinsClient: core.Client{},
+			log:           logr.Logger{},
+			TokenIssuer:   &token.FakeIssuer{},
 		},
 		args: args{
 			req: defaultReq,
@@ -120,10 +120,10 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "empty edit mode",
 		fields: fields{
-			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(emptyEditMode).Build(),
-			JenkinsCore: core.JenkinsCore{},
-			log:         logr.Logger{},
-			TokenIssuer: &token.FakeIssuer{},
+			Client:        fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(emptyEditMode).Build(),
+			JenkinsClient: core.Client{},
+			log:           logr.Logger{},
+			TokenIssuer:   &token.FakeIssuer{},
 		},
 		args: args{
 			req: defaultReq,
@@ -135,9 +135,9 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "irregular pipeline, and jenkinsfile edit mode",
 		fields: fields{
-			Client:      fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(irregularPip).Build(),
-			JenkinsCore: core.JenkinsCore{},
-			log:         logr.Logger{},
+			Client:        fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(irregularPip).Build(),
+			JenkinsClient: core.Client{},
+			log:           logr.Logger{},
 		},
 		args: args{
 			req: defaultReq,
@@ -149,17 +149,15 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "a regular pipeline with jenkinsfile edit mode",
 		fields: fields{
-			Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(pip).Build(),
-			JenkinsCore: core.JenkinsCore{
-				URL: "http://localhost",
-			},
-			log:         logr.Logger{},
-			TokenIssuer: &token.FakeIssuer{},
+			Client:        fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(pip).Build(),
+			JenkinsClient: core.Client{},
+			log:           logr.Logger{},
+			TokenIssuer:   &token.FakeIssuer{},
 		},
 		args: args{
 			req: defaultReq,
 		},
-		prepare: func(t *testing.T, c *core.JenkinsCore) {
+		prepare: func(t *testing.T, c *core.Client) {
 			ctrl := gomock.NewController(t)
 			roundTripper := mhttp.NewMockRoundTripper(ctrl)
 			c.RoundTripper = roundTripper
@@ -184,17 +182,15 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "a regular pipeline with JSON edit mode",
 		fields: fields{
-			Client: fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(jsonEditModePip).Build(),
-			JenkinsCore: core.JenkinsCore{
-				URL: "http://localhost",
-			},
-			log:         logr.Logger{},
-			TokenIssuer: &token.FakeIssuer{},
+			Client:        fake.NewClientBuilder().WithScheme(schema).WithRuntimeObjects(jsonEditModePip).Build(),
+			JenkinsClient: core.Client{},
+			log:           logr.Logger{},
+			TokenIssuer:   &token.FakeIssuer{},
 		},
 		args: args{
 			req: defaultReq,
 		},
-		prepare: func(t *testing.T, c *core.JenkinsCore) {
+		prepare: func(t *testing.T, c *core.Client) {
 			ctrl := gomock.NewController(t)
 			roundTripper := mhttp.NewMockRoundTripper(ctrl)
 			c.RoundTripper = roundTripper
@@ -220,14 +216,13 @@ func TestJenkinsfileReconciler_Reconcile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.prepare != nil {
-				tt.prepare(t, &tt.fields.JenkinsCore)
+				tt.prepare(t, &tt.fields.JenkinsClient)
 			}
 			r := &JenkinsfileReconciler{
-				Client:      tt.fields.Client,
-				log:         logr.New(log.NullLogSink{}),
-				recorder:    tt.fields.recorder,
-				JenkinsCore: tt.fields.JenkinsCore,
-				TokenIssuer: tt.fields.TokenIssuer,
+				Client:        tt.fields.Client,
+				log:           logr.New(log.NullLogSink{}),
+				recorder:      tt.fields.recorder,
+				JenkinsClient: tt.fields.JenkinsClient,
 			}
 			gotResult, err := r.Reconcile(context.Background(), tt.args.req)
 			if !tt.wantErr(t, err, fmt.Sprintf("Reconcile(%v)", tt.args.req)) {

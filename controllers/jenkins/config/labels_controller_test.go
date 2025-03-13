@@ -23,14 +23,14 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/mock/mhttp"
+	mgrcore "github.com/kubesphere/ks-devops/controllers/core"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/jwt/token"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	mgrcore "kubesphere.io/devops/controllers/core"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/jwt/token"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -109,7 +109,7 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 
 	type fields struct {
 		TargetNamespace string
-		JenkinsClient   core.JenkinsCore
+		JenkinsClient   core.Client
 		TokenIssuer     token.Issuer
 		targetName      string
 		Client          client.Client
@@ -122,21 +122,21 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 		name       string
 		fields     fields
 		args       args
-		prepare    func(t *testing.T, c *core.JenkinsCore)
+		prepare    func(t *testing.T, c *core.Client)
 		wantResult controllerruntime.Result
 		wantErr    assert.ErrorAssertionFunc
 	}{{
 		name: "not found ConfigMap",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema),
-			JenkinsClient: core.JenkinsCore{
+			Client: fake.NewClientBuilder().WithScheme(schema).Build(),
+			JenkinsClient: core.Client{JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
-			},
+			}},
 			TokenIssuer:     &token.FakeIssuer{},
 			targetName:      "fake",
 			TargetNamespace: "ns",
 		},
-		prepare: func(t *testing.T, c *core.JenkinsCore) {
+		prepare: func(t *testing.T, c *core.Client) {
 			ctrl := gomock.NewController(t)
 			roundTripper := mhttp.NewMockRoundTripper(ctrl)
 			c.RoundTripper = roundTripper
@@ -151,15 +151,15 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 	}, {
 		name: "have the specific ConfigMap",
 		fields: fields{
-			Client: fake.NewFakeClientWithScheme(schema, cmWithoutLabels),
-			JenkinsClient: core.JenkinsCore{
+			Client: fake.NewClientBuilder().WithScheme(schema).WithObjects(cmWithoutLabels).Build(),
+			JenkinsClient: core.Client{JenkinsCore: core.JenkinsCore{
 				URL: "http://localhost",
-			},
+			}},
 			TokenIssuer:     &token.FakeIssuer{},
 			targetName:      "fake",
 			TargetNamespace: "ns",
 		},
-		prepare: func(t *testing.T, c *core.JenkinsCore) {
+		prepare: func(t *testing.T, c *core.Client) {
 			ctrl := gomock.NewController(t)
 			roundTripper := mhttp.NewMockRoundTripper(ctrl)
 			c.RoundTripper = roundTripper
@@ -181,7 +181,6 @@ func TestAgentLabelsReconciler_Reconcile(t *testing.T) {
 			r := &AgentLabelsReconciler{
 				TargetNamespace: tt.fields.TargetNamespace,
 				JenkinsClient:   tt.fields.JenkinsClient,
-				TokenIssuer:     tt.fields.TokenIssuer,
 				targetName:      tt.fields.targetName,
 				Client:          tt.fields.Client,
 				log:             logr.Logger{},
@@ -209,8 +208,7 @@ func TestAgentLabelsReconciler_SetupWithManager(t *testing.T) {
 
 	type fields struct {
 		TargetNamespace string
-		JenkinsClient   core.JenkinsCore
-		TokenIssuer     token.Issuer
+		JenkinsClient   core.Client
 		targetName      string
 		Client          client.Client
 		log             logr.Logger
@@ -253,7 +251,6 @@ func TestAgentLabelsReconciler_SetupWithManager(t *testing.T) {
 			r := &AgentLabelsReconciler{
 				TargetNamespace: tt.fields.TargetNamespace,
 				JenkinsClient:   tt.fields.JenkinsClient,
-				TokenIssuer:     tt.fields.TokenIssuer,
 				targetName:      tt.fields.targetName,
 				Client:          tt.fields.Client,
 				log:             tt.fields.log,

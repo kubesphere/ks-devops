@@ -21,9 +21,9 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
 	"github.com/jenkins-x/go-scm/scm/driver/github"
 	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
 	"net/http"
 	"testing"
 )

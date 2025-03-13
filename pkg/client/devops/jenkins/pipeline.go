@@ -30,7 +30,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 type Pipeline struct {
@@ -374,13 +374,13 @@ func (p *Pipeline) GetArtifacts() ([]devops.Artifacts, error) {
 	return artifacts, err
 }
 
-func (p *Pipeline) GetRunLog() ([]byte, http.Header, error) {
-	res, header, err := p.Jenkins.SendPureRequestWithHeaderResp(p.Path, p.HttpParameters)
+func (p *Pipeline) GetRunLog() ([]byte, error) {
+	res, err := p.Jenkins.SendPureRequest(p.Path, p.HttpParameters)
 	if err != nil {
 		klog.Error(err)
 	}
 
-	return res, header, err
+	return res, err
 }
 
 func (p *Pipeline) GetStepLog() ([]byte, http.Header, error) {

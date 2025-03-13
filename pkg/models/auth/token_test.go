@@ -17,11 +17,11 @@ limitations under the License.
 package auth
 
 import (
+	"github.com/kubesphere/ks-devops/pkg/apiserver/authentication/oauth"
+	authoptions "github.com/kubesphere/ks-devops/pkg/apiserver/authentication/options"
+	"github.com/kubesphere/ks-devops/pkg/client/cache"
 	"github.com/stretchr/testify/assert"
 	user2 "k8s.io/apiserver/pkg/authentication/user"
-	"kubesphere.io/devops/pkg/apiserver/authentication/oauth"
-	authoptions "kubesphere.io/devops/pkg/apiserver/authentication/options"
-	"kubesphere.io/devops/pkg/client/cache"
 	"testing"
 	"time"
 )

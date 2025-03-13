@@ -23,13 +23,13 @@ import (
 	"html/template"
 
 	"github.com/go-logr/logr"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/utils/k8sutil"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -178,6 +178,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.log = ctrl.Log.WithName("AddonReconciler")
 	r.recorder = mgr.GetEventRecorderFor("addon-controller")
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("addon_controller").
 		For(&v1alpha3.Addon{}).
 		Complete(r)
 }

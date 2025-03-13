@@ -30,7 +30,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 // Basic Authentication
@@ -308,13 +308,14 @@ func (j *Jenkins) GetArtifacts(projectName, pipelineName, runId string, httpPara
 	return res, err
 }
 
-func (j *Jenkins) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
+func (j *Jenkins) GetRunLog(projectName, pipelineName, runId string, httpParameters *devops.HttpParameters) ([]byte, error) {
 	PipelineOjb := &Pipeline{
 		HttpParameters: httpParameters,
 		Jenkins:        j,
 		Path:           fmt.Sprintf(GetRunLogUrl+httpParameters.Url.RawQuery, projectName, pipelineName, runId),
 	}
-	return PipelineOjb.GetRunLog()
+	res, err := PipelineOjb.GetRunLog()
+	return res, err
 }
 
 func (j *Jenkins) GetStepLog(projectName, pipelineName, runId, nodeId, stepId string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {

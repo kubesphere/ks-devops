@@ -17,11 +17,11 @@ limitations under the License.
 package webhook
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/event/common"
+	"github.com/kubesphere/ks-devops/pkg/event/workflowrun"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"k8s.io/apimachinery/pkg/util/errors"
-	"kubesphere.io/devops/pkg/event/common"
-	"kubesphere.io/devops/pkg/event/workflowrun"
-	"kubesphere.io/devops/pkg/kapis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

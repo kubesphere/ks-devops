@@ -21,11 +21,11 @@ import (
 	"strings"
 	"time"
 
-	"kubesphere.io/devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/config"
 
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -43,7 +43,6 @@ type DevOpsControllerManagerOptions struct {
 	WebhookCertDir    string
 	S3Options         *s3.Options
 	FeatureOptions    *FeatureOptions
-	JWTOptions        *JWTOptions
 	ArgoCDOption      *config.ArgoCDOption
 
 	// KubeSphere is using sigs.k8s.io/application as fundamental object to implement Application Management.

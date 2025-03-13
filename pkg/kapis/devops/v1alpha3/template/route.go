@@ -17,14 +17,16 @@ package template
 
 import (
 	"fmt"
-	"github.com/emicklei/go-restful"
-	restfulspec "github.com/emicklei/go-restful-openapi"
-	"kubesphere.io/devops/pkg/api"
-	"kubesphere.io/devops/pkg/api/devops"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/kapis/devops/v1alpha3/common"
 	"net/http"
+
+	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/v3"
+
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/common"
 )
 
 var (
@@ -49,36 +51,36 @@ type RenderBody struct {
 func RegisterRoutes(service *restful.WebService, options *common.Options) {
 	handler := newHandler(options)
 	// Template
-	service.Route(service.GET("/devops/{devops}/templates").
+	service.Route(service.GET("/namespaces/{devops}/templates").
 		To(handler.handleQuery).
 		Param(common.DevopsPathParameter).
 		Doc("Query templates for a DevOps Project.").
 		Returns(http.StatusOK, api.StatusOK, PageResult{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsTemplateTags))
 
-	service.Route(service.GET("/devops/{devops}/templates/{template}").
+	service.Route(service.GET("/namespaces/{devops}/templates/{template}").
 		To(handler.handleGetTemplate).
 		Param(common.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Doc("Get template").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsTemplateTags))
 
-	service.Route(service.POST("/devops/{devops}/templates/{template}/render").
+	service.Route(service.POST("/namespaces/{devops}/templates/{template}/render").
 		To(handler.handleRenderTemplate).
 		Param(common.DevopsPathParameter).
 		Param(TemplatePathParameter).
 		Reads(RenderBody{}).
 		Doc(fmt.Sprintf("Render template and return render result into annotations (%s/%s) inside template", devops.GroupName, devops.RenderResultAnnoKey)).
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.Template{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsTemplateTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsTemplateTags))
 
 	// ClusterTemplate
 	service.Route(service.GET("/clustertemplates").
 		To(handler.handleQueryClusterTemplates).
 		Doc("Query cluster templates.").
 		Returns(http.StatusOK, api.StatusOK, PageResult{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsClusterTemplateTags))
 
 	service.Route(service.POST("/clustertemplates/{clustertemplate}/render").
 		To(handler.handleRenderClusterTemplate).
@@ -86,5 +88,5 @@ func RegisterRoutes(service *restful.WebService, options *common.Options) {
 		Reads(RenderBody{}).
 		Doc("Render cluster template.").
 		Returns(http.StatusOK, api.StatusOK, v1alpha3.ClusterTemplate{}).
-		Metadata(restfulspec.KeyOpenAPITags, []string{constants.DevOpsClusterTemplateTag}))
+		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsClusterTemplateTags))
 }

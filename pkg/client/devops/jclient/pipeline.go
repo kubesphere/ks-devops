@@ -24,7 +24,7 @@ import (
 
 	"github.com/jenkins-zh/jenkins-client/pkg/artifact"
 
-	"kubesphere.io/devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops"
 )
 
 // GetPipeline returns a pipeline
@@ -81,7 +81,7 @@ func (j *JenkinsClient) DownloadArtifact(projectName, pipelineName, runID, filen
 }
 
 // GetRunLog returns the log output of a pipeline run
-func (j *JenkinsClient) GetRunLog(projectName, pipelineName, runID string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
+func (j *JenkinsClient) GetRunLog(projectName, pipelineName, runID string, httpParameters *devops.HttpParameters) ([]byte, error) {
 	return j.jenkins.GetRunLog(projectName, pipelineName, runID, httpParameters)
 }
 

@@ -18,15 +18,15 @@ package v1alpha2
 
 import (
 	"fmt"
-	"kubesphere.io/devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"net/http"
 
 	"code.cloudfoundry.org/bytefmt"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"k8s.io/klog/v2"
 
-	"kubesphere.io/devops/pkg/models/devops"
-	"kubesphere.io/devops/pkg/utils/hashutil"
+	"github.com/kubesphere/ks-devops/pkg/models/devops"
+	"github.com/kubesphere/ks-devops/pkg/utils/hashutil"
 )
 
 type S2iBinaryHandler struct {

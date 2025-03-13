@@ -24,7 +24,12 @@ func NewDevopsClient(options *Options) (*Jenkins, error) {
 			return http.ErrUseLastResponse
 		},
 	}
-	jenkins := CreateJenkins(client, options.Host, options.MaxConnections, options.Username, options.Password)
+
+	password := options.Password
+	if password == "" {
+		password = options.ApiToken // use apiToken if without password
+	}
+	jenkins := CreateJenkins(client, options.Host, options.MaxConnections, options.Username, password)
 
 	return jenkins, nil
 }

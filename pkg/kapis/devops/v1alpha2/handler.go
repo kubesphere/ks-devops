@@ -17,13 +17,13 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"kubesphere.io/devops/pkg/client/clientset/versioned"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/informers/externalversions"
-	"kubesphere.io/devops/pkg/client/k8s"
-	"kubesphere.io/devops/pkg/client/s3"
-	"kubesphere.io/devops/pkg/client/sonarqube"
-	"kubesphere.io/devops/pkg/models/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	dclient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/informers/externalversions"
+	"github.com/kubesphere/ks-devops/pkg/client/k8s"
+	"github.com/kubesphere/ks-devops/pkg/client/s3"
+	"github.com/kubesphere/ks-devops/pkg/client/sonarqube"
+	"github.com/kubesphere/ks-devops/pkg/models/devops"
 )
 
 type ProjectPipelineHandler struct {
@@ -37,15 +37,15 @@ type PipelineSonarHandler struct {
 	pipelineSonarGetter devops.PipelineSonarGetter
 }
 
-func NewProjectPipelineHandler(devopsClient devopsClient.Interface, k8sClient k8s.Client) ProjectPipelineHandler {
+func NewProjectPipelineHandler(devopsClient dclient.Interface, k8sClient k8s.Client) ProjectPipelineHandler {
 	return ProjectPipelineHandler{
-		devopsOperator:          devops.NewDevopsOperator(devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere()),
+		devopsOperator:          devops.NewDevopsOperator(devopsClient, k8sClient.Kubernetes(), k8sClient.KubeSphere(), nil),
 		projectCredentialGetter: devops.NewProjectCredentialOperator(devopsClient),
 		k8sClient:               k8sClient,
 	}
 }
 
-func NewPipelineSonarHandler(devopsClient devopsClient.Interface, sonarClient sonarqube.SonarInterface,
+func NewPipelineSonarHandler(devopsClient dclient.Interface, sonarClient sonarqube.SonarInterface,
 	k8sClient k8s.Client) PipelineSonarHandler {
 	return PipelineSonarHandler{
 		k8sClient:           k8sClient,

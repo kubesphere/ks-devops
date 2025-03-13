@@ -23,10 +23,10 @@ import (
 	"reflect"
 	"time"
 
-	"kubesphere.io/devops/pkg/utils"
-	"kubesphere.io/devops/pkg/utils/sliceutil"
+	"github.com/kubesphere/ks-devops/pkg/utils"
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,13 +43,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
-	devopsv1alpha3 "kubesphere.io/devops/pkg/api/devops/v1alpha3"
+	devopsv1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 
-	kubesphereclient "kubesphere.io/devops/pkg/client/clientset/versioned"
-	devopsClient "kubesphere.io/devops/pkg/client/devops"
-	devopsinformers "kubesphere.io/devops/pkg/client/informers/externalversions/devops/v1alpha3"
-	devopslisters "kubesphere.io/devops/pkg/client/listers/devops/v1alpha3"
-	"kubesphere.io/devops/pkg/constants"
+	kubesphereclient "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
+	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	devopsinformers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/devops/v1alpha3"
+	devopslisters "github.com/kubesphere/ks-devops/pkg/client/listers/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 )
 
 // Controller is the controller of the Pipeline

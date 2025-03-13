@@ -23,27 +23,24 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/emicklei/go-restful/v3"
 	"k8s.io/klog"
 
-	"kubesphere.io/devops/pkg/kapis"
-
-	"kubesphere.io/devops/pkg/apiserver/query"
-	"kubesphere.io/devops/pkg/apiserver/request"
-
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/devops/pkg/api/devops/v1alpha3"
-
-	"kubesphere.io/devops/pkg/api"
-	clientDevOps "kubesphere.io/devops/pkg/client/devops"
-	"kubesphere.io/devops/pkg/client/devops/jenkins"
-
-	//"kubesphere.io/devops/pkg/apiserver/authorization/authorizer"
-	//"kubesphere.io/devops/pkg/apiserver/request"
-	"kubesphere.io/devops/pkg/constants"
-	"kubesphere.io/devops/pkg/models/devops"
+	"github.com/kubesphere/ks-devops/pkg/api"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
+	dclient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/kapis"
+	"github.com/kubesphere/ks-devops/pkg/models/devops"
+	"kubesphere.io/kubesphere/pkg/apiserver/query"
 )
 
-const jenkinsHeaderPre = "X-"
+const (
+	jenkinsHeaderPre = "X-"
+	parameterStart   = "start"
+)
 
 func (h *ProjectPipelineHandler) CheckPipelineName(req *restful.Request, resp *restful.Response, projectName, pipelineName string) {
 	res, err := h.devopsOperator.CheckPipelineName(projectName, pipelineName, req.Request)
@@ -92,10 +89,10 @@ func (h *ProjectPipelineHandler) getPipelinesByRequest(req *restful.Request) (ap
 }
 
 func buildPipelineSearchQueryParam(req *restful.Request, nameReg string) (q *query.Query) {
-	startStr := req.QueryParameter(query.ParameterStart)
+	startStr := req.QueryParameter(parameterStart)
 	if req.Request.Form.Get(query.ParameterPage) == "" && startStr != "" {
 		// for pagination compatibility
-		req.Request.Form.Set(query.ParameterStart, startStr)
+		req.Request.Form.Set(parameterStart, startStr)
 	}
 
 	q = query.ParseQueryParameter(req)
@@ -147,15 +144,15 @@ func (h *ProjectPipelineHandler) ListPipelines(req *restful.Request, resp *restf
 	}
 
 	// get all pipelines which come from ks
-	pipelineList := &clientDevOps.PipelineList{
+	pipelineList := &dclient.PipelineList{
 		Total: objs.TotalItems,
-		Items: make([]clientDevOps.Pipeline, 0, len(objs.Items)),
+		Items: make([]dclient.Pipeline, 0, len(objs.Items)),
 	}
 	pipelineMap := make(map[string]int)
 	for i := range objs.Items {
 		if pipeline, ok := objs.Items[i].(*v1alpha3.Pipeline); ok {
 			pipelineMap[pipeline.Name] = i
-			pipelineList.Items = append(pipelineList.Items, clientDevOps.Pipeline{
+			pipelineList.Items = append(pipelineList.Items, dclient.Pipeline{
 				Name:        pipeline.Name,
 				Annotations: pipeline.Annotations,
 			})
@@ -278,16 +275,10 @@ func (h *ProjectPipelineHandler) GetRunLog(req *restful.Request, resp *restful.R
 	pipelineName := req.PathParameter("pipeline")
 	runId := req.PathParameter("run")
 
-	res, header, err := h.devopsOperator.GetRunLog(projectName, pipelineName, runId, req.Request)
+	res, err := h.devopsOperator.GetRunLog(projectName, pipelineName, runId, req.Request)
 	if err != nil {
 		parseErr(err, resp)
 		return
-	}
-
-	for k, v := range header {
-		if strings.HasPrefix(k, jenkinsHeaderPre) {
-			resp.AddHeader(k, v[0])
-		}
 	}
 
 	resp.Write(res)
@@ -345,7 +336,7 @@ func (h *ProjectPipelineHandler) GetPipelineRunNodes(req *restful.Request, resp 
 // approvableCheck requires the users who have PipelineRun management permission to
 // approve a step. If the particular submitters exist, we also restrict the users
 // who are Pipeline creator or in the particular submitters can be able to approve or reject a step.
-func (h *ProjectPipelineHandler) approvableCheck(nodes []clientDevOps.NodesDetail, pipe pipelineParam) {
+func (h *ProjectPipelineHandler) approvableCheck(nodes []dclient.NodesDetail, pipe pipelineParam) {
 	userInfo, ok := request.UserFrom(pipe.Context)
 	if !ok {
 		klog.V(6).Infof("cannot get the current user when checking the approvable with pipeline '%s/%s'",
@@ -356,13 +347,13 @@ func (h *ProjectPipelineHandler) approvableCheck(nodes []clientDevOps.NodesDetai
 	// check every input steps if it's approvable
 	for i := range nodes {
 		node := &nodes[i]
-		if node.State != clientDevOps.StatePaused {
+		if node.State != dclient.StatePaused {
 			continue
 		}
 
 		for j := range node.Steps {
 			step := &node.Steps[j]
-			if step.State != clientDevOps.StatePaused || step.Input == nil {
+			if step.State != dclient.StatePaused || step.Input == nil {
 				continue
 			}
 			if len(step.Input.GetSubmitters()) == 0 {
@@ -403,7 +394,7 @@ func (h *ProjectPipelineHandler) hasSubmitPermission(req *restful.Request) (hasP
 	branchName := req.PathParameter("branch")
 
 	// check if current user can approve this input
-	var res []clientDevOps.NodesDetail
+	var res []dclient.NodesDetail
 
 	if branchName == "" {
 		res, err = h.devopsOperator.GetNodesDetail(pipeParam.ProjectName, pipeParam.Name, runId, httpReq)

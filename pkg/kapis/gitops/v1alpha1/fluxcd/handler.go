@@ -17,12 +17,12 @@ package fluxcd
 
 import (
 	"context"
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
+	"github.com/kubesphere/ks-devops/pkg/api/gitops/v1alpha1"
+	"github.com/kubesphere/ks-devops/pkg/config"
+	"github.com/kubesphere/ks-devops/pkg/kapis/common"
+	"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops"
 	v1 "k8s.io/api/core/v1"
-	"kubesphere.io/devops/pkg/api/gitops/v1alpha1"
-	"kubesphere.io/devops/pkg/config"
-	"kubesphere.io/devops/pkg/kapis/common"
-	"kubesphere.io/devops/pkg/kapis/gitops/v1alpha1/gitops"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
