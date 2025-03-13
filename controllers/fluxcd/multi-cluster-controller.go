@@ -146,7 +146,7 @@ func base64DecodeWithoutErrorCheck(str string) string {
 // getFluxAppNs get the namespaces where the fluxApp (HelmRelease or Kustomization) existed.
 // The secret must be in the same namespace as the fluxApp.
 func (r *MultiClusterReconciler) getFluxAppNsList(ctx context.Context, nsList *v1.NamespaceList) (err error) {
-	devops, _ := labels.NewRequirement("github.com/kubesphere/ks-devopsproject", selection.Exists, nil)
+	devops, _ := labels.NewRequirement("kubesphere.io/devopsproject", selection.Exists, nil)
 	selector := labels.NewSelector().Add(*devops)
 	if err = r.List(ctx, nsList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		return
