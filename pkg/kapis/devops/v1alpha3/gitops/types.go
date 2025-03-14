@@ -112,8 +112,9 @@ type BranchInfo struct {
 type ListBranchesOutput ListResult[*BranchInfo]
 
 type FileNameData struct {
-	Data []byte `json:"data"`
-	Name string `json:"name"`
+	Data    []byte `json:"data"` // NOTE: empty file is valid!
+	Name    string `json:"name"`
+	OldName string `json:"oldName"` // used when move/rename a file
 }
 
 type FileInfo struct {
