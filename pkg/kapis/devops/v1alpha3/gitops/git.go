@@ -737,7 +737,7 @@ func (s *gitRepoService) ListBranches(ctx context.Context, input *ListBranchesIn
 			hash = head.Hash()
 		}
 		commit, err := s.repo.CommitObject(hash)
-		if err != nil {
+		if err != nil && !errors.Is(err, plumbing.ErrObjectNotFound) {
 			return nil, err
 		}
 		branch := &BranchInfo{
