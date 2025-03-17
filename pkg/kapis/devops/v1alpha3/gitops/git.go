@@ -737,7 +737,7 @@ func (s *gitRepoService) ListBranches(ctx context.Context, input *ListBranchesIn
 			hash = head.Hash()
 		}
 		commit, err := s.repo.CommitObject(hash)
-		if err != nil {
+		if err != nil && !errors.Is(err, plumbing.ErrObjectNotFound) {
 			return nil, err
 		}
 		branch := &BranchInfo{
@@ -851,6 +851,15 @@ func (s *gitRepoService) AddFiles(ctx context.Context, input *AddFilesInput) (*A
 			if err == nil && !input.Overwrite {
 				continue
 			}
+
+			if len(file.OldName) > 0 {
+				oldFilePath := w.Filesystem.Join(root, file.OldName)
+				err = os.RemoveAll(oldFilePath)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			filePath := w.Filesystem.Join(root, file.Name)
 			err = os.RemoveAll(filePath)
 			if err != nil {
