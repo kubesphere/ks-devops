@@ -19,14 +19,21 @@ package scm
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/emicklei/go-restful/v3"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
 	goscm "github.com/jenkins-x/go-scm/scm"
+	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/client/git"
 	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 // handler holds all the API handlers of SCM
@@ -48,12 +55,80 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	secretNamespace := request.QueryParameter("secretNamespace")
 	server := common.GetQueryParameter(request, queryParameterServer)
 
-	_, code, err := h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
+	code, err := 0, error(nil)
+	switch scm {
+	case "git":
+		if server == "" {
+			err := fmt.Errorf("server is required")
+			kapis.HandleError(request, response, err)
+			response.WriteHeaderAndEntity(http.StatusBadRequest, err)
+			return
+		}
+		code, err = h.checkRepoAccess(server, secretName, secretNamespace)
+
+	default:
+		_, code, err = h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
+	}
 
 	response.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	verifyResult := git.VerifyResult(err, code)
 	verifyResult.CredentialID = secretName
 	_ = response.WriteAsJson(verifyResult)
+}
+
+func (h *handler) checkRepoAccess(repourl, secretName, secretNamespace string) (int, error) {
+	user, token, privateKey, err := h.getTokenWithSShFromSecret(
+		context.Background(), &v1.SecretReference{
+			Namespace: secretNamespace, Name: secretName,
+		})
+	if err != nil {
+		return http.StatusOK, err
+	}
+
+	storage := memory.NewStorage()
+	remote := gogit.NewRemote(storage, &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{repourl},
+	})
+
+	auth, err := getAuthMethod(repourl, user, token, privateKey)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	_, err = remote.List(&gogit.ListOptions{Auth: auth})
+	if err != nil {
+		return http.StatusForbidden, handleGitError(err)
+	}
+
+	return http.StatusOK, nil
+}
+
+func (h *handler) getTokenWithSShFromSecret(ctx context.Context, ref *v1.SecretReference) (username, token string, privateKey []byte, err error) {
+	secret := &v1.Secret{}
+	if err := h.Get(ctx, types.NamespacedName{
+		Namespace: ref.Namespace,
+		Name:      ref.Name,
+	}, secret); err != nil {
+		return "", "", nil, err
+	}
+
+	switch secret.Type {
+	case v1.SecretTypeBasicAuth, v1alpha3.SecretTypeBasicAuth:
+		token = string(secret.Data[v1.BasicAuthPasswordKey])
+		username = string(secret.Data[v1.BasicAuthUsernameKey])
+	case v1.SecretTypeOpaque:
+		token = string(secret.Data[v1.ServiceAccountTokenKey])
+	case v1alpha3.SecretTypeSecretText:
+		token = string(secret.Data[v1alpha3.SecretTextSecretKey])
+		username = string(secret.Data[v1.BasicAuthUsernameKey])
+	case v1alpha3.SecretTypeSSHAuth:
+		privateKey = secret.Data[v1alpha3.SSHAuthPrivateKey]
+		token = string(secret.Data[v1alpha3.SSHAuthPassphraseKey])
+		username = string(secret.Data[v1alpha3.SSHAuthUsernameKey])
+	}
+
+	return username, token, privateKey, err
 }
 
 func (h *handler) getOrganizations(scm, server, secret, namespace string, page, size int, includeUser bool) (orgs []*goscm.Organization, code int, err error) {
