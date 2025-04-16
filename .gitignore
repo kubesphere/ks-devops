@@ -20,6 +20,7 @@ scripts
 
 # editor and IDE paraphernalia
 .idea
+.nocalhost
 *.swp
 *.swo
 *~
