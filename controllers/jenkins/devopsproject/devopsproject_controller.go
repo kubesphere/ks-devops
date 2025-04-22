@@ -45,7 +45,6 @@ import (
 	"github.com/kubesphere/ks-devops/pkg/client/clientset/versioned/scheme"
 	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
 	"github.com/kubesphere/ks-devops/pkg/constants"
-	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 
 	kubesphereclient "github.com/kubesphere/ks-devops/pkg/client/clientset/versioned"
@@ -243,16 +242,8 @@ func (c *Controller) syncHandler(key string) error {
 			}
 			// If ns exists, but the associated attributes with the project are not set correctly,
 			// then reset the associated attributes
-			if k8sutil.IsControlledBy(ns.OwnerReferences,
-				devopsv1alpha3.ResourceKindDevOpsProject, project.Name) &&
-				ns.Labels[constants.DevOpsProjectLabelKey] == project.Name {
-			} else {
+			if ns.Labels[constants.DevOpsProjectLabelKey] != project.Name {
 				copyNs := ns.DeepCopy()
-				err := controllerutil.SetControllerReference(copyProject, copyNs, scheme.Scheme)
-				if err != nil {
-					klog.V(8).Info(err, fmt.Sprintf("failed to set ownerreference %s ", key))
-					return err
-				}
 				if copyNs.Labels == nil {
 					copyNs.Labels = make(map[string]string)
 				}
@@ -289,15 +280,8 @@ func (c *Controller) syncHandler(key string) error {
 				copyProject.Status.AdminNamespace = ns.Name
 			} else if len(namespaces) != 0 {
 				ns := namespaces[0]
-				// reset ownerReferences
-				if !k8sutil.IsControlledBy(ns.OwnerReferences,
-					devopsv1alpha3.ResourceKindDevOpsProject, project.Name) {
+				if ns.Labels[constants.DevOpsProjectLabelKey] != project.Name {
 					copyNs := ns.DeepCopy()
-					err := controllerutil.SetControllerReference(copyProject, copyNs, scheme.Scheme)
-					if err != nil {
-						klog.V(8).Info(err, fmt.Sprintf("failed to set ownerreference %s ", key))
-						return err
-					}
 					copyNs.Labels[constants.DevOpsProjectLabelKey] = project.Name
 					_, err = c.client.CoreV1().Namespaces().Update(context.Background(), copyNs, metav1.UpdateOptions{})
 					if err != nil {
