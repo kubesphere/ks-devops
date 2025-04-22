@@ -45,7 +45,6 @@ import (
 	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
 	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/kubesphere/ks-devops/pkg/utils"
-	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 )
 
@@ -323,8 +322,5 @@ func (c *Controller) syncHandler(key string) error {
 
 func isDevOpsProjectAdminNamespace(namespace *v1.Namespace) bool {
 	_, ok := namespace.Labels[constants.DevOpsProjectLabelKey]
-
-	return ok && k8sutil.IsControlledBy(namespace.OwnerReferences,
-		devopsv1alpha3.ResourceKindDevOpsProject, "")
-
+	return ok
 }
