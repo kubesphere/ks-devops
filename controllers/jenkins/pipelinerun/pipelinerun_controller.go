@@ -20,7 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -37,6 +39,7 @@ import (
 
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
 	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
 	storeInter "github.com/kubesphere/ks-devops/pkg/store/store"
 	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
@@ -52,6 +55,7 @@ type Reconciler struct {
 	ctx                  context.Context
 	log                  logr.Logger
 	Scheme               *runtime.Scheme
+	Options              *jenkins.Options
 	DevOpsClient         devopsClient.Interface
 	JenkinsCore          core.JenkinsCore
 	recorder             record.EventRecorder
@@ -170,6 +174,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, err
 		}
 
+		if err := r.getAgentInfo(ctx, pipelineRunCopied); err != nil {
+			log.Error(err, "unable to get agent info")
+			r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeWarning, v1alpha3.RetrieveFailed, "Failed to retrieve agent info from Jenkins, and error was %v", err)
+			return ctrl.Result{}, err
+		}
+
 		r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Updated, "Updated running data for PipelineRun %s", req.NamespacedName)
 		// until the status is okay
 		// TODO make the RequeueAfter configurable
@@ -224,6 +234,62 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{}, nil
+}
+
+// match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/{run}/log/?start=0
+// match /blue/rest/organizations/jenkins/pipelines/%s/pipelines/%s/branches/%s/runs/%s/log/?
+func (r *Reconciler) getAgentInfo(ctx context.Context, pr *v1alpha3.PipelineRun) error {
+	if pr.Annotations == nil {
+		pr.Annotations = make(map[string]string)
+	}
+
+	podName, podNameExist := pr.Annotations[v1alpha3.JenkinsAgentPodNameAnnoKey]
+	_, nodeNameExist := pr.Annotations[v1alpha3.JenkinsAgentNodeNameAnnoKey]
+	if podNameExist && nodeNameExist || (pr.Status.Phase != v1alpha3.Running && pr.Status.Phase != v1alpha3.Pending) {
+		return nil
+	}
+
+	if !podNameExist {
+		runID, _ := pr.GetPipelineRunID()
+		logUrl := jenkins.GetRunLogUrl
+		api := fmt.Sprintf(logUrl, pr.Namespace, pr.Spec.PipelineRef.Name, runID)
+		if pr.Spec.PipelineSpec.Type == v1alpha3.MultiBranchPipelineType {
+			logUrl = jenkins.GetBranchRunLogUrl
+			api = fmt.Sprintf(logUrl, pr.Namespace, pr.Spec.PipelineRef.Name, pr.Spec.SCM.RefName, runID)
+		}
+
+		_, res, err := r.JenkinsCore.Request(http.MethodGet, api, map[string]string{"Content-Type": "application/json"}, nil)
+		if err != nil {
+			return err
+		}
+
+		lines := strings.Split(string(res), "\n")
+		for _, line := range lines {
+			if strings.HasPrefix(line, "Agent") && strings.Contains(line, "is provisioned from template") {
+				parts := strings.Fields(line)
+				if len(parts) > 2 {
+					pr.Annotations[v1alpha3.JenkinsAgentPodNameAnnoKey] = parts[1]
+					klog.Infof("get agent pod name: %s", parts[1])
+				}
+				break
+			}
+		}
+	}
+
+	if !nodeNameExist {
+		agentPod := &corev1.Pod{}
+		err := r.Client.Get(ctx, client.ObjectKey{Namespace: r.Options.WorkerNamespace, Name: podName}, agentPod)
+		if err != nil {
+			return err
+		}
+
+		if agentPod.Spec.NodeName != "" {
+			pr.Annotations[v1alpha3.JenkinsAgentNodeNameAnnoKey] = agentPod.Spec.NodeName
+			klog.Info("get agent pod running node name: ", agentPod.Spec.NodeName)
+		}
+	}
+
+	return r.updateLabelsAndAnnotations(ctx, pr)
 }
 
 func (r *Reconciler) storePipelineRunData(runResultJSON, nodeDetailsJSON string, pipelineRunCopied *v1alpha3.PipelineRun) (err error) {

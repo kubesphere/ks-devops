@@ -40,6 +40,9 @@ const (
 	PipelineRunSCMRefNameField = "spec.scm.ref-name"
 	// PipelineRunIdentifierIndexerName is an indexer name of PipelineRun identifier.
 	PipelineRunIdentifierIndexerName = "pipelinerun.identifier"
+
+	JenkinsAgentPodNameAnnoKey  = devops.GroupName + "/agent-pod-name"
+	JenkinsAgentNodeNameAnnoKey = devops.GroupName + "/agent-node-name"
 )
 
 var (

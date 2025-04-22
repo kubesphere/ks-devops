@@ -53,6 +53,7 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 			DevOpsClient:         devopsClient,
 			JenkinsCore:          jenkinsCore,
 			PipelineRunDataStore: s.FeatureOptions.PipelineRunDataStore,
+			Options:              s.JenkinsOptions,
 		}).SetupWithManager(mgr); err != nil {
 			klog.Errorf("unable to create pipelinerun-controller, err: %v", err)
 			return
