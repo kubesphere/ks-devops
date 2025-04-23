@@ -48,7 +48,7 @@ func (h *handler) createGitRepositories(req *restful.Request, res *restful.Respo
 	namespace := common.GetPathParameter(req, common.NamespacePathParameter)
 	repo := &v1alpha3.GitRepository{}
 	err := req.ReadEntity(repo)
-	ctx := context.Background()
+	ctx := req.Request.Context()
 
 	if err == nil {
 		repo.Namespace = namespace

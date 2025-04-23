@@ -63,7 +63,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 	var token string
 	username := ""
 	if c.secretRef != nil {
-		if token, username, err = c.getTokenFromSecret(c.secretRef); err != nil {
+		if token, username, _, err = c.GetTokenFromSecret(c.secretRef); err != nil {
 			return
 		}
 	}
@@ -73,7 +73,7 @@ func (c *ClientFactory) GetClient() (client *goscm.Client, err error) {
 	return
 }
 
-func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token, username string, err error) {
+func (c *ClientFactory) GetTokenFromSecret(secretRef *v1.SecretReference) (token, username string, privateKey []byte, err error) {
 	var gitSecret *v1.Secret
 	if gitSecret, err = c.getSecret(secretRef); err != nil {
 		return
@@ -86,7 +86,12 @@ func (c *ClientFactory) getTokenFromSecret(secretRef *v1.SecretReference) (token
 	case v1.SecretTypeOpaque:
 		token = string(gitSecret.Data[v1.ServiceAccountTokenKey])
 	case v1alpha3.SecretTypeSecretText:
-		token = string(gitSecret.Data["secret"])
+		username = string(gitSecret.Data[v1.BasicAuthUsernameKey])
+		token = string(gitSecret.Data[v1alpha3.SecretTextSecretKey])
+	case v1alpha3.SecretTypeSSHAuth:
+		privateKey = gitSecret.Data[v1alpha3.SSHAuthPrivateKey]
+		token = string(gitSecret.Data[v1alpha3.SSHAuthPassphraseKey])
+		username = string(gitSecret.Data[v1alpha3.SSHAuthUsernameKey])
 	}
 	return
 }

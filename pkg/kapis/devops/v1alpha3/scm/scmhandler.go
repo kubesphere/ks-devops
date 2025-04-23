@@ -19,14 +19,19 @@ package scm
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/emicklei/go-restful/v3"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
 	goscm "github.com/jenkins-x/go-scm/scm"
 	"github.com/kubesphere/ks-devops/pkg/client/git"
 	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 // handler holds all the API handlers of SCM
@@ -48,12 +53,56 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	secretNamespace := request.QueryParameter("secretNamespace")
 	server := common.GetQueryParameter(request, queryParameterServer)
 
-	_, code, err := h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
+	code, err := 0, error(nil)
+	switch scm {
+	case "git":
+		if server == "" {
+			err := fmt.Errorf("server is required")
+			kapis.HandleError(request, response, err)
+			response.WriteHeaderAndEntity(http.StatusBadRequest, err)
+			return
+		}
+		code, err = h.checkRepoAccess(server, secretName, secretNamespace)
+
+	default:
+		_, code, err = h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
+	}
 
 	response.Header().Set(restful.HEADER_ContentType, restful.MIME_JSON)
 	verifyResult := git.VerifyResult(err, code)
 	verifyResult.CredentialID = secretName
 	_ = response.WriteAsJson(verifyResult)
+}
+
+func (h *handler) checkRepoAccess(repourl, secretName, secretNamespace string) (int, error) {
+	storage := memory.NewStorage()
+	remote := gogit.NewRemote(storage, &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{repourl},
+	})
+
+	listOption := &gogit.ListOptions{}
+	if secretName != "" && secretNamespace != "" {
+		factory := git.NewClientFactory("git", &v1.SecretReference{
+			Namespace: secretNamespace, Name: secretName,
+		}, h.Client)
+		token, user, privateKey, err := factory.GetTokenFromSecret(&v1.SecretReference{Namespace: secretNamespace, Name: secretName})
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+
+		listOption.Auth, err = getAuthMethod(repourl, user, token, privateKey)
+		if err != nil {
+			return http.StatusBadRequest, err
+		}
+	}
+
+	_, err := remote.List(listOption)
+	if err != nil {
+		return http.StatusForbidden, fmt.Errorf("access verification failed: %v", err)
+	}
+
+	return http.StatusOK, nil
 }
 
 func (h *handler) getOrganizations(scm, server, secret, namespace string, page, size int, includeUser bool) (orgs []*goscm.Organization, code int, err error) {
