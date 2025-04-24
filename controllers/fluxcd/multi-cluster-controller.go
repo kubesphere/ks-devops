@@ -57,24 +57,11 @@ func (r *MultiClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return
 	}
 
-	// ignore the host cluster
-	if ignore(cluster) {
-		return
-	}
-
 	if err = r.reconcileCluster(ctx, cluster); err != nil {
 		return
 	}
 
 	return
-}
-
-func ignore(cluster *unstructured.Unstructured) bool {
-	if cluster != nil {
-		_, ok := cluster.GetLabels()["cluster-role.kubesphere.io/host"]
-		return ok
-	}
-	return true
 }
 
 func (r *MultiClusterReconciler) reconcileCluster(ctx context.Context, cluster *unstructured.Unstructured) (err error) {

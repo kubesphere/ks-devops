@@ -37,49 +37,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func Test_ignore(t *testing.T) {
-	sampleCluster := &unstructured.Unstructured{}
-	sampleCluster.SetKind("Cluster")
-	sampleCluster.SetAPIVersion("cluster.kubesphere.io/v1alpha1")
-
-	type args struct {
-		cluster func() *unstructured.Unstructured
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{{
-		name: "cluster is nil",
-		want: true,
-	}, {
-		name: "cluster without the particular label",
-		args: args{cluster: func() *unstructured.Unstructured {
-			return sampleCluster.DeepCopy()
-		}},
-		want: false,
-	}, {
-		name: "with the particular label",
-		args: args{cluster: func() *unstructured.Unstructured {
-			cluster := sampleCluster.DeepCopy()
-			cluster.SetLabels(map[string]string{
-				"cluster-role.kubesphere.io/host": "",
-			})
-			return cluster
-		}},
-		want: true,
-	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var cluster *unstructured.Unstructured
-			if tt.args.cluster != nil {
-				cluster = tt.args.cluster()
-			}
-			assert.Equalf(t, tt.want, ignore(cluster), "ignore(%v)", tt.args.cluster)
-		})
-	}
-}
-
 func Test_createArgoCluster(t *testing.T) {
 	defaultCluster := &unstructured.Unstructured{}
 	defaultCluster.SetKind("Cluster")

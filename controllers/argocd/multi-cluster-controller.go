@@ -62,11 +62,6 @@ func (r *MultiClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	// ignore the host cluster
-	if ignore(cluster) {
-		return
-	}
-
 	ownerRef := getOwnerReference(cluster)
 	argoCluster := createArgoCluster(cluster)
 	argoCluster.SetNamespace(r.argocdNamespace)
@@ -194,14 +189,6 @@ func getCluster(client client.Reader, namespacedName types.NamespacedName) (clus
 		cluster = nil
 	}
 	return
-}
-
-func ignore(cluster *unstructured.Unstructured) bool {
-	if cluster != nil {
-		_, ok := cluster.GetLabels()["cluster-role.kubesphere.io/host"]
-		return ok
-	}
-	return true
 }
 
 // GetName returns the name of this controller
