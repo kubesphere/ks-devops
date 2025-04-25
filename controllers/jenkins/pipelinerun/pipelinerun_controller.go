@@ -268,7 +268,8 @@ func (r *Reconciler) getAgentInfo(ctx context.Context, pr *v1alpha3.PipelineRun)
 			if strings.HasPrefix(line, "Agent") && strings.Contains(line, "is provisioned from template") {
 				parts := strings.Fields(line)
 				if len(parts) > 2 {
-					pr.Annotations[v1alpha3.JenkinsAgentPodNameAnnoKey] = parts[1]
+					podName = parts[1]
+					pr.Annotations[v1alpha3.JenkinsAgentPodNameAnnoKey] = podName
 					klog.Infof("get agent pod name: %s", parts[1])
 				}
 				break
@@ -276,7 +277,7 @@ func (r *Reconciler) getAgentInfo(ctx context.Context, pr *v1alpha3.PipelineRun)
 		}
 	}
 
-	if !nodeNameExist {
+	if podName != "" && !nodeNameExist {
 		agentPod := &corev1.Pod{}
 		err := r.Client.Get(ctx, client.ObjectKey{Namespace: r.Options.WorkerNamespace, Name: podName}, agentPod)
 		if err != nil {
