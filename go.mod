@@ -27,7 +27,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/h2non/gock v1.0.9
 	github.com/jenkins-x/go-scm v1.14.44
-	github.com/jenkins-zh/jenkins-client v0.0.14
+	github.com/jenkins-zh/jenkins-client v0.0.15
 	github.com/jenkins-zh/jenkins-client/pkg/k8s v0.0.0-20230828075918-608f347ef851
 	github.com/kubesphere/sonargo v0.0.2
 	github.com/onsi/ginkgo v1.16.5
@@ -40,6 +40,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
+	golang.org/x/crypto v0.29.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.31.3
@@ -117,7 +118,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
