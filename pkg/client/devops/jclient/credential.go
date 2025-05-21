@@ -28,7 +28,7 @@ func (j *JenkinsClient) CreateCredentialInProject(projectID string, credential *
 	client := j.getClient()
 
 	var cre interface{}
-	if cre, err = util.ConvertSecretToCredential(credential); err != nil {
+	if cre, err = util.ConvertSecretToCredential(credential, j.SaveKubeConfigAs); err != nil {
 		return "", err
 	}
 	return "", client.CreateInFolder(projectID, cre)
@@ -39,7 +39,7 @@ func (j *JenkinsClient) UpdateCredentialInProject(projectID string, credential *
 	client := j.getClient()
 
 	var cre interface{}
-	if cre, err = util.ConvertSecretToCredential(credential); err != nil {
+	if cre, err = util.ConvertSecretToCredential(credential, j.SaveKubeConfigAs); err != nil {
 		return "", err
 	}
 
@@ -56,6 +56,10 @@ func (j *JenkinsClient) GetCredentialInProject(projectID, id string) (*devops.Cr
 func (j *JenkinsClient) DeleteCredentialInProject(projectID, id string) (string, error) {
 	client := j.getClient()
 	return id, client.DeleteInFolder(projectID, id)
+}
+
+func (j *JenkinsClient) GetKubeConfigCredentialStoreType() string {
+	return j.SaveKubeConfigAs
 }
 
 func (j *JenkinsClient) getClient() *jcredential.CredentialsManager {

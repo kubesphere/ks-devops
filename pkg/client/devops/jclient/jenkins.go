@@ -25,8 +25,9 @@ import (
 
 // JenkinsClient represents a client of Jenkins
 type JenkinsClient struct {
-	Core    core.JenkinsCore
-	jenkins *jenkins.Jenkins // For refactor purpose only
+	Core             core.JenkinsCore
+	SaveKubeConfigAs string
+	jenkins          *jenkins.Jenkins // For refactor purpose only
 }
 
 var _ devops.Interface = &JenkinsClient{}
@@ -41,7 +42,8 @@ func NewJenkinsClient(options *jenkins.Options) (*JenkinsClient, error) {
 
 	devopsClient, _ := jenkins.NewDevopsClient(options) // For refactor purpose only
 	return &JenkinsClient{
-		Core:    jenkinsCore,
-		jenkins: devopsClient, // For refactor purpose only
+		Core:             jenkinsCore,
+		jenkins:          devopsClient, // For refactor purpose only
+		SaveKubeConfigAs: options.SaveKubeConfigAs,
 	}, nil
 }

@@ -27,7 +27,7 @@ import (
 )
 
 // ConvertSecretToCredential converts a secret to Jenkins credential type
-func ConvertSecretToCredential(secret *v1.Secret) (interface{}, error) {
+func ConvertSecretToCredential(secret *v1.Secret, saveKubeConfigAs string) (interface{}, error) {
 	name := secret.GetName()
 
 	switch secret.Type {
@@ -45,6 +45,10 @@ func ConvertSecretToCredential(secret *v1.Secret) (interface{}, error) {
 		return jcredential.NewSecretTextCredential(name, secretContent), nil
 	case devopsv1alpha3.SecretTypeKubeConfig:
 		secretContent := string(secret.Data[devopsv1alpha3.KubeConfigSecretKey])
+		// for backward compatibility, empty value means kubeconfig
+		if saveKubeConfigAs == devopsv1alpha3.SecretTextString {
+			return jcredential.NewSecretTextCredential(name, secretContent), nil
+		}
 		return jcredential.NewKubeConfigCredential(name, secretContent), nil
 	default:
 		err := fmt.Errorf("error unsupport credential type")

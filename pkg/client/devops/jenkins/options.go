@@ -18,22 +18,24 @@ package jenkins
 
 import (
 	"fmt"
-	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 	"time"
+
+	"github.com/kubesphere/ks-devops/pkg/utils/reflectutils"
 
 	"github.com/spf13/pflag"
 )
 
 type Options struct {
-	Host            string        `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
-	Username        string        `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
-	Password        string        `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
-	ApiToken        string        `json:"apiToken,omitempty" yaml:"apiToken" description:"Jenkins admin apiToken"`
-	MaxConnections  int           `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
-	Namespace       string        `json:"namespace,omitempty" yaml:"namespace"`
-	WorkerNamespace string        `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
-	ReloadCasCDelay time.Duration `json:"reloadCasCDelay,omitempty" yaml:"reloadCasCDelay"`
-	SkipVerify      bool
+	Host             string        `json:",omitempty" yaml:"host" description:"Jenkins service host address"`
+	Username         string        `json:",omitempty" yaml:"username" description:"Jenkins admin username"`
+	Password         string        `json:",omitempty" yaml:"password" description:"Jenkins admin password"`
+	ApiToken         string        `json:"apiToken,omitempty" yaml:"apiToken" description:"Jenkins admin apiToken"`
+	MaxConnections   int           `json:"maxConnections,omitempty" yaml:"maxConnections" description:"Maximum connections allowed to connect to Jenkins"`
+	Namespace        string        `json:"namespace,omitempty" yaml:"namespace"`
+	WorkerNamespace  string        `json:"workerNamespace,omitempty" yaml:"workerNamespace"`
+	ReloadCasCDelay  time.Duration `json:"reloadCasCDelay,omitempty" yaml:"reloadCasCDelay"`
+	SkipVerify       bool
+	SaveKubeConfigAs string `json:"saveKubeConfigAs,omitempty" yaml:"saveKubeConfigAs"` // values: [secret-text, kubeconfig]. default is kubeconfig
 }
 
 // NewJenkinsOptions returns a `zero` instance
