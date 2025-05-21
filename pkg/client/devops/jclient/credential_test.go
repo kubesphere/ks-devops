@@ -70,7 +70,7 @@ func TestUpdateCredentialInProject(t *testing.T) {
 	secret.SetName("id")
 	secret.Type = devopsv1alpha3.SecretTypeBasicAuth
 
-	data, err := devopsutil.ConvertSecretToCredential(secret.DeepCopy())
+	data, err := devopsutil.ConvertSecretToCredential(secret.DeepCopy(), devopsv1alpha3.KubeConfigString)
 	assert.Nil(t, err)
 
 	formData := url.Values{}
@@ -108,7 +108,7 @@ func TestCreateCredentialInProject(t *testing.T) {
 	unknownSecret := secret.DeepCopy()
 	unknownSecret.Type = "fake"
 
-	data, err := devopsutil.ConvertSecretToCredential(secret.DeepCopy())
+	data, err := devopsutil.ConvertSecretToCredential(secret.DeepCopy(), devopsv1alpha3.KubeConfigString)
 	assert.Nil(t, err)
 
 	formData := url.Values{}

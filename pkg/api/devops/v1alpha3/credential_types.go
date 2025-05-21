@@ -52,19 +52,21 @@ const (
 	// SSHAuthPrivateKey is the key of the privatekey for SecretTypeSSHAuth secrets
 	SSHAuthPrivateKey = "private_key"
 
+	SecretTextString = "secret-text"
 	// SecretTypeSecretText contains data.
 	//
 	// Required at least one of fields:
 	// - Secret.Data["secret"] - secret
-	SecretTypeSecretText v1.SecretType = DevOpsCredentialPrefix + "secret-text"
+	SecretTypeSecretText v1.SecretType = DevOpsCredentialPrefix + SecretTextString
 	// SecretTextSecretKey is the key of the secret for SecretTypeSecretText secrets
 	SecretTextSecretKey = "secret"
 
+	KubeConfigString = "kubeconfig"
 	// SecretTypeKubeConfig contains data.
 	//
 	// Required at least one of fields:
 	// - Secret.Data["secret"] - secret
-	SecretTypeKubeConfig v1.SecretType = DevOpsCredentialPrefix + "kubeconfig"
+	SecretTypeKubeConfig v1.SecretType = DevOpsCredentialPrefix + KubeConfigString
 	// KubeConfigSecretKey is the key of the secret for SecretTypeKubeConfig secrets
 	KubeConfigSecretKey = "content"
 	//	CredentialAutoSyncAnnoKey is used to indicate whether the secret is automatically synchronized to devops.
