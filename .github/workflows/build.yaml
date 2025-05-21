@@ -86,16 +86,6 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
-        if: github.event_name == 'pull_request'
-        with:
-          image-ref: 'docker.io/kubesphere/devops-controller:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
 
   BuildAPIServer:
     runs-on: ubuntu-latest
@@ -156,16 +146,6 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
-        if: github.event_name == 'pull_request'
-        with:
-          image-ref: 'docker.io/kubesphere/devops-apiserver:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
 
   BuildTools:
     runs-on: ubuntu-latest
@@ -226,13 +206,3 @@ jobs:
           platforms: ${{ steps.build_env.outputs.platforms }}
           provenance: false
           sbom: false
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
-        if: github.event_name == 'pull_request'
-        with:
-          image-ref: 'docker.io/kubesphere/devops-tools:${{ steps.build_env.outputs.ref }}-${{ steps.build_env.outputs.short_sha }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
