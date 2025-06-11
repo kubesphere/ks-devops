@@ -48,8 +48,11 @@ func (g *gitRepoFactory) parseSkipTLSFromRepo(ctx context.Context, repo *v1alpha
 }
 
 func (g *gitRepoFactory) parseAuthorFromSecret(ctx context.Context, secret *v1.Secret) *object.Signature {
-	authorName := secret.Annotations[constants.GitAuthorNameAnnotationKey]
-	authorEmail := secret.Annotations[constants.GitAuthorEmailAnnotationKey]
+	var authorName, authorEmail string
+	if secret != nil {
+		authorName = secret.Annotations[constants.GitAuthorNameAnnotationKey]
+		authorEmail = secret.Annotations[constants.GitAuthorEmailAnnotationKey]
+	}
 	return &object.Signature{
 		Name:  authorName,
 		Email: authorEmail,
@@ -62,25 +65,35 @@ func (g *gitRepoFactory) NewRepoService(ctx context.Context, user user.Info, rep
 		return nil, err
 	}
 
+	var token, tokenUser string
+	var secret *v1.Secret
+	var auth *http.BasicAuth
+
 	secretRef := gitRepo.Spec.Secret
-	secret, err := g.getSecret(ctx, secretRef)
-	if err != nil {
-		return nil, err
+	// Note: public repo does not need a secret
+	if secretRef != nil && secretRef.Name != "" && secretRef.Namespace != "" {
+		secret, err = g.getSecret(ctx, secretRef)
+		if err != nil {
+			return nil, err
+		}
+		token, tokenUser, err = g.getTokenFromSecret(ctx, secret)
+		if err != nil {
+			return nil, err
+		}
+		if token == "" {
+			return nil, fmt.Errorf("failed to get token")
+		}
 	}
-	token, tokenUser, err := g.getTokenFromSecret(ctx, secret)
-	if err != nil {
-		return nil, err
-	}
-	if token == "" {
-		return nil, fmt.Errorf("failed to get token")
-	}
+
 	if tokenUser == "" {
 		tokenUser = user.GetName() // yes, this can be anything except an empty string
 	}
 
-	auth := &http.BasicAuth{
-		Username: tokenUser,
-		Password: token,
+	if tokenUser != "" && token != "" {
+		auth = &http.BasicAuth{
+			Username: tokenUser,
+			Password: token,
+		}
 	}
 
 	insecureSkipTLS := g.parseSkipTLSFromRepo(ctx, gitRepo)
