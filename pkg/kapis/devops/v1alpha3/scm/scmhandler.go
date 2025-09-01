@@ -28,9 +28,11 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	goscm "github.com/jenkins-x/go-scm/scm"
 	"github.com/kubesphere/ks-devops/pkg/client/git"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/kubesphere/ks-devops/pkg/kapis"
 	"github.com/kubesphere/ks-devops/pkg/kapis/common"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -50,6 +52,9 @@ func newHandler(k8sClient client.Client) *handler {
 func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	scm := request.PathParameter("scm")
 	secretName := request.QueryParameter("secret")
+	insecureSkipTLS := request.QueryParameter("insecureSkipTLS") == "true"
+	caName := request.QueryParameter("caName")
+	caNamespace := request.QueryParameter("caNamespace")
 	secretNamespace := request.QueryParameter("secretNamespace")
 	server := common.GetQueryParameter(request, queryParameterServer)
 
@@ -62,7 +67,8 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 			response.WriteHeaderAndEntity(http.StatusBadRequest, err)
 			return
 		}
-		code, err = h.checkRepoAccess(server, secretName, secretNamespace)
+
+		code, err = h.checkRepoAccess(server, secretName, secretNamespace, insecureSkipTLS, caName, caNamespace)
 
 	default:
 		_, code, err = h.getOrganizations(scm, server, secretName, secretNamespace, 1, 1, false)
@@ -74,14 +80,34 @@ func (h *handler) verify(request *restful.Request, response *restful.Response) {
 	_ = response.WriteAsJson(verifyResult)
 }
 
-func (h *handler) checkRepoAccess(repourl, secretName, secretNamespace string) (int, error) {
+func (h *handler) checkRepoAccess(repourl, secretName, secretNamespace string, insecureSkipTLS bool, caName, caNamespace string) (int, error) {
 	storage := memory.NewStorage()
 	remote := gogit.NewRemote(storage, &config.RemoteConfig{
 		Name: "origin",
 		URLs: []string{repourl},
 	})
 
-	listOption := &gogit.ListOptions{}
+	listOption := &gogit.ListOptions{InsecureSkipTLS: insecureSkipTLS}
+	if caName != "" {
+		if caNamespace == "" {
+			caNamespace = constants.DevOpsWorkerNamespace
+		}
+
+		cacm := &v1.ConfigMap{}
+		if err := h.Get(context.Background(), client.ObjectKey{Namespace: caNamespace, Name: caName}, cacm); err != nil {
+			if errors.IsNotFound(err) {
+				return http.StatusNotFound, err
+			}
+			return http.StatusInternalServerError, err
+		}
+
+		certData, exists := cacm.Data[constants.TLSCertKey]
+		if !exists {
+			return http.StatusNotFound, fmt.Errorf("ca.crt not found in configmap %s", caName)
+		}
+		listOption.CABundle = []byte(certData)
+	}
+
 	if secretName != "" && secretNamespace != "" {
 		factory := git.NewClientFactory("git", &v1.SecretReference{
 			Namespace: secretNamespace, Name: secretName,

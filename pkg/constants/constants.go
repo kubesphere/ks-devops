@@ -17,14 +17,17 @@ limitations under the License.
 package constants
 
 const (
-	CreatorAnnotationKey         = "kubesphere.io/creator"
-	WorkspaceLabelKey            = "kubesphere.io/workspace"
-	DisplayNameAnnotationKey     = "kubesphere.io/alias-name"
-	InsecureSkipTLSAnnotationKey = "devops.kubesphere.io/insecure-skip-tls"
-	GitAuthorNameAnnotationKey   = "devops.kubesphere.io/git-author-name"
-	GitAuthorEmailAnnotationKey  = "devops.kubesphere.io/git-author-email"
-	DevOpsProjectLabelKey        = "kubesphere.io/devopsproject"
+	CreatorAnnotationKey           = "kubesphere.io/creator"
+	WorkspaceLabelKey              = "kubesphere.io/workspace"
+	DisplayNameAnnotationKey       = "kubesphere.io/alias-name"
+	InsecureSkipTLSAnnotationKey   = "devops.kubesphere.io/insecure-skip-tls"
+	TLSCertsNameAnnotationKey      = "devops.kubesphere.io/tls-certs"
+	TLSCertsNameSpaceAnnotationKey = "devops.kubesphere.io/tls-certs-namespace"
+	GitAuthorNameAnnotationKey     = "devops.kubesphere.io/git-author-name"
+	GitAuthorEmailAnnotationKey    = "devops.kubesphere.io/git-author-email"
+	DevOpsProjectLabelKey          = "kubesphere.io/devopsproject"
 
+	TLSCertKey               = "ca.crt"
 	AuthenticationTag        = "Authentication"
 	DevOpsCredentialTag      = "DevOps Credential"
 	DevOpsPipelineTag        = "DevOps Pipeline"
@@ -38,7 +41,9 @@ const (
 	DevOpsClusterTemplateTag = "DevOps ClusterTemplate"
 	GitOpsTag                = "GitOps"
 
-	DevOpsManagedKey = "devops.kubesphere.io/managed"
+	DevOpsManagedKey      = "devops.kubesphere.io/managed"
+	DevOpsSystemNamespace = "kubesphere-devops-system"
+	DevOpsWorkerNamespace = "kubesphere-devops-worker"
 )
 
 var (
