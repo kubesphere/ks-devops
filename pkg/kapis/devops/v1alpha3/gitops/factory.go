@@ -2,7 +2,6 @@ package gitops
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,6 +44,32 @@ func (g *gitRepoFactory) parseSkipTLSFromRepo(ctx context.Context, repo *v1alpha
 	}
 	yes, _ := strconv.ParseBool(v)
 	return yes
+}
+
+func (g *gitRepoFactory) parseTLSCertsFromRepo(ctx context.Context, repo *v1alpha3.GitRepository) ([]byte, error) {
+	tlsCertsName := repo.Annotations[constants.TLSCertsNameAnnotationKey]
+	if tlsCertsName == "" {
+		return nil, nil
+	}
+
+	tlsCertsNamespace := repo.Annotations[constants.TLSCertsNameSpaceAnnotationKey]
+	if tlsCertsNamespace == "" {
+		tlsCertsNamespace = constants.DevOpsWorkerNamespace
+	}
+
+	caSecret := &v1.ConfigMap{}
+	if err := g.k8sClient.Get(ctx, types.NamespacedName{
+		Name:      tlsCertsName,
+		Namespace: tlsCertsNamespace,
+	}, caSecret); err != nil {
+		return nil, err
+	}
+
+	if caSecret.Data[constants.TLSCertKey] == "" {
+		return nil, fmt.Errorf("invalid secret data: %s", constants.TLSCertKey)
+	}
+
+	return []byte(caSecret.Data[constants.TLSCertKey]), nil
 }
 
 func (g *gitRepoFactory) parseAuthorFromSecret(ctx context.Context, secret *v1.Secret) *object.Signature {
@@ -97,6 +122,10 @@ func (g *gitRepoFactory) NewRepoService(ctx context.Context, user user.Info, rep
 	}
 
 	insecureSkipTLS := g.parseSkipTLSFromRepo(ctx, gitRepo)
+	ca, err := g.parseTLSCertsFromRepo(ctx, gitRepo)
+	if err != nil {
+		return nil, err
+	}
 	author := g.parseAuthorFromSecret(ctx, secret)
 	repoDir := g.getRepoDirForUser(ctx, repoName.Namespace, gitRepo.Spec.URL)
 
@@ -111,12 +140,15 @@ func (g *gitRepoFactory) NewRepoService(ctx context.Context, user user.Info, rep
 		if err != nil {
 			return nil, err
 		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		repo, err = git.PlainClone(repoDir, false, &git.CloneOptions{
-			Auth:     auth,
-			URL:      gitRepo.Spec.URL,
-			Progress: os.Stdout,
-		})
+	} else if os.IsNotExist(err) {
+		opt := &git.CloneOptions{
+			Auth:            auth,
+			URL:             gitRepo.Spec.URL,
+			Progress:        os.Stdout,
+			InsecureSkipTLS: insecureSkipTLS,
+			CABundle:        ca,
+		}
+		repo, err = git.PlainClone(repoDir, false, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -133,8 +165,9 @@ func (g *gitRepoFactory) NewRepoService(ctx context.Context, user user.Info, rep
 		user:            user,
 		repo:            repo,
 		auth:            auth,
-		insecureSkipTLS: insecureSkipTLS,
 		newFilePerm:     g.config.NewFilePerm,
+		insecureSkipTLS: insecureSkipTLS,
+		caBundle:        ca,
 	}
 	repoService := NewGitRepoService(gitRepoOpts)
 
