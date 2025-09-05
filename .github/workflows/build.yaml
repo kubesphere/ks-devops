@@ -6,9 +6,6 @@ on:
       tag:
         description: "Image Tag"
         default: "latest"
-  pull_request:
-    branches:
-      - master
   push:
     branches:
       - master
