@@ -22,11 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/constants"
 	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -132,6 +134,12 @@ func (c *GitRepositoryController) setArgoGitRepoFields(repo *v1alpha3.GitReposit
 	secret.Data["type"] = []byte("git")
 	secret.Data["url"] = []byte(repo.Spec.URL)
 
+	if skip, exist := repo.Annotations[constants.InsecureSkipTLSAnnotationKey]; exist && skip == "true" {
+		secret.Data["insecure"] = []byte("true")
+	} else {
+		delete(secret.Data, "insecure")
+	}
+
 	c.setArgoGitRepoAuth(secret, repo.Spec.Secret)
 }
 
@@ -176,7 +184,8 @@ func (c *GitRepositoryController) SetupWithManager(mgr ctrl.Manager) error {
 	c.recorder = mgr.GetEventRecorderFor(c.GetName())
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("argocd_git_repository_controller").
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&v1alpha3.GitRepository{}).
+		For(&v1alpha3.GitRepository{}, builder.WithPredicates(
+			predicate.ResourceVersionChangedPredicate{},
+		)).
 		Complete(c)
 }
