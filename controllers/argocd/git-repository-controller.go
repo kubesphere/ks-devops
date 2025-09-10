@@ -19,6 +19,7 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
@@ -30,7 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 //+kubebuilder:rbac:groups=devops.kubesphere.io,resources=gitrepositories,verbs=get;list;watch;update;delete
@@ -187,5 +190,38 @@ func (c *GitRepositoryController) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1alpha3.GitRepository{}, builder.WithPredicates(
 			predicate.ResourceVersionChangedPredicate{},
 		)).
+		Watches(&v1.Secret{}, handler.EnqueueRequestsFromMapFunc(c.mapSecretToGitRepos)).
 		Complete(c)
+}
+
+func (c *GitRepositoryController) mapSecretToGitRepos(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*v1.Secret)
+	if !ok {
+		return nil
+	}
+
+	if !strings.HasPrefix(string(secret.Type), v1alpha3.DevOpsCredentialPrefix) {
+		return nil
+	}
+
+	var repos v1alpha3.GitRepositoryList
+	if err := c.List(ctx, &repos, client.InNamespace(secret.Namespace)); err != nil {
+		c.log.Error(err, "Failed to list GitRepositories")
+		return nil
+	}
+
+	requests := make([]reconcile.Request, 0)
+	for _, repo := range repos.Items {
+		if repo.Spec.Secret == nil || repo.Spec.Secret.Name != secret.Name || repo.Spec.Secret.Namespace != secret.Namespace {
+			continue
+		}
+
+		requests = append(requests, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      repo.Name,
+				Namespace: repo.Namespace,
+			},
+		})
+	}
+	return requests
 }
