@@ -833,10 +833,11 @@ func (p *Pipeline) CheckCron() (*devops.CheckCronRes, error) {
 		res.Result = "error"
 	})
 	if res.Result == "ok" {
-		res.LastTime, res.NextTime, err = parseCronJobTime(res.Message)
-		if err != nil {
-			klog.Error(err)
-			return interanlErrorMessage(), err
+		var parseErr error
+		res.LastTime, res.NextTime, parseErr = parseCronJobTime(res.Message)
+		if parseErr != nil {
+			// don't exit, just log the error
+			klog.Error(parseErr)
 		}
 	}
 
