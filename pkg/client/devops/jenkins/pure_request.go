@@ -40,7 +40,7 @@ func (j *Jenkins) SendPureRequest(path string, httpParameters *devops.HttpParame
 func (j *Jenkins) SendPureRequestWithHeaderResp(path string, httpParameters *devops.HttpParameters) ([]byte, http.Header, error) {
 	apiURL, err := url.Parse(j.Server + path)
 	if err != nil {
-		klog.V(8).Info(err)
+		klog.ErrorS(err, "failed to parse url")
 		return nil, nil, err
 	}
 
