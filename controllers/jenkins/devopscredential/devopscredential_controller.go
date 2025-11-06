@@ -266,14 +266,14 @@ func (c *Controller) syncHandler(key string) error {
 			if _, ok := copySecret.Annotations[devopsv1alpha3.CredentialAutoSyncAnnoKey]; ok {
 				_, err := c.devopsClient.UpdateCredentialInProject(nsName, copySecret)
 				if err != nil {
-					klog.V(8).Info(err, fmt.Sprintf("failed to update secret %s ", key))
+					klog.ErrorS(err, fmt.Sprintf("failed to update secret %s ", key))
 					return err
 				}
 			}
 		} else {
 			_, err = c.devopsClient.CreateCredentialInProject(nsName, copySecret)
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to create secret %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to create secret %s ", key))
 				return err
 			}
 		}
@@ -293,7 +293,7 @@ func (c *Controller) syncHandler(key string) error {
 					klog.Error(fmt.Sprintf("unexpected error type: %v, should be *restful.ServiceError", err))
 				}
 
-				klog.V(8).Info(err, fmt.Sprintf("failed to delete secret %s in devops", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to delete secret %s in devops", key))
 			} else {
 				delSuccess = true
 			}
@@ -313,7 +313,7 @@ func (c *Controller) syncHandler(key string) error {
 	if !reflect.DeepEqual(secret, copySecret) {
 		_, err = c.client.CoreV1().Secrets(nsName).Update(context.Background(), copySecret, metav1.UpdateOptions{})
 		if err != nil {
-			klog.V(8).Info(err, fmt.Sprintf("failed to update secret %s ", key))
+			klog.ErrorS(err, fmt.Sprintf("failed to update secret %s ", key))
 			return err
 		}
 	}

@@ -207,7 +207,7 @@ func (c *Controller) syncHandler(key string) error {
 			klog.Info(fmt.Sprintf("devopsproject '%s' in work queue no longer exists ", key))
 			return nil
 		}
-		klog.V(8).Info(err, fmt.Sprintf("could not get devopsproject %s ", key))
+		klog.ErrorS(err, fmt.Sprintf("could not get devopsproject %s ", key))
 		return err
 	}
 	copyProject := project.DeepCopy()
@@ -227,14 +227,14 @@ func (c *Controller) syncHandler(key string) error {
 		if project.Status.AdminNamespace != "" {
 			ns, err := c.namespaceLister.Get(project.Status.AdminNamespace)
 			if err != nil && !errors.IsNotFound(err) {
-				klog.V(8).Info(err, "failed to get namespace")
+				klog.ErrorS(err, "failed to get namespace")
 				return err
 			} else if errors.IsNotFound(err) {
 				// if admin ns is not found, clean project status, rerun reconcile
 				copyProject.Status.AdminNamespace = ""
 				_, err := c.kubesphereClient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), copyProject, metav1.UpdateOptions{})
 				if err != nil {
-					klog.V(8).Info(err, fmt.Sprintf("failed to update project %s ", key))
+					klog.ErrorS(err, fmt.Sprintf("failed to update project %s ", key))
 					return err
 				}
 				c.enqueueDevOpsProject(key)
@@ -250,7 +250,7 @@ func (c *Controller) syncHandler(key string) error {
 				copyNs.Labels[constants.DevOpsProjectLabelKey] = project.Name
 				_, err = c.client.CoreV1().Namespaces().Update(context.Background(), copyNs, metav1.UpdateOptions{})
 				if err != nil {
-					klog.V(8).Info(err, fmt.Sprintf("failed to update ns %s ", key))
+					klog.ErrorS(err, fmt.Sprintf("failed to update ns %s ", key))
 					return err
 				}
 			}
@@ -260,7 +260,7 @@ func (c *Controller) syncHandler(key string) error {
 			namespaces, err := c.namespaceLister.List(
 				labels.SelectorFromSet(labels.Set{constants.DevOpsProjectLabelKey: project.Name}))
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to list ns %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to list ns %s ", key))
 				return err
 			}
 			// if there is no ns, generate new one
@@ -274,7 +274,7 @@ func (c *Controller) syncHandler(key string) error {
 						c.eventRecorder.Event(project, v1.EventTypeWarning, "CreateAdminNamespaceFailed", err.Error())
 						return err
 					}
-					klog.V(8).Info(err, fmt.Sprintf("failed to create ns %s ", key))
+					klog.ErrorS(err, fmt.Sprintf("failed to create ns %s ", key))
 					return err
 				}
 				copyProject.Status.AdminNamespace = ns.Name
@@ -285,7 +285,7 @@ func (c *Controller) syncHandler(key string) error {
 					copyNs.Labels[constants.DevOpsProjectLabelKey] = project.Name
 					_, err = c.client.CoreV1().Namespaces().Update(context.Background(), copyNs, metav1.UpdateOptions{})
 					if err != nil {
-						klog.V(8).Info(err, fmt.Sprintf("failed to update ns %s ", key))
+						klog.ErrorS(err, fmt.Sprintf("failed to update ns %s ", key))
 						return err
 					}
 				}
@@ -304,7 +304,7 @@ func (c *Controller) syncHandler(key string) error {
 		if err != nil {
 			_, err := c.devopsClient.CreateDevOpsProject(copyProject.Status.AdminNamespace)
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to get project %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to get project %s ", key))
 				return err
 			}
 		}
@@ -317,7 +317,7 @@ func (c *Controller) syncHandler(key string) error {
 		if !reflect.DeepEqual(copyProject, project) {
 			_, err = c.kubesphereClient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), copyProject, metav1.UpdateOptions{})
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to update ns %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to update ns %s ", key))
 				return err
 			}
 		}
@@ -336,7 +336,7 @@ func (c *Controller) syncHandler(key string) error {
 					klog.Error(fmt.Sprintf("unexpected error type: %v, should be *restful.ServiceError", err))
 				}
 
-				klog.V(8).Info(err, fmt.Sprintf("failed to delete resource %s in devops", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to delete resource %s in devops", key))
 			} else {
 				delSuccess = true
 			}
@@ -353,7 +353,7 @@ func (c *Controller) syncHandler(key string) error {
 
 			_, err = c.kubesphereClient.DevopsV1alpha3().DevOpsProjects().Update(context.Background(), project, metav1.UpdateOptions{})
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to update project %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to update project %s ", key))
 				return err
 			}
 		}

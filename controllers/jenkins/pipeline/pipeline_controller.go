@@ -214,7 +214,7 @@ func (c *Controller) syncHandler(key string) error {
 	//		klog.Info(fmt.Sprintf("namespace '%s' in work queue no longer exists ", key))
 	//		return nil
 	//	}
-	//	klog.V(8).Info(err, fmt.Sprintf("could not get namespace %s ", key))
+	//	klog.ErrorS(err, fmt.Sprintf("could not get namespace %s ", key))
 	//	return err
 	//}
 	// TODO this is the KubeSphere core part instead of the DevOps part
@@ -265,7 +265,7 @@ func (c *Controller) syncHandler(key string) error {
 			if !reflect.DeepEqual(jenkinsPipeline.Spec, copyPipeline.Spec) {
 				_, err := c.devopsClient.UpdateProjectPipeline(nsName, copyPipeline)
 				if err != nil {
-					klog.V(8).Info(err, fmt.Sprintf("failed to update pipeline config %s ", key))
+					klog.ErrorS(err, fmt.Sprintf("failed to update pipeline config %s ", key))
 					return err
 				}
 			} else {
@@ -274,7 +274,7 @@ func (c *Controller) syncHandler(key string) error {
 		} else {
 			_, err = c.devopsClient.CreateProjectPipeline(nsName, copyPipeline)
 			if err != nil {
-				klog.V(8).Info(err, fmt.Sprintf("failed to create copyPipeline %s ", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to create copyPipeline %s ", key))
 				return err
 			}
 		}
@@ -295,7 +295,7 @@ func (c *Controller) syncHandler(key string) error {
 					klog.Error(fmt.Sprintf("unexpected error type: %v, should be *restful.ServiceError", err))
 				}
 
-				klog.V(8).Info(err, fmt.Sprintf("failed to delete pipeline %s in devops", key))
+				klog.ErrorS(err, fmt.Sprintf("failed to delete pipeline %s in devops", key))
 			} else {
 				delSuccess = true
 			}
