@@ -24,6 +24,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubesphere/ks-devops/cmd/apiserver/app/options"
 	"github.com/kubesphere/ks-devops/pkg/config"
@@ -86,6 +88,8 @@ cluster's shared state through which all other components interact.`,
 }
 
 func Run(s *options.ServerRunOptions, stopCh context.Context) error {
+	ctrl.SetLogger(klogr.New())
+
 	apiserver, err := s.NewAPIServer(stopCh.Done())
 	if err != nil {
 		return err
