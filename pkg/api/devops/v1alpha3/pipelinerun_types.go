@@ -24,8 +24,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PipelineRunFinalizerName is the name of PipelineRun finalizer
-const PipelineRunFinalizerName = "pipelinerun.finalizers.kubesphere.io"
+const (
+	// PipelineRunFinalizerName is the name of PipelineRun finalizer
+	PipelineRunFinalizerName = "pipelinerun.finalizers.kubesphere.io"
+
+	// PipelineRunKeepJenkinsRecordAnnoKey is the annotation key of keeping Jenkins record
+	PipelineRunKeepJenkinsRecordAnnoKey = "devops.kubesphere.io/keep-jenkins-record"
+)
 
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {

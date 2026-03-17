@@ -89,4 +89,13 @@ func RegisterRoutes(ws *restful.WebService, devopsClient dclient.Interface, c cl
 		To(handler.downloadArtifact).
 		Returns(http.StatusOK, api.StatusOK, nil).
 		Metadata(restfulspec.KeyOpenAPITags, constants.DevOpsPipelineTags))
+
+	// delete a pipelinerun of a pipeline
+	ws.Route(ws.DELETE("/namespaces/{namespace}/pipelineruns/{pipelinerun}").
+		To(handler.deletePipelineRun).
+		Doc("Delete a pipelinerun of a pipeline.").
+		Param(ws.PathParameter("namespace", "The namespace of the pipeline.")).
+		Param(ws.PathParameter("pipelinerun", "The name of the pipelinerun.")).
+		Param(ws.QueryParameter("keepJenkinsRecord", "Whether to keep the record in Jenkins. Default is false.")).
+		Returns(http.StatusOK, "OK", nil))
 }
