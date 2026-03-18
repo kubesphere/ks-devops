@@ -68,6 +68,4 @@ type CredentialOperator interface {
 	GetCredentialInProject(projectId, id string) (*Credential, error)
 
 	DeleteCredentialInProject(projectId, id string) (string, error)
-
-	GetKubeConfigCredentialStoreType() string
 }
