@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 
@@ -285,4 +286,49 @@ func (h *apiHandler) downloadArtifact(request *restful.Request, response *restfu
 		kapis.HandleError(request, response, err)
 		return
 	}
+}
+
+// deletePipelineRun deletes a specific PipelineRun of a Pipeline.
+func (h *apiHandler) deletePipelineRun(request *restful.Request, response *restful.Response) {
+	nsName := request.PathParameter("namespace")
+	runName := request.PathParameter("pipelinerun")
+	keepJenkinsRecord := request.QueryParameter("keepJenkinsRecord")
+
+	ctx := request.Request.Context()
+	// get the PipelineRun
+	var pr v1alpha3.PipelineRun
+	if err := h.client.Get(ctx, client.ObjectKey{Namespace: nsName, Name: runName}, &pr); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+
+	// check if the PipelineRun is in a final state
+	switch pr.Status.Phase {
+	case v1alpha3.Succeeded, v1alpha3.Failed, v1alpha3.Cancelled:
+		// allow to delete
+	default:
+		// if the PipelineRun is still running, we should not delete it
+		err := fmt.Errorf("cannot delete a running PipelineRun, please stop it first, current status is %s", pr.Status.Phase)
+		kapis.HandleBadRequest(response, request, err)
+		return
+	}
+
+	// check if we need to keep the record in Jenkins
+	if keep, err := strconv.ParseBool(keepJenkinsRecord); err == nil && keep {
+		if pr.Annotations == nil {
+			pr.Annotations = make(map[string]string)
+		}
+		pr.Annotations[v1alpha3.PipelineRunKeepJenkinsRecordAnnoKey] = "true"
+		if err := h.client.Update(ctx, &pr); err != nil {
+			kapis.HandleError(request, response, err)
+			return
+		}
+	}
+
+	// delete the CR
+	if err := h.client.Delete(ctx, &pr); err != nil {
+		kapis.HandleError(request, response, err)
+		return
+	}
+	response.WriteHeader(http.StatusOK)
 }

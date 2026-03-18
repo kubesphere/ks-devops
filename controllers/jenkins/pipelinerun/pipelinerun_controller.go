@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,7 @@ import (
 	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
 	storeInter "github.com/kubesphere/ks-devops/pkg/store/store"
 	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
+	"github.com/kubesphere/ks-devops/pkg/utils/sliceutil"
 )
 
 // BuildNotExistMsg indicates the build with pipelinerun-id not exist in jenkins
@@ -86,14 +88,52 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// DeletionTimestamp.IsZero() means copyPipeline has not been deleted.
 	if !pipelineRunCopied.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err = jHandler.deleteJenkinsJobHistory(pipelineRunCopied); err != nil {
+		// if the annotation value is true, we should keep the record in Jenkins
+		if keep, err := strconv.ParseBool(pipelineRunCopied.Annotations[v1alpha3.PipelineRunKeepJenkinsRecordAnnoKey]); err == nil && keep {
+			klog.V(4).Infof("try to delete PipelineRun: %s/%s, but need to keep Jenkins record",
+				pipelineRunCopied.Namespace, pipelineRunCopied.Name)
+		} else if err = jHandler.deleteJenkinsJobHistory(pipelineRunCopied); err != nil {
 			klog.V(4).Infof("failed to delete Jenkins job history from PipelineRun: %s/%s, error: %v",
 				pipelineRunCopied.Namespace, pipelineRunCopied.Name, err)
-		} else {
-			k8sutil.RemoveFinalizer(&pipelineRunCopied.ObjectMeta, v1alpha3.PipelineRunFinalizerName)
-			err = r.Update(context.TODO(), pipelineRunCopied)
 		}
+
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Get the latest version of PipelineRun
+			if err := r.Get(ctx, req.NamespacedName, pipelineRunCopied); err != nil {
+				// ignore not found error
+				return client.IgnoreNotFound(err)
+			}
+
+			// Remove the finalizer
+			pipelineRunCopied.ObjectMeta.Finalizers = sliceutil.RemoveString(pipelineRunCopied.ObjectMeta.Finalizers, func(item string) bool {
+				return item == v1alpha3.PipelineRunFinalizerName
+			})
+
+			// Try to update
+			return r.Update(ctx, pipelineRunCopied)
+		})
+
 		return ctrl.Result{}, err
+	}
+
+	// add finalizer if it does not exist
+	if !sliceutil.HasString(pipelineRunCopied.ObjectMeta.Finalizers, v1alpha3.PipelineRunFinalizerName) {
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Get the latest version of PipelineRun
+			if err := r.Get(ctx, req.NamespacedName, pipelineRunCopied); err != nil {
+				return err
+			}
+			// Add the finalizer if it's still not there
+			if !sliceutil.HasString(pipelineRunCopied.ObjectMeta.Finalizers, v1alpha3.PipelineRunFinalizerName) {
+				pipelineRunCopied.ObjectMeta.Finalizers = append(pipelineRunCopied.ObjectMeta.Finalizers, v1alpha3.PipelineRunFinalizerName)
+				// Try to update
+				return r.Update(ctx, pipelineRunCopied)
+			}
+			return nil // Finalizer was added by another process, no need to update
+		})
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	// the PipelineRun cannot allow building
