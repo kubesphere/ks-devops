@@ -342,6 +342,21 @@ func (c *Controller) syncHandler(key string) error {
 			}
 
 			if delSuccess {
+				// find all namespaces with the prefix of devopsproject
+				namespaces, err := c.namespaceLister.List(labels.SelectorFromSet(labels.Set{constants.DevOpsProjectLabelKey: project.Name}))
+				if err != nil {
+					klog.ErrorS(err, fmt.Sprintf("failed to list namespaces when deleting devopsproject %s", key))
+					return err
+				}
+				for _, ns := range namespaces {
+					klog.Infof("deleting namespace %s for devopsproject %s", ns.Name, project.Name)
+					err := c.client.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
+					if err != nil && !errors.IsNotFound(err) {
+						// do not return error, continue to delete other namespaces
+						klog.ErrorS(err, fmt.Sprintf("failed to delete namespace %s for devopsproject %s", ns.Name, project.Name))
+					}
+				}
+
 				project.ObjectMeta.Finalizers = sliceutil.RemoveString(project.ObjectMeta.Finalizers, func(item string) bool {
 					return item == devopsv1alpha3.DevOpsProjectFinalizerName
 				})
