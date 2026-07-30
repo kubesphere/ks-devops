@@ -26,6 +26,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/core"
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -62,6 +63,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.Get(ctx, req.NamespacedName, pipeline); err != nil {
 		// ignore resource not found due to deletion
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if pipelineengine.IsTekton(pipeline) {
+		return ctrl.Result{}, nil
 	}
 
 	if err := r.obtainAndUpdatePipelineMetadata(pipeline); err != nil {

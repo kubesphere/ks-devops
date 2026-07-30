@@ -1,0 +1,18 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: PipelineRun
+metadata:
+  generateName: secure-image-demo-manual-
+  namespace: kse-tekton-demo
+spec:
+  pipelineRef:
+    apiVersion: devops.kubesphere.io/v1alpha3
+    kind: Pipeline
+    name: secure-image-demo
+    namespace: kse-tekton-demo
+  pipelineSpec:
+    engine:
+      type: tekton
+    type: pipeline
+  parameters:
+    - name: image
+      value: alpine:3.21

@@ -63,10 +63,31 @@ const (
 
 // PipelineSpec defines the desired state of Pipeline
 type PipelineSpec struct {
+	// Engine selects the backend that executes this Pipeline.
+	// When omitted, the Pipeline uses Jenkins for backward compatibility.
+	// +optional
+	Engine              *PipelineEngineSpec  `json:"engine,omitempty"`
 	Type                PipelineType         `json:"type" description:"type of devops pipeline, in scm or no scm"`
 	Pipeline            *NoScmPipeline       `json:"pipeline,omitempty" description:"no scm pipeline structs"`
 	MultiBranchPipeline *MultiBranchPipeline `json:"multi_branch_pipeline,omitempty" description:"in scm pipeline structs"`
 }
+
+// PipelineEngineSpec identifies the backend that executes a Pipeline.
+type PipelineEngineSpec struct {
+	// Type is the execution engine name.
+	// +kubebuilder:validation:Enum=jenkins;tekton
+	Type PipelineEngineType `json:"type"`
+}
+
+// PipelineEngineType identifies a supported Pipeline execution backend.
+type PipelineEngineType string
+
+const (
+	// PipelineEngineJenkins identifies the existing Jenkins execution backend.
+	PipelineEngineJenkins PipelineEngineType = "jenkins"
+	// PipelineEngineTekton identifies the Tekton execution backend.
+	PipelineEngineTekton PipelineEngineType = "tekton"
+)
 
 // PipelineStatus defines the observed state of Pipeline
 type PipelineStatus struct {

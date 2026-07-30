@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	v1alpha3 "github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -57,6 +58,9 @@ func (r *JenkinsfileReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	pip := &v1alpha3.Pipeline{}
 	if err = r.Get(ctx, req.NamespacedName, pip); err != nil {
 		err = client.IgnoreNotFound(err)
+		return
+	}
+	if pipelineengine.IsTekton(pip) {
 		return
 	}
 

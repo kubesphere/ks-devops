@@ -1,0 +1,15 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  name: secure-image-demo
+  namespace: kse-tekton-demo
+  annotations:
+    devops.kubesphere.io/tekton-pipeline: secure-image-demo
+    devops.kubesphere.io/tekton-timeout: 20m
+spec:
+  engine:
+    type: tekton
+  type: pipeline
+  pipeline:
+    name: secure-image-demo
+    description: KubeSphere facade for a blocking Trivy image scan.

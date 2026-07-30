@@ -164,6 +164,11 @@ func NewFakeDevops(data map[string]interface{}) *Devops {
 	return &fakeData
 }
 
+// GetKubeConfigCredentialStoreType returns the backward-compatible kubeconfig store used by tests.
+func (d *Devops) GetKubeConfigCredentialStoreType() string {
+	return ""
+}
+
 // Pipelinne operator interface
 func (d *Devops) GetPipeline(projectName, pipelineName string, httpParameters *devops.HttpParameters) (*devops.Pipeline, error) {
 	return nil, nil

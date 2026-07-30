@@ -338,3 +338,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelineruns
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch

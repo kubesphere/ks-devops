@@ -30,6 +30,7 @@ import (
 	"github.com/kubesphere/ks-devops/controllers/jenkins/config"
 	jenkinspipeline "github.com/kubesphere/ks-devops/controllers/jenkins/pipeline"
 	"github.com/kubesphere/ks-devops/controllers/jenkins/pipelinerun"
+	tektoncontroller "github.com/kubesphere/ks-devops/controllers/tekton"
 	"github.com/kubesphere/ks-devops/pkg/client/devops"
 	"github.com/kubesphere/ks-devops/pkg/client/k8s"
 	"github.com/kubesphere/ks-devops/pkg/informers"
@@ -45,6 +46,9 @@ func addControllers(mgr manager.Manager, client k8s.Client, informerFactory info
 	}
 
 	reconcilers := getAllControllers(mgr, client, informerFactory, devopsClient, s, jenkinsCore)
+	reconcilers["tekton"] = func(mgr manager.Manager) error {
+		return (&tektoncontroller.Reconciler{Client: mgr.GetClient()}).SetupWithManager(mgr)
+	}
 	reconcilers["pipeline"] = func(mgr manager.Manager) (err error) {
 		// add PipelineRun controller
 		if err = (&pipelinerun.Reconciler{

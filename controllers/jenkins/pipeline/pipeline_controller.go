@@ -50,6 +50,7 @@ import (
 	devopsinformers "github.com/kubesphere/ks-devops/pkg/client/informers/externalversions/devops/v1alpha3"
 	devopslisters "github.com/kubesphere/ks-devops/pkg/client/listers/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/constants"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 )
 
 // Controller is the controller of the Pipeline
@@ -231,6 +232,9 @@ func (c *Controller) syncHandler(key string) error {
 		}
 		klog.Error(err, fmt.Sprintf("could not get copyPipeline %s ", key))
 		return err
+	}
+	if pipelineengine.IsTekton(pipeline) {
+		return nil
 	}
 
 	copyPipeline := pipeline.DeepCopy()

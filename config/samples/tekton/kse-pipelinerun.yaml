@@ -1,0 +1,18 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: PipelineRun
+metadata:
+  generateName: smoke-demo-manual-
+  namespace: kse-tekton-demo
+spec:
+  pipelineRef:
+    apiVersion: devops.kubesphere.io/v1alpha3
+    kind: Pipeline
+    name: smoke-demo
+    namespace: kse-tekton-demo
+  pipelineSpec:
+    engine:
+      type: tekton
+    type: pipeline
+  parameters:
+    - name: message
+      value: hello-from-kse-tekton

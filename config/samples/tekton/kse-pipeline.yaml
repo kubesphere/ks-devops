@@ -1,0 +1,15 @@
+apiVersion: devops.kubesphere.io/v1alpha3
+kind: Pipeline
+metadata:
+  name: smoke-demo
+  namespace: kse-tekton-demo
+  annotations:
+    devops.kubesphere.io/tekton-pipeline: smoke-demo
+    devops.kubesphere.io/tekton-timeout: 5m
+spec:
+  engine:
+    type: tekton
+  type: pipeline
+  pipeline:
+    name: smoke-demo
+    description: KubeSphere facade for the native Tekton smoke-demo Pipeline.

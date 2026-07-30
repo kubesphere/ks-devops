@@ -27,6 +27,7 @@ import (
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/apiserver/request"
 	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -35,6 +36,7 @@ import (
 	"github.com/kubesphere/ks-devops/pkg/apiserver/runtime"
 	fakedevops "github.com/kubesphere/ks-devops/pkg/client/devops/fake"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -124,6 +126,112 @@ func TestApis(t *testing.T) {
 			httpWriter := httptest.NewRecorder()
 			restful.DefaultContainer.Dispatch(httpWriter, httpRequest)
 			assert.Equal(t, tt.args.status, httpWriter.Code)
+		})
+	}
+}
+
+// TestCreatePipelineRunPropagatesEngineAnnotations verifies engine snapshots and compatibility annotations.
+func TestCreatePipelineRunPropagatesEngineAnnotations(t *testing.T) {
+	tests := []struct {
+		name                string
+		pipelineEngine      *v1alpha3.PipelineEngineSpec
+		pipelineAnnotations map[string]string
+		wantAnnotations     map[string]string
+		wantEngine          v1alpha3.PipelineEngineType
+	}{
+		{
+			name:           "Tekton Pipeline spec",
+			pipelineEngine: &v1alpha3.PipelineEngineSpec{Type: v1alpha3.PipelineEngineTekton},
+			pipelineAnnotations: map[string]string{
+				pipelineengine.AnnotationEngine:         pipelineengine.EngineJenkins,
+				pipelineengine.AnnotationTektonPipeline: "native-pipeline",
+				"example.com/unrelated":                 "must-not-propagate",
+			},
+			wantAnnotations: map[string]string{
+				pipelineengine.AnnotationTektonPipeline: "native-pipeline",
+			},
+			wantEngine: v1alpha3.PipelineEngineTekton,
+		},
+		{
+			name: "Legacy Tekton annotation",
+			pipelineAnnotations: map[string]string{
+				pipelineengine.AnnotationEngine:         pipelineengine.EngineTekton,
+				pipelineengine.AnnotationTektonPipeline: "native-pipeline",
+				"example.com/unrelated":                 "must-not-propagate",
+			},
+			wantAnnotations: map[string]string{
+				pipelineengine.AnnotationEngine:         pipelineengine.EngineTekton,
+				pipelineengine.AnnotationTektonPipeline: "native-pipeline",
+			},
+		},
+		{
+			name:                "Default Jenkins pipeline",
+			pipelineAnnotations: nil,
+			wantAnnotations:     map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scheme, err := v1alpha3.SchemeBuilder.Register().Build()
+			require.NoError(t, err)
+
+			pipeline := &v1alpha3.Pipeline{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pipeline",
+					Namespace:   "namespace",
+					Annotations: tt.pipelineAnnotations,
+				},
+				Spec: v1alpha3.PipelineSpec{
+					Engine: tt.pipelineEngine,
+					Type:   v1alpha3.NoScmPipelineType,
+				},
+			}
+			k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(pipeline).Build()
+
+			container := restful.NewContainer()
+			webService := runtime.NewWebService(v1alpha3.GroupVersion)
+			RegisterRoutes(webService, fakedevops.NewFakeDevops(nil), k8sClient)
+			container.Add(webService)
+
+			payload, err := json.Marshal(&devops.RunPayload{
+				Parameters: []devops.Parameter{{Name: "message", Value: "hello"}},
+			})
+			require.NoError(t, err)
+
+			ctx := request.WithUser(request.NewContext(), &user.DefaultInfo{Name: "bob"})
+			httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost,
+				"http://fake.com/kapis/devops.kubesphere.io/v1alpha3/namespaces/namespace/pipelines/pipeline/pipelineruns",
+				bytes.NewReader(payload))
+			require.NoError(t, err)
+			httpRequest.Header.Set("Content-Type", "application/json")
+
+			recorder := httptest.NewRecorder()
+			container.ServeHTTP(recorder, httpRequest)
+			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+
+			runs := &v1alpha3.PipelineRunList{}
+			require.NoError(t, k8sClient.List(context.Background(), runs))
+			require.Len(t, runs.Items, 1)
+
+			created := runs.Items[0]
+			for key, value := range tt.wantAnnotations {
+				assert.Equal(t, value, created.Annotations[key])
+			}
+			if len(tt.wantAnnotations) == 0 {
+				assert.NotContains(t, created.Annotations, pipelineengine.AnnotationEngine)
+			}
+			if tt.wantEngine != "" {
+				assert.NotContains(t, created.Annotations, pipelineengine.AnnotationEngine)
+				require.NotNil(t, created.Spec.PipelineSpec)
+				require.NotNil(t, created.Spec.PipelineSpec.Engine)
+				assert.Equal(t, tt.wantEngine, created.Spec.PipelineSpec.Engine.Type)
+			}
+			assert.NotContains(t, created.Annotations, "example.com/unrelated")
+			assert.Equal(t, "bob", created.Annotations[v1alpha3.PipelineRunCreatorAnnoKey])
+			require.Len(t, created.Spec.Parameters, 1)
+			assert.Equal(t, "message", created.Spec.Parameters[0].Name)
+			assert.Equal(t, "hello", created.Spec.Parameters[0].Value)
 		})
 	}
 }

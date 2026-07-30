@@ -42,6 +42,7 @@ func (o *FeatureOptions) GetControllers() map[string]bool {
 		"jenkinsagent":  true,
 		"gitrepository": true,
 		"pipeline":      true,
+		"tekton":        true,
 	}
 
 	// support to only enable the specific controllers

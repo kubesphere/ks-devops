@@ -18,12 +18,14 @@ package pipelinerun
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -221,9 +223,22 @@ func TestCreatePipelineRun(t *testing.T) {
 	pipeline := &v1alpha3.Pipeline{}
 	pipeline.SetName("name")
 	pipeline.Namespace = "namespace"
+	pipeline.Spec.Engine = &v1alpha3.PipelineEngineSpec{Type: v1alpha3.PipelineEngineTekton}
+	pipeline.Annotations = map[string]string{
+		pipelineengine.AnnotationTektonPipeline: "native-pipeline",
+		"example.com/unrelated":                 "must-not-propagate",
+	}
 	pipelineRun := CreatePipelineRun(pipeline, nil, nil)
 
 	assert.Equal(t, pipelineRun.GenerateName, pipeline.Name+"-")
 	assert.Equal(t, pipelineRun.Namespace, pipeline.Namespace)
 	assert.NotNil(t, pipelineRun.Annotations)
+	assert.NotContains(t, pipelineRun.Annotations, pipelineengine.AnnotationEngine)
+	assert.Equal(t, "native-pipeline", pipelineRun.Annotations[pipelineengine.AnnotationTektonPipeline])
+	assert.NotContains(t, pipelineRun.Annotations, "example.com/unrelated")
+	require.NotNil(t, pipelineRun.Spec.PipelineSpec)
+	require.NotNil(t, pipelineRun.Spec.PipelineSpec.Engine)
+	assert.Equal(t, v1alpha3.PipelineEngineTekton, pipelineRun.Spec.PipelineSpec.Engine.Type)
+	pipeline.Spec.Engine.Type = v1alpha3.PipelineEngineJenkins
+	assert.Equal(t, v1alpha3.PipelineEngineTekton, pipelineRun.Spec.PipelineSpec.Engine.Type, "the run must own an immutable snapshot")
 }
