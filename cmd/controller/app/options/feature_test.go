@@ -43,6 +43,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			"jenkinsagent":  true,
 			"gitrepository": true,
 			"pipeline":      true,
+			"tekton":        true,
 		},
 	}, {
 		name: "no input (be nil) from users",
@@ -55,6 +56,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			"jenkinsagent":  true,
 			"gitrepository": true,
 			"pipeline":      true,
+			"tekton":        true,
 		},
 	}, {
 		name: "merge with the input from users",
@@ -69,6 +71,7 @@ func TestFeatureOptions_GetControllers(t *testing.T) {
 			"jenkinsagent":  true,
 			"gitrepository": true,
 			"pipeline":      true,
+			"tekton":        true,
 			"fake":          true,
 		},
 	}, {

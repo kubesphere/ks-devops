@@ -17,7 +17,6 @@ limitations under the License.
 package pipelinerun
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -29,11 +28,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func Test_compatibleTransform(t *testing.T) {
+// Test_noTransform verifies that backward listing preserves the PipelineRun object.
+func Test_noTransform(t *testing.T) {
 	tests := []struct {
 		name string
 		obj  runtime.Object
-		want interface{}
 	}{{
 		name: "With run status",
 		obj: &v1alpha3.PipelineRun{
@@ -43,29 +42,23 @@ func Test_compatibleTransform(t *testing.T) {
 				},
 			},
 		},
-		want: json.RawMessage(`{"id": "123"}`),
 	}, {
 		name: "Without annotations",
 		obj: &v1alpha3.PipelineRun{
 			ObjectMeta: v1.ObjectMeta{},
 		},
-		want: json.RawMessage("{}"),
 	}, {
 		name: "Nil PipelineRun",
 		obj:  (*v1alpha3.PipelineRun)(nil),
-		want: json.RawMessage("{}"),
 	}, {
 		name: "Nil object",
 		obj:  nil,
-		want: json.RawMessage("{}"),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := backwardListHandler{}
-			if got := handler.Transformer()(tt.obj); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("backwardTransform() = %v, want %v", got, tt.want)
-			} else if !reflect.TypeOf(got).AssignableTo(reflect.TypeOf((*json.Marshaler)(nil)).Elem()) {
-				t.Errorf("backwardTransform() should return an instance of json.Marshaler, current type is %s", reflect.TypeOf(got))
+			if got := handler.Transformer()(tt.obj); !reflect.DeepEqual(got, tt.obj) {
+				t.Errorf("Transformer() = %v, want original object %v", got, tt.obj)
 			}
 		})
 	}

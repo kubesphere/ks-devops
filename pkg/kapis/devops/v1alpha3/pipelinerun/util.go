@@ -23,6 +23,7 @@ import (
 
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/client/devops"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -115,10 +116,11 @@ func CreateBarePipelineRun(pipeline *v1alpha3.Pipeline, parameters []v1alpha3.Pa
 		},
 		Spec: v1alpha3.PipelineRunSpec{
 			PipelineRef:  getPipelineRef(pipeline),
-			PipelineSpec: &pipeline.Spec,
+			PipelineSpec: pipeline.Spec.DeepCopy(),
 			Parameters:   parameters,
 			SCM:          scm,
 		},
 	}
+	pipelineengine.PropagatePipelineAnnotations(pipeline, pipelineRun)
 	return pipelineRun
 }

@@ -47,6 +47,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+// TestShouldSkipForTektonSpec verifies that Jenkins ignores a run whose PipelineSpec snapshot selects Tekton.
+func TestShouldSkipForTektonSpec(t *testing.T) {
+	pipeline := &v1alpha3.Pipeline{
+		ObjectMeta: metav1.ObjectMeta{Name: "tekton-pipeline", Namespace: "demo"},
+		Spec: v1alpha3.PipelineSpec{
+			Engine: &v1alpha3.PipelineEngineSpec{Type: v1alpha3.PipelineEngineTekton},
+			Type:   v1alpha3.NoScmPipelineType,
+		},
+	}
+	run := &v1alpha3.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{Name: "tekton-run", Namespace: "demo"},
+		Spec: v1alpha3.PipelineRunSpec{
+			PipelineRef:  &v1.ObjectReference{Name: pipeline.Name},
+			PipelineSpec: pipeline.Spec.DeepCopy(),
+		},
+	}
+	reconciler := &Reconciler{Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(pipeline).Build()}
+
+	skip, err := reconciler.shouldSkipForTekton(context.Background(), run)
+	assert.NoError(t, err)
+	assert.True(t, skip)
+}
+
 func Test_getBranch(t *testing.T) {
 	type args struct {
 		prSpec *v1alpha3.PipelineRunSpec

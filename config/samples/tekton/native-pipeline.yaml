@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: smoke-demo
+  namespace: kse-tekton-demo
+spec:
+  description: A deterministic smoke test for the KubeSphere Tekton adapter.
+  params:
+    - name: message
+      type: string
+      default: hello-from-kse-tekton
+  tasks:
+    - name: smoke-test
+      params:
+        - name: message
+          value: $(params.message)
+      taskSpec:
+        params:
+          - name: message
+            type: string
+        steps:
+          - name: run
+            image: alpine:3.21
+            command:
+              - /bin/sh
+              - -c
+            args:
+              - echo "$(params.message)"

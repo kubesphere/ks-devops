@@ -24,6 +24,7 @@ import (
 	"github.com/jenkins-zh/jenkins-client/pkg/job"
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	"github.com/kubesphere/ks-devops/pkg/kapis/devops/v1alpha3/pipelinerun"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	v1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
@@ -57,6 +58,9 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	pipeline := &v1alpha3.Pipeline{}
 	if err := r.Client.Get(ctx, req.NamespacedName, pipeline); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if pipelineengine.IsTekton(pipeline) {
+		return ctrl.Result{}, nil
 	}
 	if _, ok := pipeline.Annotations[v1alpha3.PipelineRequestToSyncRunsAnnoKey]; !ok {
 		// skip the PipelineRun synchronization due to synchronized already before

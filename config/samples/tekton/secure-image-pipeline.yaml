@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: secure-image-demo
+  namespace: kse-tekton-demo
+spec:
+  description: A blocking Trivy policy gate for an image that was built earlier in CI.
+  params:
+    - name: image
+      type: string
+      description: Immutable image reference to scan; use a digest in production.
+  tasks:
+    - name: scan-image
+      params:
+        - name: image
+          value: $(params.image)
+      taskSpec:
+        params:
+          - name: image
+            type: string
+        steps:
+          - name: trivy
+            # Pin this image to a verified multi-architecture digest in production.
+            image: aquasec/trivy:0.70.0
+            command:
+              - trivy
+            args:
+              - image
+              - --exit-code
+              - "1"
+              - --severity
+              - CRITICAL
+              - --ignore-unfixed
+              - --scanners
+              - vuln,secret
+              - $(params.image)
+            computeResources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: "1"
+                memory: 1Gi

@@ -41,6 +41,7 @@ import (
 	"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha3"
 	devopsClient "github.com/kubesphere/ks-devops/pkg/client/devops"
 	"github.com/kubesphere/ks-devops/pkg/client/devops/jenkins"
+	"github.com/kubesphere/ks-devops/pkg/pipelineengine"
 	cmstore "github.com/kubesphere/ks-devops/pkg/store/configmap"
 	storeInter "github.com/kubesphere/ks-devops/pkg/store/store"
 	"github.com/kubesphere/ks-devops/pkg/utils/k8sutil"
@@ -79,6 +80,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	var err error
 	if err = r.Client.Get(ctx, req.NamespacedName, pipelineRun); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if skip, skipErr := r.shouldSkipForTekton(ctx, pipelineRun); skipErr != nil {
+		return ctrl.Result{}, skipErr
+	} else if skip {
+		return ctrl.Result{}, nil
 	}
 
 	jHandler := &jenkinsHandler{&r.JenkinsCore}
@@ -274,6 +280,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	r.recorder.Eventf(pipelineRunCopied, corev1.EventTypeNormal, v1alpha3.Started, "Started PipelineRun %s", req.NamespacedName)
 	// requeue after 1 second
 	return ctrl.Result{}, nil
+}
+
+// shouldSkipForTekton prevents Jenkins from reconciling runs owned by the Tekton engine.
+func (r *Reconciler) shouldSkipForTekton(ctx context.Context, run *v1alpha3.PipelineRun) (bool, error) {
+	if pipelineengine.IsTekton(run) {
+		return true, nil
+	}
+	if run.Spec.PipelineRef == nil || run.Spec.PipelineRef.Name == "" {
+		return false, nil
+	}
+	pipeline := &v1alpha3.Pipeline{}
+	key := client.ObjectKey{Namespace: run.Namespace, Name: run.Spec.PipelineRef.Name}
+	if err := r.Get(ctx, key, pipeline); err != nil {
+		return false, client.IgnoreNotFound(err)
+	}
+	return pipelineengine.IsTekton(pipeline), nil
 }
 
 // match /blue/rest/organizations/jenkins/pipelines/{devops}/{pipeline}/runs/{run}/log/?start=0

@@ -114,6 +114,19 @@ spec:
                 description: PipelineSpec is the specification of Pipeline when the
                   current PipelineRun is created.
                 properties:
+                  engine:
+                    description: Engine selects the backend that executes this Pipeline.
+                      When omitted, the Pipeline uses Jenkins for backward compatibility.
+                    properties:
+                      type:
+                        description: Type is the execution engine name.
+                        enum:
+                        - jenkins
+                        - tekton
+                        type: string
+                    required:
+                    - type
+                    type: object
                   multi_branch_pipeline:
                     properties:
                       bitbucket_server_source:
